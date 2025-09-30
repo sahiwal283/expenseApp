@@ -2,22 +2,29 @@
 
 A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, and expense approval workflows.
 
-## Quick Start
+**Current Version: 0.5.0-alpha (Pre-release - Frontend Only)**
 
-**Get started in 30 seconds:**
+## Quick Start - Frontend Testing
+
+**Get started in 10 seconds:**
 
 ```bash
 # macOS/Linux
-./start.sh
+./start-frontend.sh
 
 # Windows
-start.bat
+start-frontend.bat
 ```
 
 Then open http://localhost:5173 and login with:
-- Admin: `admin` / `password123`
+- Admin: `admin` / `admin`
+- Coordinator: `sarah` / `password`
+- Salesperson: `mike` / `password`
+- Accountant: `lisa` / `password`
 
-📖 See [QUICKSTART.md](QUICKSTART.md) for detailed quick start guide
+📖 See [FRONTEND_TESTING.md](FRONTEND_TESTING.md) for comprehensive testing guide
+
+**Note:** This pre-release focuses on frontend testing. Data is stored in browser localStorage. Backend integration coming in v1.0.0.
 
 ## Features
 
@@ -54,6 +61,26 @@ Before you begin, ensure you have the following installed:
 - Node.js (v18 or higher)
 - PostgreSQL (v14 or higher)
 - npm or yarn
+
+## Frontend Testing (Current Release)
+
+This is a pre-release version focused on frontend testing. The backend will be integrated in v1.0.0.
+
+**What's Included:**
+- Complete React frontend with TypeScript
+- All UI components and layouts
+- Role-based navigation and views
+- Form validations
+- Data persistence via localStorage
+- Professional UI design
+
+**What's Coming:**
+- Full backend API (Node.js + Express)
+- PostgreSQL database
+- Real OCR processing
+- JWT authentication
+- File upload to server
+- Email notifications
 
 ## Local Development Setup
 
@@ -95,10 +122,10 @@ GRANT ALL PRIVILEGES ON DATABASE expense_app TO expense_user;
 
 Navigate to the backend directory and install dependencies:
 
-```bash
+   ```bash
 cd backend
-npm install
-```
+   npm install
+   ```
 
 Create environment configuration:
 
@@ -148,9 +175,9 @@ Demo users created:
 
 Start the backend server:
 
-```bash
-npm run dev
-```
+   ```bash
+   npm run dev
+   ```
 
 The backend API will be available at `http://localhost:5000`
 
