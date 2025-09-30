@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Filter, Calendar, DollarSign, TrendingUp, Building2, CheckCircle, X } from 'lucide-react';
-import { User, TradeShow, Expense } from '../../App';
+import { User, TradeShow, Expense } from './App';
 import { ExpenseChart } from './ExpenseChart';
 import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
-import { TradeShow } from '../../App';
+import { TradeShow } from './App';
 
 interface UpcomingEventsProps {
   events: TradeShow[];

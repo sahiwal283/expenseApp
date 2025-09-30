@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, Calendar, MapPin, User, DollarSign } from 'lucide-react';
-import { Expense, TradeShow } from '../../App';
+import { Expense, TradeShow } from './App';
 
 interface DetailedReportProps {
   expenses: Expense[];

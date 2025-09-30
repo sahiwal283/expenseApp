@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, DollarSign, MapPin } from 'lucide-react';
-import { Expense } from '../../App';
+import { Expense } from './App';
 
 interface RecentExpensesProps {
   expenses: Expense[];

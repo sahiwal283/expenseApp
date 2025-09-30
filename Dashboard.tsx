@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { DollarSign, Calendar, Users, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { User, TradeShow, Expense } from '../../App';
+import { User, TradeShow, Expense } from './App';
 import { StatsCard } from './StatsCard';
 import { RecentExpenses } from './RecentExpenses';
 import { UpcomingEvents } from './UpcomingEvents';

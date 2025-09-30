@@ -1,6 +1,6 @@
 import React from 'react';
 import { Building2, DollarSign, FileText } from 'lucide-react';
-import { Expense, TradeShow } from '../../App';
+import { Expense, TradeShow } from './App';
 
 interface EntityBreakdownProps {
   expenses: Expense[];
