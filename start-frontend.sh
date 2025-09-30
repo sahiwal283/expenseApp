@@ -28,7 +28,7 @@ if ! command -v node &> /dev/null; then
     # Check if Homebrew is installed (macOS)
     if [[ "$OSTYPE" == "darwin"* ]]; then
         if command -v brew &> /dev/null; then
-            # Homebrew is installed
+            # Homebrew is installed and in PATH
             echo -e "${BLUE}📥 Install Node.js using Homebrew:${NC}"
             echo ""
             echo -e "${GREEN}Run this command:${NC}"
@@ -37,6 +37,29 @@ if ! command -v node &> /dev/null; then
             echo -e "${YELLOW}After installation:${NC}"
             echo "  1. Close and reopen your terminal"
             echo "  2. Run this script again: ./start-frontend.sh"
+        elif [ -x "/opt/homebrew/bin/brew" ] || [ -x "/usr/local/bin/brew" ]; then
+            # Homebrew is installed but not in PATH
+            echo -e "${YELLOW}⚠ Homebrew is installed but not in your PATH${NC}"
+            echo ""
+            echo -e "${BLUE}📥 Quick Fix - Use our setup helper:${NC}"
+            echo ""
+            echo -e "${GREEN}Run this command:${NC}"
+            echo "  ./setup-homebrew.sh"
+            echo ""
+            echo -e "${BLUE}This will:${NC}"
+            echo "  1. Add Homebrew to your PATH"
+            echo "  2. Install Node.js automatically"
+            echo "  3. Set up everything for you"
+            echo ""
+            echo -e "${YELLOW}Or fix manually:${NC}"
+            if [ -x "/opt/homebrew/bin/brew" ]; then
+                echo '  echo '\''eval "$(/opt/homebrew/bin/brew shellenv)"'\'' >> ~/.zshrc'
+                echo '  eval "$(/opt/homebrew/bin/brew shellenv)"'
+            else
+                echo '  echo '\''eval "$(/usr/local/bin/brew shellenv)"'\'' >> ~/.bash_profile'
+                echo '  eval "$(/usr/local/bin/brew shellenv)"'
+            fi
+            echo "  brew install node"
         else
             # Homebrew is not installed
             echo -e "${BLUE}📥 Installation Options for macOS:${NC}"
@@ -46,8 +69,8 @@ if ! command -v node &> /dev/null; then
             echo -e "${GREEN}Step 1 - Install Homebrew:${NC}"
             echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
             echo ""
-            echo -e "${GREEN}Step 2 - After Homebrew installs, install Node.js:${NC}"
-            echo "  brew install node"
+            echo -e "${GREEN}Step 2 - Use our setup helper:${NC}"
+            echo "  ./setup-homebrew.sh"
             echo ""
             echo -e "${YELLOW}OPTION 2: Download Node.js directly${NC}"
             echo "  1. Visit: https://nodejs.org/"
@@ -110,7 +133,7 @@ if [ "$NODE_MAJOR_VERSION" -lt 18 ]; then
     # Check if Homebrew is installed (macOS)
     if [[ "$OSTYPE" == "darwin"* ]]; then
         if command -v brew &> /dev/null; then
-            # Homebrew is installed - suggest using it
+            # Homebrew is installed and in PATH
             echo -e "${BLUE}📥 Upgrade Node.js using Homebrew:${NC}"
             echo ""
             echo -e "${GREEN}Run this command:${NC}"
@@ -120,6 +143,19 @@ if [ "$NODE_MAJOR_VERSION" -lt 18 ]; then
             echo "  1. Close and reopen your terminal"
             echo "  2. Verify: node -v"
             echo "  3. Run this script again: ./start-frontend.sh"
+        elif [ -x "/opt/homebrew/bin/brew" ] || [ -x "/usr/local/bin/brew" ]; then
+            # Homebrew is installed but not in PATH
+            echo -e "${YELLOW}⚠ Homebrew is installed but not in your PATH${NC}"
+            echo ""
+            echo -e "${BLUE}📥 Quick Fix - Use our setup helper:${NC}"
+            echo ""
+            echo -e "${GREEN}Run this command:${NC}"
+            echo "  ./setup-homebrew.sh"
+            echo ""
+            echo -e "${BLUE}This will:${NC}"
+            echo "  1. Add Homebrew to your PATH"
+            echo "  2. Upgrade Node.js to latest version"
+            echo "  3. Set up everything for you"
         else
             # Homebrew is not installed
             echo -e "${BLUE}📥 Upgrade Options for macOS:${NC}"
@@ -129,8 +165,8 @@ if [ "$NODE_MAJOR_VERSION" -lt 18 ]; then
             echo -e "${GREEN}Step 1 - Install Homebrew:${NC}"
             echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
             echo ""
-            echo -e "${GREEN}Step 2 - Install latest Node.js:${NC}"
-            echo "  brew install node"
+            echo -e "${GREEN}Step 2 - Use our setup helper:${NC}"
+            echo "  ./setup-homebrew.sh"
             echo ""
             echo -e "${YELLOW}OPTION 2: Download latest Node.js directly${NC}"
             echo "  1. Visit: https://nodejs.org/"
