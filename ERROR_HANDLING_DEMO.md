@@ -6,7 +6,7 @@ The startup scripts now provide **user-friendly, actionable error messages** wit
 
 ---
 
-## Scenario 1: Node.js Not Installed
+## Scenario 1A: Node.js Not Installed (Homebrew Present)
 
 ### What You See:
 
@@ -24,37 +24,77 @@ Version: 0.5.0-alpha (Pre-release)
 
 Node.js is required to run this application.
 
-📥 Quick Installation (macOS):
+📥 Install Node.js using Homebrew:
 
-# Using Homebrew (recommended):
+Run this command:
   brew install node
-
-# Or download installer:
-  Visit: https://nodejs.org/
-  Download the LTS version
 
 After installation:
   1. Close and reopen your terminal
   2. Run this script again: ./start-frontend.sh
 
-Need Homebrew? Install it first:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Scenario 1B: Node.js Not Installed (No Homebrew)
+
+### What You See:
+
+```bash
+$ ./start-frontend.sh
+
+=========================================
+Trade Show Expense App - Frontend Only
+Version: 0.5.0-alpha (Pre-release)
+=========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Node.js Not Found
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Node.js is required to run this application.
+
+📥 Installation Options for macOS:
+
+OPTION 1: Install Homebrew first (Recommended)
+
+Step 1 - Install Homebrew:
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+Step 2 - After Homebrew installs, install Node.js:
+  brew install node
+
+OPTION 2: Download Node.js directly
+  1. Visit: https://nodejs.org/
+  2. Download the LTS version (v18+)
+  3. Run the installer
+
+After installation:
+  1. Close and reopen your terminal
+  2. Run this script again: ./start-frontend.sh
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ### What To Do:
 
-**Option 1: Install via Homebrew (Recommended)**
+**If you see Homebrew instructions (brew install node):**
+- You have Homebrew! Just run the command shown
 ```bash
-# If you have Homebrew
 brew install node
-
-# If you don't have Homebrew, install it first
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-**Option 2: Download Installer**
+**If you see "Install Homebrew first":**
+- You don't have Homebrew, so install it first:
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+- Then install Node.js:
+```bash
+brew install node
+```
+
+**Alternatively (without Homebrew):**
 1. Visit https://nodejs.org/
 2. Download the LTS version (Long Term Support)
 3. Run the installer
@@ -241,11 +281,19 @@ Press any key to continue . . .
 - "Node.js Version Too Old" - Upgrade needed
 - Shows exact versions (current vs required)
 
+### ✅ Smart Homebrew Detection (macOS)
+- **NEW:** Detects if Homebrew is installed
+- If Homebrew present: Shows simple `brew install node` command
+- If Homebrew missing: Shows how to install Homebrew first
+- Prevents "brew: command not found" errors
+- Guides users step-by-step
+
 ### ✅ Actionable Instructions
 - Copy-paste ready commands
 - Step-by-step installation guides
 - Multiple installation options provided
 - Platform-specific guidance
+- No assumptions about installed tools
 
 ### ✅ Version Verification
 - Checks for Node.js v18 or higher

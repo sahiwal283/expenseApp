@@ -24,21 +24,53 @@ if ! command -v node &> /dev/null; then
     echo ""
     echo -e "${YELLOW}Node.js is required to run this application.${NC}"
     echo ""
-    echo -e "${BLUE}📥 Quick Installation (macOS):${NC}"
-    echo ""
-    echo -e "${GREEN}# Using Homebrew (recommended):${NC}"
-    echo "  brew install node"
-    echo ""
-    echo -e "${GREEN}# Or download installer:${NC}"
-    echo "  Visit: https://nodejs.org/"
-    echo "  Download the LTS version"
-    echo ""
-    echo -e "${YELLOW}After installation:${NC}"
-    echo "  1. Close and reopen your terminal"
-    echo "  2. Run this script again: ./start-frontend.sh"
-    echo ""
-    echo -e "${BLUE}Need Homebrew? Install it first:${NC}"
-    echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    
+    # Check if Homebrew is installed (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if command -v brew &> /dev/null; then
+            # Homebrew is installed
+            echo -e "${BLUE}📥 Install Node.js using Homebrew:${NC}"
+            echo ""
+            echo -e "${GREEN}Run this command:${NC}"
+            echo "  brew install node"
+            echo ""
+            echo -e "${YELLOW}After installation:${NC}"
+            echo "  1. Close and reopen your terminal"
+            echo "  2. Run this script again: ./start-frontend.sh"
+        else
+            # Homebrew is not installed
+            echo -e "${BLUE}📥 Installation Options for macOS:${NC}"
+            echo ""
+            echo -e "${YELLOW}OPTION 1: Install Homebrew first (Recommended)${NC}"
+            echo ""
+            echo -e "${GREEN}Step 1 - Install Homebrew:${NC}"
+            echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+            echo ""
+            echo -e "${GREEN}Step 2 - After Homebrew installs, install Node.js:${NC}"
+            echo "  brew install node"
+            echo ""
+            echo -e "${YELLOW}OPTION 2: Download Node.js directly${NC}"
+            echo "  1. Visit: https://nodejs.org/"
+            echo "  2. Download the LTS version (v18+)"
+            echo "  3. Run the installer"
+            echo ""
+            echo -e "${YELLOW}After installation:${NC}"
+            echo "  1. Close and reopen your terminal"
+            echo "  2. Run this script again: ./start-frontend.sh"
+        fi
+    else
+        # Linux or other OS
+        echo -e "${BLUE}📥 Quick Installation:${NC}"
+        echo ""
+        echo -e "${GREEN}# Download installer:${NC}"
+        echo "  Visit: https://nodejs.org/"
+        echo "  Download the LTS version (v18+)"
+        echo ""
+        echo -e "${YELLOW}After installation:${NC}"
+        echo "  1. Close and reopen your terminal"
+        echo "  2. Run this script again: ./start-frontend.sh"
+    fi
+    
     echo ""
     echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     exit 1
@@ -74,19 +106,56 @@ if [ "$NODE_MAJOR_VERSION" -lt 18 ]; then
     echo -e "${YELLOW}Current version: ${NODE_VERSION}${NC}"
     echo -e "${YELLOW}Required version: v18 or higher${NC}"
     echo ""
-    echo -e "${BLUE}📥 Upgrade Node.js (macOS):${NC}"
-    echo ""
-    echo -e "${GREEN}# Using Homebrew:${NC}"
-    echo "  brew upgrade node"
-    echo ""
-    echo -e "${GREEN}# Or download latest:${NC}"
-    echo "  Visit: https://nodejs.org/"
-    echo "  Download the LTS version (v18+)"
-    echo ""
-    echo -e "${YELLOW}After upgrading:${NC}"
-    echo "  1. Close and reopen your terminal"
-    echo "  2. Verify: node -v"
-    echo "  3. Run this script again: ./start-frontend.sh"
+    
+    # Check if Homebrew is installed (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if command -v brew &> /dev/null; then
+            # Homebrew is installed - suggest using it
+            echo -e "${BLUE}📥 Upgrade Node.js using Homebrew:${NC}"
+            echo ""
+            echo -e "${GREEN}Run this command:${NC}"
+            echo "  brew upgrade node"
+            echo ""
+            echo -e "${YELLOW}After upgrading:${NC}"
+            echo "  1. Close and reopen your terminal"
+            echo "  2. Verify: node -v"
+            echo "  3. Run this script again: ./start-frontend.sh"
+        else
+            # Homebrew is not installed
+            echo -e "${BLUE}📥 Upgrade Options for macOS:${NC}"
+            echo ""
+            echo -e "${YELLOW}OPTION 1: Install Homebrew and upgrade via Homebrew${NC}"
+            echo ""
+            echo -e "${GREEN}Step 1 - Install Homebrew:${NC}"
+            echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+            echo ""
+            echo -e "${GREEN}Step 2 - Install latest Node.js:${NC}"
+            echo "  brew install node"
+            echo ""
+            echo -e "${YELLOW}OPTION 2: Download latest Node.js directly${NC}"
+            echo "  1. Visit: https://nodejs.org/"
+            echo "  2. Download the LTS version (v18+)"
+            echo "  3. Run the installer (will upgrade existing)"
+            echo ""
+            echo -e "${YELLOW}After upgrading:${NC}"
+            echo "  1. Close and reopen your terminal"
+            echo "  2. Verify: node -v"
+            echo "  3. Run this script again: ./start-frontend.sh"
+        fi
+    else
+        # Linux or other OS
+        echo -e "${BLUE}📥 Upgrade Node.js:${NC}"
+        echo ""
+        echo -e "${GREEN}Download latest version:${NC}"
+        echo "  Visit: https://nodejs.org/"
+        echo "  Download the LTS version (v18+)"
+        echo ""
+        echo -e "${YELLOW}After upgrading:${NC}"
+        echo "  1. Close and reopen your terminal"
+        echo "  2. Verify: node -v"
+        echo "  3. Run this script again: ./start-frontend.sh"
+    fi
+    
     echo ""
     echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     exit 1
