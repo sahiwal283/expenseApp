@@ -15,6 +15,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]') as Expense[];
 
   const stats = useMemo(() => {
+    const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]') as User[];
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const pendingExpenses = expenses.filter(e => e.status === 'pending').length;
     const upcomingEvents = events.filter(e => e.status === 'upcoming').length;
@@ -26,7 +27,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       upcomingEvents,
       activeEvents,
       totalEvents: events.length,
-      averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0
+      averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0,
+      teamMembers: users.length
     };
   }, [events, expenses]);
 
@@ -89,10 +91,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         />
         <StatsCard
           title="Team Members"
-          value="24"
+          value={stats.teamMembers.toString()}
           icon={Users}
           color="purple"
-          trend="+3 this month"
+          trend={`${stats.teamMembers} active`}
           trendUp={true}
         />
       </div>

@@ -144,6 +144,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     }
   };
 
+  // Auto-flag reimbursement when personal card is selected
+  useEffect(() => {
+    if (formData.cardUsed && formData.cardUsed.toLowerCase().includes('personal')) {
+      setFormData(prev => ({ ...prev, reimbursementRequired: true }));
+    }
+  }, [formData.cardUsed]);
+
   const suggestCategory = (merchant: string) => {
     const merchantLower = merchant.toLowerCase();
     if (merchantLower.includes('airline') || merchantLower.includes('airport') || merchantLower.includes('flight')) {
@@ -196,6 +203,65 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Receipt Upload - First Field */}
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              Receipt Image * <span className="text-red-600">(Upload First - Required)</span>
+            </label>
+            <div className="space-y-4">
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-2 text-blue-500" />
+                    <p className="mb-2 text-sm text-gray-700">
+                      <span className="font-semibold">Click to upload receipt</span>
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleReceiptUpload}
+                    className="hidden"
+                    required={!expense}
+                  />
+                </label>
+              </div>
+
+              {/* Receipt Preview */}
+              {formData.receiptUrl && (
+                <div className="relative">
+                  <img
+                    src={formData.receiptUrl}
+                    alt="Receipt preview"
+                    className="w-full max-w-md h-48 object-cover rounded-lg border mx-auto"
+                  />
+                  {isProcessingOCR && (
+                    <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-700 font-medium">Processing receipt...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* OCR Results */}
+              {ocrResults && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center mb-2">
+                    <AlertCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <h4 className="text-sm font-semibold text-green-800">Receipt Processed Successfully</h4>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Form fields below have been auto-filled with extracted data. Please review and adjust if needed.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -290,65 +356,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               </select>
             </div>
 
-            {/* Receipt Upload - Required Field */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Receipt Image * {!expense && <span className="text-red-500">(Required)</span>}
-              </label>
-              <div className="space-y-4">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload receipt</span>
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleReceiptUpload}
-                      className="hidden"
-                      required={!expense}
-                    />
-                  </label>
-                </div>
-
-                {/* Receipt Preview */}
-                {formData.receiptUrl && (
-                  <div className="relative">
-                    <img
-                      src={formData.receiptUrl}
-                      alt="Receipt preview"
-                      className="w-full max-w-md h-48 object-cover rounded-lg border"
-                    />
-                    {isProcessingOCR && (
-                      <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-lg">
-                        <div className="text-center">
-                          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                          <p className="text-sm text-gray-700">Processing receipt...</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* OCR Results */}
-                {ocrResults && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center mb-2">
-                      <AlertCircle className="w-5 h-5 text-green-600 mr-2" />
-                      <h4 className="text-sm font-semibold text-green-800">Receipt Processed Successfully</h4>
-                    </div>
-                    <p className="text-sm text-green-700">
-                      Extracted data has been automatically filled in the form. Please review and adjust if needed.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Location
@@ -393,21 +400,27 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
           )}
 
           {/* Reimbursement Required */}
-          <div className="bg-yellow-50 rounded-lg p-6">
+          <div className={`rounded-lg p-6 ${formData.reimbursementRequired ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50'}`}>
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
                 id="reimbursementRequired"
                 checked={formData.reimbursementRequired}
                 onChange={(e) => setFormData({ ...formData, reimbursementRequired: e.target.checked })}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                disabled={formData.cardUsed.toLowerCase().includes('personal')}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
               />
               <label htmlFor="reimbursementRequired" className="text-sm font-medium text-gray-900">
                 Reimbursement Required
+                {formData.cardUsed.toLowerCase().includes('personal') && (
+                  <span className="ml-2 text-xs text-yellow-700 font-semibold">(Auto-flagged for Personal Card)</span>
+                )}
               </label>
             </div>
             <p className="text-sm text-gray-600 mt-2 ml-7">
-              Check this box if this expense requires separate reimbursement approval from the accountant.
+              {formData.cardUsed.toLowerCase().includes('personal') 
+                ? 'Personal card expenses are automatically flagged for reimbursement approval.' 
+                : 'Check this box if this expense requires separate reimbursement approval from the accountant.'}
             </p>
           </div>
 

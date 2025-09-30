@@ -11,6 +11,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar }) => {
+  const [showNotifications, setShowNotifications] = React.useState(false);
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -37,10 +39,32 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-900">Notifications</h3>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="p-4 hover:bg-gray-50 border-b border-gray-100">
+                    <p className="text-sm text-gray-900 font-medium">Welcome to the Trade Show Expense App</p>
+                    <p className="text-xs text-gray-500 mt-1">Start by creating an event or submitting an expense</p>
+                  </div>
+                  <div className="p-4 text-center text-sm text-gray-500">
+                    No new notifications
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center space-x-3">
             <div className="text-right">

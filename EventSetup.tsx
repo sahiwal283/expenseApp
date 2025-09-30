@@ -285,19 +285,22 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Budget (Optional)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.budget}
-                  onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter budget amount"
-                />
-              </div>
+              {/* Budget field - Admin and Accountant only */}
+              {(user.role === 'admin' || user.role === 'accountant') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Budget (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter budget amount"
+                  />
+                </div>
+              )}
               
               {/* Participants Section */}
               <div className="space-y-4">
