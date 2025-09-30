@@ -8,8 +8,32 @@
 ```
 npm: command not found
 ```
+Or:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Node.js Not Found
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 **Cause:** Node.js and npm are not installed or not in your PATH.
+
+**Good News:** The script now shows you exactly how to fix this!
+
+### Node.js Version Too Old
+
+**Symptom:** You see:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Node.js Version Too Old
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Current version: v16.x.x
+Required version: v18 or higher
+```
+
+**Cause:** You have Node.js installed, but it's older than v18.
+
+**Solution:** Follow the upgrade instructions shown by the script.
 
 **Solution:**
 
