@@ -103,17 +103,57 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     const previewUrl = URL.createObjectURL(file);
     setFormData({ ...formData, receiptUrl: previewUrl });
 
-    // Simulate OCR processing
+    // Simulate OCR processing with improved extraction logic
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing time
       
-      // Mock OCR results
+      // Enhanced OCR simulation based on image filename patterns
+      const filename = file.name.toLowerCase();
+      let merchant = 'Unknown Merchant';
+      let category = 'Other';
+      let amount = (Math.random() * 200 + 10).toFixed(2);
+      let location = 'Unknown Location';
+      
+      // Detect merchant from filename or use contextual detection
+      if (filename.includes('hertz') || filename.includes('rental') || filename.includes('car')) {
+        merchant = 'Hertz Car Rental';
+        category = 'Transportation';
+        amount = (Math.random() * 300 + 150).toFixed(2);
+        location = 'Indianapolis, IN';
+      } else if (filename.includes('flight') || filename.includes('airline') || filename.includes('delta') || filename.includes('united')) {
+        merchant = 'Delta Airlines';
+        category = 'Flights';
+        amount = (Math.random() * 500 + 200).toFixed(2);
+        location = 'Atlanta, GA';
+      } else if (filename.includes('hotel') || filename.includes('marriott') || filename.includes('hilton')) {
+        merchant = 'Marriott Hotel';
+        category = 'Hotels';
+        amount = (Math.random() * 250 + 100).toFixed(2);
+        location = 'Las Vegas, NV';
+      } else if (filename.includes('restaurant') || filename.includes('food') || filename.includes('meal')) {
+        merchant = 'Restaurant';
+        category = 'Meals';
+        amount = (Math.random() * 80 + 20).toFixed(2);
+        location = 'New York, NY';
+      } else if (filename.includes('uber') || filename.includes('lyft') || filename.includes('taxi')) {
+        merchant = 'Uber';
+        category = 'Transportation';
+        amount = (Math.random() * 50 + 10).toFixed(2);
+        location = 'Chicago, IL';
+      } else {
+        // Default to contextual business expense
+        const merchants = ['Office Supplies Plus', 'Tech Conference', 'Business Center', 'Trade Show Services'];
+        merchant = merchants[Math.floor(Math.random() * merchants.length)];
+        category = 'Supplies';
+      }
+      
+      const today = new Date();
       const mockOcrText = `
         RECEIPT
-        Merchant: ${['Starbucks', 'McDonald\'s', 'Delta Airlines', 'Marriott Hotel', 'Uber'][Math.floor(Math.random() * 5)]}
-        Date: ${new Date().toLocaleDateString()}
-        Amount: $${(Math.random() * 200 + 10).toFixed(2)}
-        Location: ${['Las Vegas, NV', 'New York, NY', 'Chicago, IL'][Math.floor(Math.random() * 3)]}
+        Merchant: ${merchant}
+        Date: ${today.toLocaleDateString()}
+        Amount: $${amount}
+        Location: ${location}
         Thank you for your business!
       `;
 
@@ -133,7 +173,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
         amount: prev.amount || extractedData.amount,
         location: prev.location || extractedData.location,
         ocrText: extractedData.ocrText,
-        category: prev.category || suggestCategory(extractedData.merchant)
+        category: prev.category || category
       }));
 
     } catch (error) {
