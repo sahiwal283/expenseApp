@@ -1,6 +1,8 @@
 import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
-import { User } from '../../App';
+import { User } from './App';
+
+const APP_VERSION = '1.0.0';
 
 interface HeaderProps {
   user: User;
@@ -27,6 +29,10 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
               placeholder="Search expenses, events..."
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+          
+          <div className="hidden md:flex items-center px-3 py-1 bg-gray-100 rounded-full">
+            <span className="text-xs text-gray-600">v{APP_VERSION}</span>
           </div>
         </div>
 

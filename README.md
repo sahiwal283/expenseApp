@@ -2,6 +2,23 @@
 
 A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, and expense approval workflows.
 
+## Quick Start
+
+**Get started in 30 seconds:**
+
+```bash
+# macOS/Linux
+./start.sh
+
+# Windows
+start.bat
+```
+
+Then open http://localhost:5173 and login with:
+- Admin: `admin` / `password123`
+
+📖 See [QUICKSTART.md](QUICKSTART.md) for detailed quick start guide
+
 ## Features
 
 - Role-based access control (Admin, Coordinator, Salesperson, Accountant)
