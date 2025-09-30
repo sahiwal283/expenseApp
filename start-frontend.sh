@@ -13,7 +13,38 @@ echo ""
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo -e "${RED}ERROR: Node.js is not installed${NC}"
+    echo ""
+    echo "Please install Node.js v18 or higher from:"
+    echo "  https://nodejs.org/"
+    echo ""
+    echo "Or install via Homebrew (macOS):"
+    echo "  brew install node"
+    echo ""
+    exit 1
+fi
+
+# Check if npm is installed
+if ! command -v npm &> /dev/null; then
+    echo -e "${RED}ERROR: npm is not installed${NC}"
+    echo ""
+    echo "npm should come with Node.js. Please reinstall Node.js from:"
+    echo "  https://nodejs.org/"
+    echo ""
+    exit 1
+fi
+
+# Display Node.js and npm versions
+NODE_VERSION=$(node -v)
+NPM_VERSION=$(npm -v)
+echo -e "${GREEN}✓ Node.js ${NODE_VERSION} detected${NC}"
+echo -e "${GREEN}✓ npm ${NPM_VERSION} detected${NC}"
+echo ""
 
 echo -e "${BLUE}Starting frontend-only testing mode...${NC}"
 echo ""
@@ -22,7 +53,12 @@ echo ""
 if [ ! -d "node_modules" ]; then
     echo -e "${BLUE}Installing frontend dependencies...${NC}"
     npm install
-    echo -e "${GREEN}✓ Dependencies installed${NC}"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Dependencies installed${NC}"
+    else
+        echo -e "${RED}✗ Failed to install dependencies${NC}"
+        exit 1
+    fi
     echo ""
 fi
 

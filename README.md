@@ -23,6 +23,7 @@ Then open http://localhost:5173 and login with:
 - Accountant: `lisa` / `password`
 
 📖 See [FRONTEND_TESTING.md](FRONTEND_TESTING.md) for comprehensive testing guide
+🔧 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if you encounter any issues
 
 **Note:** This pre-release focuses on frontend testing. Data is stored in browser localStorage. Backend integration coming in v1.0.0.
 

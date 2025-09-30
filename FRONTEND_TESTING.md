@@ -319,6 +319,12 @@ This is a frontend-only pre-release with the following limitations:
 
 ## Troubleshooting
 
+**For detailed troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
+
+### npm: command not found
+
+If you get this error, Node.js is not installed. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md#npm-command-not-found) for installation instructions.
+
 ### Port Already in Use
 If port 5173 is in use, edit `vite.config.ts`:
 ```typescript
