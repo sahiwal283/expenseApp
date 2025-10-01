@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Key, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface LoginFormProps {
-  onLogin: (username: string, password: string) => boolean;
+  onLogin: (username: string, password: string) => Promise<boolean> | boolean;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
@@ -16,10 +16,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const success = onLogin(username, password);
+    const success = await onLogin(username, password);
     if (!success) {
       setError('Invalid username or password');
     }
