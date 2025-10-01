@@ -39,6 +39,9 @@ export const api = {
   },
   getUsers: async () => apiFetch('/users'),
   getEvents: async () => apiFetch('/events'),
+  createEvent: async (payload: Record<string, any>) => apiFetch('/events', { method: 'POST', body: JSON.stringify(payload) }),
+  updateEvent: async (id: string, payload: Record<string, any>) => apiFetch(`/events/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteEvent: async (id: string) => apiFetch(`/events/${id}`, { method: 'DELETE' }),
   getExpenses: async (params?: Record<string, string | number | boolean>) => {
     const qs = params
       ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X } from 'lucide-react';
 import { User, TradeShow } from '../../App';
+import { api } from '../../utils/api';
 
 interface EventSetupProps {
   user: User;
@@ -28,14 +29,21 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [selectedUserId, setSelectedUserId] = useState('');
 
   useEffect(() => {
-    const storedEvents = localStorage.getItem('tradeshow_events');
-    const storedUsers = localStorage.getItem('tradeshow_users');
-    if (storedEvents) {
-      setEvents(JSON.parse(storedEvents));
-    }
-    if (storedUsers) {
-      setAllUsers(JSON.parse(storedUsers));
-    }
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const ev = await api.getEvents();
+          setEvents(ev || []);
+        } catch {
+          setEvents([]);
+        }
+      } else {
+        const storedEvents = localStorage.getItem('tradeshow_events');
+        if (storedEvents) setEvents(JSON.parse(storedEvents));
+      }
+      const storedUsers = localStorage.getItem('tradeshow_users');
+      if (storedUsers) setAllUsers(JSON.parse(storedUsers));
+    })();
   }, []);
 
   const resetForm = () => {
@@ -54,7 +62,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     setEditingEvent(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const eventData: Omit<TradeShow, 'id'> = {
@@ -70,23 +78,43 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       coordinatorId: user.id
     };
 
-    let updatedEvents;
-    if (editingEvent) {
-      const updatedEvent: TradeShow = {
-        ...eventData,
-        id: editingEvent.id
-      };
-      updatedEvents = events.map(event => event.id === editingEvent.id ? updatedEvent : event);
+    if (api.USE_SERVER) {
+      if (editingEvent) {
+        await api.updateEvent(editingEvent.id, {
+          name: eventData.name,
+          venue: eventData.venue,
+          city: eventData.city,
+          state: eventData.state,
+          start_date: eventData.startDate,
+          end_date: eventData.endDate,
+          budget: eventData.budget,
+          status: eventData.status || 'upcoming',
+        });
+      } else {
+        await api.createEvent({
+          name: eventData.name,
+          venue: eventData.venue,
+          city: eventData.city,
+          state: eventData.state,
+          start_date: eventData.startDate,
+          end_date: eventData.endDate,
+          budget: eventData.budget,
+        });
+      }
+      const refreshed = await api.getEvents();
+      setEvents(refreshed || []);
     } else {
-      const newEvent: TradeShow = {
-        ...eventData,
-        id: Date.now().toString()
-      };
-      updatedEvents = [...events, newEvent];
+      let updatedEvents: TradeShow[];
+      if (editingEvent) {
+        const updatedEvent: TradeShow = { ...eventData, id: editingEvent.id } as TradeShow;
+        updatedEvents = events.map(event => event.id === editingEvent.id ? updatedEvent : event);
+      } else {
+        const newEvent: TradeShow = { ...eventData, id: Date.now().toString() } as TradeShow;
+        updatedEvents = [...events, newEvent];
+      }
+      setEvents(updatedEvents);
+      localStorage.setItem('tradeshow_events', JSON.stringify(updatedEvents));
     }
-
-    setEvents(updatedEvents);
-    localStorage.setItem('tradeshow_events', JSON.stringify(updatedEvents));
     setShowForm(false);
     resetForm();
   };
@@ -106,10 +134,16 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     setShowForm(true);
   };
 
-  const handleDelete = (eventId: string) => {
-    const updatedEvents = events.filter(event => event.id !== eventId);
-    setEvents(updatedEvents);
-    localStorage.setItem('tradeshow_events', JSON.stringify(updatedEvents));
+  const handleDelete = async (eventId: string) => {
+    if (api.USE_SERVER) {
+      await api.deleteEvent(eventId);
+      const refreshed = await api.getEvents();
+      setEvents(refreshed || []);
+    } else {
+      const updatedEvents = events.filter(event => event.id !== eventId);
+      setEvents(updatedEvents);
+      localStorage.setItem('tradeshow_events', JSON.stringify(updatedEvents));
+    }
   };
 
   const addParticipant = () => {
