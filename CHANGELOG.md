@@ -1,0 +1,136 @@
+# Changelog
+
+All notable changes to the Trade Show Expense Management App will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [0.5.1-alpha] - 2025-09-30
+
+### Added
+- Smart notification badge that only shows red dot when notifications exist
+- Apple Pay advisory note under Card Used field
+- Admin password reset capability in User Management
+- Shared `types.ts` for centralized type definitions
+- Shared `constants.ts` for application-wide constants
+- Comprehensive `ARCHITECTURE.md` with system diagrams
+- `BLANK_PAGE_FIX.md` troubleshooting guide
+- `SESSION_SUMMARY.md` development history
+
+### Changed
+- Improved OCR accuracy with better amount ranges per category
+- Enhanced date formatting to MM/DD/YYYY format
+- Notification panel shows actual pending expenses
+- OCR amounts now match realistic business expense ranges:
+  - Car rentals: $180-280
+  - Flights: $250-500
+  - Hotels: $150-300
+  - Meals: $30-80
+  - Transportation: $15-45
+
+### Fixed
+- Post-login blank page issue (useAuth.ts import path)
+- Team members count now shows accurate number (was hardcoded 24)
+- Notification bell now interactive with dropdown
+- Budget field properly restricted to Admin and Accountant roles only
+- All import paths corrected (16+ files)
+
+---
+
+## [0.5.0-alpha] - 2025-09-30
+
+### Added
+- Complete frontend React application with TypeScript
+- Four role-based dashboards (Admin, Coordinator, Salesperson, Accountant)
+- Event management with participant tracking
+- Expense submission with receipt upload
+- Simulated OCR receipt scanning
+- Approval workflows for expenses and reimbursements
+- User management system (Admin only)
+- Application settings configuration
+- Comprehensive reporting and analytics
+- Interactive notification system
+- Version badge display in header
+- Easy startup scripts (`start-frontend.sh`, `start-frontend.bat`)
+- Homebrew PATH fix helper (`setup-homebrew.sh`)
+- Extensive documentation suite (15+ guides)
+
+### Features
+- Role-based access control enforced in UI
+- Auto-flag reimbursement for personal card selection
+- Receipt upload as first field in expense form
+- Budget field access restricted by role
+- Salesperson privacy (only see own expenses)
+- localStorage data persistence
+- Responsive design with Tailwind CSS
+- Professional UI with blue/emerald gradient theme
+- No emojis (professional design)
+
+### Documentation
+- README.md with quick start guide
+- FRONTEND_TESTING.md with comprehensive testing checklist
+- UX_IMPROVEMENTS.md documenting all fixes
+- TROUBLESHOOTING.md for common issues
+- HOMEBREW_PATH_FIX.md for macOS setup
+- ERROR_HANDLING_DEMO.md with error examples
+- Multiple setup and configuration guides
+
+### Infrastructure
+- Node.js version checking (requires v18+)
+- Homebrew detection and installation guidance
+- Automated environment setup scripts
+- Cross-platform startup scripts (macOS, Windows, Linux)
+
+---
+
+## [Unreleased - v1.0.0]
+
+### Planned
+- Full backend API with Node.js and Express
+- PostgreSQL database integration
+- Real JWT authentication
+- Actual Tesseract.js OCR processing
+- Server-side file uploads
+- Email notification system
+- Zoho Books API integration
+- Real-time features
+- Advanced reporting with PDF export
+- Multi-currency support
+- Enhanced security features
+- Production deployment configuration
+
+---
+
+## Version History
+
+| Version | Date | Type | Description |
+|---------|------|------|-------------|
+| 0.5.1-alpha | 2025-09-30 | Patch | Bug fixes, OCR improvements, refactoring |
+| 0.5.0-alpha | 2025-09-30 | Minor | Initial pre-release, frontend only |
+| 1.0.0 | TBD | Major | Full stack with backend integration |
+
+---
+
+## Semantic Versioning Guide
+
+Given a version number MAJOR.MINOR.PATCH (e.g., 1.0.0):
+
+- **MAJOR**: Incompatible API changes or major feature overhauls
+- **MINOR**: New functionality in a backward-compatible manner
+- **PATCH**: Backward-compatible bug fixes
+- **Pre-release**: -alpha, -beta, -rc suffixes
+
+### Our Versioning Strategy:
+
+- **0.5.x-alpha**: Frontend-only pre-release versions
+- **0.6.x-alpha**: Backend integration pre-release
+- **0.9.x-beta**: Feature-complete beta testing
+- **1.0.0**: Production-ready first release
+- **1.x.x**: Production updates and enhancements
+
+---
+
+Last Updated: September 30, 2025
+Current Version: 0.5.1-alpha
