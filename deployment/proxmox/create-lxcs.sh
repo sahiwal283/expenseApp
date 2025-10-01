@@ -87,7 +87,6 @@ function create_ct() {
     -features nesting=$NESTING \
     -unprivileged $UNPRIVILEGED \
     -onboot 1 \
-    -password '' \
     -ssh-public-keys "$SSH_PUBLIC_KEY_PATH" \
     -nameserver "$DNS"
 
