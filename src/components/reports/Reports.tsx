@@ -4,7 +4,7 @@ import { User, TradeShow, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
 import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';
-import { AccountantDashboard } from './AccountantDashboard';
+import { AccountantDashboard } from '../accountant/AccountantDashboard';
 
 interface ReportsProps {
   user: User;
