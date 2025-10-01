@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
-import { Expense, TradeShow } from './App';
+import { Expense, TradeShow } from '../../App';
 
 interface ExpenseFormProps {
   expense?: Expense | null;

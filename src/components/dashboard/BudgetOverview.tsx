@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { TradeShow, Expense } from './App';
+import { TradeShow, Expense } from '../../App';
 
 interface BudgetOverviewProps {
   events: TradeShow[];

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { LoginForm } from './LoginForm';
-import { Dashboard } from './Dashboard';
-import { EventSetup } from './EventSetup';
-import { ExpenseSubmission } from './ExpenseSubmission';
-import { UserManagement } from './UserManagement';
-import { AdminSettings } from './AdminSettings';
-import { Reports } from './Reports';
-import { Sidebar } from './Sidebar';
-import { Header } from './Header';
-import { useAuth } from './useAuth';
-import { useLocalStorage } from './useLocalStorage';
+import { LoginForm } from './components/auth/LoginForm';
+import { Dashboard } from './components/dashboard/Dashboard';
+import { EventSetup } from './components/events/EventSetup';
+import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
+import { UserManagement } from './components/admin/UserManagement';
+import { AdminSettings } from './components/admin/AdminSettings';
+import { Reports } from './components/reports/Reports';
+import { Sidebar } from './components/layout/Sidebar';
+import { Header } from './components/layout/Header';
+import { useAuth } from './hooks/useAuth';
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant';
 

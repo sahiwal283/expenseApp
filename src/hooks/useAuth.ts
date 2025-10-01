@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User } from './App';
+import { User } from '../App';
 
 // Demo user credentials
 const DEMO_CREDENTIALS = {

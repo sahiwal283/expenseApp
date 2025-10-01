@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
-import { Expense, TradeShow } from './App';
+import { Expense, TradeShow } from '../../App';
 
 interface ExpenseChartProps {
   expenses: Expense[];

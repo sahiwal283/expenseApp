@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, CreditCard as Edit2, Trash2, Search, UserCheck, UserX, Mail } from 'lucide-react';
-import { User, UserRole } from './App';
+import { User, UserRole } from '../../App';
 
 interface UserManagementProps {
   user: User;

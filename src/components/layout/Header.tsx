@@ -1,8 +1,8 @@
 import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
-import { User } from './App';
+import { User } from '../../App';
 
-const APP_VERSION = '0.5.1-alpha';
+const APP_VERSION = '0.6.0-alpha';
 
 interface HeaderProps {
   user: User;

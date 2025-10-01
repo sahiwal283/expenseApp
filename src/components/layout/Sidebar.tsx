@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   Settings
 } from 'lucide-react';
-import { User, UserRole } from './App';
+import { User, UserRole } from '../../App';
 
 interface SidebarProps {
   user: User;

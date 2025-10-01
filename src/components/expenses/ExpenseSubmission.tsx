@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2 } from 'lucide-react';
-import { User, Expense, TradeShow } from './App';
+import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 

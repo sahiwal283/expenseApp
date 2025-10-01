@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X } from 'lucide-react';
-import { User, TradeShow } from './App';
+import { User, TradeShow } from '../../App';
 
 interface EventSetupProps {
   user: User;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Plus, Trash2, Save, CreditCard, Building2 } from 'lucide-react';
-import { User } from './App';
+import { User } from '../../App';
 
 interface AdminSettingsProps {
   user: User;

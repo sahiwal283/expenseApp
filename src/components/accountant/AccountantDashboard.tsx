@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   FileText
 } from 'lucide-react';
-import { User, TradeShow, Expense } from './App';
+import { User, TradeShow, Expense } from '../../App';
 
 interface AccountantDashboardProps {
   user: User;

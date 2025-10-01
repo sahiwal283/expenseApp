@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Save, X, Plus, Trash2 } from 'lucide-react';
-import { TradeShow, User } from './App';
+import { TradeShow, User } from '../../App';
 
 interface EventFormProps {
   event?: TradeShow | null;
