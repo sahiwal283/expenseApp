@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User } from '../../App';
+import { api } from '../../utils/api';
 
 const APP_VERSION = '0.6.1-alpha';
 
@@ -14,12 +15,23 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
   const [showNotifications, setShowNotifications] = React.useState(false);
   
   // Check for unread notifications
-  const notifications = React.useMemo(() => {
-    const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
-    const pendingExpenses = expenses.filter((e: any) => 
-      e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant')
-    );
-    return pendingExpenses.length > 0 ? pendingExpenses : [];
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const ex = await api.getExpenses();
+          const pending = (ex || []).filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant'));
+          setNotifications(pending);
+        } catch {
+          setNotifications([]);
+        }
+      } else {
+        const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
+        const pendingExpenses = expenses.filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant'));
+        setNotifications(pendingExpenses);
+      }
+    })();
   }, [user.role]);
 
   const hasUnreadNotifications = notifications.length > 0;

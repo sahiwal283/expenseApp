@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
+import { api } from '../../utils/api';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -37,20 +38,22 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
   const [ocrResults, setOcrResults] = useState<any>(null);
 
   useEffect(() => {
-    const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
-    setCardOptions(settings.cardOptions || [
-      'Corporate Amex',
-      'Corporate Visa', 
-      'Personal Card (Reimbursement)',
-      'Company Debit',
-      'Cash'
-    ]);
-    setEntityOptions(settings.entityOptions || [
-      'Entity A - Main Operations',
-      'Entity B - Sales Division',
-      'Entity C - Marketing Department', 
-      'Entity D - International Operations'
-    ]);
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const settings = await api.getSettings();
+          setCardOptions(settings.cardOptions || []);
+          setEntityOptions(settings.entityOptions || []);
+        } catch {
+          setCardOptions([]);
+          setEntityOptions([]);
+        }
+      } else {
+        const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+        setCardOptions(settings.cardOptions || ['Corporate Amex','Corporate Visa','Personal Card (Reimbursement)','Company Debit','Cash']);
+        setEntityOptions(settings.entityOptions || ['Entity A - Main Operations','Entity B - Sales Division','Entity C - Marketing Department','Entity D - International Operations']);
+      }
+    })();
   }, []);
   // Listen for OCR data from receipt upload
   useEffect(() => {

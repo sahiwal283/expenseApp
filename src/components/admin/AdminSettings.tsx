@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Plus, Trash2, Save, CreditCard, Building2 } from 'lucide-react';
 import { User } from '../../App';
+import { api } from '../../utils/api';
 
 interface AdminSettingsProps {
   user: User;
@@ -32,14 +33,27 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [newEntityOption, setNewEntityOption] = useState('');
 
   useEffect(() => {
-    const storedSettings = localStorage.getItem('app_settings');
-    if (storedSettings) {
-      setSettings(JSON.parse(storedSettings));
-    }
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const data = await api.getSettings();
+          setSettings(data || settings);
+        } catch {
+          // keep defaults
+        }
+      } else {
+        const storedSettings = localStorage.getItem('app_settings');
+        if (storedSettings) setSettings(JSON.parse(storedSettings));
+      }
+    })();
   }, []);
 
-  const saveSettings = () => {
-    localStorage.setItem('app_settings', JSON.stringify(settings));
+  const saveSettings = async () => {
+    if (api.USE_SERVER) {
+      await api.updateSettings(settings as any);
+    } else {
+      localStorage.setItem('app_settings', JSON.stringify(settings));
+    }
     alert('Settings saved successfully!');
   };
 

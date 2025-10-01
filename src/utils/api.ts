@@ -38,6 +38,9 @@ export const api = {
     return data;
   },
   getUsers: async () => apiFetch('/users'),
+  createUser: async (payload: Record<string, any>) => apiFetch('/users', { method: 'POST', body: JSON.stringify(payload) }),
+  updateUser: async (id: string, payload: Record<string, any>) => apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteUser: async (id: string) => apiFetch(`/users/${id}`, { method: 'DELETE' }),
   getEvents: async () => apiFetch('/events'),
   createEvent: async (payload: Record<string, any>) => apiFetch('/events', { method: 'POST', body: JSON.stringify(payload) }),
   updateEvent: async (id: string, payload: Record<string, any>) => apiFetch(`/events/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
@@ -66,6 +69,7 @@ export const api = {
   },
   deleteExpense: async (id: string) => apiFetch(`/expenses/${id}`, { method: 'DELETE' }),
   getSettings: async () => apiFetch('/settings'),
+  updateSettings: async (payload: Record<string, any>) => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
 };
 
 

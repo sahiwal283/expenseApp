@@ -5,6 +5,7 @@ import { ExpenseChart } from './ExpenseChart';
 import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';
 import { AccountantDashboard } from '../accountant/AccountantDashboard';
+import { api } from '../../utils/api';
 
 interface ReportsProps {
   user: User;
@@ -19,19 +20,30 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   const [reportType, setReportType] = useState<'overview' | 'detailed' | 'entity'>('overview');
 
   useEffect(() => {
-    const storedEvents = localStorage.getItem('tradeshow_events');
-    const storedExpenses = localStorage.getItem('tradeshow_expenses');
-    
-    if (storedEvents) setEvents(JSON.parse(storedEvents));
-    if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
+    (async () => {
+      if (api.USE_SERVER) {
+        const [ev, ex] = await Promise.all([api.getEvents(), api.getExpenses()]);
+        setEvents(ev || []);
+        setExpenses(ex || []);
+      } else {
+        const storedEvents = localStorage.getItem('tradeshow_events');
+        const storedExpenses = localStorage.getItem('tradeshow_expenses');
+        if (storedEvents) setEvents(JSON.parse(storedEvents));
+        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
+      }
+    })();
   }, []);
 
-  const handleUpdateExpense = (updatedExpense: Expense) => {
-    const updatedExpenses = expenses.map(expense => 
-      expense.id === updatedExpense.id ? updatedExpense : expense
-    );
-    setExpenses(updatedExpenses);
-    localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+  const handleUpdateExpense = async (updatedExpense: Expense) => {
+    // Future: call API to update expense; for now refresh list from server
+    if (api.USE_SERVER) {
+      const refreshed = await api.getExpenses();
+      setExpenses(refreshed || []);
+    } else {
+      const updatedExpenses = expenses.map(expense => expense.id === updatedExpense.id ? updatedExpense : expense);
+      setExpenses(updatedExpenses);
+      localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+    }
   };
 
   const handleReimbursementApproval = (expense: Expense, status: 'approved' | 'rejected') => {

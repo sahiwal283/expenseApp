@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, CreditCard as Edit2, Trash2, Search, UserCheck, UserX, Mail } from 'lucide-react';
 import { User, UserRole } from '../../App';
+import { api } from '../../utils/api';
 
 interface UserManagementProps {
   user: User;
@@ -22,36 +23,48 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
   });
 
   useEffect(() => {
-    const storedUsers = localStorage.getItem('tradeshow_users');
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    }
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const data = await api.getUsers();
+          setUsers(data || []);
+        } catch {
+          setUsers([]);
+        }
+      } else {
+        const storedUsers = localStorage.getItem('tradeshow_users');
+        if (storedUsers) setUsers(JSON.parse(storedUsers));
+      }
+    })();
   }, []);
 
-  const handleSaveUser = (e: React.FormEvent) => {
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newUser: User = {
-      id: editingUser?.id || Date.now().toString(),
-      ...formData
-    };
-
-    let updatedUsers;
-    if (editingUser) {
-      updatedUsers = users.map(u => u.id === editingUser.id ? newUser : u);
+    if (api.USE_SERVER) {
+      if (editingUser) {
+        await api.updateUser(editingUser.id, {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+        });
+      } else {
+        await api.createUser({
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+        });
+      }
+      const refreshed = await api.getUsers();
+      setUsers(refreshed || []);
     } else {
-      updatedUsers = [...users, newUser];
+      const newUser: User = { id: editingUser?.id || Date.now().toString(), ...formData } as User;
+      const updatedUsers = editingUser ? users.map(u => u.id === editingUser.id ? newUser : u) : [...users, newUser];
+      setUsers(updatedUsers);
+      localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
+      if (formData.password) localStorage.setItem(`user_password_${newUser.username}`, formData.password);
     }
-
-    setUsers(updatedUsers);
-    localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
-    
-    // Update password in demo credentials if provided
-    if (formData.password) {
-      // Store password hint for demo purposes
-      localStorage.setItem(`user_password_${newUser.username}`, formData.password);
-    }
-    
     setShowForm(false);
     setEditingUser(null);
     setFormData({ name: '', username: '', email: '', password: '', role: 'salesperson' });
@@ -69,15 +82,20 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     setShowForm(true);
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (userId === currentUser.id) {
       alert("You cannot delete your own account!");
       return;
     }
-    
-    const updatedUsers = users.filter(u => u.id !== userId);
-    setUsers(updatedUsers);
-    localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
+    if (api.USE_SERVER) {
+      await api.deleteUser(userId);
+      const refreshed = await api.getUsers();
+      setUsers(refreshed || []);
+    } else {
+      const updatedUsers = users.filter(u => u.id !== userId);
+      setUsers(updatedUsers);
+      localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
+    }
   };
 
   const handleInviteUser = (userId: string) => {
