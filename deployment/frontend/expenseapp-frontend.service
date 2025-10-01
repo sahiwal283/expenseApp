@@ -1,0 +1,22 @@
+[Unit]
+Description=Expense App Frontend (static)
+After=network.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+WorkingDirectory=__WEB_DIR__
+ExecStart=/usr/bin/serve -s __WEB_DIR__/dist -l __PORT__
+Restart=always
+RestartSec=5
+AmbientCapabilities=
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+
+
