@@ -2,7 +2,9 @@
 
 A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, and expense approval workflows.
 
-**Current Version: 0.5.0-alpha (Pre-release - Frontend Only)**
+**Current Version: 0.5.1-alpha (Pre-release - Frontend Only)**
+
+📝 See [CHANGELOG.md](CHANGELOG.md) for version history and release notes
 
 ## Quick Start - Frontend Testing
 
