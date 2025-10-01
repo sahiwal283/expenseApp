@@ -15,33 +15,32 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (api.USE_SERVER) {
         try {
-          const [ev, ex] = await Promise.all([
+          const [ev, ex, us] = await Promise.all([
             api.getEvents(),
             api.getExpenses(),
+            api.getUsers(),
           ]);
           if (mounted) {
             setEvents(ev || []);
             setExpenses(ex || []);
+            setUsers(us || []);
           }
         } catch {
           // graceful fallback to empty
         }
-      } else {
-        setEvents(JSON.parse(localStorage.getItem('tradeshow_events') || '[]'));
-        setExpenses(JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]'));
       }
     })();
     return () => { mounted = false; };
   }, []);
 
   const stats = useMemo(() => {
-    const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]') as User[];
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const pendingExpenses = expenses.filter(e => e.status === 'pending').length;
     const upcomingEvents = events.filter(e => e.status === 'upcoming').length;
@@ -56,7 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0,
       teamMembers: users.length
     };
-  }, [events, expenses]);
+  }, [events, expenses, users]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();

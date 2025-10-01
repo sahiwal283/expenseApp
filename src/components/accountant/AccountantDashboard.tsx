@@ -13,6 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
+import { api } from '../../utils/api';
 
 interface AccountantDashboardProps {
   user: User;
@@ -38,24 +39,21 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
   const [filterReimbursement, setFilterReimbursement] = useState('all');
   const [filterCard, setFilterCard] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
-
-  const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]') as User[];
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
-    setCardOptions(settings.cardOptions || [
-      'Corporate Amex',
-      'Corporate Visa',
-      'Personal Card (Reimbursement)', 
-      'Company Debit',
-      'Cash'
-    ]);
-    setEntityOptions(settings.entityOptions || [
-      'Entity A - Main Operations',
-      'Entity B - Sales Division',
-      'Entity C - Marketing Department',
-      'Entity D - International Operations'
-    ]);
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const [us, st] = await Promise.all([api.getUsers(), api.getSettings()]);
+          setUsers(us || []);
+          setCardOptions(st?.cardOptions || []);
+          setEntityOptions(st?.entityOptions || []);
+        } catch {
+          setUsers([]);
+        }
+      }
+    })();
   }, []);
   const filteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
@@ -76,19 +74,23 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
     });
   }, [expenses, searchTerm, filterCategory, filterUser, filterEvent, filterStatus, filterReimbursement, filterCard, filterEntity]);
 
-  const handleApproveExpense = (expense: Expense) => {
+  const handleApproveExpense = async (expense: Expense) => {
+    if (api.USE_SERVER) await api.reviewExpense(expense.id, { status: 'approved' });
     onUpdateExpense({ ...expense, status: 'approved' });
   };
 
-  const handleRejectExpense = (expense: Expense) => {
+  const handleRejectExpense = async (expense: Expense) => {
+    if (api.USE_SERVER) await api.reviewExpense(expense.id, { status: 'rejected' });
     onUpdateExpense({ ...expense, status: 'rejected' });
   };
 
-  const handleAssignEntity = (expense: Expense, entity: string) => {
+  const handleAssignEntity = async (expense: Expense, entity: string) => {
+    if (api.USE_SERVER) await api.updateExpense(expense.id, { zoho_entity: entity });
     onUpdateExpense({ ...expense, zohoEntity: entity });
   };
 
-  const handleReimbursementApproval = (expense: Expense, status: 'approved' | 'rejected') => {
+  const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
+    if (api.USE_SERVER) await api.setExpenseReimbursement(expense.id, { reimbursement_status: status });
     onUpdateExpense({ ...expense, reimbursementStatus: status });
   };
   const getStatusColor = (status: string) => {

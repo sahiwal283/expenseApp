@@ -67,6 +67,9 @@ export const api = {
     }
     return apiFetch('/expenses', { method: 'POST', body: JSON.stringify(payload) });
   },
+  updateExpense: async (id: string, payload: Record<string, any>) => apiFetch(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  reviewExpense: async (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) => apiFetch(`/expenses/${id}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  setExpenseReimbursement: async (id: string, payload: { reimbursement_status: 'approved' | 'rejected' }) => apiFetch(`/expenses/${id}/reimbursement`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteExpense: async (id: string) => apiFetch(`/expenses/${id}`, { method: 'DELETE' }),
   getSettings: async () => apiFetch('/settings'),
   updateSettings: async (payload: Record<string, any>) => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
