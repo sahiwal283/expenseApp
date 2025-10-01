@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0-alpha] - 2025-10-01
+
+### Changed
+- **MAJOR:** Complete project reorganization with clean folder structure
+- Moved all source code to `src/` directory
+- Organized components into feature folders (auth, dashboard, events, expenses, admin, accountant, reports, layout)
+- Moved all documentation to `docs/` folder (19 files)
+- Moved all scripts to `scripts/` folder (5 files)
+- Updated all import paths automatically
+- Updated Tailwind and Vite configuration
+- Version bumped to 0.6.0-alpha (minor version for structural changes)
+
+### Added
+- `PROJECT_STRUCTURE.md` - Complete folder structure documentation
+- `src/types/` folder with centralized types and constants
+- Clean root directory with only essential files
+
+### Fixed
+- BudgetOverview crash when budget is undefined
+- Import paths updated for new structure
+- Configuration files point to correct locations
+
+---
+
 ## [0.5.1-alpha] - 2025-09-30
 
 ### Added
