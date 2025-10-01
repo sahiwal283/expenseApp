@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Expense App Backup Daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
+
