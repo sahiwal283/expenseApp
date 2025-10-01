@@ -9,19 +9,24 @@ interface BudgetOverviewProps {
 
 export const BudgetOverview: React.FC<BudgetOverviewProps> = ({ events, expenses }) => {
   const budgetData = useMemo(() => {
-    return events.map(event => {
-      const eventExpenses = expenses.filter(expense => expense.tradeShowId === event.id);
-      const totalSpent = eventExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-      const budgetUsed = (totalSpent / event.budget) * 100;
-      
-      return {
-        ...event,
-        totalSpent,
-        budgetUsed,
-        remaining: event.budget - totalSpent,
-        expenseCount: eventExpenses.length
-      };
-    }).slice(0, 4);
+    return events
+      .filter(event => event.budget && event.budget > 0) // Only show events with budget set
+      .map(event => {
+        const eventExpenses = expenses.filter(expense => expense.tradeShowId === event.id);
+        const totalSpent = eventExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const budget = event.budget || 0;
+        const budgetUsed = budget > 0 ? (totalSpent / budget) * 100 : 0;
+        
+        return {
+          ...event,
+          budget,
+          totalSpent,
+          budgetUsed,
+          remaining: budget - totalSpent,
+          expenseCount: eventExpenses.length
+        };
+      })
+      .slice(0, 4);
   }, [events, expenses]);
 
   const getBudgetStatus = (percentage: number) => {
