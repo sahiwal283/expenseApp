@@ -2,9 +2,9 @@
 
 A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, and expense approval workflows.
 
-**Current Version: 0.5.1-alpha (Pre-release - Frontend Only)**
+**Current Version: 0.6.0-alpha (Pre-release - Frontend Only)**
 
-📝 See [CHANGELOG.md](CHANGELOG.md) for version history and release notes
+📝 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history and release notes
 
 ## Quick Start - Frontend Testing
 
@@ -12,10 +12,10 @@ A professional web application for managing trade show events and expenses with 
 
 ```bash
 # macOS/Linux
-./start-frontend.sh
+./scripts/start-frontend.sh
 
 # Windows
-start-frontend.bat
+scripts\start-frontend.bat
 ```
 
 Then open http://localhost:5173 and login with:
@@ -24,10 +24,10 @@ Then open http://localhost:5173 and login with:
 - Salesperson: `mike` / `password`
 - Accountant: `lisa` / `password`
 
-📖 See [FRONTEND_TESTING.md](FRONTEND_TESTING.md) for comprehensive testing guide
-🔧 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if you encounter any issues
-⚙️ **Homebrew installed but not working?** Run `./setup-homebrew.sh` to fix PATH issues
-🏗️ See [ARCHITECTURE.md](ARCHITECTURE.md) for complete system architecture and diagrams
+📖 See [docs/FRONTEND_TESTING.md](docs/FRONTEND_TESTING.md) for comprehensive testing guide
+🔧 See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) if you encounter any issues
+⚙️ **Homebrew installed but not working?** Run `./scripts/setup-homebrew.sh` to fix PATH issues
+🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete system architecture and diagrams
 
 **Note:** This pre-release focuses on frontend testing. Data is stored in browser localStorage. Backend integration coming in v1.0.0.
 
