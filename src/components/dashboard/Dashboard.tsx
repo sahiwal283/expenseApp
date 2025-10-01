@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { DollarSign, Calendar, Users, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
+import { useEffect, useState, useMemo } from 'react';
+import { api } from '../../utils/api';
 import { StatsCard } from './StatsCard';
 import { RecentExpenses } from './RecentExpenses';
 import { UpcomingEvents } from './UpcomingEvents';
@@ -11,8 +13,32 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
-  const events = JSON.parse(localStorage.getItem('tradeshow_events') || '[]') as TradeShow[];
-  const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]') as Expense[];
+  const [events, setEvents] = useState<TradeShow[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const [ev, ex] = await Promise.all([
+            api.getEvents(),
+            api.getExpenses(),
+          ]);
+          if (mounted) {
+            setEvents(ev || []);
+            setExpenses(ex || []);
+          }
+        } catch {
+          // graceful fallback to empty
+        }
+      } else {
+        setEvents(JSON.parse(localStorage.getItem('tradeshow_events') || '[]'));
+        setExpenses(JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]'));
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const stats = useMemo(() => {
     const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]') as User[];

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '../App';
+import { api, setToken } from '../utils/api';
 
 // Demo user credentials
 const DEMO_CREDENTIALS = {
@@ -18,22 +19,31 @@ export const useAuth = () => {
     }
   }, []);
 
-  const login = (username: string, password: string): boolean => {
-    // Check credentials
-    if (DEMO_CREDENTIALS[username as keyof typeof DEMO_CREDENTIALS] !== password) {
-      return false;
-    }
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      if (api.USE_SERVER) {
+        const data = await api.login(username, password);
+        const serverUser = data?.user as User | undefined;
+        if (data?.token && serverUser) {
+          setToken(data.token);
+          setUser(serverUser);
+          localStorage.setItem('tradeshow_current_user', JSON.stringify(serverUser));
+          return true;
+        }
+        return false;
+      }
 
-    const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]');
-    const foundUser = users.find((u: User) => u.username === username);
-    
-    if (foundUser) {
+      // Fallback demo mode
+      if (DEMO_CREDENTIALS[username as keyof typeof DEMO_CREDENTIALS] !== password) return false;
+      const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]');
+      const foundUser = users.find((u: User) => u.username === username);
+      if (!foundUser) return false;
       setUser(foundUser);
       localStorage.setItem('tradeshow_current_user', JSON.stringify(foundUser));
       return true;
+    } catch {
+      return false;
     }
-    
-    return false;
   };
 
   const logout = () => {

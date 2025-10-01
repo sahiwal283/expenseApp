@@ -3,6 +3,7 @@ import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2 } from 
 import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
+import { api } from '../../utils/api';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -19,33 +20,55 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [filterEvent, setFilterEvent] = useState('all');
 
   useEffect(() => {
-    const storedExpenses = localStorage.getItem('tradeshow_expenses');
-    const storedEvents = localStorage.getItem('tradeshow_events');
-    
-    if (storedExpenses) {
-      setExpenses(JSON.parse(storedExpenses));
-    }
-    if (storedEvents) {
-      setEvents(JSON.parse(storedEvents));
-    }
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const [ev, ex] = await Promise.all([
+            api.getEvents(),
+            api.getExpenses(),
+          ]);
+          setEvents(ev || []);
+          setExpenses(ex || []);
+        } catch {
+          setEvents([]);
+          setExpenses([]);
+        }
+      } else {
+        const storedExpenses = localStorage.getItem('tradeshow_expenses');
+        const storedEvents = localStorage.getItem('tradeshow_events');
+        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
+        if (storedEvents) setEvents(JSON.parse(storedEvents));
+      }
+    })();
   }, []);
 
-  const handleSaveExpense = (expenseData: Omit<Expense, 'id'>) => {
-    const newExpense: Expense = {
-      ...expenseData,
-      id: editingExpense?.id || Date.now().toString(),
-      userId: user.id
-    };
-
-    let updatedExpenses;
-    if (editingExpense) {
-      updatedExpenses = expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense);
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>) => {
+    if (api.USE_SERVER) {
+      await api.createExpense({
+        event_id: expenseData.tradeShowId,
+        category: expenseData.category,
+        merchant: expenseData.merchant,
+        amount: expenseData.amount,
+        date: expenseData.date,
+        description: expenseData.description,
+        card_used: expenseData.cardUsed,
+        reimbursement_required: expenseData.reimbursementRequired,
+        location: expenseData.location,
+      });
+      const refreshed = await api.getExpenses();
+      setExpenses(refreshed || []);
     } else {
-      updatedExpenses = [...expenses, newExpense];
+      const newExpense: Expense = {
+        ...expenseData,
+        id: editingExpense?.id || Date.now().toString(),
+        userId: user.id
+      };
+      const updatedExpenses = editingExpense
+        ? expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense)
+        : [...expenses, newExpense];
+      setExpenses(updatedExpenses);
+      localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
     }
-
-    setExpenses(updatedExpenses);
-    localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
     setShowForm(false);
     setEditingExpense(null);
   };
@@ -55,10 +78,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setShowForm(true);
   };
 
-  const handleDeleteExpense = (expenseId: string) => {
-    const updatedExpenses = expenses.filter(expense => expense.id !== expenseId);
-    setExpenses(updatedExpenses);
-    localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (api.USE_SERVER) {
+      await api.deleteExpense(expenseId);
+      const refreshed = await api.getExpenses();
+      setExpenses(refreshed || []);
+    } else {
+      const updatedExpenses = expenses.filter(expense => expense.id !== expenseId);
+      setExpenses(updatedExpenses);
+      localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+    }
   };
 
   const handleReceiptProcessed = (receiptData: any) => {

@@ -67,43 +67,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Initialize demo data
-  useEffect(() => {
-    const initializeDemoData = () => {
-      const existingUsers = localStorage.getItem('tradeshow_users');
-      if (!existingUsers) {
-        const demoUsers: User[] = [
-          { id: '1', name: 'Admin User', username: 'admin', email: 'admin@company.com', role: 'admin' },
-          { id: '2', name: 'Sarah Johnson', username: 'sarah', email: 'sarah@company.com', role: 'coordinator' },
-          { id: '3', name: 'Mike Chen', username: 'mike', email: 'mike@company.com', role: 'salesperson' },
-          { id: '4', name: 'Lisa Williams', username: 'lisa', email: 'lisa@company.com', role: 'accountant' }
-        ];
-        localStorage.setItem('tradeshow_users', JSON.stringify(demoUsers));
-      }
-
-      const existingShows = localStorage.getItem('tradeshow_events');
-      if (!existingShows) {
-        const demoShows: TradeShow[] = [
-          {
-            id: '1',
-            name: 'CES 2025',
-            venue: 'Las Vegas Convention Center',
-            city: 'Las Vegas',
-            state: 'Nevada',
-            startDate: '2025-01-07',
-            endDate: '2025-01-10',
-            participants: [],
-            budget: 50000,
-            status: 'upcoming',
-            coordinatorId: '2'
-          }
-        ];
-        localStorage.setItem('tradeshow_events', JSON.stringify(demoShows));
-      }
-    };
-
-    initializeDemoData();
-  }, []);
+  // Server-backed mode: disable demo data seeding
+  useEffect(() => {}, []);
 
   if (!user) {
     return <LoginForm onLogin={login} />;
