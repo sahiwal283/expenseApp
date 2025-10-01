@@ -11,8 +11,8 @@ router.get('/', async (req: AuthRequest, res) => {
   try {
     const result = await query('SELECT key, value FROM app_settings');
     
-    const settings: any = {};
-    result.rows.forEach(row => {
+    const settings: Record<string, unknown> = {};
+    (result.rows as Array<{ key: string; value: unknown }>).forEach((row) => {
       settings[row.key] = row.value;
     });
 
