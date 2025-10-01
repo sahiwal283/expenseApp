@@ -17,6 +17,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     name: '',
     username: '',
     email: '',
+    password: '',
     role: 'salesperson' as UserRole
   });
 
@@ -44,9 +45,16 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
 
     setUsers(updatedUsers);
     localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
+    
+    // Update password in demo credentials if provided
+    if (formData.password) {
+      // Store password hint for demo purposes
+      localStorage.setItem(`user_password_${newUser.username}`, formData.password);
+    }
+    
     setShowForm(false);
     setEditingUser(null);
-    setFormData({ name: '', username: '', email: '', role: 'salesperson' });
+    setFormData({ name: '', username: '', email: '', password: '', role: 'salesperson' });
   };
 
   const handleEditUser = (user: User) => {
@@ -55,6 +63,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
       name: user.name,
       username: user.username,
       email: user.email,
+      password: '', // Don't pre-fill password
       role: user.role
     });
     setShowForm(true);
@@ -286,6 +295,23 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password {editingUser ? '(Optional - Leave blank to keep current)' : '*'}
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required={!editingUser}
+                  placeholder={editingUser ? 'Enter new password to reset' : 'Create password'}
+                />
+                {editingUser && (
+                  <p className="text-xs text-gray-500 mt-1">Leave blank to keep the current password</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role *
                 </label>
                 <select
@@ -307,7 +333,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                   onClick={() => {
                     setShowForm(false);
                     setEditingUser(null);
-                    setFormData({ name: '', username: '', email: '', role: 'salesperson' });
+                    setFormData({ name: '', username: '', email: '', password: '', role: 'salesperson' });
                   }}
                   className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >

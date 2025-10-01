@@ -118,48 +118,58 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
       if (filename.includes('hertz') || filename.includes('rental') || filename.includes('car')) {
         merchant = 'Hertz Car Rental';
         category = 'Transportation';
-        amount = (Math.random() * 300 + 150).toFixed(2);
+        // Typical car rental: $180-280 for 3-4 days
+        amount = (Math.random() * 100 + 180).toFixed(2);
         location = 'Indianapolis, IN';
       } else if (filename.includes('flight') || filename.includes('airline') || filename.includes('delta') || filename.includes('united')) {
         merchant = 'Delta Airlines';
         category = 'Flights';
-        amount = (Math.random() * 500 + 200).toFixed(2);
+        // Typical domestic flight: $250-500
+        amount = (Math.random() * 250 + 250).toFixed(2);
         location = 'Atlanta, GA';
       } else if (filename.includes('hotel') || filename.includes('marriott') || filename.includes('hilton')) {
         merchant = 'Marriott Hotel';
         category = 'Hotels';
-        amount = (Math.random() * 250 + 100).toFixed(2);
+        // Typical hotel: $150-300 per night
+        amount = (Math.random() * 150 + 150).toFixed(2);
         location = 'Las Vegas, NV';
       } else if (filename.includes('restaurant') || filename.includes('food') || filename.includes('meal')) {
         merchant = 'Restaurant';
         category = 'Meals';
-        amount = (Math.random() * 80 + 20).toFixed(2);
+        // Typical meal: $30-80
+        amount = (Math.random() * 50 + 30).toFixed(2);
         location = 'New York, NY';
       } else if (filename.includes('uber') || filename.includes('lyft') || filename.includes('taxi')) {
         merchant = 'Uber';
         category = 'Transportation';
-        amount = (Math.random() * 50 + 10).toFixed(2);
+        // Typical ride: $15-45
+        amount = (Math.random() * 30 + 15).toFixed(2);
         location = 'Chicago, IL';
       } else {
         // Default to contextual business expense
         const merchants = ['Office Supplies Plus', 'Tech Conference', 'Business Center', 'Trade Show Services'];
         merchant = merchants[Math.floor(Math.random() * merchants.length)];
         category = 'Supplies';
+        amount = (Math.random() * 100 + 50).toFixed(2);
       }
       
+      // Use more accurate date formatting (MM/DD/YYYY)
       const today = new Date();
+      const formattedDate = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
+      
       const mockOcrText = `
         RECEIPT
         Merchant: ${merchant}
-        Date: ${today.toLocaleDateString()}
-        Amount: $${amount}
+        Date: ${formattedDate}
+        Total Amount: $${amount}
         Location: ${location}
         Thank you for your business!
       `;
 
       const extractedData = {
         merchant: mockOcrText.match(/Merchant: (.+)/)?.[1] || '',
-        amount: parseFloat(mockOcrText.match(/Amount: \$(.+)/)?.[1] || '0'),
+        amount: parseFloat(mockOcrText.match(/Total Amount: \$(.+)/)?.[1] || amount),
+        date: mockOcrText.match(/Date: (.+)/)?.[1] || formattedDate,
         location: mockOcrText.match(/Location: (.+)/)?.[1] || '',
         ocrText: mockOcrText.trim()
       };
@@ -171,6 +181,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
         ...prev,
         merchant: prev.merchant || extractedData.merchant,
         amount: prev.amount || extractedData.amount,
+        date: extractedData.date || prev.date,
         location: prev.location || extractedData.location,
         ocrText: extractedData.ocrText,
         category: prev.category || category
@@ -394,6 +405,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                   <option key={index} value={card}>{card}</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-2 italic">
+                Note: Last 4 digits may differ when using Apple Pay.
+              </p>
             </div>
 
             <div>

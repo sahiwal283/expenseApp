@@ -12,6 +12,17 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar }) => {
   const [showNotifications, setShowNotifications] = React.useState(false);
+  
+  // Check for unread notifications
+  const notifications = React.useMemo(() => {
+    const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
+    const pendingExpenses = expenses.filter((e: any) => 
+      e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant')
+    );
+    return pendingExpenses.length > 0 ? pendingExpenses : [];
+  }, [user.role]);
+
+  const hasUnreadNotifications = notifications.length > 0;
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -45,7 +56,9 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              {hasUnreadNotifications && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              )}
             </button>
             
             {showNotifications && (
@@ -54,13 +67,20 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
                   <h3 className="font-semibold text-gray-900">Notifications</h3>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  <div className="p-4 hover:bg-gray-50 border-b border-gray-100">
-                    <p className="text-sm text-gray-900 font-medium">Welcome to the Trade Show Expense App</p>
-                    <p className="text-xs text-gray-500 mt-1">Start by creating an event or submitting an expense</p>
-                  </div>
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    No new notifications
-                  </div>
+                  {notifications.length > 0 ? (
+                    notifications.map((expense: any, index: number) => (
+                      <div key={index} className="p-4 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
+                        <p className="text-sm text-gray-900 font-medium">Pending Expense Approval</p>
+                        <p className="text-xs text-gray-600 mt-1">{expense.merchant} - ${expense.amount}</p>
+                        <p className="text-xs text-gray-500 mt-1">Submitted by user</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-sm text-gray-500">No new notifications</p>
+                      <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
