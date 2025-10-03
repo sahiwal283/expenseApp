@@ -227,7 +227,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
               </button>
             </div>
 
-            {formData.participants.length > 0 && (
+            {formData.participants?.length || 0 > 0 && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="space-y-2">
                   {formData.participants.map((participant) => (

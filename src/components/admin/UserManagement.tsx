@@ -46,6 +46,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
           name: formData.name,
           email: formData.email,
           role: formData.role,
+          ...(formData.password ? { password: formData.password } : {}),
         });
       } else {
         await api.createUser({

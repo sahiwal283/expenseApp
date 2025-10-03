@@ -223,11 +223,11 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Card Options</h4>
-            <p className="text-sm text-gray-600">{settings.cardOptions.length} options configured</p>
+            <p className="text-sm text-gray-600">{settings.cardOptions?.length || 0} options configured</p>
           </div>
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Entity Options</h4>
-            <p className="text-sm text-gray-600">{settings.entityOptions.length} entities configured</p>
+            <p className="text-sm text-gray-600">{settings.entityOptions?.length || 0} entities configured</p>
           </div>
         </div>
 

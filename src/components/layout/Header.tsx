@@ -3,15 +3,16 @@ import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 
-const APP_VERSION = '0.6.2-alpha';
+const APP_VERSION = '0.7.0';
 
 interface HeaderProps {
   user: User;
   onLogout: () => void;
   onToggleSidebar: () => void;
+  onToggleMobileMenu: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onToggleMobileMenu }) => {
   const [showNotifications, setShowNotifications] = React.useState(false);
   
   // Check for unread notifications
@@ -37,22 +38,24 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
   const hasUnreadNotifications = notifications.length > 0;
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 md:py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4 flex-1">
+          {/* Mobile Menu Button */}
           <button
-            onClick={onToggleSidebar}
+            onClick={onToggleMobileMenu}
             className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
           >
             <Menu className="w-5 h-5" />
           </button>
           
-          <div className="relative max-w-md">
+          {/* Search - Hidden on small mobile, visible on tablet+ */}
+          <div className="relative hidden sm:block flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search expenses, events..."
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
           </div>
           
@@ -61,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
           <div className="relative">
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
@@ -74,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
             </button>
             
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-200">
                   <h3 className="font-semibold text-gray-900">Notifications</h3>
                 </div>
@@ -98,7 +101,8 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
             )}
           </div>
 
-          <div className="flex items-center space-x-3">
+          {/* User info - Simplified on mobile */}
+          <div className="hidden md:flex items-center space-x-3">
             <div className="text-right">
               <p className="font-medium text-gray-900">{user.name}</p>
               <p className="text-sm text-gray-500 capitalize">{user.role}</p>
@@ -110,6 +114,13 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
             </div>
           </div>
 
+          {/* Mobile: Just avatar */}
+          <div className="md:hidden w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-medium text-sm">
+              {user.name.charAt(0)}
+            </span>
+          </div>
+
           <button
             onClick={onLogout}
             className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -117,6 +128,18 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar 
           >
             <LogOut className="w-5 h-5" />
           </button>
+        </div>
+      </div>
+      
+      {/* Mobile search bar below header */}
+      <div className="sm:hidden mt-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search..."
+            className="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          />
         </div>
       </div>
     </header>

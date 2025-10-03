@@ -44,17 +44,31 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>) => {
     if (api.USE_SERVER) {
-      await api.createExpense({
-        event_id: expenseData.tradeShowId,
-        category: expenseData.category,
-        merchant: expenseData.merchant,
-        amount: expenseData.amount,
-        date: expenseData.date,
-        description: expenseData.description,
-        card_used: expenseData.cardUsed,
-        reimbursement_required: expenseData.reimbursementRequired,
-        location: expenseData.location,
-      });
+      if (editingExpense) {
+        await api.updateExpense(editingExpense.id, {
+          category: expenseData.category,
+          merchant: expenseData.merchant,
+          amount: expenseData.amount,
+          date: expenseData.date,
+          description: expenseData.description,
+          card_used: expenseData.cardUsed,
+          reimbursement_required: expenseData.reimbursementRequired,
+          location: expenseData.location,
+          zoho_entity: expenseData.zohoEntity,
+        });
+      } else {
+        await api.createExpense({
+          event_id: expenseData.tradeShowId,
+          category: expenseData.category,
+          merchant: expenseData.merchant,
+          amount: expenseData.amount,
+          date: expenseData.date,
+          description: expenseData.description,
+          card_used: expenseData.cardUsed,
+          reimbursement_required: expenseData.reimbursementRequired,
+          location: expenseData.location,
+        });
+      }
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {

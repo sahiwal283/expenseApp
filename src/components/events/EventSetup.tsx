@@ -410,7 +410,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   </div>
                 </div>
 
-                {formData.participants.length > 0 && (
+                {formData.participants?.length || 0 > 0 && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="space-y-2">
                       {formData.participants.map((participant) => (
@@ -512,10 +512,10 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
               
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <Users className="w-4 h-4" />
-                <span>{event.participants.length} participants</span>
+                <span>{event.participants?.length || 0} participants</span>
               </div>
               
-              {event.participants.length > 0 && (
+              {event.participants?.length || 0 > 0 && (
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-2">
                     {event.participants.map((participant, index) => (

@@ -66,6 +66,7 @@ function App() {
   const { user, login, logout } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Server-backed mode: disable demo data seeding
   useEffect(() => {}, []);
@@ -74,24 +75,40 @@ function App() {
     return <LoginForm onLogin={login} />;
   }
 
+  const handlePageChange = (page: string) => {
+    setCurrentPage(page);
+    setMobileMenuOpen(false); // Close mobile menu after navigation
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar 
         user={user} 
         currentPage={currentPage} 
-        onPageChange={setCurrentPage}
+        onPageChange={handlePageChange}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        mobileMenuOpen={mobileMenuOpen}
+        onCloseMobileMenu={() => setMobileMenuOpen(false)}
       />
       
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      {/* Mobile overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      
+      <div className={`flex-1 flex flex-col transition-all duration-300 lg:${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <Header 
           user={user} 
           onLogout={logout}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
         
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6">
           {currentPage === 'dashboard' && <Dashboard user={user} />}
           {currentPage === 'events' && <EventSetup user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}

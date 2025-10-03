@@ -1,3 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Mobile-first responsive design */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply text-base;
+  }
+
+  /* Better touch targets for mobile */
+  button, a, input, select, textarea {
+    @apply touch-manipulation;
+  }
+}
+
+@layer utilities {
+  /* Mobile-optimized scrolling */
+  .scroll-smooth {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Mobile-friendly table wrapper */
+  .table-mobile {
+    @apply overflow-x-auto -mx-3 sm:mx-0;
+  }
+
+  .table-mobile table {
+    @apply min-w-full;
+  }
+
+  /* Card responsive padding */
+  .card-mobile {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+
+  /* Better mobile buttons */
+  .btn-mobile {
+    @apply px-4 py-2.5 min-h-[44px] text-sm sm:text-base;
+  }
+
+  /* Mobile form inputs */
+  .input-mobile {
+    @apply px-3 py-2.5 min-h-[44px] text-base;
+  }
+}

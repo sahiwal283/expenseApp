@@ -59,7 +59,7 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events }) => {
                   </div>
                   <div className="flex items-center">
                     <Users className="w-4 h-4 mr-2" />
-                    <span>{event.participants.length} participants</span>
+                    <span>{event.participants?.length || 0} participants</span>
                   </div>
                 </div>
 
