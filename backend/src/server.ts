@@ -26,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadDir));
+app.use("/api/uploads", express.static(uploadDir));
 
 // Routes
 app.use('/api/auth', authRoutes);

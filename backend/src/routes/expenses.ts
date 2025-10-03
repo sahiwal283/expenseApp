@@ -58,43 +58,82 @@ async function preprocessImage(filePath: string): Promise<Buffer> {
 
 // Extract structured data from OCR text
 function extractReceiptData(text: string) {
+  console.log("\n=== OCR EXTRACTION START ===");
+  console.log("Raw OCR text (first 300 chars):", text.substring(0, 300));
+  
   // Clean the text
   const cleanText = text.trim();
-  
-  // Extract merchant (usually first line)
   const lines = cleanText.split('\n').filter(line => line.trim().length > 0);
-  const merchant = lines[0]?.trim() || 'Unknown Merchant';
+  
+  // Extract merchant (usually first line or line with business-like name)
+  let merchant = 'Unknown Merchant';
+  for (const line of lines.slice(0, 5)) {
+    const trimmed = line.trim();
+    // Skip lines with only numbers, dates, or very short text
+    if (trimmed.length > 3 && !/^\d+[\/\-]/.test(trimmed) && !/^\$?\d+\.\d{2}$/.test(trimmed)) {
+      merchant = trimmed;
+      break;
+    }
+  }
+  console.log("Extracted Merchant:", merchant);
   
   // Extract total amount with multiple patterns
   let amount = null;
   const amountPatterns = [
-    /(?:total|amount|sum|balance)[:\s]*\$?\s*(\d+[.,]\d{2})/i,
+    /(?:total|amount|sum|balance|subtotal)[:\s]*\$?\s*(\d+[.,]\d{2})/i,
     /\$\s*(\d+[.,]\d{2})(?:\s|$)/,
-    /(?:^|\s)(\d+[.,]\d{2})\s*(?:total|usd|$)/i
+    /(?:^|\s)(\d+[.,]\d{2})\s*(?:total|usd|$)/i,
+    /(\d+[.,]\d{2})/  // Fallback: any number with 2 decimals
   ];
   
   for (const pattern of amountPatterns) {
     const match = cleanText.match(pattern);
     if (match) {
-      amount = parseFloat(match[1].replace(',', '.'));
-      break;
+      const parsed = parseFloat(match[1].replace(',', '.'));
+      if (parsed > 0 && parsed < 100000) {  // Reasonable amount
+        amount = parsed;
+        break;
+      }
     }
   }
+  console.log("Extracted Amount:", amount);
   
-  // Extract date with multiple formats
+  // Extract date with MANY more patterns
   let date = null;
   const datePatterns = [
-    /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,
-    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}/i
+    /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,  // MM/DD/YYYY
+    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,    // YYYY-MM-DD
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}/i,  // Month DD, YYYY
+    /(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{2,4})/i,  // DD Month YYYY
+    /(?:date|time)[:\s]+(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/i,  // Date: or Time: prefix
+    /(\d{1,2}[-/]\d{1,2}[-/]\d{2})\s+\d{1,2}:\d{2}/  // Date with time
   ];
   
   for (const pattern of datePatterns) {
     const match = cleanText.match(pattern);
     if (match) {
-      date = match[0];
-      break;
+      console.log("Date pattern matched:", match[0]);
+      try {
+        const parsedDate = new Date(match[1] || match[0]);
+        if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 2000) {
+          const year = parsedDate.getFullYear();
+          const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+          const day = String(parsedDate.getDate()).padStart(2, '0');
+          date = `${year}-${month}-${day}`;
+          console.log("Normalized date:", date);
+          break;
+        }
+      } catch (e) {
+        console.log("Failed to parse date, trying next pattern");
+      }
     }
+  }
+  
+  // If no date found, use today as fallback
+  if (!date) {
+    const today = new Date();
+    date = today.toISOString().split('T')[0];
+    console.log("No date found in receipt, using today:", date);
   }
   
   // Extract location/address
@@ -104,21 +143,26 @@ function extractReceiptData(text: string) {
   if (locationMatch) {
     location = locationMatch[1].trim();
   }
+  console.log("Extracted Location:", location);
   
   // Try to categorize based on merchant name
   let category = 'Other';
-  const merchantLower = merchant.toLowerCase();
-  if (merchantLower.includes('restaurant') || merchantLower.includes('cafe') || merchantLower.includes('food')) {
+  const textLower = (merchant + ' ' + cleanText).toLowerCase();
+  if (/restaurant|cafe|coffee|pizza|burger|food|grill|diner/.test(textLower)) {
     category = 'Meals';
-  } else if (merchantLower.includes('hotel') || merchantLower.includes('inn')) {
+  } else if (/hotel|inn|lodge|resort|motel/.test(textLower)) {
     category = 'Lodging';
-  } else if (merchantLower.includes('gas') || merchantLower.includes('fuel')) {
+  } else if (/gas|fuel|shell|chevron|exxon|mobil|bp/.test(textLower)) {
     category = 'Transportation';
-  } else if (merchantLower.includes('uber') || merchantLower.includes('lyft') || merchantLower.includes('taxi')) {
+  } else if (/uber|lyft|taxi|cab|airline|flight|airport/.test(textLower)) {
     category = 'Transportation';
-  } else if (merchantLower.includes('office') || merchantLower.includes('supplies')) {
-    category = 'Office Supplies';
+  } else if (/office|supplies|staples|depot|fedex|ups|print/.test(textLower)) {
+    category = 'Supplies';
+  } else if (/market|grocery|store|walmart|target/.test(textLower)) {
+    category = 'Supplies';
   }
+  console.log("Extracted Category:", category);
+  console.log("=== END EXTRACTION ===\n");
   
   return {
     merchant,
@@ -181,6 +225,22 @@ async function processOCR(filePath: string): Promise<{
   }
 }
 
+
+// Convert PostgreSQL numeric types to JavaScript numbers
+function convertExpenseTypes(expense: any) {
+  return {
+    ...expense,
+    amount: expense.amount ? parseFloat(expense.amount) : 0,
+    receiptUrl: expense.receipt_url,
+    cardUsed: expense.card_used,
+    reimbursementRequired: expense.reimbursement_required,
+    reimbursementStatus: expense.reimbursement_status,
+    ocrText: expense.ocr_text,
+    zohoEntity: expense.zoho_entity,
+    tradeShowId: expense.event_id,
+    userId: expense.user_id,
+  };
+}
 router.use(authenticateToken);
 
 // Get all expenses
@@ -221,7 +281,7 @@ router.get('/', async (req: AuthRequest, res) => {
     queryText += ' ORDER BY e.submitted_at DESC';
 
     const result = await query(queryText, queryParams);
-    res.json(result.rows);
+    res.json(result.rows.map(convertExpenseTypes));
   } catch (error) {
     console.error('Error fetching expenses:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -247,7 +307,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(convertExpenseTypes(result.rows[0]));
   } catch (error) {
     console.error('Error fetching expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -256,6 +316,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
 // Create expense with optional receipt upload and OCR
 router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
+  console.log('[DEBUG] POST /api/expenses - File uploaded:', req.file ? req.file.filename : 'NO FILE');
   try {
     const {
       event_id,
@@ -350,7 +411,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Expense not found or unauthorized' });
     }
 
-    res.json(result.rows[0]);
+    res.json(convertExpenseTypes(result.rows[0]));
   } catch (error) {
     console.error('Error updating expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -379,7 +440,7 @@ router.patch('/:id/review', authorize('admin', 'accountant'), async (req: AuthRe
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(convertExpenseTypes(result.rows[0]));
   } catch (error) {
     console.error('Error reviewing expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -404,7 +465,7 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(convertExpenseTypes(result.rows[0]));
   } catch (error) {
     console.error('Error assigning entity:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -433,7 +494,7 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req:
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(convertExpenseTypes(result.rows[0]));
   } catch (error) {
     console.error('Error updating reimbursement:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -474,6 +535,34 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error deleting expense:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// OCR-only endpoint for receipt scanning
+router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
+  console.log('[DEBUG] POST /api/expenses - File uploaded:', req.file ? req.file.filename : 'NO FILE');
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log('Processing OCR for file:', req.file.filename);
+
+    // Perform OCR on the receipt
+    const ocrResult = await processOCR(req.file.path);
+    
+    console.log('OCR Result - Confidence:', Math.round(ocrResult.confidence * 100), '%');
+    console.log('Extracted data:', ocrResult.structured);
+
+    // Return OCR results
+    res.json({
+      text: ocrResult.text,
+      confidence: ocrResult.confidence,
+      ...ocrResult.structured
+    });
+  } catch (error) {
+    console.error('OCR endpoint error:', error);
+    res.status(500).json({ error: 'OCR processing failed' });
   }
 });
 
