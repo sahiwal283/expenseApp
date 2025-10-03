@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { createWorker } from 'tesseract.js';
+import sharp from 'sharp';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 
@@ -39,16 +40,144 @@ const upload = multer({
   }
 });
 
-// OCR processing function
-async function processOCR(filePath: string): Promise<string> {
+// Image preprocessing for better OCR accuracy
+async function preprocessImage(filePath: string): Promise<Buffer> {
   try {
-    const worker = await createWorker('eng');
-    const { data: { text } } = await worker.recognize(filePath);
+    return await sharp(filePath)
+      .grayscale()           // Convert to grayscale
+      .normalize()           // Normalize contrast
+      .sharpen()             // Sharpen edges
+      .threshold(128)        // Binary threshold for clarity
+      .toBuffer();
+  } catch (error) {
+    console.error('Image preprocessing error:', error);
+    // Return original if preprocessing fails
+    return await sharp(filePath).toBuffer();
+  }
+}
+
+// Extract structured data from OCR text
+function extractReceiptData(text: string) {
+  // Clean the text
+  const cleanText = text.trim();
+  
+  // Extract merchant (usually first line)
+  const lines = cleanText.split('\n').filter(line => line.trim().length > 0);
+  const merchant = lines[0]?.trim() || 'Unknown Merchant';
+  
+  // Extract total amount with multiple patterns
+  let amount = null;
+  const amountPatterns = [
+    /(?:total|amount|sum|balance)[:\s]*\$?\s*(\d+[.,]\d{2})/i,
+    /\$\s*(\d+[.,]\d{2})(?:\s|$)/,
+    /(?:^|\s)(\d+[.,]\d{2})\s*(?:total|usd|$)/i
+  ];
+  
+  for (const pattern of amountPatterns) {
+    const match = cleanText.match(pattern);
+    if (match) {
+      amount = parseFloat(match[1].replace(',', '.'));
+      break;
+    }
+  }
+  
+  // Extract date with multiple formats
+  let date = null;
+  const datePatterns = [
+    /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,
+    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}/i
+  ];
+  
+  for (const pattern of datePatterns) {
+    const match = cleanText.match(pattern);
+    if (match) {
+      date = match[0];
+      break;
+    }
+  }
+  
+  // Extract location/address
+  let location = null;
+  const locationPattern = /(\d+\s+[\w\s]+(?:street|st|avenue|ave|road|rd|blvd|drive|dr|lane|ln|way)[\w\s,]*)/i;
+  const locationMatch = cleanText.match(locationPattern);
+  if (locationMatch) {
+    location = locationMatch[1].trim();
+  }
+  
+  // Try to categorize based on merchant name
+  let category = 'Other';
+  const merchantLower = merchant.toLowerCase();
+  if (merchantLower.includes('restaurant') || merchantLower.includes('cafe') || merchantLower.includes('food')) {
+    category = 'Meals';
+  } else if (merchantLower.includes('hotel') || merchantLower.includes('inn')) {
+    category = 'Lodging';
+  } else if (merchantLower.includes('gas') || merchantLower.includes('fuel')) {
+    category = 'Transportation';
+  } else if (merchantLower.includes('uber') || merchantLower.includes('lyft') || merchantLower.includes('taxi')) {
+    category = 'Transportation';
+  } else if (merchantLower.includes('office') || merchantLower.includes('supplies')) {
+    category = 'Office Supplies';
+  }
+  
+  return {
+    merchant,
+    amount,
+    date,
+    location,
+    category
+  };
+}
+
+// Enhanced OCR processing with preprocessing and structured extraction
+async function processOCR(filePath: string): Promise<{
+  text: string;
+  confidence: number;
+  structured: any;
+}> {
+  try {
+    console.log('Starting OCR processing for:', filePath);
+    
+    // Preprocess image
+    const processedImage = await preprocessImage(filePath);
+    
+    // Create Tesseract worker with optimized settings
+    const worker = await createWorker('eng', 1, {
+      logger: (m: any) => {
+        if (m.status === 'recognizing text') {
+          console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+        }
+      }
+    });
+    
+    // Configure for receipt-like text
+    await worker.setParameters({
+      tessedit_pageseg_mode: '6',  // Assume uniform block of text
+      tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$.,:/\\-#@ '
+    });
+    
+    // Recognize text
+    const { data } = await worker.recognize(processedImage);
     await worker.terminate();
-    return text;
+    
+    console.log(`OCR completed with ${Math.round(data.confidence)}% confidence`);
+    
+    // Extract structured data
+    const structured = extractReceiptData(data.text);
+    console.log('Extracted structured data:', structured);
+    
+    return {
+      text: data.text,
+      confidence: data.confidence / 100,
+      structured: structured
+    };
   } catch (error) {
     console.error('OCR processing error:', error);
-    return '';
+    return {
+      text: '',
+      confidence: 0,
+      structured: null
+    };
   }
 }
 
@@ -152,7 +281,14 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
       receiptUrl = `/uploads/${req.file.filename}`;
       
       // Perform OCR on the receipt
-      ocrText = await processOCR(req.file.path);
+      const ocrResult = await processOCR(req.file.path);
+      ocrText = ocrResult.text;
+      
+      // Log OCR results
+      console.log(`OCR Confidence: ${Math.round(ocrResult.confidence * 100)}%`);
+      if (ocrResult.structured) {
+        console.log('Auto-extracted:', ocrResult.structured);
+      }
     }
 
     const result = await query(

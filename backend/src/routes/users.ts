@@ -70,12 +70,23 @@ router.post('/', authorize('admin'), async (req: AuthRequest, res) => {
 router.put('/:id', authorize('admin'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role } = req.body;
+    const { name, email, role, password } = req.body;
 
-    const result = await query(
-      'UPDATE users SET name = $1, email = $2, role = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, name, email, role',
-      [name, email, role, id]
-    );
+    let updateQuery: string;
+    let queryParams: any[];
+
+    if (password) {
+      // If password is provided, hash it and update
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, password = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, username, name, email, role';
+      queryParams = [name, email, role, hashedPassword, id];
+    } else {
+      // If no password, update other fields only
+      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, name, email, role';
+      queryParams = [name, email, role, id];
+    }
+
+    const result = await query(updateQuery, queryParams);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
