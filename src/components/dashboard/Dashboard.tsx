@@ -41,7 +41,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   }, []);
 
   const stats = useMemo(() => {
-    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalExpenses = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
     const pendingExpenses = expenses.filter(e => e.status === 'pending').length;
     const upcomingEvents = events.filter(e => e.status === 'upcoming').length;
     const activeEvents = events.filter(e => e.status === 'active').length;

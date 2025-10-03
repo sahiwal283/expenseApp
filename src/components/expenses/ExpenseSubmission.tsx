@@ -18,6 +18,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterEvent, setFilterEvent] = useState('all');
+  const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -332,7 +333,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <td className="px-6 py-4">
                         {expense.receiptUrl ? (
                           <button
-                            onClick={() => window.open(expense.receiptUrl, '_blank')}
+                            onClick={() => setReceiptModalUrl(expense.receiptUrl.replace(/^\/uploads/, '/api/uploads'))}
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                           >
                             View Receipt
@@ -367,6 +368,25 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Modal */}
+      {receiptModalUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setReceiptModalUrl(null)}>
+          <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Receipt</h3>
+              <button onClick={() => setReceiptModalUrl(null)} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <img src={receiptModalUrl} alt="Receipt" className="max-w-md mx-auto rounded-lg shadow-lg" />
+            </div>
           </div>
         </div>
       )}

@@ -81,11 +81,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required receipt for new expenses
-    if (!expense && !receiptFile && !formData.receiptUrl) {
-      alert('Please upload a receipt image. This is required for all expense submissions.');
-      return;
-    }
     
     onSave(formData);
   };
@@ -277,7 +272,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                     accept="image/*"
                     onChange={handleReceiptUpload}
                     className="hidden"
-                    required={!expense}
+                    
                   />
                 </label>
               </div>

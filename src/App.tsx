@@ -100,7 +100,7 @@ function App() {
         />
       )}
       
-      <div className={`flex-1 flex flex-col transition-all duration-300 lg:${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-64"}`}>
         <Header 
           user={user} 
           onLogout={logout}
