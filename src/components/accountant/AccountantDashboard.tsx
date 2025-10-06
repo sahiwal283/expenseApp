@@ -3,8 +3,6 @@ import {
   Search, 
   Filter, 
   Building2, 
-  CheckCircle, 
-  X, 
   DollarSign, 
   Calendar,
   User as UserIcon,
@@ -74,32 +72,23 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
     });
   }, [expenses, searchTerm, filterCategory, filterUser, filterEvent, filterStatus, filterReimbursement, filterCard, filterEntity]);
 
-  const handleApproveExpense = async (expense: Expense) => {
-    if (api.USE_SERVER) await api.reviewExpense(expense.id, { status: 'approved' });
-    onUpdateExpense({ ...expense, status: 'approved' });
-  };
-
-  const handleRejectExpense = async (expense: Expense) => {
-    if (api.USE_SERVER) await api.reviewExpense(expense.id, { status: 'rejected' });
-    onUpdateExpense({ ...expense, status: 'rejected' });
-  };
-
   const handleAssignEntity = async (expense: Expense, entity: string) => {
     try {
       if (api.USE_SERVER) {
         await api.assignEntity(expense.id, { zoho_entity: entity });
+        // Force reload by calling parent update with fresh data from server
+        const refreshedExpenses = await api.getExpenses();
+        const updatedExpense = refreshedExpenses?.find(e => e.id === expense.id);
+        if (updatedExpense) {
+          onUpdateExpense(updatedExpense);
+        }
+      } else {
+        onUpdateExpense({ ...expense, zohoEntity: entity });
       }
-      // Update local state and trigger parent refresh
-      onUpdateExpense({ ...expense, zohoEntity: entity });
     } catch (error) {
       console.error('Failed to assign entity:', error);
       alert('Failed to assign entity. Please try again.');
     }
-  };
-
-  const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
-    if (api.USE_SERVER) await api.setExpenseReimbursement(expense.id, { reimbursement_status: status });
-    onUpdateExpense({ ...expense, reimbursementStatus: status });
   };
   const getStatusColor = (status: string) => {
     const colors = {
@@ -349,7 +338,7 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
                   Entity Assignment
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  Info
                 </th>
               </tr>
             </thead>
@@ -419,43 +408,8 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
                       </select>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        {expense.reimbursementRequired && (
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={() => handleReimbursementApproval(expense, 'approved')}
-                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
-                              title="Approve Reimbursement"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleReimbursementApproval(expense, 'rejected')}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Reject Reimbursement"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                        {expense.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApproveExpense(expense)}
-                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="Approve"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRejectExpense(expense)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Reject"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
+                      <div className="text-sm text-gray-500 italic">
+                        Use Approvals page for reviews
                       </div>
                     </td>
                   </tr>
