@@ -5,28 +5,29 @@
 
 -- Clean existing data (in correct order to respect foreign keys)
 TRUNCATE TABLE expenses CASCADE;
+TRUNCATE TABLE event_participants CASCADE;
 TRUNCATE TABLE events CASCADE;
 TRUNCATE TABLE users CASCADE;
 TRUNCATE TABLE app_settings CASCADE;
 
 -- ===== USERS =====
--- Password for all users: sandbox123 (bcrypt hash)
--- Hash: $2b$10$rZ0qZ4JZoJXYxQj7h6nqWOx0xqxvKQU.JZqZqZqZqZqZqZqZqZqZq
+-- Password for all users: sandbox123
+-- Hashed with bcrypt: $2b$10$aK9g/U44bKIq/qbKS74dEeieSrGK7AsrOOe6HVQsZUwKko/.ZOQiW
 
 INSERT INTO users (id, username, password, name, email, role, created_at) VALUES
-('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'admin', '$2b$10$YQ3b4Y2ZJhOcXVNZVNNNYOuGjMbQ8JQwZQjZQzZQzZQzZQzZQzZQy', 'Admin User', 'admin@example.com', 'admin', NOW()),
-('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'coordinator', '$2b$10$YQ3b4Y2ZJhOcXVNZVNNNYOuGjMbQ8JQwZQjZQzZQzZQzZQzZQzZQy', 'Sarah Coordinator', 'coordinator@example.com', 'coordinator', NOW()),
-('cccccccc-cccc-cccc-cccc-cccccccccccc', 'salesperson', '$2b$10$YQ3b4Y2ZJhOcXVNZVNNNYOuGjMbQ8JQwZQjZQzZQzZQzZQzZQzZQy', 'John Salesperson', 'salesperson@example.com', 'salesperson', NOW()),
-('dddddddd-dddd-dddd-dddd-dddddddddddd', 'accountant', '$2b$10$YQ3b4Y2ZJhOcXVNZVNNNYOuGjMbQ8JQwZQjZQzZQzZQzZQzZQzZQy', 'Lisa Accountant', 'accountant@example.com', 'accountant', NOW()),
-('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'salesperson2', '$2b$10$YQ3b4Y2ZJhOcXVNZVNNNYOuGjMbQ8JQwZQjZQzZQzZQzZQzZQzZQy', 'Mike Sales', 'mike@example.com', 'salesperson', NOW());
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'admin', '$2b$10$aK9g/U44bKIq/qbKS74dEeieSrGK7AsrOOe6HVQsZUwKko/.ZOQiW', 'Admin User', 'admin@example.com', 'admin', NOW()),
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'coordinator', '$2b$10$aK9g/U44bKIq/qbKS74dEeieSrGK7AsrOOe6HVQsZUwKko/.ZOQiW', 'Sarah Coordinator', 'coordinator@example.com', 'coordinator', NOW()),
+('cccccccc-cccc-cccc-cccc-cccccccccccc', 'salesperson', '$2b$10$aK9g/U44bKIq/qbKS74dEeieSrGK7AsrOOe6HVQsZUwKko/.ZOQiW', 'John Salesperson', 'salesperson@example.com', 'salesperson', NOW()),
+('dddddddd-dddd-dddd-dddd-dddddddddddd', 'accountant', '$2b$10$aK9g/U44bKIq/qbKS74dEeieSrGK7AsrOOe6HVQsZUwKko/.ZOQiW', 'Lisa Accountant', 'accountant@example.com', 'accountant', NOW()),
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'salesperson2', '$2b$10$aK9g/U44bKIq/qbKS74dEeieSrGK7AsrOOe6HVQsZUwKko/.ZOQiW', 'Mike Sales', 'mike@example.com', 'salesperson', NOW());
 
 -- ===== EVENTS =====
-INSERT INTO events (id, name, location, start_date, end_date, budget, status, description, created_at) VALUES
-('11111111-1111-1111-1111-111111111111', 'CES 2025', 'Las Vegas, NV', '2025-01-07', '2025-01-10', 75000.00, 'upcoming', 'Consumer Electronics Show - Major tech trade show', NOW()),
-('22222222-2222-2222-2222-222222222222', 'MWC Barcelona 2025', 'Barcelona, Spain', '2025-02-26', '2025-03-01', 90000.00, 'upcoming', 'Mobile World Congress - Global mobile event', NOW()),
-('33333333-3333-3333-3333-333333333333', 'NAB Show 2025', 'Las Vegas, NV', '2025-04-12', '2025-04-16', 60000.00, 'active', 'Broadcasting and media technology show', NOW()),
-('44444444-4444-4444-4444-444444444444', 'GITEX Dubai 2024', 'Dubai, UAE', '2024-10-14', '2024-10-18', 80000.00, 'completed', 'Gulf Information Technology Exhibition', NOW()),
-('55555555-5555-5555-5555-555555555555', 'Web Summit 2024', 'Lisbon, Portugal', '2024-11-11', '2024-11-14', 55000.00, 'completed', 'Tech conference with global reach', NOW());
+INSERT INTO events (id, name, venue, city, state, start_date, end_date, budget, status, coordinator_id, created_at) VALUES
+('11111111-1111-1111-1111-111111111111', 'CES 2025', 'Las Vegas Convention Center', 'Las Vegas', 'NV', '2025-01-07', '2025-01-10', 75000.00, 'upcoming', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NOW()),
+('22222222-2222-2222-2222-222222222222', 'MWC Barcelona 2025', 'Fira Barcelona Gran Via', 'Barcelona', 'Spain', '2025-02-26', '2025-03-01', 90000.00, 'upcoming', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NOW()),
+('33333333-3333-3333-3333-333333333333', 'NAB Show 2025', 'Las Vegas Convention Center', 'Las Vegas', 'NV', '2025-04-12', '2025-04-16', 60000.00, 'active', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NOW()),
+('44444444-4444-4444-4444-444444444444', 'GITEX Dubai 2024', 'Dubai World Trade Centre', 'Dubai', 'UAE', '2024-10-14', '2024-10-18', 80000.00, 'completed', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NOW()),
+('55555555-5555-5555-5555-555555555555', 'Web Summit 2024', 'Altice Arena', 'Lisbon', 'Portugal', '2024-11-11', '2024-11-14', 55000.00, 'completed', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NOW());
 
 -- ===== EXPENSES =====
 -- Pending expenses (for approval workflow testing)
@@ -50,7 +51,7 @@ INSERT INTO expenses (id, event_id, user_id, category, merchant, amount, date, d
 ('ea222222-2222-2222-2222-222222222222', '55555555-5555-5555-5555-555555555555', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'Supplies', 'Office Supply Store', 120.00, '2024-11-12', 'Booth supplies and materials', 'Haute LLC USD Amex', false, 'approved', 'approved', 'Haute LLC', 'dddddddd-dddd-dddd-dddd-dddddddddddd', NOW() - INTERVAL '8 days', 'Lisbon, Portugal', NOW() - INTERVAL '9 days');
 
 -- Rejected expenses (for comprehensive testing)
-INSERT INTO expenses (id, event_id, user_id, category, merchant, amount, date, description, card_used, reimbursement_required, status, reimbursement_status, reviewed_by, reviewed_at, review_comments, location, created_at) VALUES
+INSERT INTO expenses (id, event_id, user_id, category, merchant, amount, date, description, card_used, reimbursement_required, status, reimbursement_status, reviewed_by, reviewed_at, comments, location, created_at) VALUES
 ('ea333333-3333-3333-3333-333333333333', '44444444-4444-4444-4444-444444444444', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Entertainment', 'Casino', 500.00, '2024-10-16', 'Entertainment expenses', 'Cash', true, 'rejected', 'rejected', 'dddddddd-dddd-dddd-dddd-dddddddddddd', NOW() - INTERVAL '2 days', 'Not a valid business expense', 'Dubai, UAE', NOW() - INTERVAL '3 days');
 
 -- ===== APP SETTINGS =====
@@ -67,4 +68,3 @@ UNION ALL
 SELECT 'Expenses', COUNT(*) FROM expenses
 UNION ALL
 SELECT 'Settings', COUNT(*) FROM app_settings;
-
