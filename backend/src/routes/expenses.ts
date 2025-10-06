@@ -2,12 +2,15 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { createWorker } from 'tesseract.js';
-import sharp from 'sharp';
+import FormData from 'form-data';
+import axios from 'axios';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+// OCR Service Configuration
+const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://localhost:8000';
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -40,207 +43,58 @@ const upload = multer({
   }
 });
 
-// Image preprocessing for better OCR accuracy
-async function preprocessImage(filePath: string): Promise<Buffer> {
-  try {
-    return await sharp(filePath)
-      .grayscale()           // Convert to grayscale
-      .normalize()           // Normalize contrast
-      .sharpen()             // Sharpen edges
-      .threshold(128)        // Binary threshold for clarity
-      .toBuffer();
-  } catch (error) {
-    console.error('Image preprocessing error:', error);
-    // Return original if preprocessing fails
-    return await sharp(filePath).toBuffer();
-  }
-}
-
-// Extract structured data from OCR text
-function extractReceiptData(text: string) {
-  console.log("\n=== OCR EXTRACTION START ===");
-  console.log("Raw OCR text (first 300 chars):", text.substring(0, 300));
-  
-  // Clean the text
-  const cleanText = text.trim();
-  const lines = cleanText.split('\n').filter(line => line.trim().length > 0);
-  
-  // Extract merchant (usually first line or line with business-like name)
-  let merchant = 'Unknown Merchant';
-  for (const line of lines.slice(0, 5)) {
-    const trimmed = line.trim();
-    // Skip lines with only numbers, dates, or very short text
-    if (trimmed.length > 3 && !/^\d+[\/\-]/.test(trimmed) && !/^\$?\d+\.\d{2}$/.test(trimmed)) {
-      merchant = trimmed;
-      break;
-    }
-  }
-  console.log("Extracted Merchant:", merchant);
-  
-  // Extract total amount with multiple patterns
-  let amount = null;
-  const amountPatterns = [
-    /(?:total|amount|sum|balance|subtotal)[:\s]*\$?\s*(\d+[.,]\d{2})/i,
-    /\$\s*(\d+[.,]\d{2})(?:\s|$)/,
-    /(?:^|\s)(\d+[.,]\d{2})\s*(?:total|usd|$)/i,
-    /(\d+[.,]\d{2})/  // Fallback: any number with 2 decimals
-  ];
-  
-  for (const pattern of amountPatterns) {
-    const match = cleanText.match(pattern);
-    if (match) {
-      const parsed = parseFloat(match[1].replace(',', '.'));
-      if (parsed > 0 && parsed < 100000) {  // Reasonable amount
-        amount = parsed;
-        break;
-      }
-    }
-  }
-  console.log("Extracted Amount:", amount);
-  
-  // Extract date with MANY more patterns
-  let date = null;
-  const datePatterns = [
-    /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,  // MM/DD/YYYY
-    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,    // YYYY-MM-DD
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}/i,  // Month DD, YYYY
-    /(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{2,4})/i,  // DD Month YYYY
-    /(?:date|time)[:\s]+(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/i,  // Date: or Time: prefix
-    /(\d{1,2}[-/]\d{1,2}[-/]\d{2})\s+\d{1,2}:\d{2}/  // Date with time
-  ];
-  
-  for (const pattern of datePatterns) {
-    const match = cleanText.match(pattern);
-    if (match) {
-      console.log("Date pattern matched:", match[0]);
-      try {
-        const parsedDate = new Date(match[1] || match[0]);
-        if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 2000) {
-          const year = parsedDate.getFullYear();
-          const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-          const day = String(parsedDate.getDate()).padStart(2, '0');
-          date = `${year}-${month}-${day}`;
-          console.log("Normalized date:", date);
-          break;
-        }
-      } catch (e) {
-        console.log("Failed to parse date, trying next pattern");
-      }
-    }
-  }
-  
-  // If no date found, use today as fallback
-  if (!date) {
-    const today = new Date();
-    date = today.toISOString().split('T')[0];
-    console.log("No date found in receipt, using today:", date);
-  }
-  
-  // Extract location/address
-  let location = null;
-  const locationPattern = /(\d+\s+[\w\s]+(?:street|st|avenue|ave|road|rd|blvd|drive|dr|lane|ln|way)[\w\s,]*)/i;
-  const locationMatch = cleanText.match(locationPattern);
-  if (locationMatch) {
-    location = locationMatch[1].trim();
-  }
-  console.log("Extracted Location:", location);
-  
-  // Try to categorize based on merchant name
-  let category = 'Other';
-  const textLower = (merchant + ' ' + cleanText).toLowerCase();
-  if (/restaurant|cafe|coffee|pizza|burger|food|grill|diner/.test(textLower)) {
-    category = 'Meals';
-  } else if (/hotel|inn|lodge|resort|motel/.test(textLower)) {
-    category = 'Lodging';
-  } else if (/gas|fuel|shell|chevron|exxon|mobil|bp/.test(textLower)) {
-    category = 'Transportation';
-  } else if (/uber|lyft|taxi|cab|airline|flight|airport/.test(textLower)) {
-    category = 'Transportation';
-  } else if (/office|supplies|staples|depot|fedex|ups|print/.test(textLower)) {
-    category = 'Supplies';
-  } else if (/market|grocery|store|walmart|target/.test(textLower)) {
-    category = 'Supplies';
-  }
-  console.log("Extracted Category:", category);
-  console.log("=== END EXTRACTION ===\n");
-  
-  return {
-    merchant,
-    amount,
-    date,
-    location,
-    category
-  };
-}
-
-// Enhanced OCR processing with preprocessing and structured extraction
+// OCR processing function using PaddleOCR service
 async function processOCR(filePath: string): Promise<{
   text: string;
   confidence: number;
   structured: any;
 }> {
   try {
-    console.log('Starting OCR processing for:', filePath);
+    console.log('Starting PaddleOCR processing for:', filePath);
     
-    // Preprocess image
-    const processedImage = await preprocessImage(filePath);
+    // Create form data for OCR service
+    const form = new FormData();
+    form.append('file', fs.createReadStream(filePath));
     
-    // Create Tesseract worker with optimized settings
-    const worker = await createWorker('eng', 1, {
-      logger: (m: any) => {
-        if (m.status === 'recognizing text') {
-          console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-        }
-      }
+    // Call OCR service
+    const response = await axios.post(`${OCR_SERVICE_URL}/ocr/process`, form, {
+      headers: {
+        ...form.getHeaders(),
+      },
+      timeout: 30000 // 30 second timeout
     });
     
-    // Configure for receipt-like text
-    await worker.setParameters({
-      tessedit_pageseg_mode: '6',  // Assume uniform block of text
-      tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$.,:/\\-#@ '
-    });
+    const result = response.data;
     
-    // Recognize text
-    const { data } = await worker.recognize(processedImage);
-    await worker.terminate();
-    
-    console.log(`OCR completed with ${Math.round(data.confidence)}% confidence`);
-    
-    // Extract structured data
-    const structured = extractReceiptData(data.text);
-    console.log('Extracted structured data:', structured);
+    console.log(`PaddleOCR completed: ${result.line_count} lines detected`);
+    console.log(`Confidence: ${(result.confidence * 100).toFixed(2)}%`);
+    console.log('Extracted structured data:', result.structured);
     
     return {
-      text: data.text,
-      confidence: data.confidence / 100,
-      structured: structured
+      text: result.text || '',
+      confidence: result.confidence || 0,
+      structured: result.structured || {}
     };
-  } catch (error) {
-    console.error('OCR processing error:', error);
+    
+  } catch (error: any) {
+    console.error('PaddleOCR processing error:', error.message);
+    if (error.response) {
+      console.error('OCR service response:', error.response.data);
+    }
     return {
       text: '',
       confidence: 0,
-      structured: null
+      structured: {}
     };
   }
 }
 
+// Helper function to convert numeric strings to numbers
+const normalizeExpense = (expense: any) => ({
+  ...expense,
+  amount: expense.amount ? parseFloat(expense.amount) : null,
+});
 
-// Convert PostgreSQL numeric types to JavaScript numbers
-function convertExpenseTypes(expense: any) {
-  return {
-    ...expense,
-    amount: expense.amount ? parseFloat(expense.amount) : 0,
-    receiptUrl: expense.receipt_url,
-    cardUsed: expense.card_used,
-    reimbursementRequired: expense.reimbursement_required,
-    reimbursementStatus: expense.reimbursement_status,
-    ocrText: expense.ocr_text,
-    zohoEntity: expense.zoho_entity,
-    tradeShowId: expense.event_id,
-    userId: expense.user_id,
-  };
-}
 router.use(authenticateToken);
 
 // Get all expenses
@@ -281,7 +135,7 @@ router.get('/', async (req: AuthRequest, res) => {
     queryText += ' ORDER BY e.submitted_at DESC';
 
     const result = await query(queryText, queryParams);
-    res.json(result.rows.map(convertExpenseTypes));
+    res.json(result.rows.map(normalizeExpense));
   } catch (error) {
     console.error('Error fetching expenses:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -307,16 +161,15 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(convertExpenseTypes(result.rows[0]));
+    res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error fetching expense:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Create expense with optional receipt upload and OCR
+// Create expense with optional receipt upload and PaddleOCR
 router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
-  console.log('[DEBUG] POST /api/expenses - File uploaded:', req.file ? req.file.filename : 'NO FILE');
   try {
     const {
       event_id,
@@ -336,27 +189,27 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
 
     let receiptUrl = null;
     let ocrText = null;
+    let ocrConfidence = null;
+    let extractedData = null;
 
-    // Process uploaded receipt
+    // Process uploaded receipt with PaddleOCR
     if (req.file) {
       receiptUrl = `/uploads/${req.file.filename}`;
       
-      // Perform OCR on the receipt
+      // Perform OCR using PaddleOCR service
       const ocrResult = await processOCR(req.file.path);
       ocrText = ocrResult.text;
+      ocrConfidence = ocrResult.confidence;
+      extractedData = ocrResult.structured;
       
-      // Log OCR results
-      console.log(`OCR Confidence: ${Math.round(ocrResult.confidence * 100)}%`);
-      if (ocrResult.structured) {
-        console.log('Auto-extracted:', ocrResult.structured);
-      }
+      console.log(`Receipt OCR completed with ${(ocrConfidence * 100).toFixed(2)}% confidence`);
     }
 
     const result = await query(
       `INSERT INTO expenses (
         event_id, user_id, category, merchant, amount, date, description, 
-        card_used, reimbursement_required, receipt_url, ocr_text, location
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+        card_used, reimbursement_required, receipt_url, ocr_text, location, extracted_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
       RETURNING *`,
       [
         event_id,
@@ -370,11 +223,12 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
         reimbursement_required === 'true' || reimbursement_required === true,
         receiptUrl,
         ocrText,
-        location
+        location,
+        extractedData ? JSON.stringify(extractedData) : null
       ]
     );
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error creating expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -411,7 +265,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Expense not found or unauthorized' });
     }
 
-    res.json(convertExpenseTypes(result.rows[0]));
+    res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error updating expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -440,7 +294,7 @@ router.patch('/:id/review', authorize('admin', 'accountant'), async (req: AuthRe
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(convertExpenseTypes(result.rows[0]));
+    res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error reviewing expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -465,7 +319,7 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(convertExpenseTypes(result.rows[0]));
+    res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error assigning entity:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -494,7 +348,7 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req:
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(convertExpenseTypes(result.rows[0]));
+    res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error updating reimbursement:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -538,32 +392,5 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// OCR-only endpoint for receipt scanning
-router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
-  console.log('[DEBUG] POST /api/expenses - File uploaded:', req.file ? req.file.filename : 'NO FILE');
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    console.log('Processing OCR for file:', req.file.filename);
-
-    // Perform OCR on the receipt
-    const ocrResult = await processOCR(req.file.path);
-    
-    console.log('OCR Result - Confidence:', Math.round(ocrResult.confidence * 100), '%');
-    console.log('Extracted data:', ocrResult.structured);
-
-    // Return OCR results
-    res.json({
-      text: ocrResult.text,
-      confidence: ocrResult.confidence,
-      ...ocrResult.structured
-    });
-  } catch (error) {
-    console.error('OCR endpoint error:', error);
-    res.status(500).json({ error: 'OCR processing failed' });
-  }
-});
-
 export default router;
+

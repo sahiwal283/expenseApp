@@ -69,6 +69,7 @@ export const api = {
   },
   updateExpense: async (id: string, payload: Record<string, any>) => apiFetch(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   reviewExpense: async (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) => apiFetch(`/expenses/${id}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  assignEntity: async (id: string, payload: { zoho_entity: string }) => apiFetch(`/expenses/${id}/entity`, { method: 'PATCH', body: JSON.stringify(payload) }),
   setExpenseReimbursement: async (id: string, payload: { reimbursement_status: 'approved' | 'rejected' }) => apiFetch(`/expenses/${id}/reimbursement`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteExpense: async (id: string) => apiFetch(`/expenses/${id}`, { method: 'DELETE' }),
   getSettings: async () => apiFetch('/settings'),

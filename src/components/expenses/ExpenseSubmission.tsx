@@ -43,7 +43,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     })();
   }, []);
 
-  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>) => {
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, receiptFile?: File | null) => {
     if (api.USE_SERVER) {
       if (editingExpense) {
         await api.updateExpense(editingExpense.id, {
@@ -58,6 +58,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           zoho_entity: expenseData.zohoEntity,
         });
       } else {
+        // Pass the receipt file to the API
         await api.createExpense({
           event_id: expenseData.tradeShowId,
           category: expenseData.category,
@@ -68,7 +69,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           card_used: expenseData.cardUsed,
           reimbursement_required: expenseData.reimbursementRequired,
           location: expenseData.location,
-        });
+        }, receiptFile || undefined);
       }
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
@@ -76,7 +77,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       const newExpense: Expense = {
         ...expenseData,
         id: editingExpense?.id || Date.now().toString(),
-        userId: user.id
+        userId: user.id,
+        receiptUrl: receiptFile ? URL.createObjectURL(receiptFile) : undefined
       };
       const updatedExpenses = editingExpense
         ? expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense)

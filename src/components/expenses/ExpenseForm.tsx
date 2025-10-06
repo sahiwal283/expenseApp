@@ -6,7 +6,7 @@ import { api } from '../../utils/api';
 interface ExpenseFormProps {
   expense?: Expense | null;
   events: TradeShow[];
-  onSave: (expense: Omit<Expense, 'id'>) => void;
+  onSave: (expense: Omit<Expense, 'id'>, receiptFile?: File | null) => void;
   onCancel: () => void;
 }
 
@@ -81,8 +81,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    
-    onSave(formData);
+    // Pass the receipt file along with the form data
+    onSave(formData, receiptFile);
   };
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -406,19 +406,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <p className="text-xs text-gray-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
               </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Las Vegas, NV"
-              />
             </div>
           </div>
 
