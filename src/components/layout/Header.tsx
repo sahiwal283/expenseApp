@@ -3,7 +3,7 @@ import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 
-const APP_VERSION = '0.7.1';
+const APP_VERSION = '0.7.2';
 
 interface HeaderProps {
   user: User;

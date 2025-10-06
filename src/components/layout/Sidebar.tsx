@@ -7,7 +7,8 @@ import {
   BarChart3, 
   ChevronLeft,
   Settings,
-  X
+  X,
+  CheckSquare
 } from 'lucide-react';
 import { User, UserRole } from '../../App';
 
@@ -25,6 +26,7 @@ const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
   { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
+  { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant'] },
   { id: 'users', label: 'Users', icon: Users, roles: ['admin'] },
   { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin'] },
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'coordinator', 'accountant'] },
