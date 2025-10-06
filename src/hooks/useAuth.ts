@@ -25,7 +25,7 @@ export const useAuth = () => {
         const data = await api.login(username, password);
         const serverUser = data?.user as User | undefined;
         if (data?.token && serverUser) {
-          setToken(data.token);
+          TokenManager.setToken(data.token);
           setUser(serverUser);
           localStorage.setItem('tradeshow_current_user', JSON.stringify(serverUser));
           return true;
