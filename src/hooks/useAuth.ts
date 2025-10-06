@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '../App';
-import { api, setToken } from '../utils/api';
+import { api, TokenManager } from '../utils/api';
 
 // Demo user credentials
 const DEMO_CREDENTIALS = {

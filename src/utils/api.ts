@@ -1,79 +1,67 @@
-// Lightweight API client for server-backed mode
+/**
+ * API Client - Backward Compatible Version
+ * @version 0.8.0
+ */
 
-const API_BASE: string = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
-const USE_SERVER: boolean = ((import.meta as any).env?.VITE_USE_SERVER || 'true') === 'true';
+import { TokenManager, apiClient } from './apiClient';
 
-function getToken(): string | null {
-  return localStorage.getItem('jwt_token');
-}
+const USE_SERVER = (import.meta.env.VITE_USE_SERVER || 'true') === 'true';
 
-export function setToken(token: string) {
-  localStorage.setItem('jwt_token', token);
-}
-
-async function apiFetch(path: string, options: RequestInit = {}) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> | undefined),
-  };
-  const token = getToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`API ${path} failed: ${res.status} ${text}`);
-  }
-  const ct = res.headers.get('content-type') || '';
-  return ct.includes('application/json') ? res.json() : res.text();
-}
+export { TokenManager, apiClient };
 
 export const api = {
   USE_SERVER,
+  
   login: async (username: string, password: string) => {
-    const data = await apiFetch('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
-    if (data?.token) setToken(data.token);
+    const data = await apiClient.post('/auth/login', { username, password });
+    if (data?.token) TokenManager.setToken(data.token);
     return data;
   },
-  getUsers: async () => apiFetch('/users'),
-  createUser: async (payload: Record<string, any>) => apiFetch('/users', { method: 'POST', body: JSON.stringify(payload) }),
-  updateUser: async (id: string, payload: Record<string, any>) => apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-  deleteUser: async (id: string) => apiFetch(`/users/${id}`, { method: 'DELETE' }),
-  getEvents: async () => apiFetch('/events'),
-  createEvent: async (payload: Record<string, any>) => apiFetch('/events', { method: 'POST', body: JSON.stringify(payload) }),
-  updateEvent: async (id: string, payload: Record<string, any>) => apiFetch(`/events/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-  deleteEvent: async (id: string) => apiFetch(`/events/${id}`, { method: 'DELETE' }),
-  getExpenses: async (params?: Record<string, string | number | boolean>) => {
-    const qs = params
-      ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString()
-      : '';
-    return apiFetch(`/expenses${qs}`);
+
+  logout: () => {
+    TokenManager.removeToken();
   },
+
+  // Users
+  getUsers: () => apiClient.get('/users'),
+  createUser: (payload: Record<string, any>) => apiClient.post('/users', payload),
+  updateUser: (id: string, payload: Record<string, any>) => apiClient.put(`/users/${id}`, payload),
+  deleteUser: (id: string) => apiClient.delete(`/users/${id}`),
+
+  // Events
+  getEvents: () => apiClient.get('/events'),
+  createEvent: (payload: Record<string, any>) => apiClient.post('/events', payload),
+  updateEvent: (id: string, payload: Record<string, any>) => apiClient.put(`/events/${id}`, payload),
+  deleteEvent: (id: string) => apiClient.delete(`/events/${id}`),
+
+  // Expenses
+  getExpenses: (params?: Record<string, string | number | boolean>) => 
+    apiClient.get('/expenses', { params }),
+  
   createExpense: async (payload: Record<string, any>, receipt?: File) => {
     if (receipt) {
-      const form = new FormData();
-      Object.entries(payload).forEach(([k, v]) => form.append(k, String(v)));
-      form.append('receipt', receipt);
-      const token = getToken();
-      const res = await fetch(`${API_BASE}/expenses`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: form,
-      });
-      if (!res.ok) throw new Error(`Create expense failed: ${res.status}`);
-      return res.json();
+      return apiClient.upload('/expenses', payload, receipt, 'receipt');
     }
-    return apiFetch('/expenses', { method: 'POST', body: JSON.stringify(payload) });
+    return apiClient.post('/expenses', payload);
   },
-  updateExpense: async (id: string, payload: Record<string, any>) => apiFetch(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-  reviewExpense: async (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) => apiFetch(`/expenses/${id}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
-  assignEntity: async (id: string, payload: { zoho_entity: string }) => apiFetch(`/expenses/${id}/entity`, { method: 'PATCH', body: JSON.stringify(payload) }),
-  setExpenseReimbursement: async (id: string, payload: { reimbursement_status: 'approved' | 'rejected' }) => apiFetch(`/expenses/${id}/reimbursement`, { method: 'PATCH', body: JSON.stringify(payload) }),
-  deleteExpense: async (id: string) => apiFetch(`/expenses/${id}`, { method: 'DELETE' }),
-  getSettings: async () => apiFetch('/settings'),
-  updateSettings: async (payload: Record<string, any>) => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
+
+  updateExpense: (id: string, payload: Record<string, any>) => 
+    apiClient.put(`/expenses/${id}`, payload),
+  
+  reviewExpense: (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) =>
+    apiClient.patch(`/expenses/${id}/review`, payload),
+  
+  assignEntity: (id: string, payload: { zoho_entity: string }) =>
+    apiClient.patch(`/expenses/${id}/entity`, payload),
+  
+  setExpenseReimbursement: (id: string, payload: { reimbursement_status: 'approved' | 'rejected' }) =>
+    apiClient.patch(`/expenses/${id}/reimbursement`, payload),
+  
+  deleteExpense: (id: string) => apiClient.delete(`/expenses/${id}`),
+
+  // Settings
+  getSettings: () => apiClient.get('/settings'),
+  updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 };
 
 
