@@ -30,6 +30,7 @@ app.use(requestLogger);
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
+app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 
 // Routes
 app.use('/api/auth', authRoutes);
