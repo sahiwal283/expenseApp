@@ -174,15 +174,17 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
 
       setOcrResults(extractedData);
       
-      // Auto-populate form with OCR data
+      // Auto-populate form with OCR data, preserving existing values (especially event and card)
       setFormData(prev => ({
         ...prev,
         merchant: prev.merchant || extractedData.merchant,
         amount: prev.amount || extractedData.amount,
-        date: extractedData.date || prev.date,
-        location: prev.location || extractedData.location,
+        date: prev.date || extractedData.date,
         ocrText: extractedData.ocrText,
-        category: prev.category || category
+        category: prev.category || category,
+        // FIXED: Preserve tradeShowId and cardUsed when re-uploading receipt
+        tradeShowId: prev.tradeShowId, // Keep existing event selection
+        cardUsed: prev.cardUsed // Keep existing card selection
       }));
 
     } catch (error) {
@@ -240,7 +242,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <h1 className="text-2xl font-bold text-gray-900">
                 {expense ? 'Edit Expense' : 'Add New Expense'}
               </h1>
-              <p className="text-gray-600">Enter expense details and assign to a trade show</p>
+              <p className="text-gray-600">Upload receipt for automatic OCR data extraction, or enter manually</p>
             </div>
           </div>
           <button
@@ -406,19 +408,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <p className="text-xs text-gray-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
               </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Las Vegas, NV"
-              />
             </div>
           </div>
 

@@ -24,11 +24,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setIsLoading(false);
   };
 
-  const demoUsers = [
-    { username: 'admin', password: 'admin', role: 'Admin' },
-    { username: 'sarah', password: 'password', role: 'Show Coordinator' },
-    { username: 'mike', password: 'password', role: 'Salesperson' },
-    { username: 'lisa', password: 'password', role: 'Accountant' }
+  const sandboxUsers = [
+    { username: 'admin', password: 'sandbox123', role: 'Administrator' },
+    { username: 'coordinator', password: 'sandbox123', role: 'Event Coordinator' },
+    { username: 'salesperson', password: 'sandbox123', role: 'Salesperson' },
+    { username: 'accountant', password: 'sandbox123', role: 'Accountant' },
+    { username: 'salesperson2', password: 'sandbox123', role: 'Salesperson' }
   ];
 
   return (
@@ -102,22 +103,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Demo Accounts:</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Sandbox Test Accounts:</h3>
             <div className="grid grid-cols-1 gap-2">
-              {demoUsers.map((user, index) => (
+              {sandboxUsers.map((user, index) => (
                 <button
                   key={index}
                   onClick={() => {
                     setUsername(user.username);
                     setPassword(user.password);
                   }}
-                  className="text-left p-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="text-left p-3 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
                 >
-                  <span className="font-medium">{user.username}</span>
-                  <span className="text-gray-500 ml-2">({user.role}) - Password: {user.password}</span>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-semibold">{user.username}</span>
+                      <span className="text-gray-500 ml-2">({user.role})</span>
+                    </div>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">sandbox123</span>
+                  </div>
                 </button>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              All accounts use password: <strong>sandbox123</strong>
+            </p>
           </div>
         </div>
       </div>

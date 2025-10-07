@@ -33,20 +33,17 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     (async () => {
       if (api.USE_SERVER) {
         try {
-          const [ev, users] = await Promise.all([
-            api.getEvents(),
-            api.getUsers()
-          ]);
+          const ev = await api.getEvents();
           setEvents(ev || []);
+          const users = await api.getUsers();
           setAllUsers(users || []);
-        } catch (error) {
-          console.error("Failed to fetch data:", error);
+        } catch {
           setEvents([]);
           setAllUsers([]);
         }
       } else {
-        const storedEvents = localStorage.getItem("tradeshow_events");
-        const storedUsers = localStorage.getItem("tradeshow_users");
+        const storedEvents = localStorage.getItem('tradeshow_events');
+        const storedUsers = localStorage.getItem('tradeshow_users');
         if (storedEvents) setEvents(JSON.parse(storedEvents));
         if (storedUsers) setAllUsers(JSON.parse(storedUsers));
       }
@@ -129,13 +126,19 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   const handleEdit = (event: TradeShow) => {
     setEditingEvent(event);
+    // Convert dates to YYYY-MM-DD format for date inputs
+    const formatDateForInput = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+    
     setFormData({
       name: event.name,
       venue: event.venue,
       city: event.city,
       state: event.state,
-      startDate: event.startDate ? new Date(event.startDate).toISOString().split("T")[0] : "",
-      endDate: event.endDate ? new Date(event.endDate).toISOString().split("T")[0] : "",
+      startDate: formatDateForInput(event.startDate),
+      endDate: formatDateForInput(event.endDate),
       budget: event.budget?.toString() || '',
       participants: event.participants
     });

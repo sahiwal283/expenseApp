@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { DollarSign, Calendar, Users, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
-import { useEffect, useState, useMemo } from 'react';
 import { api } from '../../utils/api';
 import { StatsCard } from './StatsCard';
 import { RecentExpenses } from './RecentExpenses';

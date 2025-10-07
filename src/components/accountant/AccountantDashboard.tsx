@@ -3,8 +3,6 @@ import {
   Search, 
   Filter, 
   Building2, 
-  CheckCircle, 
-  X, 
   DollarSign, 
   Calendar,
   User as UserIcon,
@@ -74,24 +72,23 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
     });
   }, [expenses, searchTerm, filterCategory, filterUser, filterEvent, filterStatus, filterReimbursement, filterCard, filterEntity]);
 
-  const handleApproveExpense = async (expense: Expense) => {
-    if (api.USE_SERVER) await api.reviewExpense(expense.id, { status: 'approved' });
-    onUpdateExpense({ ...expense, status: 'approved' });
-  };
-
-  const handleRejectExpense = async (expense: Expense) => {
-    if (api.USE_SERVER) await api.reviewExpense(expense.id, { status: 'rejected' });
-    onUpdateExpense({ ...expense, status: 'rejected' });
-  };
-
   const handleAssignEntity = async (expense: Expense, entity: string) => {
-    if (api.USE_SERVER) await api.updateExpense(expense.id, { zoho_entity: entity });
-    onUpdateExpense({ ...expense, zohoEntity: entity });
-  };
-
-  const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
-    if (api.USE_SERVER) await api.setExpenseReimbursement(expense.id, { reimbursement_status: status });
-    onUpdateExpense({ ...expense, reimbursementStatus: status });
+    try {
+      if (api.USE_SERVER) {
+        await api.assignEntity(expense.id, { zoho_entity: entity });
+        // Force reload by calling parent update with fresh data from server
+        const refreshedExpenses = await api.getExpenses();
+        const updatedExpense = refreshedExpenses?.find(e => e.id === expense.id);
+        if (updatedExpense) {
+          onUpdateExpense(updatedExpense);
+        }
+      } else {
+        onUpdateExpense({ ...expense, zohoEntity: entity });
+      }
+    } catch (error) {
+      console.error('Failed to assign entity:', error);
+      alert('Failed to assign entity. Please try again.');
+    }
   };
   const getStatusColor = (status: string) => {
     const colors = {
@@ -118,12 +115,24 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
 
   const stats = useMemo(() => {
     const totalAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const approvedAmount = filteredExpenses.filter(e => e.status === 'approved').reduce((sum, exp) => sum + exp.amount, 0);
+    const pendingAmount = filteredExpenses.filter(e => e.status === 'pending').reduce((sum, exp) => sum + exp.amount, 0);
     const pendingCount = filteredExpenses.filter(e => e.status === 'pending').length;
     const reimbursementCount = filteredExpenses.filter(e => e.reimbursementRequired).length;
     const unassignedCount = filteredExpenses.filter(e => !e.zohoEntity).length;
+    const entityCount = new Set(expenses.map(e => e.zohoEntity).filter(Boolean)).size;
 
-    return { totalAmount, pendingCount, reimbursementCount, unassignedCount };
-  }, [filteredExpenses]);
+    return { 
+      totalAmount, 
+      approvedAmount, 
+      pendingAmount, 
+      pendingCount, 
+      reimbursementCount, 
+      unassignedCount,
+      entityCount,
+      expenseCount: filteredExpenses.length
+    };
+  }, [filteredExpenses, expenses]);
 
   return (
     <div className="space-y-6">
@@ -134,7 +143,7 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Matching Admin Dashboard Format */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -143,44 +152,56 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">${stats.totalAmount.toLocaleString()}</p>
-              <p className="text-gray-600">Total Amount</p>
+              <p className="text-gray-600">Total Expenses</p>
             </div>
+          </div>
+          <div className="text-sm text-gray-600">
+            {stats.expenseCount} transactions
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-yellow-600">{stats.pendingCount}</p>
-              <p className="text-gray-600">Pending Approval</p>
+              <p className="text-2xl font-bold text-emerald-600">${stats.approvedAmount.toLocaleString()}</p>
+              <p className="text-gray-600">Approved</p>
             </div>
+          </div>
+          <div className="text-sm text-gray-600">
+            {stats.totalAmount > 0 ? Math.round((stats.approvedAmount / stats.totalAmount) * 100) : 0}% of total
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-white" />
+              <Calendar className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-orange-600">{stats.reimbursementCount}</p>
-              <p className="text-gray-600">Reimbursement Required</p>
+              <p className="text-2xl font-bold text-orange-600">${stats.pendingAmount.toLocaleString()}</p>
+              <p className="text-gray-600">Pending</p>
             </div>
+          </div>
+          <div className="text-sm text-gray-600">
+            {stats.pendingCount} items
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-red-600">{stats.unassignedCount}</p>
-              <p className="text-gray-600">Unassigned Entities</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.entityCount}</p>
+              <p className="text-gray-600">Entities</p>
             </div>
+          </div>
+          <div className="text-sm text-gray-600">
+            Active mappings
           </div>
         </div>
       </div>
@@ -317,7 +338,7 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
                   Entity Assignment
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  Info
                 </th>
               </tr>
             </thead>
@@ -387,43 +408,8 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
                       </select>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        {expense.reimbursementRequired && (
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={() => handleReimbursementApproval(expense, 'approved')}
-                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
-                              title="Approve Reimbursement"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleReimbursementApproval(expense, 'rejected')}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Reject Reimbursement"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                        {expense.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApproveExpense(expense)}
-                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="Approve"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRejectExpense(expense)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Reject"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
+                      <div className="text-sm text-gray-500 italic">
+                        Use Approvals page for reviews
                       </div>
                     </td>
                   </tr>

@@ -2,8 +2,9 @@ import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
+import packageJson from '../../../package.json';
 
-const APP_VERSION = '0.8.0';
+const APP_VERSION = packageJson.version;
 
 interface HeaderProps {
   user: User;
@@ -14,28 +15,51 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onToggleMobileMenu }) => {
   const [showNotifications, setShowNotifications] = React.useState(false);
+  const [hasViewedNotifications, setHasViewedNotifications] = React.useState(false);
   
   // Check for unread notifications
   const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [previousNotificationCount, setPreviousNotificationCount] = React.useState(0);
+  
   React.useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
         try {
           const ex = await api.getExpenses();
-          const pending = (ex || []).filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant'));
+          const pending = (ex || []).filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant' || user.role === 'coordinator'));
           setNotifications(pending);
+          
+          // Reset viewed flag if new notifications arrive
+          if (pending.length > previousNotificationCount) {
+            setHasViewedNotifications(false);
+          }
+          setPreviousNotificationCount(pending.length);
         } catch {
           setNotifications([]);
         }
       } else {
         const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
-        const pendingExpenses = expenses.filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant'));
+        const pendingExpenses = expenses.filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant' || user.role === 'coordinator'));
         setNotifications(pendingExpenses);
+        
+        // Reset viewed flag if new notifications arrive
+        if (pendingExpenses.length > previousNotificationCount) {
+          setHasViewedNotifications(false);
+        }
+        setPreviousNotificationCount(pendingExpenses.length);
       }
     })();
-  }, [user.role]);
+  }, [user.role, previousNotificationCount]);
 
-  const hasUnreadNotifications = notifications.length > 0;
+  const hasUnreadNotifications = notifications.length > 0 && !hasViewedNotifications;
+  
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications) {
+      // Mark as viewed when opening the panel
+      setHasViewedNotifications(true);
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 md:py-4">
@@ -67,12 +91,12 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
         <div className="flex items-center space-x-2 md:space-x-4">
           <div className="relative">
             <button 
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={handleNotificationClick}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Bell className="w-5 h-5" />
               {hasUnreadNotifications && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
               )}
             </button>
             

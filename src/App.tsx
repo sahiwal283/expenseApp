@@ -3,8 +3,8 @@ import { LoginForm } from './components/auth/LoginForm';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { EventSetup } from './components/events/EventSetup';
 import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
-import { UserManagement } from './components/admin/UserManagement';
 import { AdminSettings } from './components/admin/AdminSettings';
+import { Approvals } from './components/admin/Approvals';
 import { Reports } from './components/reports/Reports';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -112,9 +112,9 @@ function App() {
           {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
           {currentPage === 'events' && <EventSetup user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
-          {currentPage === 'users' && <UserManagement user={user} />}
-          {currentPage === 'settings' && <AdminSettings user={user} />}
+          {currentPage === 'approvals' && <Approvals user={user} />}
           {currentPage === 'reports' && <Reports user={user} />}
+          {currentPage === 'settings' && <AdminSettings user={user} />}
         </main>
       </div>
     </div>
