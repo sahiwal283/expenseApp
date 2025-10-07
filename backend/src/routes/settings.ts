@@ -11,8 +11,9 @@ router.get('/', async (req: AuthRequest, res) => {
   try {
     const result = await query('SELECT key, value FROM app_settings');
     
-    const settings: Record<string, unknown> = {};
-    (result.rows as Array<{ key: string; value: unknown }>).forEach((row) => {
+    const settings: Record<string, any> = {};
+    (result.rows as Array<{ key: string; value: any }>).forEach((row) => {
+      // PostgreSQL JSONB columns are already parsed
       settings[row.key] = row.value;
     });
 
