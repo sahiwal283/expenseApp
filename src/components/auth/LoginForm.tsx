@@ -11,6 +11,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Detect environment based on hostname
+  const isProduction = window.location.hostname.includes('duckdns.org') || 
+                       window.location.hostname.includes('expapp') ||
+                       window.location.hostname === 'localhost' && window.location.port === '80';
+  
+  const isSandbox = !isProduction;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -24,6 +31,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setIsLoading(false);
   };
 
+  // Sandbox test accounts
   const sandboxUsers = [
     { username: 'admin', password: 'sandbox123', role: 'Administrator' },
     { username: 'coordinator', password: 'sandbox123', role: 'Event Coordinator' },
@@ -31,6 +39,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     { username: 'accountant', password: 'sandbox123', role: 'Accountant' },
     { username: 'salesperson2', password: 'sandbox123', role: 'Salesperson' }
   ];
+
+  // Production accounts
+  const productionUsers = [
+    { username: 'admin', password: 'admin', role: 'Administrator' },
+    { username: 'sarah', password: 'password123', role: 'Coordinator' },
+    { username: 'mike', password: 'password123', role: 'Salesperson' },
+    { username: 'lisa', password: 'password123', role: 'Accountant' }
+  ];
+
+  const displayUsers = isSandbox ? sandboxUsers : productionUsers;
+  const passwordHint = isSandbox ? 'sandbox123' : 'admin / password123';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4">
@@ -103,9 +122,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Sandbox Test Accounts:</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              {isSandbox ? 'Sandbox Test Accounts:' : 'Production Accounts:'}
+            </h3>
             <div className="grid grid-cols-1 gap-2">
-              {sandboxUsers.map((user, index) => (
+              {displayUsers.map((user, index) => (
                 <button
                   key={index}
                   onClick={() => {
@@ -119,13 +140,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                       <span className="font-semibold">{user.username}</span>
                       <span className="text-gray-500 ml-2">({user.role})</span>
                     </div>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">sandbox123</span>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{user.password}</span>
                   </div>
                 </button>
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-3 text-center">
-              All accounts use password: <strong>sandbox123</strong>
+              {isSandbox ? (
+                <>All accounts use password: <strong>sandbox123</strong></>
+              ) : (
+                <>Admin uses <strong>admin</strong>, others use <strong>password123</strong></>
+              )}
             </p>
           </div>
         </div>
