@@ -197,17 +197,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={() => setShowReceiptUpload(true)}
-            className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            onClick={() => setShowForm(true)}
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/30"
           >
             <Receipt className="w-5 h-5" />
-            <span>Scan Receipt</span>
-          </button>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
             <span>Add Expense</span>
           </button>
         </div>
@@ -259,16 +252,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {searchTerm || filterStatus !== 'all' || filterEvent !== 'all'
               ? 'Try adjusting your filters to see more expenses.'
-              : 'Start by submitting your first expense or scanning a receipt.'
+              : 'Start by submitting your first expense with automatic OCR extraction from receipts.'
             }
           </p>
           <div className="flex justify-center space-x-4">
-            <button
-              onClick={() => setShowReceiptUpload(true)}
-              className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Scan Receipt
-            </button>
             <button
               onClick={() => setShowForm(true)}
               className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
