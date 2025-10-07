@@ -2,7 +2,7 @@
 // Version: 0.5.1-alpha
 
 // Version Information
-export const APP_VERSION = '0.5.1-alpha';
+export const APP_VERSION = '0.8.0';
 export const APP_NAME = 'Trade Show Expense Management App';
 
 // Demo User Credentials
