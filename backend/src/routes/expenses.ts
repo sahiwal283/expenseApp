@@ -233,13 +233,13 @@ function extractStructuredData(text: string): any {
 const normalizeExpense = (expense: any) => ({
   ...expense,
   amount: expense.amount ? parseFloat(expense.amount) : null,
-  cardUsed: expense.card_used,
-  tradeShowId: expense.event_id,
-  receiptUrl: expense.receipt_url,
+  cardUsed: expense.card_used || null,
+  tradeShowId: expense.event_id || null,
+  receiptUrl: expense.receipt_url || null,
   reimbursementRequired: expense.reimbursement_required,
-  reimbursementStatus: expense.reimbursement_status,
-  ocrText: expense.ocr_text,
-  zohoEntity: expense.zoho_entity,
+  reimbursementStatus: expense.reimbursement_status || null,
+  ocrText: expense.ocr_text || null,
+  zohoEntity: expense.zoho_entity || null,
   userId: expense.user_id,
 });
 
