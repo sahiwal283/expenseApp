@@ -52,6 +52,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         setExpenses(ex || []);
         setUsers(us || []);
         setCardOptions(st?.cardOptions || []);
+        console.log('[Approvals] Entity options from API:', st?.entityOptions);
         setEntityOptions(st?.entityOptions || []);
       } catch (error) {
         console.error('Error loading data:', error);
