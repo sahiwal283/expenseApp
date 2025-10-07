@@ -37,3 +37,26 @@ Thumbs.db
 coverage/
 *.bak
 README.old.md
+
+# Temporary files and archives
+*.tar.gz
+*.zip
+*.tar
+*.sql
+
+# Deployment artifacts (keep only current deployment script)
+deploy_v*.sh
+!deploy_v0.11.0_to_sandbox.sh
+
+# Old documentation (version-specific historical docs)
+*_v0.[0-9]*.md
+!OCR_ENHANCEMENT_v0.11.0.md
+!DEPLOYMENT_READY_v0.11.0.md
+!DEPLOYMENT_SUCCESS_v0.11.0.md
+
+# Troubleshooting scripts (keep only current ones)
+diagnose_*.sh
+reset_*.sh
+test_*.sh
+fix_*.sh
+generate_*.sh
