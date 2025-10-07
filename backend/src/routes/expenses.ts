@@ -9,8 +9,8 @@ import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-// OCR Service Configuration
-const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://localhost:8000';
+// OCR Service Configuration (use 127.0.0.1 instead of localhost to force IPv4)
+const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://127.0.0.1:8000';
 
 // Configure multer for file upload
 const storage = multer.diskStorage({

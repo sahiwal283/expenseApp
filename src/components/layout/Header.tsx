@@ -2,8 +2,9 @@ import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
+import packageJson from '../../../package.json';
 
-const APP_VERSION = '0.9.1';
+const APP_VERSION = packageJson.version;
 
 interface HeaderProps {
   user: User;
