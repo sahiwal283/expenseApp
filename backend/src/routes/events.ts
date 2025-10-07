@@ -5,6 +5,17 @@ import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 const router = Router();
 
 router.use(authenticateToken);
+function convertEventTypes(event: any) {
+  return {
+    ...event,
+    startDate: event.start_date,
+    endDate: event.end_date,
+    budget: event.budget ? parseFloat(event.budget) : undefined,
+    coordinatorId: event.coordinator_id,
+    participants: event.participants || [],
+  };
+}
+
 
 // Get all events
 router.get('/', async (req: AuthRequest, res) => {
@@ -26,7 +37,7 @@ router.get('/', async (req: AuthRequest, res) => {
       ORDER BY e.start_date DESC
     `);
 
-    res.json(result.rows);
+    res.json(result.rows.map(convertEventTypes));
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -58,7 +69,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(convertEventTypes(result.rows[0]));
   } catch (error) {
     console.error('Error fetching event:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -130,7 +141,7 @@ router.put('/:id', authorize('admin', 'coordinator'), async (req: AuthRequest, r
       }
     }
 
-    res.json(result.rows[0]);
+    res.json(convertEventTypes(result.rows[0]));
   } catch (error) {
     console.error('Error updating event:', error);
     res.status(500).json({ error: 'Internal server error' });
