@@ -45,8 +45,12 @@ export const api = {
     return apiClient.post('/expenses', payload);
   },
 
-  updateExpense: (id: string, payload: Record<string, any>) => 
-    apiClient.put(`/expenses/${id}`, payload),
+  updateExpense: async (id: string, payload: Record<string, any>, receipt?: File) => {
+    if (receipt) {
+      return apiClient.upload(`/expenses/${id}`, payload, receipt, 'receipt', 'PUT');
+    }
+    return apiClient.put(`/expenses/${id}`, payload);
+  },
   
   reviewExpense: (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) =>
     apiClient.patch(`/expenses/${id}/review`, payload),

@@ -3,10 +3,11 @@ import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { TradeShow } from '../../App';
 
 interface UpcomingEventsProps {
+  onPageChange: (page: string) => void;
   events: TradeShow[];
 }
 
-export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events }) => {
+export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageChange }) => {
   const upcomingEvents = events.filter(event => event.status === 'upcoming').slice(0, 3);
 
   const getDaysUntil = (dateString: string) => {
@@ -21,7 +22,7 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events }) => {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Upcoming Events</h3>
-        <button className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
+        <button onClick={() => onPageChange('events')} className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
       </div>
 
       {upcomingEvents.length === 0 ? (

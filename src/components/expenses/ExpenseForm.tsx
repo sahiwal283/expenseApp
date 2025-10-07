@@ -6,7 +6,7 @@ import { api } from '../../utils/api';
 interface ExpenseFormProps {
   expense?: Expense | null;
   events: TradeShow[];
-  onSave: (expense: Omit<Expense, 'id'>, receiptFile?: File | null) => void;
+  onSave: (expense: Omit<Expense, 'id'>) => void;
   onCancel: () => void;
 }
 
@@ -21,7 +21,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     amount: expense?.amount || 0,
     category: expense?.category || '',
     merchant: expense?.merchant || '',
-    date: expense?.date || new Date().toISOString().split('T')[0],
+    date: expense?.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     description: expense?.description || '',
     cardUsed: expense?.cardUsed || '',
     reimbursementRequired: expense?.reimbursementRequired || false,
@@ -30,7 +30,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     zohoEntity: expense?.zohoEntity || '',
     location: expense?.location || '',
     ocrText: expense?.ocrText || '',
-    receiptUrl: expense?.receiptUrl || ''
+    receiptUrl: expense?.receiptUrl ? expense.receiptUrl.replace(/^\/uploads/, '/api/uploads') : ''
   });
 
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -81,8 +81,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Pass the receipt file along with the form data
-    onSave(formData, receiptFile);
+    
+    onSave(formData, receiptFile || undefined);
   };
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,7 +255,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
           {/* Receipt Upload - First Field */}
           <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
             <label className="block text-sm font-medium text-gray-900 mb-3">
-              Receipt Image * <span className="text-red-600">(Upload First - Required)</span>
+              Receipt Image {expense ? <span className="text-gray-600">(Optional - Upload to replace)</span> : <span className="text-red-600">* (Upload First - Required)</span>}
             </label>
             <div className="space-y-4">
               <div className="flex items-center justify-center w-full">
@@ -406,6 +406,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <p className="text-xs text-gray-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Las Vegas, NV"
+              />
             </div>
           </div>
 

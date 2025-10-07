@@ -432,7 +432,7 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
 });
 
 // Update expense
-router.put('/:id', async (req: AuthRequest, res) => {
+router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const {
@@ -447,15 +447,36 @@ router.put('/:id', async (req: AuthRequest, res) => {
       zoho_entity
     } = req.body;
 
-    const result = await query(
-      `UPDATE expenses 
+    let receiptUrl = null;
+    
+    // Process uploaded receipt if provided
+    if (req.file) {
+      receiptUrl = `/uploads/${req.file.filename}`;
+    }
+
+    // Build dynamic query based on whether receipt is uploaded
+    let updateQuery: string;
+    let queryParams: any[];
+    
+    if (receiptUrl) {
+      updateQuery = `UPDATE expenses 
+       SET category = $1, merchant = $2, amount = $3, date = $4, description = $5,
+           card_used = $6, reimbursement_required = $7, location = $8, zoho_entity = $9,
+           receipt_url = $10, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $11 AND user_id = $12
+       RETURNING *`;
+      queryParams = [category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, receiptUrl, id, req.user?.id];
+    } else {
+      updateQuery = `UPDATE expenses 
        SET category = $1, merchant = $2, amount = $3, date = $4, description = $5,
            card_used = $6, reimbursement_required = $7, location = $8, zoho_entity = $9,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $10 AND user_id = $11
-       RETURNING *`,
-      [category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, id, req.user?.id]
-    );
+       RETURNING *`;
+      queryParams = [category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, id, req.user?.id];
+    }
+
+    const result = await query(updateQuery, queryParams);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Expense not found or unauthorized' });

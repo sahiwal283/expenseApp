@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2 } from 'lucide-react';
+import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X } from 'lucide-react';
 import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
@@ -19,6 +19,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterEvent, setFilterEvent] = useState('all');
   const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
+  const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +44,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     })();
   }, []);
 
-  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, receiptFile?: File | null) => {
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
     if (api.USE_SERVER) {
       if (editingExpense) {
         await api.updateExpense(editingExpense.id, {
@@ -56,9 +57,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           reimbursement_required: expenseData.reimbursementRequired,
           location: expenseData.location,
           zoho_entity: expenseData.zohoEntity,
-        });
+        }, file || undefined);
       } else {
-        // Pass the receipt file to the API
         await api.createExpense({
           event_id: expenseData.tradeShowId,
           category: expenseData.category,
@@ -69,16 +69,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           card_used: expenseData.cardUsed,
           reimbursement_required: expenseData.reimbursementRequired,
           location: expenseData.location,
-        }, receiptFile || undefined);
+        }, file || pendingReceiptFile || undefined);
       }
+      setPendingReceiptFile(null); // Clear after save
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {
       const newExpense: Expense = {
         ...expenseData,
         id: editingExpense?.id || Date.now().toString(),
-        userId: user.id,
-        receiptUrl: receiptFile ? URL.createObjectURL(receiptFile) : undefined
+        userId: user.id
       };
       const updatedExpenses = editingExpense
         ? expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense)
@@ -93,11 +93,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense);
     setShowForm(true);
+    setPendingReceiptFile(file); // Store the receipt file
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
     if (api.USE_SERVER) {
       await api.deleteExpense(expenseId);
+      setPendingReceiptFile(null); // Clear after save
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {
@@ -107,7 +109,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleReceiptProcessed = (receiptData: any) => {
+  const handleReceiptProcessed = (receiptData: any, file: File) => {
     const newExpense: Omit<Expense, 'id'> = {
       userId: user.id,
       tradeShowId: '',
@@ -123,6 +125,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
     setEditingExpense(null);
     setShowForm(true);
+    setPendingReceiptFile(file); // Store the receipt file
     // Pre-populate form with OCR data
     setTimeout(() => {
       const event = new CustomEvent('populateExpenseForm', { detail: newExpense });
