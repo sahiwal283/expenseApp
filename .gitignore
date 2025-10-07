@@ -92,6 +92,7 @@ deploy_v*.sh
 !DEPLOYMENT_READY_v0.11.0.md
 !DEPLOYMENT_SUCCESS_v0.11.0.md
 !DATA_PERSISTENCE_FIXES_v0.16.0.md
+!REPOSITORY_CLEANUP_v0.17.0.md
 
 # Temporary analysis & production-specific docs
 PRODUCTION_DEPLOYMENT_ANALYSIS.md
