@@ -233,6 +233,14 @@ function extractStructuredData(text: string): any {
 const normalizeExpense = (expense: any) => ({
   ...expense,
   amount: expense.amount ? parseFloat(expense.amount) : null,
+  cardUsed: expense.card_used,
+  tradeShowId: expense.event_id,
+  receiptUrl: expense.receipt_url,
+  reimbursementRequired: expense.reimbursement_required,
+  reimbursementStatus: expense.reimbursement_status,
+  ocrText: expense.ocr_text,
+  zohoEntity: expense.zoho_entity,
+  userId: expense.user_id,
 });
 
 router.use(authenticateToken);
