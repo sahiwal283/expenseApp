@@ -34,15 +34,18 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
         try {
           const ev = await api.getEvents();
           setEvents(ev || []);
+          const users = await api.getUsers();
+          setAllUsers(users || []);
         } catch {
           setEvents([]);
+          setAllUsers([]);
         }
       } else {
         const storedEvents = localStorage.getItem('tradeshow_events');
+        const storedUsers = localStorage.getItem('tradeshow_users');
         if (storedEvents) setEvents(JSON.parse(storedEvents));
+        if (storedUsers) setAllUsers(JSON.parse(storedUsers));
       }
-      const storedUsers = localStorage.getItem('tradeshow_users');
-      if (storedUsers) setAllUsers(JSON.parse(storedUsers));
     })();
   }, []);
 
@@ -121,13 +124,19 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   const handleEdit = (event: TradeShow) => {
     setEditingEvent(event);
+    // Convert dates to YYYY-MM-DD format for date inputs
+    const formatDateForInput = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+    
     setFormData({
       name: event.name,
       venue: event.venue,
       city: event.city,
       state: event.state,
-      startDate: event.startDate,
-      endDate: event.endDate,
+      startDate: formatDateForInput(event.startDate),
+      endDate: formatDateForInput(event.endDate),
       budget: event.budget?.toString() || '',
       participants: event.participants
     });

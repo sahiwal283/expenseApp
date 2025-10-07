@@ -436,6 +436,7 @@ router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const {
+      event_id,
       category,
       merchant,
       amount,
@@ -460,20 +461,20 @@ router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
     
     if (receiptUrl) {
       updateQuery = `UPDATE expenses 
-       SET category = $1, merchant = $2, amount = $3, date = $4, description = $5,
-           card_used = $6, reimbursement_required = $7, location = $8, zoho_entity = $9,
-           receipt_url = $10, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11 AND user_id = $12
+       SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
+           card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
+           receipt_url = $11, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12 AND user_id = $13
        RETURNING *`;
-      queryParams = [category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, receiptUrl, id, req.user?.id];
+      queryParams = [event_id, category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, receiptUrl, id, req.user?.id];
     } else {
       updateQuery = `UPDATE expenses 
-       SET category = $1, merchant = $2, amount = $3, date = $4, description = $5,
-           card_used = $6, reimbursement_required = $7, location = $8, zoho_entity = $9,
+       SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
+           card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10 AND user_id = $11
+       WHERE id = $11 AND user_id = $12
        RETURNING *`;
-      queryParams = [category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, id, req.user?.id];
+      queryParams = [event_id, category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, id, req.user?.id];
     }
 
     const result = await query(updateQuery, queryParams);

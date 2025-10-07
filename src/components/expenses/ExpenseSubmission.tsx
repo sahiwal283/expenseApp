@@ -48,6 +48,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     if (api.USE_SERVER) {
       if (editingExpense) {
         await api.updateExpense(editingExpense.id, {
+          event_id: expenseData.tradeShowId, // FIXED: Include event_id on update
           category: expenseData.category,
           merchant: expenseData.merchant,
           amount: expenseData.amount,

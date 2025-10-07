@@ -174,14 +174,17 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
 
       setOcrResults(extractedData);
       
-      // Auto-populate form with OCR data, preserving existing date if present
+      // Auto-populate form with OCR data, preserving existing values (especially event and card)
       setFormData(prev => ({
         ...prev,
         merchant: prev.merchant || extractedData.merchant,
         amount: prev.amount || extractedData.amount,
         date: prev.date || extractedData.date,
         ocrText: extractedData.ocrText,
-        category: prev.category || category
+        category: prev.category || category,
+        // FIXED: Preserve tradeShowId and cardUsed when re-uploading receipt
+        tradeShowId: prev.tradeShowId, // Keep existing event selection
+        cardUsed: prev.cardUsed // Keep existing card selection
       }));
 
     } catch (error) {
