@@ -97,6 +97,62 @@ const normalizeExpense = (expense: any) => ({
 
 router.use(authenticateToken);
 
+// OCR processing endpoint (preview only, no expense creation)
+router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log(`[OCR Preview] Processing file: ${req.file.filename}`);
+
+    // Perform OCR using EasyOCR service
+    const ocrResult = await processOCR(req.file.path);
+    
+    if (!ocrResult.text || ocrResult.confidence === 0) {
+      console.warn('[OCR Preview] OCR returned no results');
+      // Clean up the uploaded file
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(500).json({ 
+        error: 'Failed to process receipt. Please try again or enter manually.',
+        details: 'No text could be extracted from the image'
+      });
+    }
+
+    console.log(`[OCR Preview] Success - Confidence: ${(ocrResult.confidence * 100).toFixed(2)}%`);
+    
+    // Return the temporary receipt URL and extracted data
+    const tempReceiptUrl = `/uploads/${req.file.filename}`;
+    
+    res.json({
+      success: true,
+      ocrText: ocrResult.text,
+      confidence: ocrResult.confidence,
+      structured: ocrResult.structured,
+      receiptUrl: tempReceiptUrl,
+      merchant: ocrResult.structured?.merchant || '',
+      amount: ocrResult.structured?.total || 0,
+      date: ocrResult.structured?.date || '',
+      category: ocrResult.structured?.category || '',
+      location: ocrResult.structured?.location || ''
+    });
+  } catch (error: any) {
+    console.error('[OCR Preview] Error:', error.message);
+    
+    // Clean up the uploaded file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to process receipt. Please try again or enter manually.',
+      details: error.message
+    });
+  }
+});
+
 // Get all expenses
 router.get('/', async (req: AuthRequest, res) => {
   try {
