@@ -2,15 +2,11 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import FormData from 'form-data';
-import axios from 'axios';
+import { createWorker } from 'tesseract.js';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 
 const router = Router();
-
-// OCR Service Configuration (use 127.0.0.1 instead of localhost to force IPv4)
-const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://127.0.0.1:8000';
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -43,50 +39,113 @@ const upload = multer({
   }
 });
 
-// OCR processing function using PaddleOCR service
+// OCR processing function using Tesseract.js (same as production)
 async function processOCR(filePath: string): Promise<{
   text: string;
   confidence: number;
   structured: any;
 }> {
+  let worker = null;
   try {
-    console.log('Starting PaddleOCR processing for:', filePath);
+    console.log('Starting Tesseract OCR processing for:', filePath);
     
-    // Create form data for OCR service
-    const form = new FormData();
-    form.append('file', fs.createReadStream(filePath));
+    // Create Tesseract worker
+    worker = await createWorker('eng');
     
-    // Call OCR service
-    const response = await axios.post(`${OCR_SERVICE_URL}/ocr/process`, form, {
-      headers: {
-        ...form.getHeaders(),
-      },
-      timeout: 30000 // 30 second timeout
-    });
+    // Process the image
+    const { data } = await worker.recognize(filePath);
     
-    const result = response.data;
+    console.log(`Tesseract OCR completed`);
+    console.log(`Confidence: ${data.confidence.toFixed(2)}%`);
+    console.log(`Extracted text length: ${data.text.length} characters`);
     
-    console.log(`PaddleOCR completed: ${result.line_count} lines detected`);
-    console.log(`Confidence: ${(result.confidence * 100).toFixed(2)}%`);
-    console.log('Extracted structured data:', result.structured);
+    // Extract structured data from text
+    const structured = extractStructuredData(data.text);
     
     return {
-      text: result.text || '',
-      confidence: result.confidence || 0,
-      structured: result.structured || {}
+      text: data.text || '',
+      confidence: data.confidence / 100 || 0, // Convert to 0-1 range
+      structured: structured
     };
     
   } catch (error: any) {
-    console.error('PaddleOCR processing error:', error.message);
-    if (error.response) {
-      console.error('OCR service response:', error.response.data);
-    }
+    console.error('Tesseract OCR processing error:', error.message);
     return {
       text: '',
       confidence: 0,
       structured: {}
     };
+  } finally {
+    // Always terminate the worker
+    if (worker) {
+      await worker.terminate();
+    }
   }
+}
+
+// Extract structured data from OCR text (same logic as production)
+function extractStructuredData(text: string): any {
+  const structured: any = {
+    merchant: null,
+    total: null,
+    date: null,
+    category: null,
+    location: null
+  };
+  
+  const lines = text.split('\n');
+  const textLower = text.toLowerCase();
+  
+  // Extract merchant (first substantial line that's not a number)
+  for (const line of lines.slice(0, 5)) {
+    const trimmed = line.trim();
+    if (trimmed.length > 3 && !/^\d+/.test(trimmed)) {
+      structured.merchant = trimmed;
+      break;
+    }
+  }
+  
+  // Extract total amount
+  const amountPatterns = [
+    /total[\s:$]*(\d+[.,]\d{2})/i,
+    /amount[\s:$]*(\d+[.,]\d{2})/i,
+    /\$\s*(\d+[.,]\d{2})/
+  ];
+  for (const pattern of amountPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      structured.total = parseFloat(match[1].replace(',', '.'));
+      break;
+    }
+  }
+  
+  // Extract date
+  const datePatterns = [
+    /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,
+    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/
+  ];
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      structured.date = match[0];
+      break;
+    }
+  }
+  
+  // Guess category based on keywords
+  if (textLower.includes('hertz') || textLower.includes('rental') || textLower.includes('car')) {
+    structured.category = 'Transportation';
+  } else if (textLower.includes('hotel') || textLower.includes('marriott') || textLower.includes('hilton')) {
+    structured.category = 'Hotels';
+  } else if (textLower.includes('restaurant') || textLower.includes('cafe') || textLower.includes('food')) {
+    structured.category = 'Meals';
+  } else if (textLower.includes('uber') || textLower.includes('lyft') || textLower.includes('taxi')) {
+    structured.category = 'Transportation';
+  } else if (textLower.includes('flight') || textLower.includes('airline')) {
+    structured.category = 'Flights';
+  }
+  
+  return structured;
 }
 
 // Helper function to convert numeric strings to numbers
