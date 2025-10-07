@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import eventRoutes from './routes/events';
@@ -10,6 +12,10 @@ import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 dotenv.config();
+
+// Read version from package.json
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
+const VERSION = packageJson.version;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,7 +42,7 @@ app.use('/api/settings', settingsRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    version: '1.3.0',
+    version: VERSION,
     timestamp: new Date().toISOString() 
   });
 });
@@ -49,5 +55,5 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Version: 1.3.0`);
+  console.log(`Version: ${VERSION}`);
 });
