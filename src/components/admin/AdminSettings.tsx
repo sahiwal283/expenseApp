@@ -33,6 +33,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
   const [newCardOption, setNewCardOption] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -50,47 +51,63 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     })();
   }, []);
 
-  const saveSettings = async () => {
-    if (api.USE_SERVER) {
-      await api.updateSettings(settings as any);
-    } else {
-      localStorage.setItem('app_settings', JSON.stringify(settings));
+  const saveSettings = async (updatedSettings?: AppSettings) => {
+    const settingsToSave = updatedSettings || settings;
+    setIsSaving(true);
+    try {
+      if (api.USE_SERVER) {
+        await api.updateSettings(settingsToSave as any);
+      } else {
+        localStorage.setItem('app_settings', JSON.stringify(settingsToSave));
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-    alert('Settings saved successfully!');
   };
 
-  const addCardOption = () => {
+  const addCardOption = async () => {
     if (newCardOption && !settings.cardOptions.includes(newCardOption)) {
-      setSettings({
+      const updatedSettings = {
         ...settings,
         cardOptions: [...settings.cardOptions, newCardOption]
-      });
+      };
+      setSettings(updatedSettings);
       setNewCardOption('');
+      await saveSettings(updatedSettings);
     }
   };
 
-  const removeCardOption = (option: string) => {
-    setSettings({
+  const removeCardOption = async (option: string) => {
+    const updatedSettings = {
       ...settings,
       cardOptions: settings.cardOptions.filter(card => card !== option)
-    });
+    };
+    setSettings(updatedSettings);
+    await saveSettings(updatedSettings);
   };
 
-  const addEntityOption = () => {
+  const addEntityOption = async () => {
     if (newEntityOption && !settings.entityOptions.includes(newEntityOption)) {
-      setSettings({
+      const updatedSettings = {
         ...settings,
         entityOptions: [...settings.entityOptions, newEntityOption]
-      });
+      };
+      setSettings(updatedSettings);
       setNewEntityOption('');
+      await saveSettings(updatedSettings);
     }
   };
 
-  const removeEntityOption = (option: string) => {
-    setSettings({
+  const removeEntityOption = async (option: string) => {
+    const updatedSettings = {
       ...settings,
       entityOptions: settings.entityOptions.filter(entity => entity !== option)
-    });
+    };
+    setSettings(updatedSettings);
+    await saveSettings(updatedSettings);
   };
 
   return (
@@ -103,11 +120,12 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         </div>
         {activeTab === 'system' && (
           <button
-            onClick={saveSettings}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+            onClick={() => saveSettings()}
+            disabled={isSaving}
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
           >
             <Save className="w-5 h-5" />
-            <span>Save Settings</span>
+            <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
           </button>
         )}
       </div>
@@ -173,12 +191,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                 type="text"
                 value={newCardOption}
                 onChange={(e) => setNewCardOption(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addCardOption()}
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter new card option..."
               />
               <button
                 onClick={addCardOption}
-                disabled={!newCardOption}
+                disabled={!newCardOption || isSaving}
                 className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
@@ -192,7 +211,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                   <span className="text-gray-900">{option}</span>
                   <button
                     onClick={() => removeCardOption(option)}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    disabled={isSaving}
+                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -220,12 +240,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                 type="text"
                 value={newEntityOption}
                 onChange={(e) => setNewEntityOption(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addEntityOption()}
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter new entity option..."
               />
               <button
                 onClick={addEntityOption}
-                disabled={!newEntityOption}
+                disabled={!newEntityOption || isSaving}
                 className="bg-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
@@ -239,7 +260,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                   <span className="text-gray-900">{option}</span>
                   <button
                     onClick={() => removeEntityOption(option)}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    disabled={isSaving}
+                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -270,7 +292,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Changes to these settings will be immediately reflected in all expense forms and dropdowns throughout the application. Remember to save your changes.
+            <strong>Note:</strong> Changes to these settings are automatically saved to the database and will be immediately reflected in all expense forms and dropdowns throughout the application.
           </p>
         </div>
       </div>
@@ -279,3 +301,4 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     </div>
   );
 };
+
