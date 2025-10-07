@@ -6,7 +6,7 @@ import { api } from '../../utils/api';
 interface ExpenseFormProps {
   expense?: Expense | null;
   events: TradeShow[];
-  onSave: (expense: Omit<Expense, 'id'>) => void;
+  onSave: (expense: Omit<Expense, 'id'>, file?: File) => void;
   onCancel: () => void;
 }
 
@@ -30,7 +30,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     zohoEntity: expense?.zohoEntity || '',
     location: expense?.location || '',
     ocrText: expense?.ocrText || '',
-    receiptUrl: expense?.receiptUrl ? expense.receiptUrl.replace(/^\/uploads/, '/api/uploads') : ''
+    receiptUrl: expense?.receiptUrl || ''
   });
 
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -82,7 +82,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     e.preventDefault();
     
     
-    onSave(formData);
+    onSave(formData, receiptFile || undefined);
   };
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,7 +255,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
           {/* Receipt Upload - First Field */}
           <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
             <label className="block text-sm font-medium text-gray-900 mb-3">
-              Receipt Image {expense ? <span className="text-gray-600">(Optional - Upload to replace)</span> : <span className="text-red-600">* (Upload First - Required)</span>}
+              Receipt Image * <span className="text-red-600">(Upload First - Required)</span>
             </label>
             <div className="space-y-4">
               <div className="flex items-center justify-center w-full">

@@ -19,7 +19,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterEvent, setFilterEvent] = useState('all');
   const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
-  const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -44,7 +43,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     })();
   }, []);
 
-  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>) => {
     if (api.USE_SERVER) {
       if (editingExpense) {
         await api.updateExpense(editingExpense.id, {
@@ -69,9 +68,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           card_used: expenseData.cardUsed,
           reimbursement_required: expenseData.reimbursementRequired,
           location: expenseData.location,
-        }, file || pendingReceiptFile || undefined);
+        });
       }
-      setPendingReceiptFile(null); // Clear after save
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {
@@ -93,13 +91,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense);
     setShowForm(true);
-    setPendingReceiptFile(file); // Store the receipt file
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
     if (api.USE_SERVER) {
       await api.deleteExpense(expenseId);
-      setPendingReceiptFile(null); // Clear after save
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {
@@ -109,7 +105,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleReceiptProcessed = (receiptData: any, file: File) => {
+  const handleReceiptProcessed = (receiptData: any) => {
     const newExpense: Omit<Expense, 'id'> = {
       userId: user.id,
       tradeShowId: '',
@@ -125,7 +121,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
     setEditingExpense(null);
     setShowForm(true);
-    setPendingReceiptFile(file); // Store the receipt file
     // Pre-populate form with OCR data
     setTimeout(() => {
       const event = new CustomEvent('populateExpenseForm', { detail: newExpense });

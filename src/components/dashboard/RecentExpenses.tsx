@@ -3,10 +3,11 @@ import { Clock, DollarSign, MapPin } from 'lucide-react';
 import { Expense } from '../../App';
 
 interface RecentExpensesProps {
+  onPageChange: (page: string) => void;
   expenses: Expense[];
 }
 
-export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses }) => {
+export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPageChange }) => {
   const recentExpenses = expenses.slice(0, 5);
 
   const getCategoryColor = (category: string) => {
@@ -34,7 +35,7 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses }) => {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Recent Expenses</h3>
-        <button className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
+        <button onClick={() => onPageChange('expenses')} className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
       </div>
 
       {recentExpenses.length === 0 ? (

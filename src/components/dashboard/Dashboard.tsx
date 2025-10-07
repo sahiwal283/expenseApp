@@ -10,9 +10,10 @@ import { BudgetOverview } from './BudgetOverview';
 
 interface DashboardProps {
   user: User;
+  onPageChange: (page: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -127,32 +128,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-          <RecentExpenses expenses={expenses} />
+          <RecentExpenses expenses={expenses} onPageChange={onPageChange} />
           {(user.role === 'admin' || user.role === 'accountant') && (
             <BudgetOverview events={events} expenses={expenses} />
           )}
         </div>
         <div className="space-y-6">
-          <UpcomingEvents events={events} />
+          <UpcomingEvents events={events} onPageChange={onPageChange} />
           
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
               {(user.role === 'salesperson' || user.role === 'coordinator') && (
-                <button className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center justify-center">
+                <button className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center justify-center" onClick={() => onPageChange("expenses")}>
                   <DollarSign className="w-5 h-5 mr-2" />
                   Submit New Expense
                 </button>
               )}
               {user.role === 'coordinator' && (
-                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center">
+                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center" onClick={() => onPageChange("events")}>
                   <Calendar className="w-5 h-5 mr-2" />
                   Create Trade Show
                 </button>
               )}
               {user.role === 'accountant' && (
-                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center">
+                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center" onClick={() => onPageChange("expenses")}>
                   <CheckCircle className="w-5 h-5 mr-2" />
                   Review Expenses
                 </button>
