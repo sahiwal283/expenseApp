@@ -28,24 +28,30 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [newParticipantEmail, setNewParticipantEmail] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
 
+
   useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
         try {
-          const ev = await api.getEvents();
+          const [ev, users] = await Promise.all([
+            api.getEvents(),
+            api.getUsers()
+          ]);
           setEvents(ev || []);
-        } catch {
+          setAllUsers(users || []);
+        } catch (error) {
+          console.error("Failed to fetch data:", error);
           setEvents([]);
+          setAllUsers([]);
         }
       } else {
-        const storedEvents = localStorage.getItem('tradeshow_events');
+        const storedEvents = localStorage.getItem("tradeshow_events");
+        const storedUsers = localStorage.getItem("tradeshow_users");
         if (storedEvents) setEvents(JSON.parse(storedEvents));
+        if (storedUsers) setAllUsers(JSON.parse(storedUsers));
       }
-      const storedUsers = localStorage.getItem('tradeshow_users');
-      if (storedUsers) setAllUsers(JSON.parse(storedUsers));
     })();
   }, []);
-
   const resetForm = () => {
     setFormData({
       name: '',
@@ -88,6 +94,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           start_date: eventData.startDate,
           end_date: eventData.endDate,
           budget: eventData.budget,
+          participant_ids: eventData.participants.map((p: any) => p.id),
           status: eventData.status || 'upcoming',
         });
       } else {
@@ -99,6 +106,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           start_date: eventData.startDate,
           end_date: eventData.endDate,
           budget: eventData.budget,
+          participant_ids: eventData.participants.map((p: any) => p.id),
         });
       }
       const refreshed = await api.getEvents();
@@ -126,8 +134,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       venue: event.venue,
       city: event.city,
       state: event.state,
-      startDate: event.startDate,
-      endDate: event.endDate,
+      startDate: event.startDate ? new Date(event.startDate).toISOString().split("T")[0] : "",
+      endDate: event.endDate ? new Date(event.endDate).toISOString().split("T")[0] : "",
       budget: event.budget?.toString() || '',
       participants: event.participants
     });
@@ -410,7 +418,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   </div>
                 </div>
 
-                {formData.participants?.length || 0 > 0 && (
+                {(formData.participants?.length || 0) > 0 && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="space-y-2">
                       {formData.participants.map((participant) => (
