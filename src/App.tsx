@@ -3,7 +3,6 @@ import { LoginForm } from './components/auth/LoginForm';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { EventSetup } from './components/events/EventSetup';
 import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
-import { UserManagement } from './components/admin/UserManagement';
 import { AdminSettings } from './components/admin/AdminSettings';
 import { Approvals } from './components/admin/Approvals';
 import { Reports } from './components/reports/Reports';
@@ -114,9 +113,8 @@ function App() {
           {currentPage === 'events' && <EventSetup user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
           {currentPage === 'approvals' && <Approvals user={user} />}
-          {currentPage === 'users' && <UserManagement user={user} />}
-          {currentPage === 'settings' && <AdminSettings user={user} />}
           {currentPage === 'reports' && <Reports user={user} />}
+          {currentPage === 'settings' && <AdminSettings user={user} />}
         </main>
       </div>
     </div>
