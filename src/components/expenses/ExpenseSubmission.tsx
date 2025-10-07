@@ -57,7 +57,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           reimbursement_required: expenseData.reimbursementRequired,
           location: expenseData.location,
           zoho_entity: expenseData.zohoEntity,
-        });
+        }, file || undefined);
       } else {
         await api.createExpense({
           event_id: expenseData.tradeShowId,

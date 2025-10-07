@@ -21,7 +21,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     amount: expense?.amount || 0,
     category: expense?.category || '',
     merchant: expense?.merchant || '',
-    date: expense?.date || new Date().toISOString().split('T')[0],
+    date: expense?.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     description: expense?.description || '',
     cardUsed: expense?.cardUsed || '',
     reimbursementRequired: expense?.reimbursementRequired || false,
@@ -82,7 +82,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     e.preventDefault();
     
     
-    onSave(formData);
+    onSave(formData, receiptFile || undefined);
   };
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

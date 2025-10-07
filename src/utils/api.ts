@@ -67,7 +67,22 @@ export const api = {
     }
     return apiFetch('/expenses', { method: 'POST', body: JSON.stringify(payload) });
   },
-  updateExpense: async (id: string, payload: Record<string, any>) => apiFetch(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  updateExpense: async (id: string, payload: Record<string, any>, receipt?: File) => {
+    if (receipt) {
+      const form = new FormData();
+      Object.entries(payload).forEach(([k, v]) => form.append(k, String(v)));
+      form.append('receipt', receipt);
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/expenses/${id}`, {
+        method: 'PUT',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+      if (!res.ok) throw new Error(`Update expense failed: ${res.status}`);
+      return res.json();
+    }
+    return apiFetch(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
   reviewExpense: async (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) => apiFetch(`/expenses/${id}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
   setExpenseReimbursement: async (id: string, payload: { reimbursement_status: 'approved' | 'rejected' }) => apiFetch(`/expenses/${id}/reimbursement`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteExpense: async (id: string) => apiFetch(`/expenses/${id}`, { method: 'DELETE' }),
