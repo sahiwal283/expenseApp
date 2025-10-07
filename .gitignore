@@ -97,6 +97,7 @@ deploy_v*.sh
 # Temporary analysis & production-specific docs
 PRODUCTION_DEPLOYMENT_ANALYSIS.md
 PRODUCTION_DEPLOYMENT_v*.md
+!PRODUCTION_DEPLOYMENT_v0.17.0.md
 PRODUCTION_PASSWORD_RESET.md
 MERGE_ANALYSIS.md
 
