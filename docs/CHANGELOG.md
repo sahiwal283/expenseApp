@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.27.3] - 2025-10-08
+
+### Removed
+- **Pending Card from Reports**: Removed the Pending expenses card from Reports page
+  - Pending information is already available in the Approvals tab
+  - Eliminates redundancy and simplifies the Reports page layout
+  - Only Total Expenses summary card now shown for cleaner interface
+
+### Technical
+- Frontend version: 0.27.2 → 0.27.3
+
+---
+
 ## [0.27.2] - 2025-10-08
 
 ### Fixed

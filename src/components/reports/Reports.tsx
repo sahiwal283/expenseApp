@@ -272,35 +272,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       )}
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900">${reportStats.totalAmount.toLocaleString()}</p>
-              <p className="text-gray-600">Total Expenses</p>
-            </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <DollarSign className="w-6 h-6 text-white" />
           </div>
-          <div className="text-sm text-gray-600">
-            {reportStats.expenseCount} transactions
+          <div className="text-right">
+            <p className="text-2xl font-bold text-gray-900">${reportStats.totalAmount.toLocaleString()}</p>
+            <p className="text-gray-600">Total Expenses</p>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-orange-600">${reportStats.pendingAmount.toLocaleString()}</p>
-              <p className="text-gray-600">Pending</p>
-            </div>
-          </div>
-          <div className="text-sm text-gray-600">
-            {filteredExpenses.filter(e => e.status === 'pending').length} items
-          </div>
+        <div className="text-sm text-gray-600">
+          {reportStats.expenseCount} transactions
         </div>
       </div>
 
