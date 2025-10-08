@@ -72,18 +72,40 @@ Following [Semantic Versioning](https://semver.org/):
 
 **Format:** `MAJOR.MINOR.PATCH`
 
+**⚠️ IMPORTANT: Increment version for EVERY change, no matter how small!**
+
 - **MAJOR (0.x.x):** Breaking changes, major feature overhauls
   - Currently in `0.x` (pre-1.0 development phase)
+  - Example: `0.19.1` → `1.0.0` (production ready)
+  
 - **MINOR (x.X.x):** New features, backward-compatible changes
   - Example: `0.18.0` → `0.19.0` (added inline filtering)
-- **PATCH (x.x.X):** Bug fixes, minor improvements
-  - Example: `0.19.0` → `0.19.1` (fix a bug)
+  - Use for: New components, new pages, new API endpoints, feature additions
+  
+- **PATCH (x.x.X):** Bug fixes, minor improvements, small changes
+  - Example: `0.19.0` → `0.19.1` (fix expense update validation)
+  - Use for: Bug fixes, typo corrections, small UI tweaks, logging improvements
+  - **Always increment for bug fixes!**
 
 ### Current Versioning Strategy
 
 - **v0.1.0 - v0.18.0:** Historical versions
-- **v0.19.0:** Current sandbox version (inline column filtering)
+- **v0.19.0:** Inline column filtering feature (MINOR - new feature)
+- **v0.19.1:** Expense update validation fix (PATCH - bug fix)
 - **v1.0.0:** Target for production-ready release
+
+### Version Increment Examples
+
+| Change Type | Example | Version Change |
+|-------------|---------|----------------|
+| **New Feature** | Add user notifications | 0.19.1 → 0.20.0 |
+| **Bug Fix** | Fix broken button | 0.19.1 → 0.19.2 |
+| **UI Tweak** | Update color scheme | 0.19.1 → 0.19.2 |
+| **Typo Fix** | Fix spelling in UI | 0.19.1 → 0.19.2 |
+| **Logging** | Add debug logs | 0.19.1 → 0.19.2 |
+| **Breaking Change** | Remove old API | 0.19.1 → 1.0.0 |
+
+**Rule of Thumb:** If you commit and push code, increment the version!
 
 ---
 
@@ -277,11 +299,15 @@ Production Environment (192.168.1.201, 192.168.1.139)
 
 ## Version History
 
-| Version | Branch | Date | Description |
-|---------|--------|------|-------------|
-| 0.7.1 | sandbox-v0.7.1 | Earlier | Previous sandbox version |
-| 0.19.0 | sandbox-v0.19.0 | Oct 8, 2025 | Inline column filtering |
-| 0.20.0 | sandbox-v0.20.0 | TBD | Next feature |
+| Version | Branch | Date | Type | Description |
+|---------|--------|------|------|-------------|
+| 0.7.1 | sandbox-v0.7.1 | Earlier | PATCH | Previous sandbox version |
+| 0.19.0 | sandbox-v0.19.0 | Oct 8, 2025 | MINOR | Inline column filtering (new feature) |
+| 0.19.1 | sandbox-v0.19.0 | Oct 8, 2025 | PATCH | Expense update validation fix (bug fix) |
+| 0.20.0 | sandbox-v0.20.0 | TBD | MINOR | Next feature |
+
+**Note:** Branch names stay the same (sandbox-v0.19.0) while version increments within it (0.19.0 → 0.19.1).  
+Create a new branch (sandbox-v0.20.0) only when adding a new MINOR feature.
 
 ---
 
