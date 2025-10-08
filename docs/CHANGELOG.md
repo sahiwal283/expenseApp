@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.1] - 2025-10-08
+
+### Fixed
+- **Expense Update Validation**: Added required field validation to UPDATE endpoint
+  - Event, card used, and receipt fields now save correctly when updating expenses
+  - Validation error returned if required fields (event_id, card_used) are missing
+  - Fixed issue where empty values were being accepted and saved as null
+- **Receipt Update Processing**: New receipts uploaded during expense updates now process OCR
+  - Updates receipt_url, ocr_text, and extracted_data fields
+  - Preserves existing receipt if no new one is uploaded
+- **Backend Logging**: Added debug logging for expense updates to help diagnose issues
+
+### Technical
+- Backend version: 2.2.0 → 2.2.1
+- Frontend version: 0.19.0 → 0.19.1
+
+---
+
 ## [0.19.0] - 2025-10-08
 
 ### Added
@@ -193,4 +211,4 @@ Given a version number MAJOR.MINOR.PATCH (e.g., 1.0.0):
 ---
 
 Last Updated: October 8, 2025
-Current Version: 0.19.0
+Current Version: 0.19.1
