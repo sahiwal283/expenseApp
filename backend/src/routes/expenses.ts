@@ -604,9 +604,15 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req:
     const { id } = req.params;
     const { reimbursement_status } = req.body;
 
+    console.log(`[REIMBURSEMENT] Received request to update expense ${id} to status: "${reimbursement_status}" (type: ${typeof reimbursement_status})`);
+    console.log(`[REIMBURSEMENT] Full request body:`, JSON.stringify(req.body));
+
     if (!['pending review', 'approved', 'rejected', 'paid'].includes(reimbursement_status)) {
-      return res.status(400).json({ error: 'Invalid reimbursement status' });
+      console.error(`[REIMBURSEMENT] Invalid status rejected: "${reimbursement_status}"`);
+      return res.status(400).json({ error: `Invalid reimbursement status: "${reimbursement_status}"` });
     }
+
+    console.log(`[REIMBURSEMENT] Validation passed, executing database update...`);
 
     const result = await query(
       `UPDATE expenses 
@@ -617,13 +623,15 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req:
     );
 
     if (result.rows.length === 0) {
+      console.error(`[REIMBURSEMENT] Expense ${id} not found in database`);
       return res.status(404).json({ error: 'Expense not found' });
     }
 
+    console.log(`[REIMBURSEMENT] Successfully updated expense ${id} to status "${reimbursement_status}"`);
     res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
-    console.error('Error updating reimbursement:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('[REIMBURSEMENT] Error updating reimbursement:', error);
+    res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 });
 
