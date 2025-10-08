@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
+import { BarChart3, PieChart } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 
 interface ExpenseChartProps {
@@ -47,9 +47,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {/* Category Breakdown */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
-          <PieChart className="w-5 h-5 text-blue-600" />
         </div>
         
         {categories.length > 0 ? (
@@ -86,9 +85,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 
       {/* Monthly Trend */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Monthly Spending Trend</h3>
-          <TrendingUp className="w-5 h-5 text-emerald-600" />
         </div>
         
         {monthlyEntries.length > 0 ? (
@@ -130,9 +128,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 
       {/* Event Breakdown */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 xl:col-span-2">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Expenses by Trade Show</h3>
-          <BarChart3 className="w-5 h-5 text-purple-600" />
         </div>
         
         {Object.keys(eventBreakdown).length > 0 ? (

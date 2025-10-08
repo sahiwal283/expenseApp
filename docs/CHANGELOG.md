@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.22.1] - 2025-10-08
+
+### Fixed
+- **Misleading UI Icons**: Removed non-functional chart icons from Reports page
+  - Removed PieChart icon from "Expenses by Category" header
+  - Removed TrendingUp icon from "Monthly Spending Trend" header
+  - Removed BarChart3 icon from "Expenses by Trade Show" header
+  - These icons appeared clickable but had no functionality, causing user confusion
+  - Cleaner UI without false affordances
+
+### Technical
+- Frontend version: 0.22.0 → 0.22.1
+
+---
+
 ## [0.22.0] - 2025-10-08
 
 ### Added
