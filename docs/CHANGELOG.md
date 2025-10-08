@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.32.3] - 2025-10-08
+
+### Fixed
+- **Reimbursement Status Update Error**: Fixed backend validation to accept all reimbursement statuses
+  - Backend was only accepting 'approved' and 'rejected'
+  - Now accepts all four statuses: 'pending review', 'approved', 'rejected', 'paid'
+  - Users can now successfully update reimbursement status to any valid state
+  - Updated frontend API type definitions to match new statuses
+
+### Technical
+- Frontend version: 0.32.2 → 0.32.3
+- Backend version: 2.3.1 → 2.4.0
+- Updated backend validation in expenses route (line 607)
+- Updated frontend API type definition in api.ts
+
+---
+
 ## [0.32.2] - 2025-10-08
 
 ### Fixed

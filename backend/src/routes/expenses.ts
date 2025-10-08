@@ -604,7 +604,7 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req:
     const { id } = req.params;
     const { reimbursement_status } = req.body;
 
-    if (!['approved', 'rejected'].includes(reimbursement_status)) {
+    if (!['pending review', 'approved', 'rejected', 'paid'].includes(reimbursement_status)) {
       return res.status(400).json({ error: 'Invalid reimbursement status' });
     }
 
