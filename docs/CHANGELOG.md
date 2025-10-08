@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.29.0] - 2025-10-08
+
+### Added
+- **Date Utilities Module**: Created centralized date handling utilities to prevent future timezone bugs
+  - New `src/utils/dateUtils.ts` with comprehensive date functions
+  - `parseLocalDate()` - Parse YYYY-MM-DD strings as local dates
+  - `formatLocalDate()` - Format dates for display without timezone issues
+  - `formatDateRange()` - Format date ranges consistently
+  - `getDaysUntil()` - Calculate days between dates
+  - `getDaysUntilLabel()` - Get human-readable labels
+  - `isToday()`, `isPast()`, `isFuture()` - Date comparison utilities
+  - `formatForDateInput()` - Format for HTML date inputs
+  - Comprehensive JSDoc documentation explaining timezone pitfalls
+  - Created `src/utils/README.md` with usage guide and migration checklist
+
+### Changed
+- **UpcomingEvents Component**: Refactored to use new date utilities
+  - Demonstrates best practices for date handling
+  - Cleaner, more maintainable code
+  - Same functionality with better architecture
+
+### Technical
+- Frontend version: 0.28.1 → 0.29.0
+- All date operations now centralized in one location
+- Future date bugs prevented through single source of truth
+- Migration path documented for other components
+
+### Developer Experience
+- Clear documentation on why timezone bugs occur
+- Examples of correct vs incorrect date handling
+- Migration checklist for refactoring existing code
+- Testing recommendations across timezones
+
+---
+
 ## [0.28.1] - 2025-10-08
 
 ### Fixed

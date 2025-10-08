@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { TradeShow } from '../../App';
+import { parseLocalDate, formatDateRange, getDaysUntil } from '../../utils/dateUtils';
 
 interface UpcomingEventsProps {
   onPageChange: (page: string) => void;
@@ -14,25 +15,11 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
   
   const upcomingEvents = events
     .filter(event => {
-      // Parse date as local time to avoid timezone conversion
-      const [year, month, day] = event.endDate.split('T')[0].split('-');
-      const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      endDate.setHours(0, 0, 0, 0);
+      // Use utility to parse date without timezone conversion
+      const endDate = parseLocalDate(event.endDate);
       return endDate >= today; // Include events that end today or later
     })
     .slice(0, 3);
-
-  const getDaysUntil = (dateString: string) => {
-    // Parse date as local time to avoid timezone conversion
-    const [year, month, day] = dateString.split('T')[0].split('-');
-    const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    eventDate.setHours(0, 0, 0, 0); // Normalize to midnight
-    const todayMidnight = new Date();
-    todayMidnight.setHours(0, 0, 0, 0);
-    const diffTime = eventDate.getTime() - todayMidnight.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
   
   const getDaysUntilLabel = (days: number) => {
     if (days === 0) return 'Today';
@@ -78,16 +65,7 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
                   </div>
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-2" />
-                    <span>
-                      {(() => {
-                        // Format date without timezone conversion
-                        const formatLocalDate = (dateStr: string) => {
-                          const [year, month, day] = dateStr.split('T')[0].split('-');
-                          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toLocaleDateString();
-                        };
-                        return `${formatLocalDate(event.startDate)} - ${formatLocalDate(event.endDate)}`;
-                      })()}
-                    </span>
+                    <span>{formatDateRange(event.startDate, event.endDate)}</span>
                   </div>
                   <div className="flex items-center">
                     <Users className="w-4 h-4 mr-2" />
