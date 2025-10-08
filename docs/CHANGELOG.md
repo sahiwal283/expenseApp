@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.1] - 2025-10-08
+
+### Changed
+- **Coordinator Access Control**: Restricted coordinators from accessing Reports page
+  - Coordinators can now only access: Dashboard, Events, Expenses, and Settings
+  - Reports tab removed from coordinator navigation
+  - Access denied message displayed if coordinator attempts to access Reports
+  - Aligns with coordinator role scope: create events and assign users
+
+### Technical
+- Frontend version: 0.31.0 → 0.31.1
+- Added role check in Reports component
+- Updated Sidebar navigation roles for Reports (removed 'coordinator', added 'salesperson')
+
+---
+
 ## [0.31.0] - 2025-10-08
 
 ### Added

@@ -27,7 +27,7 @@ const navigationItems = [
   { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
   { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant'] },
-  { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'coordinator', 'accountant'] },
+  { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'salesperson'] },
   { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
 ];
 

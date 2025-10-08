@@ -13,6 +13,17 @@ interface ReportsProps {
 }
 
 export const Reports: React.FC<ReportsProps> = ({ user }) => {
+  // Access control: Only admin, accountant, and salesperson can access reports
+  if (user.role === 'coordinator') {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">Access denied. Coordinators do not have access to reports.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedEvent, setSelectedEvent] = useState('all');
