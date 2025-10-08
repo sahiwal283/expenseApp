@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.5] - 2025-10-08
+
+### Fixed
+- **Entity Running Totals Dashboard**: Now only shows currently active entities
+  - Loads `entityOptions` from app settings
+  - Filters entity totals to only include entities in the active entity list
+  - Prevents display of obsolete/removed entities that still have historical expense data
+  - Works in both server and localStorage modes
+
+### Technical
+- Frontend version: 0.24.4 → 0.24.5
+
+---
+
 ## [0.24.4] - 2025-10-08
 
 ### Changed

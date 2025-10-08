@@ -18,6 +18,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedEntity, setSelectedEntity] = useState('all');
   const [reportType, setReportType] = useState<'overview' | 'detailed' | 'entity'>('overview');
+  const [activeEntityOptions, setActiveEntityOptions] = useState<string[]>([]);
 
   const handleTradeShowClick = (eventId: string) => {
     setSelectedEvent(eventId);
@@ -29,14 +30,24 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
-        const [ev, ex] = await Promise.all([api.getEvents(), api.getExpenses()]);
+        const [ev, ex, settings] = await Promise.all([
+          api.getEvents(), 
+          api.getExpenses(),
+          api.getSettings()
+        ]);
         setEvents(ev || []);
         setExpenses(ex || []);
+        setActiveEntityOptions(settings?.entityOptions || []);
       } else {
         const storedEvents = localStorage.getItem('tradeshow_events');
         const storedExpenses = localStorage.getItem('tradeshow_expenses');
+        const storedSettings = localStorage.getItem('app_settings');
         if (storedEvents) setEvents(JSON.parse(storedEvents));
         if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
+        if (storedSettings) {
+          const settings = JSON.parse(storedSettings);
+          setActiveEntityOptions(settings.entityOptions || []);
+        }
       }
     })();
   }, []);
@@ -119,18 +130,19 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     };
   }, [filteredExpenses]);
 
-  // Calculate entity totals (filtered)
+  // Calculate entity totals (filtered, only active entities)
   const entityTotals = useMemo(() => {
     const totals: Record<string, number> = {};
     filteredExpenses.forEach(expense => {
-      if (expense.zohoEntity) {
+      // Only include expenses with entities that are in the active entity options
+      if (expense.zohoEntity && activeEntityOptions.includes(expense.zohoEntity)) {
         totals[expense.zohoEntity] = (totals[expense.zohoEntity] || 0) + expense.amount;
       }
     });
     return Object.entries(totals)
       .sort((a, b) => b[1] - a[1]) // Sort by amount descending
       .map(([entity, amount]) => ({ entity, amount }));
-  }, [filteredExpenses]);
+  }, [filteredExpenses, activeEntityOptions]);
 
   const handleExportCSV = () => {
     const csvContent = [
