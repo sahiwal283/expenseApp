@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.7] - 2025-10-08
+
+### Fixed
+- **Upcoming Events Dashboard**: Fixed multiple date calculation bugs
+  - Events that have ended (past endDate) are now properly filtered out
+  - Date calculations now normalize to midnight for accurate day counts
+  - Badge text now correctly shows "Today", "1 day", "X days" (no more "1 days")
+  - Events starting today now correctly show "Today" instead of "1 days"
+  - Badge colors: Orange for "Today", Yellow for 1-7 days, Blue for 7+ days
+
+### Technical
+- Frontend version: 0.24.6 → 0.24.7
+
+---
+
 ## [0.24.6] - 2025-10-08
 
 ### Changed
