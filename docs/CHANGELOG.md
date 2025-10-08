@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.4] - 2025-10-08
+
+### Changed
+- **Entity Running Totals Dashboard**: Layout now uses flexbox instead of grid
+  - Changed from fixed grid columns to flexible wrapping layout
+  - Entity cards now flow naturally left-to-right without blank space
+  - Minimum card width of 200px ensures readability
+  - More efficient use of horizontal space, especially with few entities
+  - Cards wrap to next line as needed
+
+### Technical
+- Frontend version: 0.24.3 → 0.24.4
+
+---
+
 ## [0.24.3] - 2025-10-08
 
 ### Fixed

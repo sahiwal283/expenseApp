@@ -250,11 +250,11 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          <div className="flex flex-wrap gap-3">
             {entityTotals.map(({ entity, amount }) => (
               <div 
                 key={entity} 
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-md transition-all duration-200"
+                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-md transition-all duration-200 min-w-[200px] flex-shrink-0"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
