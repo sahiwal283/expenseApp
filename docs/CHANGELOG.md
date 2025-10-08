@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.9] - 2025-10-08
+
+### Fixed
+- **Reports Tab Access**: Accountants can now access the Reports tab
+  - Removed redirect that was forcing accountants to AccountantDashboard
+  - Accountants now see the full Reports page like admins and coordinators
+  - Permissions already allowed `canViewReports: true` for accountants
+  - Sidebar navigation already included Reports for accountants
+  - Aligns functionality with intended permission model
+
+### Technical
+- Frontend version: 0.24.8 → 0.24.9
+
+---
+
 ## [0.24.8] - 2025-10-08
 
 ### Removed

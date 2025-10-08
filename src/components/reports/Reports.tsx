@@ -68,17 +68,6 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     const updatedExpense = { ...expense, reimbursementStatus: status };
     handleUpdateExpense(updatedExpense);
   };
-  // Show accountant dashboard for accountants
-  if (user.role === 'accountant') {
-    return (
-      <AccountantDashboard 
-        user={user}
-        expenses={expenses}
-        events={events}
-        onUpdateExpense={handleUpdateExpense}
-      />
-    );
-  }
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
