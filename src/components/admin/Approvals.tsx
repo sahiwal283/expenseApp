@@ -393,7 +393,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {expense.reimbursementRequired ? 'Required' : 'Not Required'}
+                            {expense.reimbursementRequired 
+                              ? `Required (${expense.reimbursementStatus || 'pending review'})` 
+                              : 'Not Required'}
                           </span>
                           {expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
                             <div className="flex items-center space-x-1 mt-1">
@@ -505,7 +507,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Date</p>
                     <p className="text-base font-semibold text-gray-900">
-                      {new Date(editingExpense.date).toLocaleDateString()}
+                      {formatLocalDate(editingExpense.date)}
                     </p>
                   </div>
                 </div>

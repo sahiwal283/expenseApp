@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.32.2] - 2025-10-08
+
+### Fixed
+- **Reimbursement Status Display**: Reimbursement column now shows the full status
+  - Fixed: Previously only showed "Required" without the status
+  - Now shows: "Required (pending review)", "Required (approved)", "Required (rejected)", "Required (paid)"
+  - Provides clear visibility of reimbursement workflow stage
+- **Edit Modal Date Bug**: Fixed date display off by one day in Approvals edit modal
+  - Used timezone-safe `formatLocalDate` instead of `new Date().toLocaleDateString()`
+  - Ensures date shown in modal matches the date in the table
+  - Prevents UTC timezone conversion issues
+
+### Technical
+- Frontend version: 0.32.1 → 0.32.2
+- Updated reimbursement column display logic in Approvals component
+- Applied formatLocalDate to edit modal date display
+
+---
+
 ## [0.32.1] - 2025-10-08
 
 ### Changed
