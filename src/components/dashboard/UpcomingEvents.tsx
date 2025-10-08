@@ -14,14 +14,18 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
   
   const upcomingEvents = events
     .filter(event => {
-      const endDate = new Date(event.endDate);
+      // Parse date as local time to avoid timezone conversion
+      const [year, month, day] = event.endDate.split('T')[0].split('-');
+      const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       endDate.setHours(0, 0, 0, 0);
       return endDate >= today; // Include events that end today or later
     })
     .slice(0, 3);
 
   const getDaysUntil = (dateString: string) => {
-    const eventDate = new Date(dateString);
+    // Parse date as local time to avoid timezone conversion
+    const [year, month, day] = dateString.split('T')[0].split('-');
+    const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     eventDate.setHours(0, 0, 0, 0); // Normalize to midnight
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
@@ -75,7 +79,14 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-2" />
                     <span>
-                      {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                      {(() => {
+                        // Format date without timezone conversion
+                        const formatLocalDate = (dateStr: string) => {
+                          const [year, month, day] = dateStr.split('T')[0].split('-');
+                          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toLocaleDateString();
+                        };
+                        return `${formatLocalDate(event.startDate)} - ${formatLocalDate(event.endDate)}`;
+                      })()}
                     </span>
                   </div>
                   <div className="flex items-center">

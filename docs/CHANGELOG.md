@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.28.1] - 2025-10-08
+
+### Fixed
+- **Upcoming Events Date Display**: Fixed timezone conversion bug causing incorrect date display
+  - Event dates now display correctly without timezone shift
+  - Days until calculation fixed to use local dates
+  - Date range display (start - end) now shows correct dates
+  - Event filtering by end date now works correctly
+  - Resolves issue where dates were off by one day due to UTC conversion
+
+### Technical
+- Frontend version: 0.28.0 → 0.28.1
+- Applied same local date parsing fix as EventSetup component
+- All date operations now parse YYYY-MM-DD strings as local dates, not UTC
+
+---
+
 ## [0.28.0] - 2025-10-08
 
 ### Added
