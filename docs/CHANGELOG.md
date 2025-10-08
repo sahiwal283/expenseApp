@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Code Refactor & Cleanup] - 2025-10-08
+## [0.34.0 / Backend 2.5.0] - 2025-10-08 - Code Refactor & Cleanup
 
 ### 🧹 Major Codebase Cleanup
 - **Removed 16+ obsolete version-specific documentation files** from project root
@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/components/reports/EntityBreakdown.tsx`
 
 ### Technical
+- Frontend version: 0.33.2 → 0.34.0
+- Backend version: 2.4.2 → 2.5.0
 - All components now import color utilities from central constants
 - Eliminated code duplication and technical debt
 - Build verified: Frontend ✓ Backend ✓
