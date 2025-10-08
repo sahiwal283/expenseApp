@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.21.0] - 2025-10-08
+
+### Added
+- **Edit Expense Modal**: Accountants can now edit expenses after approval/rejection
+  - Edit button added to Actions column for all expenses
+  - Modal allows changing approval status, reimbursement status, and entity assignment
+  - Prevents accidental status changes with confirmation workflow
+  - Allows correction if wrong status was selected or new info becomes available
+
+### Fixed
+- **Unassigned Entities Count**: Fixed calculation to show all unassigned entities regardless of approval status
+  - Previously only counted approved expenses without entities
+  - Now correctly counts all expenses missing entity assignment
+- **Entity Dropdown Logic**: Reversed the enable/disable logic
+  - Entity dropdown now editable when entity is unassigned
+  - Entity dropdown now locked (greyed out) once entity is assigned
+  - Prevents accidental changes to already-assigned entities
+
+### Changed
+- Entity dropdown styling: Visually distinct disabled state (grey background) when locked
+
+### Technical
+- Backend version: 2.3.0 → 2.3.1 (no backend changes, version sync)
+- Frontend version: 0.20.0 → 0.21.0
+
+---
+
 ## [0.20.0] - 2025-10-08
 
 ### Added

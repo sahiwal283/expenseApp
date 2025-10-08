@@ -10,7 +10,8 @@ import {
   User as UserIcon,
   CreditCard,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  Edit
 } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
@@ -33,6 +34,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterReimbursement, setFilterReimbursement] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
+
+  // Edit modal state
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editStatus, setEditStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [editReimbursementStatus, setEditReimbursementStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [editEntity, setEditEntity] = useState<string>('');
 
   // Load data
   useEffect(() => {
@@ -85,7 +92,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   const stats = useMemo(() => {
     const pendingExpenses = expenses.filter(e => e.status === 'pending');
     const pendingReimbursements = expenses.filter(e => e.reimbursementRequired && e.reimbursementStatus === 'pending');
-    const unassignedEntities = expenses.filter(e => e.status === 'approved' && !e.zohoEntity);
+    const unassignedEntities = expenses.filter(e => !e.zohoEntity);
     const totalPendingAmount = pendingExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
     return {
@@ -142,6 +149,49 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     } catch (error) {
       console.error('Error updating reimbursement:', error);
       alert('Failed to update reimbursement status. Please try again.');
+    }
+  };
+
+  const openEditModal = (expense: Expense) => {
+    setEditingExpense(expense);
+    setEditStatus(expense.status as 'pending' | 'approved' | 'rejected');
+    setEditReimbursementStatus(expense.reimbursementStatus as 'pending' | 'approved' | 'rejected');
+    setEditEntity(expense.zohoEntity || '');
+  };
+
+  const closeEditModal = () => {
+    setEditingExpense(null);
+    setEditStatus('pending');
+    setEditReimbursementStatus('pending');
+    setEditEntity('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingExpense) return;
+
+    try {
+      if (api.USE_SERVER) {
+        // Update status if changed
+        if (editStatus !== editingExpense.status) {
+          await api.reviewExpense(editingExpense.id, { status: editStatus });
+        }
+        
+        // Update reimbursement status if changed and reimbursement is required
+        if (editingExpense.reimbursementRequired && editReimbursementStatus !== editingExpense.reimbursementStatus) {
+          await api.setExpenseReimbursement(editingExpense.id, { reimbursement_status: editReimbursementStatus });
+        }
+        
+        // Update entity if changed
+        if (editEntity !== editingExpense.zohoEntity) {
+          await api.assignEntity(editingExpense.id, { zoho_entity: editEntity });
+        }
+      }
+      
+      await loadData(); // Refresh all data
+      closeEditModal();
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      alert('Failed to update expense. Please try again.');
     }
   };
 
@@ -447,8 +497,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <select
                           value={expense.zohoEntity || ''}
                           onChange={(e) => handleAssignEntity(expense, e.target.value)}
-                          className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
-                          disabled={expense.status !== 'approved'}
+                          className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full ${
+                            expense.zohoEntity 
+                              ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
+                              : 'border-gray-300 bg-white text-gray-900'
+                          }`}
+                          disabled={!!expense.zohoEntity}
                         >
                           <option value="">Unassigned</option>
                           {entityOptions.map((entity, index) => (
@@ -476,6 +530,13 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                               </button>
                             </>
                           )}
+                          <button
+                            onClick={() => openEditModal(expense)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Expense"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -486,6 +547,121 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingExpense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Edit Expense</h2>
+                <button
+                  onClick={closeEditModal}
+                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Expense Details (Read-only) */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Merchant</p>
+                    <p className="text-base font-semibold text-gray-900">{editingExpense.merchant}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Amount</p>
+                    <p className="text-base font-semibold text-gray-900">${editingExpense.amount.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Category</p>
+                    <p className="text-base font-semibold text-gray-900">{editingExpense.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Date</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {new Date(editingExpense.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editable Fields */}
+              <div className="space-y-4">
+                {/* Approval Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Approval Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as 'pending' | 'approved' | 'rejected')}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+
+                {/* Reimbursement Status */}
+                {editingExpense.reimbursementRequired && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reimbursement Status
+                    </label>
+                    <select
+                      value={editReimbursementStatus}
+                      onChange={(e) => setEditReimbursementStatus(e.target.value as 'pending' | 'approved' | 'rejected')}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Entity Assignment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Zoho Entity
+                  </label>
+                  <select
+                    value={editEntity}
+                    onChange={(e) => setEditEntity(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Unassigned</option>
+                    {entityOptions.map((entity, index) => (
+                      <option key={index} value={entity}>{entity}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-end space-x-3 border-t border-gray-200">
+              <button
+                onClick={closeEditModal}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
