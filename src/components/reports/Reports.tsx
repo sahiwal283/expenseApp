@@ -167,7 +167,12 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="text-gray-600 mt-1">
             Analyze expenses and generate comprehensive reports
-            <span className="ml-3 text-sm text-gray-500">• {filteredExpenses.length} expenses found</span>
+            <span className="ml-3 text-sm text-gray-500">
+              • {filteredExpenses.length} expenses found
+              <span className="ml-3 font-semibold text-gray-700">
+                • Total: ${reportStats.totalAmount.toLocaleString()}
+              </span>
+            </span>
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -270,22 +275,6 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           )}
         </div>
       )}
-
-      {/* Summary Stats */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <DollarSign className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900">${reportStats.totalAmount.toLocaleString()}</p>
-            <p className="text-gray-600">Total Expenses</p>
-          </div>
-        </div>
-        <div className="text-sm text-gray-600">
-          {reportStats.expenseCount} transactions
-        </div>
-      </div>
 
       {/* Report Content */}
       {reportType === 'overview' && (

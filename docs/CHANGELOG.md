@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.27.4] - 2025-10-08
+
+### Changed
+- **Reports Page Total**: Moved total expenses from card to page header
+  - Removed large Total Expenses card
+  - Total amount now displayed in page subtitle (e.g., "• Total: $5,457.90")
+  - More space-efficient layout while keeping total visible
+  - Always accessible without scrolling
+
+### Technical
+- Frontend version: 0.27.3 → 0.27.4
+
+---
+
 ## [0.27.3] - 2025-10-08
 
 ### Removed
