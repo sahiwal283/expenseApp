@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.20.0] - 2025-10-08
+
+### Added
+- **Two-Column Card Management**: Enhanced card options with separate name and last 4 digits
+  - Admin settings now include two input fields for card name and last 4 digits
+  - Card options display in "Card Name | 1234" format throughout the app
+  - Better differentiation between multiple cards with the same name
+  - Validation ensures last 4 digits are exactly 4 characters
+  - Duplicate detection based on both name and last 4 digits
+
+### Changed
+- **Card Options Data Structure**: Migrated from simple strings to structured objects
+  - Old format: `"Haute Inc USD Amex"` (string)
+  - New format: `{ name: "Haute Inc USD Amex", lastFour: "1234" }` (object)
+  - Backward compatibility: Old string format automatically converts to new format with "0000" placeholder
+- **Expense Form Card Display**: Cards now show in "Name | Last4" format in dropdown
+- **Default Card Options**: Updated to match actual company cards (Haute Intl/Inc/LLC variations)
+
+### Technical
+- Backend version: 2.2.1 → 2.3.0
+- Frontend version: 0.19.1 → 0.20.0
+- Updated seed data to use new card structure
+- Backward-compatible card loading in frontend components
+
+---
+
 ## [0.19.1] - 2025-10-08
 
 ### Fixed

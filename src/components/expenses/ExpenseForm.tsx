@@ -12,8 +12,13 @@ interface ExpenseFormProps {
 
 const categories = ['Flights', 'Hotels', 'Meals', 'Supplies', 'Transportation', 'Other'];
 
+interface CardOption {
+  name: string;
+  lastFour: string;
+}
+
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSave, onCancel }) => {
-  const [cardOptions, setCardOptions] = useState<string[]>([]);
+  const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [entityOptions, setEntityOptions] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
@@ -42,7 +47,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
       if (api.USE_SERVER) {
         try {
           const settings = await api.getSettings();
-          setCardOptions(settings.cardOptions || []);
+          // Handle both old string format and new object format for backward compatibility
+          const cards = settings.cardOptions || [];
+          if (cards.length > 0 && typeof cards[0] === 'string') {
+            // Convert old string format to new object format
+            setCardOptions(cards.map((card: string) => ({ name: card, lastFour: '0000' })));
+          } else {
+            setCardOptions(cards);
+          }
           setEntityOptions(settings.entityOptions || []);
         } catch {
           setCardOptions([]);
@@ -50,7 +62,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
         }
       } else {
         const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
-        setCardOptions(settings.cardOptions || ['Corporate Amex','Corporate Visa','Personal Card (Reimbursement)','Company Debit','Cash']);
+        const cards = settings.cardOptions || [
+          { name: 'Corporate Amex', lastFour: '0000' },
+          { name: 'Corporate Visa', lastFour: '0000' },
+          { name: 'Personal Card (Reimbursement)', lastFour: '0000' },
+          { name: 'Company Debit', lastFour: '0000' },
+          { name: 'Cash', lastFour: '0000' }
+        ];
+        // Handle backward compatibility
+        if (cards.length > 0 && typeof cards[0] === 'string') {
+          setCardOptions(cards.map((card: string) => ({ name: card, lastFour: '0000' })));
+        } else {
+          setCardOptions(cards);
+        }
         setEntityOptions(settings.entityOptions || ['Entity A - Main Operations','Entity B - Sales Division','Entity C - Marketing Department','Entity D - International Operations']);
       }
     })();
@@ -401,9 +425,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 required
               >
                 <option value="">Select card used</option>
-                {cardOptions.map((card, index) => (
-                  <option key={index} value={card}>{card}</option>
-                ))}
+                {cardOptions.map((card, index) => {
+                  const cardValue = `${card.name} | ${card.lastFour}`;
+                  return (
+                    <option key={index} value={cardValue}>{cardValue}</option>
+                  );
+                })}
               </select>
               <p className="text-xs text-gray-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
