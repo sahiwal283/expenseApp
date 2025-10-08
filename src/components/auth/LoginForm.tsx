@@ -36,8 +36,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     { username: 'admin', password: 'sandbox123', role: 'Administrator' },
     { username: 'coordinator', password: 'sandbox123', role: 'Event Coordinator' },
     { username: 'salesperson', password: 'sandbox123', role: 'Salesperson' },
-    { username: 'accountant', password: 'sandbox123', role: 'Accountant' },
-    { username: 'salesperson2', password: 'sandbox123', role: 'Salesperson' }
+    { username: 'accountant', password: 'sandbox123', role: 'Accountant' }
   ];
 
   // Production accounts
@@ -145,13 +144,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
-              {isSandbox ? (
-                <>All accounts use password: <strong>sandbox123</strong></>
-              ) : (
-                <>Admin uses <strong>admin</strong>, others use <strong>password123</strong></>
-              )}
-            </p>
           </div>
         </div>
       </div>

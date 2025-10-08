@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.25.2] - 2025-10-08
+
+### Changed
+- **Login Screen**: Cleaned up test accounts display
+  - Removed `salesperson2` test account from sandbox login screen
+  - Removed redundant password hint text at bottom of login form
+  - Password is already visible in each account button, making hint unnecessary
+
+### Technical
+- Frontend version: 0.25.1 → 0.25.2
+
+---
+
 ## [0.25.1] - 2025-10-08
 
 ### Removed
