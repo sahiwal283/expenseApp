@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.23.1] - 2025-10-08
+
+### Removed
+- **Entities Card**: Removed "Active mappings" / "Entities" card from Reports summary stats
+  - Unnecessary metric that doesn't provide actionable insight
+  - Grid now shows 3 cards instead of 4 (Total Expenses, Approved, Pending)
+  - Cleaner layout with more space for important metrics
+
+### Technical
+- Frontend version: 0.23.0 → 0.23.1
+
+---
+
 ## [0.23.0] - 2025-10-08
 
 ### Added
