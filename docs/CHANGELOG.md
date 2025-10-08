@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.27.1] - 2025-10-08
+
+### Added
+- **Trade Show Detail Header**: Added prominent header banner when viewing specific trade show details
+  - Displays selected trade show name clearly at the top
+  - Shows total expenses for the selected trade show
+  - Includes easy-to-access back button with arrow icon
+  - Beautiful gradient design matching app theme
+  - Improves navigation by eliminating need to use filters modal to return to overview
+
+### Changed
+- **Navigation**: Simplified navigation when drilling into trade show details
+  - One-click back button returns to overview and clears trade show filter
+  - No longer need to open filters modal to navigate back
+  - Better user experience for report exploration
+
+### Technical
+- Frontend version: 0.27.0 → 0.27.1
+
+---
+
 ## [0.27.0] - 2025-10-08
 
 ### Changed

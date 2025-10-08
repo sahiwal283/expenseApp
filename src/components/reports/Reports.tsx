@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Download, Filter, Calendar, DollarSign, TrendingUp, Building2, CheckCircle, X } from 'lucide-react';
+import { Download, Filter, Calendar, DollarSign, TrendingUp, Building2, CheckCircle, X, ArrowLeft } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
 import { EntityBreakdown } from './EntityBreakdown';
@@ -187,6 +187,38 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           </button>
         </div>
       </div>
+
+      {/* Trade Show Header Banner */}
+      {selectedEvent !== 'all' && (
+        <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl shadow-lg border border-blue-600 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => {
+                  setSelectedEvent('all');
+                  setReportType('overview');
+                }}
+                className="w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                title="Back to Overview"
+              >
+                <ArrowLeft className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+              </button>
+              <div>
+                <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Trade Show</p>
+                <h2 className="text-2xl font-bold text-white">
+                  {events.find(e => e.id === selectedEvent)?.name || 'Unknown Event'}
+                </h2>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-white text-opacity-90 text-sm font-medium mb-1">Total Expenses</p>
+              <p className="text-3xl font-bold text-white">
+                ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Entity Totals Dashboard */}
       {entityTotals.length > 0 && (
