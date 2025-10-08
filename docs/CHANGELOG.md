@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.0] - 2025-10-08
+
+### Added
+- **Category Breakdown Chart in Detailed Reports**: Added expense-by-category visualization to detailed report view
+  - Shows category breakdown for filtered/selected trade show
+  - Appears above the detailed expense table
+  - Same visual style as overview category chart (colored bars with percentages)
+  - Helps identify spending patterns within specific events
+  - Automatically calculates from filtered expenses
+
+### Changed
+- Detailed report layout now includes charts above the expense table for better data visualization
+
+### Technical
+- Frontend version: 0.23.1 → 0.24.0
+
+---
+
 ## [0.23.1] - 2025-10-08
 
 ### Removed
