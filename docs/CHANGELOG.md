@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.6] - 2025-10-08
+
+### Changed
+- **Admin Settings**: Removed redundant "Save Settings" button
+  - All changes are already auto-saved when clicking "Add" or remove icon for each option
+  - Cleaner, simpler UI without redundant save action
+  - Settings still save immediately on each add/remove operation
+
+### Technical
+- Frontend version: 0.24.5 → 0.24.6
+
+---
+
 ## [0.24.5] - 2025-10-08
 
 ### Fixed

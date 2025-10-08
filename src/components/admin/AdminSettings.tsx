@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Save, CreditCard, Building2, Users } from 'lucide-react';
+import { Settings, Plus, Trash2, CreditCard, Building2, Users } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
@@ -134,21 +134,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-1">Manage system settings and user accounts</p>
-        </div>
-        {activeTab === 'system' && (
-          <button
-            onClick={() => saveSettings()}
-            disabled={isSaving}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
-          >
-            <Save className="w-5 h-5" />
-            <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
-          </button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-1">Manage system settings and user accounts</p>
       </div>
 
       {/* Tabs */}
