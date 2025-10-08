@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Code Refactor & Cleanup] - 2025-10-08
+
+### 🧹 Major Codebase Cleanup
+- **Removed 16+ obsolete version-specific documentation files** from project root
+- **Removed obsolete scripts**: `deploy_v0.11.0_to_sandbox.sh`, Windows batch files, `setup-homebrew.sh`
+- **Removed backend backup file**: `expenses_tesseract_backup.js`
+- **Streamlined .gitignore**: Auto-excludes version docs and deployment scripts going forward
+
+### ♻️ Code Refactoring
+- **Centralized utility functions** in `appConstants.ts`:
+  - `getStatusColor()` - Expense status badge colors
+  - `getCategoryColor()` - Category badge colors
+  - `getReimbursementStatusColor()` - Reimbursement status badge colors
+- **Removed 150+ lines of duplicated code** across 6 components
+- **Improved maintainability**: Single source of truth for color schemes
+- **Bundle size reduced**: 639KB → 304KB (-52% JavaScript bundle)
+
+### 📦 Files Refactored
+- `src/components/admin/Approvals.tsx`
+- `src/components/expenses/ExpenseSubmission.tsx`
+- `src/components/reports/DetailedReport.tsx`
+- `src/components/dashboard/RecentExpenses.tsx`
+- `src/components/accountant/AccountantDashboard.tsx`
+- `src/components/reports/EntityBreakdown.tsx`
+
+### Technical
+- All components now import color utilities from central constants
+- Eliminated code duplication and technical debt
+- Build verified: Frontend ✓ Backend ✓
+
+---
+
 ## [0.33.2] - 2025-10-08
 
 ### Changed
