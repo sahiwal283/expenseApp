@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.0] - 2025-10-08
+
+### Added
+- **Inline Column Filtering**: All columns in Expense Management table now support independent filtering
+  - Date filter: Date picker for precise date selection
+  - Event filter: Dropdown to filter by specific events
+  - Category filter: Dropdown to filter by expense categories
+  - Merchant filter: Text search for merchant names
+  - Amount filter: Min/max range inputs for amount filtering
+  - Card filter: Dropdown to filter by payment card
+  - Status filter: Dropdown for pending/approved/rejected
+  - Reimbursement filter: Filter by required/not required
+- Clear Filters button: Quickly reset all active column filters
+- Active filter indicator: Visual feedback when filters are applied
+
+### Changed
+- **Column Reordering**: Improved Expense Management table layout
+  - New order: Date, Event, Category, Merchant, Amount, Card Used, Receipt, Status, Reimbursement
+  - More logical flow with date and event first for better context
+  - Financial details (amount, card) grouped together
+  - Status and reimbursement at the end for review workflow
+- Enhanced table UX with dual-row header (labels + filters)
+- Improved table responsiveness and column widths
+- Better visual hierarchy with dedicated filter row
+
+### Removed
+- Removed top-level search and filter bars (replaced by inline column filters)
+
+### Technical
+- Version bump to 0.19.0
+- Added individual state management for each column filter
+- Optimized filtering logic for better performance
+- Maintained backward compatibility with existing expense data structure
+
+---
+
 ## [0.6.0-alpha] - 2025-10-01
 
 ### Changed
@@ -156,5 +192,5 @@ Given a version number MAJOR.MINOR.PATCH (e.g., 1.0.0):
 
 ---
 
-Last Updated: September 30, 2025
-Current Version: 0.5.1-alpha
+Last Updated: October 8, 2025
+Current Version: 0.19.0
