@@ -16,6 +16,7 @@ import {
 import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
+import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
 
 interface ApprovalsProps {
   user: User;
@@ -205,37 +206,6 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       console.error('Error updating expense:', error);
       alert('Failed to update expense. Please try again.');
     }
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending'];
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
-  };
-
-  const getReimbursementStatusColor = (status: string | undefined) => {
-    const colors = {
-      'pending review': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800',
-      'paid': 'bg-blue-100 text-blue-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending review'];
   };
 
   const categories = Array.from(new Set(expenses.map(e => e.category)));

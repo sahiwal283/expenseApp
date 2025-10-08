@@ -82,25 +82,12 @@ Desktop.ini
 *.sql
 !backend/src/database/schema.sql
 
-# Deployment artifacts
+# Obsolete version-specific documentation
+*_v[0-9]*.md
+*_v[0-9]*.txt
+
+# Deployment scripts (version-specific)
 deploy_v*.sh
-!deploy_v0.11.0_to_sandbox.sh
-
-# Version-specific documentation (keep only key versions)
-*_v0.[0-9]*.md
-!OCR_ENHANCEMENT_v0.11.0.md
-!DEPLOYMENT_READY_v0.11.0.md
-!DEPLOYMENT_SUCCESS_v0.11.0.md
-!DATA_PERSISTENCE_FIXES_v0.16.0.md
-!REPOSITORY_CLEANUP_v0.17.0.md
-!ENVIRONMENT_AWARE_LOGIN_v0.18.0.md
-
-# Temporary analysis & production-specific docs
-PRODUCTION_DEPLOYMENT_ANALYSIS.md
-PRODUCTION_DEPLOYMENT_v*.md
-!PRODUCTION_DEPLOYMENT_v0.17.0.md
-PRODUCTION_PASSWORD_RESET.md
-MERGE_ANALYSIS.md
 
 # Troubleshooting & diagnostic scripts
 diagnose_*.sh
@@ -111,15 +98,8 @@ generate_*.sh
 populate_*.sql
 sandbox_*.sql
 
-# Lock files (keep package-lock.json for consistency)
-# yarn.lock
-# pnpm-lock.yaml
-
 # Optional npm cache directory
 .npm
-
-# Optional eslint cache
-.eslintcache
 
 # Optional REPL history
 .node_repl_history

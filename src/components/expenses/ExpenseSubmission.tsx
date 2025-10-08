@@ -5,21 +5,11 @@ import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
+import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
 
 interface ExpenseSubmissionProps {
   user: User;
 }
-
-// Helper function for reimbursement status colors
-const getReimbursementStatusColor = (status: string | undefined) => {
-  const colors = {
-    'pending review': 'bg-yellow-100 text-yellow-800',
-    'approved': 'bg-emerald-100 text-emerald-800',
-    'rejected': 'bg-red-100 text-red-800',
-    'paid': 'bg-blue-100 text-blue-800'
-  };
-  return colors[status as keyof typeof colors] || colors['pending review'];
-};
 
 export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -202,26 +192,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending'];
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
-  };
 
   const hasActiveFilters = dateFilter || eventFilter !== 'all' || categoryFilter !== 'all' || 
                           merchantFilter || cardFilter !== 'all' || statusFilter !== 'all' || reimbursementFilter !== 'all';
