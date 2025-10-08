@@ -7,27 +7,33 @@
 
 ## Branch Naming Convention
 
-### Sandbox Feature Branches
+### Sandbox Development Branch
 
-**Format:** `sandbox-v{MAJOR}.{MINOR}.{PATCH}`
+**Format:** `sandbox-v{MAJOR}.{MINOR}.{PATCH}` (initial version when created)
 
 **Examples:**
 - `sandbox-v0.7.1`
 - `sandbox-v0.19.0`
-- `sandbox-v0.20.0`
 
-**Purpose:** Sandbox branches are used for developing and testing new features in the sandbox environment before promoting to production.
+**Purpose:** Use ONE sandbox branch for all development work until ready to deploy to production.
 
 ### Branch Lifecycle
 
 ```
-1. Create sandbox branch:     sandbox-v0.19.0
-2. Develop & test in sandbox
-3. Create Pull Request:        sandbox-v0.19.0 → main
+1. Create/use sandbox branch:  sandbox-v0.19.0
+2. Make multiple changes and version bumps on same branch
+   - v0.19.0 (initial feature)
+   - v0.19.1 (bug fix)
+   - v0.20.0 (new feature)
+   - etc.
+3. When ready: Create Pull Request → main
 4. Review & approve
 5. Merge to main
 6. Deploy to production
+7. Create NEW sandbox branch for next cycle
 ```
+
+**Key Point:** Keep working on the same sandbox branch for multiple updates. Only create a new sandbox branch when you're ready to start fresh after a production deployment.
 
 ---
 
@@ -60,7 +66,7 @@
 ### DON'T ❌
 
 - **Don't use feature/ prefix for sandbox:** Use `sandbox-v{VERSION}` instead
-- **Don't reuse branch names:** Each version should have its own branch
+- **Don't create a new branch for every change:** Accumulate changes on one sandbox branch
 - **Don't merge without testing:** Always test in sandbox first
 - **Don't skip version bumps:** Update version number with each release
 
@@ -111,34 +117,35 @@ Following [Semantic Versioning](https://semver.org/):
 
 ## Workflow Examples
 
-### Creating a New Feature
+### Working on Sandbox Branch
 
 ```bash
-# 1. Start from main
-git checkout main
-git pull origin main
+# 1. Switch to existing sandbox branch
+git checkout sandbox-v0.19.0
+git pull origin sandbox-v0.19.0
 
-# 2. Bump version in package.json (e.g., 0.19.0 → 0.20.0)
-# Edit package.json: "version": "0.20.0"
+# 2. Make your changes
+# ... develop feature or fix bug ...
 
-# 3. Create sandbox branch
-git checkout -b sandbox-v0.20.0
+# 3. Bump version in package.json
+# - For new feature: 0.19.1 → 0.20.0
+# - For bug fix: 0.19.1 → 0.19.2
 
-# 4. Develop your feature
-# ... make changes ...
+# 4. Update CHANGELOG.md
+# Add entry for new version
 
-# 5. Update CHANGELOG.md
-# Add entry for v0.20.0
-
-# 6. Commit
+# 5. Commit changes
 git add .
 git commit -m "feat: Add new feature (v0.20.0)"
 
-# 7. Push to GitHub
-git push origin sandbox-v0.20.0
+# 6. Push to GitHub
+git push origin sandbox-v0.19.0
 
-# 8. Deploy to sandbox for testing
+# 7. Deploy to sandbox for testing
 # (see deployment instructions)
+
+# 8. Repeat steps 2-7 for additional changes
+# All changes accumulate on the same sandbox-v0.19.0 branch
 ```
 
 ### Deploying to Sandbox
@@ -153,10 +160,10 @@ pct exec 203 -- bash
 # Navigate to app
 cd /opt/expenseapp
 
-# Fetch and checkout
+# Fetch and pull latest changes
 git fetch origin
-git checkout sandbox-v0.20.0
-git pull origin sandbox-v0.20.0
+git checkout sandbox-v0.19.0  # Use your current sandbox branch
+git pull origin sandbox-v0.19.0
 
 # Build and deploy
 npm install
@@ -172,7 +179,7 @@ exit
 
 ```bash
 # 1. After thorough sandbox testing, create PR on GitHub
-# From: sandbox-v0.20.0
+# From: sandbox-v0.19.0 (with all accumulated changes)
 # To: main
 
 # 2. Get approval and merge
@@ -193,6 +200,11 @@ exit
 # (follow production deployment process)
 
 # 4. Verify and monitor
+
+# 5. (Optional) Create new sandbox branch for next development cycle
+git checkout main
+git pull origin main
+git checkout -b sandbox-v0.21.0  # or whatever next version
 ```
 
 ---
@@ -304,10 +316,9 @@ Production Environment (192.168.1.201, 192.168.1.139)
 | 0.7.1 | sandbox-v0.7.1 | Earlier | PATCH | Previous sandbox version |
 | 0.19.0 | sandbox-v0.19.0 | Oct 8, 2025 | MINOR | Inline column filtering (new feature) |
 | 0.19.1 | sandbox-v0.19.0 | Oct 8, 2025 | PATCH | Expense update validation fix (bug fix) |
-| 0.20.0 | sandbox-v0.20.0 | TBD | MINOR | Next feature |
+| 0.20.0 | sandbox-v0.19.0 | Oct 8, 2025 | MINOR | Two-column card management (new feature) |
 
-**Note:** Branch names stay the same (sandbox-v0.19.0) while version increments within it (0.19.0 → 0.19.1).  
-Create a new branch (sandbox-v0.20.0) only when adding a new MINOR feature.
+**Note:** All versions are developed on the same `sandbox-v0.19.0` branch. The branch name doesn't change with each version increment - it accumulates all changes until ready for production deployment.
 
 ---
 
@@ -328,8 +339,9 @@ Create a new branch (sandbox-v0.20.0) only when adding a new MINOR feature.
 4. **Use conventional commits**
    - Clear, standardized commit messages
    
-5. **Keep branches focused**
-   - One feature per sandbox branch
+5. **Accumulate changes on one sandbox branch**
+   - Multiple features and fixes can coexist on the same sandbox branch
+   - Only create a new sandbox branch after merging to production
    
 6. **Clean up old branches**
    - Archive or delete after merging to main
@@ -342,8 +354,8 @@ Create a new branch (sandbox-v0.20.0) only when adding a new MINOR feature.
 2. **Don't skip version bumps**
    - Every release needs a version number
    
-3. **Don't mix features**
-   - Keep each sandbox branch focused on one feature
+3. **Don't create unnecessary branches**
+   - Work on one sandbox branch until ready for production
    
 4. **Don't merge without approval**
    - Always get code review before production
