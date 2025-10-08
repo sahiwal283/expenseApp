@@ -19,12 +19,12 @@ interface AppSettings {
 }
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
-  // Access control: Only admins can access settings
-  if (user.role !== 'admin') {
+  // Access control: Only admins and accountants can access settings
+  if (user.role !== 'admin' && user.role !== 'accountant') {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">Access denied. Only administrators can access settings.</p>
+          <p className="text-red-700">Access denied. Only administrators and accountants can access settings.</p>
         </div>
       </div>
     );

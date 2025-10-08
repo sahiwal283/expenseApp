@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.6] - 2025-10-08
+
+### Changed
+- **Accountant Settings Access**: Restored Settings page access for accountant role
+  - Settings tab now visible to both administrators and accountants
+  - Accountants need access to manage card options and entity mappings
+  - Updated access control in AdminSettings component
+
+### Technical
+- Frontend version: 0.31.5 → 0.31.6
+- Updated Sidebar navigation roles for Settings (added 'accountant')
+- Modified role check in AdminSettings component
+
+---
+
 ## [0.31.5] - 2025-10-08
 
 ### Changed
