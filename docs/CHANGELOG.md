@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Backend 2.4.2] - 2025-10-08
+
+### Fixed
+- **CRITICAL: Database Schema Constraint for Reimbursement Status**:
+  - Fixed database CHECK constraint that was blocking reimbursement status updates
+  - Constraint was only allowing old values: `'pending'`, `'approved'`, `'rejected'`
+  - Updated to allow new values: `'pending review'`, `'approved'`, `'rejected'`, `'paid'`
+  - Migrated all existing `'pending'` values to `'pending review'` in database
+  - Updated `schema.sql` to prevent this issue in future deployments
+  - Resolves "Failed to update expense" error when accountants try to change reimbursement status
+
+### Technical
+- Backend version: 2.4.1 → 2.4.2
+- Database migration: Dropped old constraint, added new constraint with all four valid statuses
+- Schema file updated to match production database configuration
+- Added extensive logging to reimbursement endpoint for future diagnostics
+
+---
+
 ## [0.33.1] - 2025-10-08
 
 ### Changed
