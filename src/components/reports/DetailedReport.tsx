@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Calendar, MapPin, User, DollarSign } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -164,7 +165,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <div>
                       <div className="flex items-center text-sm text-gray-900">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {new Date(expense.date).toLocaleDateString()}
+                        {formatLocalDate(expense.date)}
                       </div>
                       {event && (
                         <div className="text-xs text-gray-500 mt-1">

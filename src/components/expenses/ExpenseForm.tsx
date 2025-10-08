@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { api } from '../../utils/api';
+import { formatForDateInput } from '../../utils/dateUtils';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -26,7 +27,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     amount: expense?.amount || 0,
     category: expense?.category || '',
     merchant: expense?.merchant || '',
-    date: expense?.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    date: expense?.date ? formatForDateInput(expense.date) : new Date().toISOString().split('T')[0],
     description: expense?.description || '',
     cardUsed: expense?.cardUsed || '',
     reimbursementRequired: expense?.reimbursementRequired || false,

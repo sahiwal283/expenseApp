@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, DollarSign, MapPin } from 'lucide-react';
 import { Expense } from '../../App';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 interface RecentExpensesProps {
   onPageChange: (page: string) => void;
@@ -56,7 +57,7 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
                   <p className="font-medium text-gray-900">{expense.merchant}</p>
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
                     <Clock className="w-3 h-3" />
-                    <span>{new Date(expense.date).toLocaleDateString()}</span>
+                    <span>{formatLocalDate(expense.date)}</span>
                     {expense.location && (
                       <>
                         <MapPin className="w-3 h-3 ml-2" />

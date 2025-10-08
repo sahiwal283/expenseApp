@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 interface ApprovalsProps {
   user: User;
@@ -347,7 +348,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <div>
                           <div className="flex items-center text-sm text-gray-900">
                             <Calendar className="w-4 h-4 mr-1" />
-                            {new Date(expense.date).toLocaleDateString()}
+                            {formatLocalDate(expense.date)}
                           </div>
                           <div className="flex items-center text-xs text-gray-500 mt-1">
                             <UserIcon className="w-3 h-3 mr-1" />

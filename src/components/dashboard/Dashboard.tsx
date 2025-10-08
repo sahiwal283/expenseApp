@@ -6,6 +6,7 @@ import { StatsCard } from './StatsCard';
 import { RecentExpenses } from './RecentExpenses';
 import { UpcomingEvents } from './UpcomingEvents';
 import { BudgetOverview } from './BudgetOverview';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 interface DashboardProps {
   user: User;
@@ -49,8 +50,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
     today.setHours(0, 0, 0, 0);
     
     const activeEvents = events.filter(event => {
-      const endDate = new Date(event.endDate);
-      endDate.setHours(0, 0, 0, 0);
+      const endDate = parseLocalDate(event.endDate);
       return endDate >= today;
     }).length;
 

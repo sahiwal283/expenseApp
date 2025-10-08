@@ -6,6 +6,7 @@ import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';
 import { AccountantDashboard } from '../accountant/AccountantDashboard';
 import { api } from '../../utils/api';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 interface ReportsProps {
   user: User;
@@ -84,7 +85,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       
       let periodMatch = true;
       if (selectedPeriod !== 'all') {
-        const expenseDate = new Date(expense.date);
+        const expenseDate = parseLocalDate(expense.date);
         const now = new Date();
         
         switch (selectedPeriod) {

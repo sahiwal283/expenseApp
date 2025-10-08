@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart3, PieChart } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 interface ExpenseChartProps {
   expenses: Expense[];
@@ -164,10 +165,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 <div key={month} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900">
-                      {new Date(month + '-01').toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long' 
-                      })}
+                      {formatLocalDate(month + '-01', { year: 'numeric', month: 'long' })}
                     </span>
                     <span className="text-sm font-semibold text-gray-900">
                       ${amount.toLocaleString()}

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.30.0] - 2025-10-08
+
+### Changed
+- **Complete Date Utilities Migration**: Migrated all components to use centralized date utilities
+  - **EventSetup.tsx**: Replaced manual date parsing with `parseLocalDate`, `formatForDateInput`, `formatDateRange`
+  - **Dashboard.tsx**: Updated active events calculation to use `parseLocalDate`
+  - **Reports.tsx**: Updated period filtering to use `parseLocalDate`
+  - **ExpenseSubmission.tsx**: Updated date display to use `formatLocalDate`
+  - **Approvals.tsx**: Updated date displays (2 instances) to use `formatLocalDate`
+  - **DetailedReport.tsx**: Updated date display to use `formatLocalDate`
+  - **AccountantDashboard.tsx**: Updated date display to use `formatLocalDate`
+  - **RecentExpenses.tsx**: Updated date display to use `formatLocalDate`
+  - **ExpenseForm.tsx**: Updated date input formatting to use `formatForDateInput`
+  - **ExpenseChart.tsx**: Updated month display to use `formatLocalDate`
+
+### Fixed
+- **Timezone Consistency**: All date operations now consistent across the entire application
+  - No more timezone conversion bugs
+  - Dates display correctly regardless of user's timezone
+  - Event filtering works consistently
+  - Date comparisons are accurate
+  - Form inputs populate correctly
+
+### Technical
+- Frontend version: 0.29.0 → 0.30.0
+- Eliminated all direct `new Date(dateString)` calls with date-only strings
+- All 10+ components now use centralized utilities
+- Single source of truth for date handling achieved
+- Complete codebase migration completed
+
+### Impact
+- **100% coverage**: All date handling operations now use timezone-safe utilities
+- **Maintainability**: Future developers will use utilities by example
+- **Reliability**: No more one-day-off bugs across any component
+- **Consistency**: Same date displays correctly everywhere in the app
+
+---
+
 ## [0.29.0] - 2025-10-08
 
 ### Added

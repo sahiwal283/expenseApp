@@ -4,6 +4,7 @@ import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { api } from '../../utils/api';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -408,7 +409,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     <tr key={expense.id} className="hover:bg-gray-50">
                       {/* Date */}
                       <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
-                        {new Date(expense.date).toLocaleDateString()}
+                        {formatLocalDate(expense.date)}
                       </td>
                       {/* Event */}
                       <td className="px-6 py-4 text-sm text-gray-900">
