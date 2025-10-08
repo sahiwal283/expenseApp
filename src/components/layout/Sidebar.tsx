@@ -24,7 +24,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
-  { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator'] },
+  { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
   { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant'] },
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant'] },

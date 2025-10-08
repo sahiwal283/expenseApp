@@ -197,42 +197,53 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const activeEvents = events.filter(event => {
+  // Filter events based on user role and permissions
+  const filteredEvents = events.filter(event => {
+    // Admin and coordinator can see all events
+    if (user.role === 'admin' || user.role === 'coordinator') {
+      return true;
+    }
+    // Other users can only see events they're assigned to as participants
+    return event.participants.some(p => p.id === user.id);
+  });
+
+  const activeEvents = filteredEvents.filter(event => {
     const endDate = parseLocalDate(event.endDate);
     return endDate >= today;
   });
 
-  const pastEvents = events.filter(event => {
+  const pastEvents = filteredEvents.filter(event => {
     const endDate = parseLocalDate(event.endDate);
     return endDate < today;
   });
 
   const displayedEvents = viewMode === 'active' ? activeEvents : pastEvents;
 
-  if (user.role !== 'coordinator' && user.role !== 'admin') {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">Access denied. Only coordinators and admins can manage events.</p>
-        </div>
-      </div>
-    );
-  }
+  // Only admins and coordinators can create/edit events
+  const canManageEvents = user.role === 'admin' || user.role === 'coordinator';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Event Management</h1>
-          <p className="text-gray-600 mt-1">Create and manage trade show events</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {canManageEvents ? 'Event Management' : 'My Events'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {canManageEvents 
+              ? 'Create and manage trade show events' 
+              : 'View events you are assigned to'}
+          </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Create Event</span>
-        </button>
+        {canManageEvents && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Create Event</span>
+          </button>
+        )}
       </div>
 
       {/* View Mode Toggle */}
@@ -549,18 +560,22 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                       <span className="font-medium">${event.budget.toLocaleString()}</span>
                     </div>
                   )}
-                  <button
-                    onClick={() => handleEdit(event)}
-                    className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(event.id)}
-                    className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    Delete
-                  </button>
+                  {canManageEvents && (
+                    <>
+                      <button
+                        onClick={() => handleEdit(event)}
+                        className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               

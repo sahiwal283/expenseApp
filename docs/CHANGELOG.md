@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.33.0] - 2025-10-08
+
+### Added
+- **Dynamic Events Page with Role-Based Filtering**:
+  - Users now see only events they're assigned to as participants
+  - Admins and coordinators continue to see all events
+  - Events tab now accessible to all roles (salespeople, accountants, coordinators, admins)
+  - Page title changes based on role: "Event Management" vs "My Events"
+  - Description updates based on permissions
+
+### Changed
+- **Event Management Permissions**:
+  - Removed hard "Access Denied" block for non-coordinators
+  - Create Event button only visible to admins and coordinators
+  - Edit/Delete buttons only visible to admins and coordinators
+  - All users can view events they're assigned to
+  - Filtering logic: admin/coordinator see all; others see only their assigned events
+
+### Technical
+- Frontend version: 0.32.3 → 0.33.0
+- Updated EventSetup component with role-based filtering
+- Added `canManageEvents` permission check
+- Updated Sidebar navigation to show Events for all roles
+- Conditional rendering of management UI based on user role
+
+---
+
 ## [0.32.3] - 2025-10-08
 
 ### Fixed
