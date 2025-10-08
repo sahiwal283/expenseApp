@@ -23,8 +23,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [eventFilter, setEventFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [merchantFilter, setMerchantFilter] = useState('');
-  const [amountMinFilter, setAmountMinFilter] = useState('');
-  const [amountMaxFilter, setAmountMaxFilter] = useState('');
   const [cardFilter, setCardFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [reimbursementFilter, setReimbursementFilter] = useState('all');
@@ -147,8 +145,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setEventFilter('all');
     setCategoryFilter('all');
     setMerchantFilter('');
-    setAmountMinFilter('');
-    setAmountMaxFilter('');
     setCardFilter('all');
     setStatusFilter('all');
     setReimbursementFilter('all');
@@ -170,10 +166,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     
     // Merchant filter
     if (merchantFilter && !expense.merchant.toLowerCase().includes(merchantFilter.toLowerCase())) return false;
-    
-    // Amount filters
-    if (amountMinFilter && expense.amount < parseFloat(amountMinFilter)) return false;
-    if (amountMaxFilter && expense.amount > parseFloat(amountMaxFilter)) return false;
     
     // Card filter
     if (cardFilter !== 'all' && expense.cardUsed !== cardFilter) return false;
@@ -213,8 +205,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   };
 
   const hasActiveFilters = dateFilter || eventFilter !== 'all' || categoryFilter !== 'all' || 
-                          merchantFilter || amountMinFilter || amountMaxFilter || 
-                          cardFilter !== 'all' || statusFilter !== 'all' || reimbursementFilter !== 'all';
+                          merchantFilter || cardFilter !== 'all' || statusFilter !== 'all' || reimbursementFilter !== 'all';
 
   if (showForm) {
     return (

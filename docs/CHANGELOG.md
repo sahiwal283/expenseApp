@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.26.2] - 2025-10-08
+
+### Changed
+- **Expense Management Filters**: Made inline filters more subtle and less intrusive
+  - Reduced background from `bg-gray-100` to `bg-gray-50` for lighter appearance
+  - Changed border from `border-gray-200` to `border-gray-100` for softer edges
+  - Reduced padding from `py-2` to `py-1.5` for more compact layout
+  - Changed filter inputs to white background with lighter borders (`border-gray-200`)
+  - Reduced focus ring from `ring-2` to `ring-1` for subtler interaction
+  - Lighter text color (`text-gray-600`) for less visual weight
+  
+### Removed
+- **Amount Filter**: Removed Min/Max amount filter inputs
+  - Amount field no longer has filter controls
+  - Removed `amountMinFilter` and `amountMaxFilter` state variables
+  - Removed amount filtering logic from expense filter function
+  - Cleaner, simpler filtering interface
+
+### Technical
+- Frontend version: 0.26.1 → 0.26.2
+
+---
+
 ## [0.26.1] - 2025-10-08
 
 ### Fixed
