@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.5] - 2025-10-08
+
+### Changed
+- **Reimbursement Field Removed**: Completely removed reimbursement checkbox from expense form
+  - Reimbursement requirement is now silently auto-determined by card selection
+  - Personal cards automatically flag for reimbursement (no UI notification)
+  - Cleaner, more streamlined expense submission form
+  - Reduced visual clutter and form complexity
+
+### Technical
+- Frontend version: 0.31.4 → 0.31.5
+- Removed reimbursement checkbox UI entirely
+- Background auto-flagging logic still active via useEffect
+
+---
+
 ## [0.31.4] - 2025-10-08
 
 ### Changed

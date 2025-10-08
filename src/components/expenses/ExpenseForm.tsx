@@ -468,44 +468,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
             </div>
           )}
 
-          {/* Reimbursement Required - Only show if NOT auto-flagged */}
-          {!formData.cardUsed.toLowerCase().includes('personal') && (
-            <div className={`rounded-lg p-6 ${formData.reimbursementRequired ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50'}`}>
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="reimbursementRequired"
-                  checked={formData.reimbursementRequired}
-                  onChange={(e) => setFormData({ ...formData, reimbursementRequired: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <label htmlFor="reimbursementRequired" className="text-sm font-medium text-gray-900">
-                  Reimbursement Required
-                </label>
-              </div>
-              <p className="text-sm text-gray-600 mt-2 ml-7">
-                Check this box if this expense requires separate reimbursement approval from the accountant.
-              </p>
-            </div>
-          )}
-
-          {/* Show notification when personal card auto-flags reimbursement */}
-          {formData.cardUsed.toLowerCase().includes('personal') && (
-            <div className="rounded-lg p-6 bg-yellow-50 border-2 border-yellow-300">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="w-5 h-5 text-yellow-700" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-yellow-900">Reimbursement Required (Auto-flagged for Personal Card)</p>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    Personal card expenses are automatically flagged for reimbursement approval.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
             <button
               type="button"
