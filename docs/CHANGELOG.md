@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.32.0] - 2025-10-08
+
+### Added
+- **Enhanced Reimbursement Status Workflow**:
+  - Added "Pending Review" status (replaces "Pending")
+  - Added "Paid" status for completed reimbursements
+  - Automatic "Pending Review" status when expense flagged for reimbursement
+  - Complete reimbursement lifecycle: Pending Review → Approved/Rejected → Paid
+
+### Changed
+- **Reimbursement Status Flow**:
+  - Changed default status from "pending" to "pending review"
+  - Updated dropdown options in Approvals modal: Pending Review, Approved, Rejected, Paid
+  - Accountants/admins can approve/reject, then mark as paid once user is paid out
+  - Updated stats cards to show "pending review" reimbursements
+  - Updated all type definitions and constants
+
+### Technical
+- Frontend version: 0.31.6 → 0.32.0
+- Updated REIMBURSEMENT_STATUS constants
+- Updated type definitions in App.tsx and types.ts
+- Modified ExpenseForm, Approvals, and DetailedReport components
+- Updated reimbursement status checks across all components
+
+---
+
 ## [0.31.6] - 2025-10-08
 
 ### Changed

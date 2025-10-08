@@ -39,9 +39,10 @@ export type ExpenseStatus = typeof EXPENSE_STATUS[keyof typeof EXPENSE_STATUS];
 
 // ========== REIMBURSEMENT STATUS ==========
 export const REIMBURSEMENT_STATUS = {
-  PENDING: 'pending',
+  PENDING_REVIEW: 'pending review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  PAID: 'paid',
 } as const;
 
 export type ReimbursementStatus = typeof REIMBURSEMENT_STATUS[keyof typeof REIMBURSEMENT_STATUS];

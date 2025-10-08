@@ -42,7 +42,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   // Edit modal state
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editStatus, setEditStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
-  const [editReimbursementStatus, setEditReimbursementStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [editReimbursementStatus, setEditReimbursementStatus] = useState<'pending review' | 'approved' | 'rejected' | 'paid'>('pending review');
   const [editEntity, setEditEntity] = useState<string>('');
 
   // Load data
@@ -95,7 +95,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   // Calculate stats
   const stats = useMemo(() => {
     const pendingExpenses = expenses.filter(e => e.status === 'pending');
-    const pendingReimbursements = expenses.filter(e => e.reimbursementRequired && e.reimbursementStatus === 'pending');
+    const pendingReimbursements = expenses.filter(e => e.reimbursementRequired && e.reimbursementStatus === 'pending review');
     const unassignedEntities = expenses.filter(e => !e.zohoEntity);
     const totalPendingAmount = pendingExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -159,14 +159,14 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   const openEditModal = (expense: Expense) => {
     setEditingExpense(expense);
     setEditStatus(expense.status as 'pending' | 'approved' | 'rejected');
-    setEditReimbursementStatus(expense.reimbursementStatus as 'pending' | 'approved' | 'rejected');
+    setEditReimbursementStatus(expense.reimbursementStatus as 'pending review' | 'approved' | 'rejected' | 'paid');
     setEditEntity(expense.zohoEntity || '');
   };
 
   const closeEditModal = () => {
     setEditingExpense(null);
     setEditStatus('pending');
-    setEditReimbursementStatus('pending');
+    setEditReimbursementStatus('pending review');
     setEditEntity('');
   };
 
@@ -387,7 +387,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           }`}>
                             {expense.reimbursementRequired ? 'Required' : 'Not Required'}
                           </span>
-                          {expense.reimbursementRequired && expense.reimbursementStatus === 'pending' && (
+                          {expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
                             <div className="flex items-center space-x-1 mt-1">
                               <button
                                 onClick={() => handleReimbursementApproval(expense, 'approved')}
@@ -529,12 +529,13 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     </label>
                     <select
                       value={editReimbursementStatus}
-                      onChange={(e) => setEditReimbursementStatus(e.target.value as 'pending' | 'approved' | 'rejected')}
+                      onChange={(e) => setEditReimbursementStatus(e.target.value as 'pending review' | 'approved' | 'rejected' | 'paid')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="pending">Pending</option>
+                      <option value="pending review">Pending Review</option>
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
+                      <option value="paid">Paid</option>
                     </select>
                   </div>
                 )}

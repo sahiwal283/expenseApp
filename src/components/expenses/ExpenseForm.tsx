@@ -31,7 +31,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     description: expense?.description || '',
     cardUsed: expense?.cardUsed || '',
     reimbursementRequired: expense?.reimbursementRequired || false,
-    reimbursementStatus: expense?.reimbursementStatus || 'pending',
+    reimbursementStatus: expense?.reimbursementStatus || 'pending review',
     status: expense?.status || 'pending' as const,
     zohoEntity: expense?.zohoEntity || '',
     location: expense?.location || '',

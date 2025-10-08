@@ -209,7 +209,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
                     }`}>
                       {expense.reimbursementRequired ? 
-                        `Required (${expense.reimbursementStatus || 'pending'})` : 
+                        `Required (${expense.reimbursementStatus || 'pending review'})` : 
                         'Not Required'
                       }
                     </span>
@@ -228,7 +228,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   </td>
                   {onReimbursementApproval && (
                     <td className="px-6 py-4 text-right">
-                      {expense.reimbursementRequired && expense.reimbursementStatus === 'pending' && (
+                      {expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => onReimbursementApproval(expense, 'approved')}
