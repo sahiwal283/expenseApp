@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.25.0] - 2025-10-08
+
+### Changed
+- **Approvals Page Filter UI**: Redesigned filter interface to be less intrusive
+  - Removed always-visible filter bar that took up significant space
+  - Added compact "Filters" button in table header
+  - Clicking button opens modal popup with all filter options
+  - Modal includes: Search, Status, Category, Event, User, Reimbursement, Entity
+  - Added "Clear All" button to reset all filters at once
+  - Filters apply in real-time while modal is open
+  - Cleaner, more spacious layout for expense table
+
+### Technical
+- Frontend version: 0.24.9 → 0.25.0
+
+---
+
 ## [0.24.9] - 2025-10-08
 
 ### Fixed
