@@ -456,11 +456,42 @@ router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
       zoho_entity
     } = req.body;
 
+    // Validate required fields
+    if (!event_id || !category || !merchant || !amount || !date || !card_used) {
+      console.error('Update validation failed:', { event_id, category, merchant, amount, date, card_used });
+      return res.status(400).json({ 
+        error: 'Required fields missing', 
+        missing: {
+          event_id: !event_id,
+          category: !category,
+          merchant: !merchant,
+          amount: !amount,
+          date: !date,
+          card_used: !card_used
+        }
+      });
+    }
+
     let receiptUrl = null;
+    let ocrText = null;
+    let ocrConfidence = null;
+    let extractedData = null;
     
     // Process uploaded receipt if provided
     if (req.file) {
       receiptUrl = `/uploads/${req.file.filename}`;
+      
+      // Perform OCR on the new receipt
+      try {
+        const ocrResult = await processOCR(req.file.path);
+        ocrText = ocrResult.text;
+        ocrConfidence = ocrResult.confidence;
+        extractedData = ocrResult.structured;
+        console.log(`Receipt OCR completed with ${(ocrConfidence * 100).toFixed(2)}% confidence`);
+      } catch (ocrError) {
+        console.error('OCR processing failed during update:', ocrError);
+        // Continue with update even if OCR fails
+      }
     }
 
     // Build dynamic query based on whether receipt is uploaded
@@ -468,29 +499,44 @@ router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
     let queryParams: any[];
     
     if (receiptUrl) {
+      // Update with new receipt and OCR data
       updateQuery = `UPDATE expenses 
        SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
            card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-           receipt_url = $11, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12 AND user_id = $13
+           receipt_url = $11, ocr_text = $12, extracted_data = $13, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $14 AND user_id = $15
        RETURNING *`;
-      queryParams = [event_id, category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, receiptUrl, id, req.user?.id];
+      queryParams = [
+        event_id, category, merchant, amount, date, description, 
+        card_used, reimbursement_required, location, zoho_entity,
+        receiptUrl, ocrText, extractedData ? JSON.stringify(extractedData) : null,
+        id, req.user?.id
+      ];
     } else {
+      // Update without changing receipt
       updateQuery = `UPDATE expenses 
        SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
            card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $11 AND user_id = $12
        RETURNING *`;
-      queryParams = [event_id, category, merchant, amount, date, description, card_used, reimbursement_required, location, zoho_entity, id, req.user?.id];
+      queryParams = [
+        event_id, category, merchant, amount, date, description, 
+        card_used, reimbursement_required, location, zoho_entity, 
+        id, req.user?.id
+      ];
     }
 
+    console.log(`Updating expense ${id} with:`, { event_id, category, merchant, card_used, hasReceipt: !!receiptUrl });
+    
     const result = await query(updateQuery, queryParams);
 
     if (result.rows.length === 0) {
+      console.error(`Update failed: Expense ${id} not found or unauthorized for user ${req.user?.id}`);
       return res.status(404).json({ error: 'Expense not found or unauthorized' });
     }
 
+    console.log(`Successfully updated expense ${id}`);
     res.json(normalizeExpense(result.rows[0]));
   } catch (error) {
     console.error('Error updating expense:', error);
