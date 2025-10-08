@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.8] - 2025-10-08
+
+### Removed
+- **Main Dashboard**: Removed "Team Members" stats card
+  - Streamlined dashboard to show only essential metrics
+  - Reduced stats grid from 4 cards to 3 cards
+  - Adjusted grid layout to `xl:grid-cols-3` for better spacing
+  - Remaining cards: Total Expenses, Pending Approvals, Active Events
+
+### Technical
+- Frontend version: 0.24.7 → 0.24.8
+
+---
+
 ## [0.24.7] - 2025-10-08
 
 ### Fixed

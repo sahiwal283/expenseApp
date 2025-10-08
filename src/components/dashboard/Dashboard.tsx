@@ -89,7 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <StatsCard
           title="Total Expenses"
           value={`$${stats.totalExpenses.toLocaleString()}`}
@@ -112,14 +112,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           icon={Calendar}
           color="emerald"
           trend={`${stats.totalEvents} total`}
-          trendUp={true}
-        />
-        <StatsCard
-          title="Team Members"
-          value={stats.teamMembers.toString()}
-          icon={Users}
-          color="purple"
-          trend={`${stats.teamMembers} active`}
           trendUp={true}
         />
       </div>
