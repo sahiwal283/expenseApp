@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.26.0] - 2025-10-08
+
+### Added
+- **Event Management**: Active/Past Events toggle functionality
+  - Added toggle buttons to switch between "Active Events" and "Past Events"
+  - Events automatically categorized based on end date
+  - Active Events: Shows events where end date is today or in the future
+  - Past Events: Shows events where end date has passed
+  - Event counts displayed on each toggle button
+  - Cleaner organization and easier event navigation
+
+### Technical
+- Frontend version: 0.25.2 → 0.26.0
+
+---
+
 ## [0.25.2] - 2025-10-08
 
 ### Changed

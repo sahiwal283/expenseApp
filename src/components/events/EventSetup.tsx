@@ -12,6 +12,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TradeShow | null>(null);
+  const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -196,6 +197,24 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     });
   };
 
+  // Filter events based on end date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const activeEvents = events.filter(event => {
+    const endDate = new Date(event.endDate);
+    endDate.setHours(0, 0, 0, 0);
+    return endDate >= today;
+  });
+
+  const pastEvents = events.filter(event => {
+    const endDate = new Date(event.endDate);
+    endDate.setHours(0, 0, 0, 0);
+    return endDate < today;
+  });
+
+  const displayedEvents = viewMode === 'active' ? activeEvents : pastEvents;
+
   if (user.role !== 'coordinator' && user.role !== 'admin') {
     return (
       <div className="p-6">
@@ -219,6 +238,30 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
         >
           <Plus className="w-5 h-5" />
           <span>Create Event</span>
+        </button>
+      </div>
+
+      {/* View Mode Toggle */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
+        <button
+          onClick={() => setViewMode('active')}
+          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+            viewMode === 'active'
+              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Active Events ({activeEvents.length})
+        </button>
+        <button
+          onClick={() => setViewMode('past')}
+          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+            viewMode === 'past'
+              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Past Events ({pastEvents.length})
         </button>
       </div>
 
@@ -476,14 +519,20 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
       {/* Events List */}
       <div className="grid gap-6">
-        {events.length === 0 ? (
+        {displayedEvents.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No events created yet</h3>
-            <p className="text-gray-500">Create your first trade show event to get started.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {viewMode === 'active' ? 'No active events' : 'No past events'}
+            </h3>
+            <p className="text-gray-500">
+              {viewMode === 'active' 
+                ? 'Create your first trade show event to get started.' 
+                : 'Past events will appear here once their end date has passed.'}
+            </p>
           </div>
         ) : (
-          events.map((event) => (
+          displayedEvents.map((event) => (
             <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
