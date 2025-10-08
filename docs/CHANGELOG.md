@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.2] - 2025-10-08
+
+### Changed
+- **Entity Running Totals Dashboard**: Made more compact and space-efficient
+  - Reduced padding and spacing throughout
+  - Smaller header icon and text
+  - More grid columns (now up to 6 on xl screens, was 4)
+  - Smaller entity cards with reduced padding
+  - Amounts shown without decimal places for cleaner look
+  - Warning message more compact
+  - Takes up less vertical space on Reports page
+
+### Technical
+- Frontend version: 0.24.1 → 0.24.2
+
+---
+
 ## [0.24.1] - 2025-10-08
 
 ### Removed

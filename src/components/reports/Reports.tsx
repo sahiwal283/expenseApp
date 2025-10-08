@@ -239,34 +239,34 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Totals Dashboard */}
       {entityTotals.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Entity Running Totals</h3>
-              <p className="text-sm text-gray-600">All-time expenses by Zoho entity</p>
+              <h3 className="text-base font-semibold text-gray-900">Entity Running Totals</h3>
+              <p className="text-xs text-gray-600">All-time expenses by Zoho entity</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
             {entityTotals.map(({ entity, amount }) => (
               <div 
                 key={entity} 
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200"
+                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-md transition-all duration-200"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 mb-1 truncate" title={entity}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-600 mb-1 truncate" title={entity}>
                       {entity}
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <p className="text-lg font-bold text-gray-900">
+                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                   </div>
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center ml-2">
-                    <DollarSign className="w-4 h-4 text-purple-600" />
+                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center ml-2 flex-shrink-0">
+                    <DollarSign className="w-3 h-3 text-purple-600" />
                   </div>
                 </div>
               </div>
@@ -274,12 +274,12 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           </div>
 
           {expenses.filter(e => !e.zohoEntity).length > 0 && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs font-bold">!</span>
                 </div>
-                <p className="text-sm text-yellow-800">
+                <p className="text-xs text-yellow-800">
                   <span className="font-semibold">{expenses.filter(e => !e.zohoEntity).length} expenses</span> have no entity assigned (${expenses.filter(e => !e.zohoEntity).reduce((sum, e) => sum + e.amount, 0).toLocaleString()})
                 </p>
               </div>
