@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.22.0] - 2025-10-08
+
+### Added
+- **Entity Running Totals Dashboard**: New dashboard on Reports page showing all-time totals for each Zoho entity
+  - Displays entity name and total amount spent
+  - Sorted by amount (highest to lowest)
+  - Responsive grid layout (1-4 columns based on screen size)
+  - Hover effects for better UX
+  - Warning indicator for expenses without entity assignment
+  - Shows count and total of unassigned expenses
+
+### Changed
+- Reports page layout: Entity totals dashboard now appears between filters and summary stats
+
+### Technical
+- Frontend version: 0.21.0 → 0.22.0
+
+---
+
 ## [0.21.0] - 2025-10-08
 
 ### Added
