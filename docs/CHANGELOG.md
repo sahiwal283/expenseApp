@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.0] - 2025-10-08
+
+### Added
+- **Trade Show Breakdown for Entities**: New card showing trade show breakdown when viewing a specific entity
+  - Displays which trade shows the selected entity has expenses in
+  - Shows amount per trade show
+  - Clickable cards to drill down into specific trade show for that entity
+  - Blue gradient styling to distinguish from entity cards
+  - Same responsive flexbox layout as entity totals
+
+### Fixed
+- **Entity Totals Visibility**: Entity running totals now correctly display when viewing a specific trade show
+  - Previously hidden when any filter was applied
+  - Now shows entity breakdown for the selected trade show
+  - Allows drilling down from trade show → entities → specific entity's expenses
+  - Complete bidirectional navigation: trade shows ↔ entities
+
+### Changed
+- **Reports Navigation Flow**: Improved drill-down experience
+  - Overview → Trade Show: See entities for that show
+  - Overview → Entity: See trade shows for that entity
+  - Trade Show view + Entity view: See specific entity's expenses in specific show
+  - Consistent clickable cards throughout
+
+### Technical
+- Frontend version: 0.30.0 → 0.31.0
+- Added `tradeShowBreakdown` useMemo calculation
+- Updated entity totals visibility logic to show when `selectedEntity === 'all'`
+- Added new trade show breakdown card with blue theme
+
+---
+
 ## [0.30.0] - 2025-10-08
 
 ### Changed

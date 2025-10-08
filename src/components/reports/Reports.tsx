@@ -142,6 +142,25 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       .map(([entity, amount]) => ({ entity, amount }));
   }, [filteredExpenses, activeEntityOptions]);
 
+  // Calculate trade show breakdown for a specific entity
+  const tradeShowBreakdown = useMemo(() => {
+    if (selectedEntity === 'all') return [];
+    
+    const totals: Record<string, { eventId: string; amount: number; name: string }> = {};
+    filteredExpenses.forEach(expense => {
+      if (expense.zohoEntity === selectedEntity && expense.tradeShowId) {
+        const event = events.find(e => e.id === expense.tradeShowId);
+        if (event) {
+          if (!totals[expense.tradeShowId]) {
+            totals[expense.tradeShowId] = { eventId: expense.tradeShowId, amount: 0, name: event.name };
+          }
+          totals[expense.tradeShowId].amount += expense.amount;
+        }
+      }
+    });
+    return Object.values(totals).sort((a, b) => b.amount - a.amount);
+  }, [filteredExpenses, selectedEntity, events]);
+
   const handleExportCSV = () => {
     const csvContent = [
       ['Date', 'Event', 'Merchant', 'Category', 'Amount', 'Status', 'Entity', 'Location'],
@@ -265,8 +284,50 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Entity Totals Dashboard - Only show in overview mode */}
-      {entityTotals.length > 0 && selectedEvent === 'all' && selectedEntity === 'all' && (
+      {/* Trade Show Breakdown - Show when viewing specific entity */}
+      {tradeShowBreakdown.length > 0 && selectedEntity !== 'all' && selectedEvent === 'all' && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Trade Show Breakdown</h3>
+              <p className="text-xs text-gray-600">Entity expenses by trade show • Click to view details</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            {tradeShowBreakdown.map(({ eventId, name, amount }) => (
+              <div 
+                key={eventId}
+                onClick={() => handleTradeShowClick(eventId)}
+                onKeyPress={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
+                role="button"
+                tabIndex={0}
+                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-lg hover:scale-105 hover:border-blue-300 transition-all duration-200 min-w-[200px] flex-shrink-0 cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-600 mb-1 truncate" title={name}>
+                      {name}
+                    </p>
+                    <p className="text-lg font-bold text-gray-900">
+                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </p>
+                  </div>
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center ml-2 flex-shrink-0">
+                    <Calendar className="w-3 h-3 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Entity Totals Dashboard - Show when not filtering by entity */}
+      {entityTotals.length > 0 && selectedEntity === 'all' && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
