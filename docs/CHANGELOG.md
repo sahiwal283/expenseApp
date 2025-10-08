@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.28.0] - 2025-10-08
+
+### Added
+- **Clickable Entity Cards**: Entity running totals cards are now clickable and expandable
+  - Click any entity card to view detailed report for that entity
+  - Shows purple gradient header banner with entity name and total
+  - Back button returns to overview and clears entity filter
+  - Same detailed layout as trade show reports (graphs on top, expenses below)
+  - Added "Click to view details" hint to entity totals header
+  - Enhanced hover effects (scale, shadow, border color change)
+  - Full keyboard accessibility with Enter key support
+
+### Changed
+- **Entity Totals Visibility**: Entity running totals card now only displays in overview mode
+  - Hidden when viewing specific trade show or entity details
+  - Prevents redundant display when already filtered
+
+### Technical
+- Frontend version: 0.27.4 → 0.28.0
+- Added `handleEntityClick` function to filter by entity and show detailed view
+- Entity header banner uses purple gradient to distinguish from trade show banner (blue/emerald)
+
+---
+
 ## [0.27.4] - 2025-10-08
 
 ### Changed

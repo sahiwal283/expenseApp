@@ -28,6 +28,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
+  const handleEntityClick = (entity: string) => {
+    setSelectedEntity(entity);
+    setReportType('detailed');
+    // Scroll to detailed report
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
@@ -225,8 +232,40 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Entity Totals Dashboard */}
-      {entityTotals.length > 0 && (
+      {/* Entity Header Banner */}
+      {selectedEntity !== 'all' && (
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg border border-purple-700 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => {
+                  setSelectedEntity('all');
+                  setReportType('overview');
+                }}
+                className="w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                title="Back to Overview"
+              >
+                <ArrowLeft className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+              </button>
+              <div>
+                <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Entity</p>
+                <h2 className="text-2xl font-bold text-white">
+                  {selectedEntity}
+                </h2>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-white text-opacity-90 text-sm font-medium mb-1">Total Expenses</p>
+              <p className="text-3xl font-bold text-white">
+                ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Entity Totals Dashboard - Only show in overview mode */}
+      {entityTotals.length > 0 && selectedEvent === 'all' && selectedEntity === 'all' && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -234,15 +273,19 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
             <div>
               <h3 className="text-base font-semibold text-gray-900">Entity Running Totals</h3>
-              <p className="text-xs text-gray-600">For selected filters</p>
+              <p className="text-xs text-gray-600">For selected filters • Click to view details</p>
             </div>
           </div>
           
           <div className="flex flex-wrap gap-3">
             {entityTotals.map(({ entity, amount }) => (
               <div 
-                key={entity} 
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-md transition-all duration-200 min-w-[200px] flex-shrink-0"
+                key={entity}
+                onClick={() => handleEntityClick(entity)}
+                onKeyPress={(e) => e.key === 'Enter' && handleEntityClick(entity)}
+                role="button"
+                tabIndex={0}
+                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-lg hover:scale-105 hover:border-purple-300 transition-all duration-200 min-w-[200px] flex-shrink-0 cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
