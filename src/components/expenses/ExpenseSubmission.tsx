@@ -304,23 +304,22 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   <th className="px-6 py-3 text-right text-sm font-medium text-gray-900">Actions</th>
                 </tr>
                 {/* Inline Filters Row */}
-                <tr className="bg-gray-100 border-t border-gray-200">
+                <tr className="bg-gray-50 border-t border-gray-100">
                   {/* Date Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <input
                       type="date"
                       value={dateFilter}
                       onChange={(e) => setDateFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Filter date"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     />
                   </th>
                   {/* Event Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <select
                       value={eventFilter}
                       onChange={(e) => setEventFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     >
                       <option value="all">All Events</option>
                       {events.map(event => (
@@ -329,11 +328,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Category Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     >
                       <option value="all">All</option>
                       {uniqueCategories.map(cat => (
@@ -342,42 +341,25 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Merchant Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <input
                       type="text"
                       value={merchantFilter}
                       onChange={(e) => setMerchantFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                       placeholder="Search..."
                     />
                   </th>
-                  {/* Amount Filter */}
-                  <th className="px-3 py-2">
-                    <div className="flex space-x-1">
-                      <input
-                        type="number"
-                        value={amountMinFilter}
-                        onChange={(e) => setAmountMinFilter(e.target.value)}
-                        className="w-1/2 px-1 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Min"
-                        step="0.01"
-                      />
-                      <input
-                        type="number"
-                        value={amountMaxFilter}
-                        onChange={(e) => setAmountMaxFilter(e.target.value)}
-                        className="w-1/2 px-1 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Max"
-                        step="0.01"
-                      />
-                    </div>
+                  {/* Amount - No Filter */}
+                  <th className="px-3 py-1.5">
+                    <div className="text-xs text-gray-300 text-center">-</div>
                   </th>
                   {/* Card Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <select
                       value={cardFilter}
                       onChange={(e) => setCardFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     >
                       <option value="all">All</option>
                       {uniqueCards.map(card => (
@@ -386,15 +368,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Receipt Filter - Placeholder */}
-                  <th className="px-3 py-2">
-                    <div className="text-xs text-gray-400 text-center">-</div>
+                  <th className="px-3 py-1.5">
+                    <div className="text-xs text-gray-300 text-center">-</div>
                   </th>
                   {/* Status Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
@@ -403,11 +385,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Reimbursement Filter */}
-                  <th className="px-3 py-2">
+                  <th className="px-3 py-1.5">
                     <select
                       value={reimbursementFilter}
                       onChange={(e) => setReimbursementFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     >
                       <option value="all">All</option>
                       <option value="required">Required</option>
@@ -415,7 +397,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Actions - No filter */}
-                  <th className="px-3 py-2"></th>
+                  <th className="px-3 py-1.5"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
