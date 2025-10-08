@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.25.1] - 2025-10-08
+
+### Removed
+- **Approvals Page**: Removed "Total Expenses / Matching filters" stats card
+  - Streamlined stats from 4 cards to 3 cards
+  - Adjusted grid layout to `xl:grid-cols-3` for better spacing
+  - Remaining cards: Pending Approval, Reimbursements, Unassigned Entities
+  - Filtered expense count still visible in table header
+
+### Technical
+- Frontend version: 0.25.0 → 0.25.1
+
+---
+
 ## [0.25.0] - 2025-10-08
 
 ### Changed
