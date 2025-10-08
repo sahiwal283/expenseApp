@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.33.1] - 2025-10-08
+
+### Changed
+- **Personalized Dashboard for Each User**:
+  - Dashboard now shows personalized data based on user role
+  - Salespeople/Coordinators see only their own expenses (not all expenses)
+  - Non-admin users see only events they're assigned to
+  - Admin/Accountant continue to see all data for oversight
+  - Stats card titles adapt: "Total Expenses" vs "My Expenses"
+  - "Pending Approvals" becomes "My Pending Approvals" for non-admins
+  - "Active Events" becomes "My Active Events" for non-admins/coordinators
+  - Recent Expenses widget shows only user's own expenses (for non-admins)
+  - Upcoming Events widget shows only assigned events (for non-admins)
+
+### Technical
+- Frontend version: 0.33.0 → 0.33.1
+- Updated Dashboard stats calculation with role-based filtering
+- Added userExpenses and userEvents to filtered data
+- Dynamic stat card titles based on user role
+- Filtered data passed to RecentExpenses, UpcomingEvents, and BudgetOverview components
+
+---
+
 ## [0.33.0] - 2025-10-08
 
 ### Added

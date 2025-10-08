@@ -42,14 +42,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   }, []);
 
   const stats = useMemo(() => {
-    const totalExpenses = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-    const pendingExpenses = expenses.filter(e => e.status === 'pending').length;
+    // Filter data based on user role
+    const isAdminOrAccountant = user.role === 'admin' || user.role === 'accountant';
+    
+    // For non-admin/accountant users, only show their own expenses
+    const userExpenses = isAdminOrAccountant 
+      ? expenses 
+      : expenses.filter(e => e.userId === user.id);
+    
+    // For non-admin/coordinator users, only show events they're assigned to
+    const userEvents = (user.role === 'admin' || user.role === 'coordinator')
+      ? events
+      : events.filter(event => event.participants.some(p => p.id === user.id));
+    
+    const totalExpenses = userExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    const pendingExpenses = userExpenses.filter(e => e.status === 'pending').length;
     
     // Calculate active events based on end date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const activeEvents = events.filter(event => {
+    const activeEvents = userEvents.filter(event => {
       const endDate = parseLocalDate(event.endDate);
       return endDate >= today;
     }).length;
@@ -57,13 +70,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
     return {
       totalExpenses,
       pendingExpenses,
-      upcomingEvents: activeEvents, // Same as activeEvents now
+      upcomingEvents: activeEvents,
       activeEvents,
-      totalEvents: events.length,
-      averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0,
-      teamMembers: users.length
+      totalEvents: userEvents.length,
+      averageExpense: userExpenses.length > 0 ? totalExpenses / userExpenses.length : 0,
+      teamMembers: users.length,
+      userExpenses, // Pass filtered expenses
+      userEvents    // Pass filtered events
     };
-  }, [events, expenses, users]);
+  }, [events, expenses, users, user.id, user.role]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -99,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <StatsCard
-          title="Total Expenses"
+          title={user.role === 'admin' || user.role === 'accountant' ? 'Total Expenses' : 'My Expenses'}
           value={`$${stats.totalExpenses.toLocaleString()}`}
           icon={DollarSign}
           color="blue"
@@ -107,7 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           trendUp={true}
         />
         <StatsCard
-          title="Pending Approvals"
+          title={user.role === 'admin' || user.role === 'accountant' ? 'Pending Approvals' : 'My Pending Approvals'}
           value={stats.pendingExpenses.toString()}
           icon={AlertTriangle}
           color="orange"
@@ -115,7 +130,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           trendUp={false}
         />
         <StatsCard
-          title="Active Events"
+          title={user.role === 'admin' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
           value={stats.activeEvents.toString()}
           icon={Calendar}
           color="emerald"
@@ -127,13 +142,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-          <RecentExpenses expenses={expenses} onPageChange={onPageChange} />
+          <RecentExpenses expenses={stats.userExpenses} onPageChange={onPageChange} />
           {(user.role === 'admin' || user.role === 'accountant') && (
-            <BudgetOverview events={events} expenses={expenses} />
+            <BudgetOverview events={stats.userEvents} expenses={stats.userExpenses} />
           )}
         </div>
         <div className="space-y-6">
-          <UpcomingEvents events={events} onPageChange={onPageChange} />
+          <UpcomingEvents events={stats.userEvents} onPageChange={onPageChange} />
           
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
