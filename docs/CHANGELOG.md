@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.27.0] - 2025-10-08
+
+### Changed
+- **Reports Page Filters**: Redesigned filter interface to be cleaner and less intrusive
+  - Removed large filter section from top of page
+  - Added compact "Filters" button next to Export CSV
+  - Clicking button opens modal popup with all filter options
+  - Expense count now shows inline in page subtitle
+  - Much cleaner, more spacious layout
+  - Filters still fully functional with real-time application
+  - Added "Clear All" button to reset filters
+
+### Technical
+- Frontend version: 0.26.2 → 0.27.0
+
+---
+
 ## [0.26.2] - 2025-10-08
 
 ### Changed
