@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.4] - 2025-10-08
+
+### Changed
+- **Salesperson Access Control**: Restricted salespeople from accessing Reports page
+  - Reports tab now only visible to administrators and accountants
+  - Removed Reports access from salesperson role
+  - Access denied message displayed if salesperson attempts to access Reports
+  - Salespeople can now only access: Dashboard and Expenses
+
+### Technical
+- Frontend version: 0.31.3 → 0.31.4
+- Updated Sidebar navigation roles for Reports (removed 'salesperson')
+- Added role check in Reports component for salesperson
+
+---
+
 ## [0.31.3] - 2025-10-08
 
 ### Changed
