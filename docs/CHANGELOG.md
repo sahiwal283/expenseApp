@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.3] - 2025-10-08
+
+### Changed
+- **Reimbursement Checkbox UX**: Improved reimbursement required field behavior
+  - Checkbox now hidden when personal card is selected (since it's auto-flagged)
+  - Replaced disabled checkbox with informational alert for personal card expenses
+  - Cleaner UI: only shows manual checkbox for non-personal cards
+  - Clear notification displays when reimbursement is automatically required
+
+### Technical
+- Frontend version: 0.31.2 → 0.31.3
+- Conditional rendering based on card selection
+- Uses AlertCircle icon for better visual communication
+
+---
+
 ## [0.31.2] - 2025-10-08
 
 ### Changed
