@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.1] - 2025-10-08
+
+### Removed
+- **Approved Card**: Removed "Approved" card from Reports summary stats
+  - Grid now shows 2 cards instead of 3 (Total Expenses, Pending)
+  - Cleaner, more focused layout showing only essential metrics
+  - Approved amount information still available in detailed reports
+
+### Technical
+- Frontend version: 0.24.0 → 0.24.1
+
+---
+
 ## [0.24.0] - 2025-10-08
 
 ### Added
