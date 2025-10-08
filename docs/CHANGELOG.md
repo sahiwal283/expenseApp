@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.24.3] - 2025-10-08
+
+### Fixed
+- **Entity Running Totals Dashboard**: Now accurately reflects selected filters
+  - Dashboard now calculates totals based on `filteredExpenses` instead of all expenses
+  - When viewing a specific trade show, entity totals show only expenses from that show
+  - When applying date/entity filters, totals update accordingly
+  - Updated subtitle from "All-time expenses by Zoho entity" to "For selected filters"
+  - Unassigned expenses warning also now shows filtered count/amount
+
+### Technical
+- Frontend version: 0.24.2 → 0.24.3
+
+---
+
 ## [0.24.2] - 2025-10-08
 
 ### Changed

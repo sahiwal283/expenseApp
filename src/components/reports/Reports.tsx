@@ -119,10 +119,10 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     };
   }, [filteredExpenses]);
 
-  // Calculate entity totals
+  // Calculate entity totals (filtered)
   const entityTotals = useMemo(() => {
     const totals: Record<string, number> = {};
-    expenses.forEach(expense => {
+    filteredExpenses.forEach(expense => {
       if (expense.zohoEntity) {
         totals[expense.zohoEntity] = (totals[expense.zohoEntity] || 0) + expense.amount;
       }
@@ -130,7 +130,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     return Object.entries(totals)
       .sort((a, b) => b[1] - a[1]) // Sort by amount descending
       .map(([entity, amount]) => ({ entity, amount }));
-  }, [expenses]);
+  }, [filteredExpenses]);
 
   const handleExportCSV = () => {
     const csvContent = [
@@ -246,7 +246,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
             <div>
               <h3 className="text-base font-semibold text-gray-900">Entity Running Totals</h3>
-              <p className="text-xs text-gray-600">All-time expenses by Zoho entity</p>
+              <p className="text-xs text-gray-600">For selected filters</p>
             </div>
           </div>
           
@@ -273,14 +273,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             ))}
           </div>
 
-          {expenses.filter(e => !e.zohoEntity).length > 0 && (
+          {filteredExpenses.filter(e => !e.zohoEntity).length > 0 && (
             <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs font-bold">!</span>
                 </div>
                 <p className="text-xs text-yellow-800">
-                  <span className="font-semibold">{expenses.filter(e => !e.zohoEntity).length} expenses</span> have no entity assigned (${expenses.filter(e => !e.zohoEntity).reduce((sum, e) => sum + e.amount, 0).toLocaleString()})
+                  <span className="font-semibold">{filteredExpenses.filter(e => !e.zohoEntity).length} expenses</span> in current view have no entity assigned (${filteredExpenses.filter(e => !e.zohoEntity).reduce((sum, e) => sum + e.amount, 0).toLocaleString()})
                 </p>
               </div>
             </div>
