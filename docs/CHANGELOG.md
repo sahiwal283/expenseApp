@@ -7,11 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.31.2] - 2025-10-08
+
+### Changed
+- **Settings Page Access Control**: Restricted Settings page to admin-only access
+  - Settings tab now only visible to administrators
+  - Removed Settings access from coordinators, salespeople, and accountants
+  - Card options and entity options are sensitive admin configurations
+  - Access denied message displayed if non-admin attempts to access Settings
+
+### Technical
+- Frontend version: 0.31.1 → 0.31.2
+- Updated Sidebar navigation roles for Settings (now only 'admin')
+- Added role check in AdminSettings component
+
+---
+
 ## [0.31.1] - 2025-10-08
 
 ### Changed
 - **Coordinator Access Control**: Restricted coordinators from accessing Reports page
-  - Coordinators can now only access: Dashboard, Events, Expenses, and Settings
+  - Coordinators can now only access: Dashboard, Events, and Expenses
   - Reports tab removed from coordinator navigation
   - Access denied message displayed if coordinator attempts to access Reports
   - Aligns with coordinator role scope: create events and assign users
