@@ -1,6 +1,8 @@
 import React from 'react';
 import { Clock, DollarSign, MapPin } from 'lucide-react';
 import { Expense } from '../../App';
+import { formatLocalDate } from '../../utils/dateUtils';
+import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
 
 interface RecentExpensesProps {
   onPageChange: (page: string) => void;
@@ -9,27 +11,6 @@ interface RecentExpensesProps {
 
 export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPageChange }) => {
   const recentExpenses = expenses.slice(0, 5);
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending'];
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -56,7 +37,7 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
                   <p className="font-medium text-gray-900">{expense.merchant}</p>
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
                     <Clock className="w-3 h-3" />
-                    <span>{new Date(expense.date).toLocaleDateString()}</span>
+                    <span>{formatLocalDate(expense.date)}</span>
                     {expense.location && (
                       <>
                         <MapPin className="w-3 h-3 ml-2" />

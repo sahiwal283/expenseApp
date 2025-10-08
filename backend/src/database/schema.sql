@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   description TEXT,
   card_used VARCHAR(255),
   reimbursement_required BOOLEAN DEFAULT FALSE,
-  reimbursement_status VARCHAR(50) CHECK (reimbursement_status IN ('pending', 'approved', 'rejected')),
+  reimbursement_status VARCHAR(50) CHECK (reimbursement_status IS NULL OR reimbursement_status IN ('pending review', 'approved', 'rejected', 'paid')),
   receipt_url VARCHAR(500),
   ocr_text TEXT,
   extracted_data JSONB,

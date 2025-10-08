@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { TradeShow } from '../../App';
+import { parseLocalDate, formatDateRange, getDaysUntil } from '../../utils/dateUtils';
 
 interface UpcomingEventsProps {
   onPageChange: (page: string) => void;
@@ -8,14 +9,22 @@ interface UpcomingEventsProps {
 }
 
 export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageChange }) => {
-  const upcomingEvents = events.filter(event => event.status === 'upcoming').slice(0, 3);
-
-  const getDaysUntil = (dateString: string) => {
-    const eventDate = new Date(dateString);
-    const today = new Date();
-    const diffTime = eventDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  // Filter events: only show if end date hasn't passed yet
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize to midnight
+  
+  const upcomingEvents = events
+    .filter(event => {
+      // Use utility to parse date without timezone conversion
+      const endDate = parseLocalDate(event.endDate);
+      return endDate >= today; // Include events that end today or later
+    })
+    .slice(0, 3);
+  
+  const getDaysUntilLabel = (days: number) => {
+    if (days === 0) return 'Today';
+    if (days === 1) return '1 day';
+    return `${days} days`;
   };
 
   return (
@@ -41,9 +50,11 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
                 <div className="flex items-start justify-between mb-3">
                   <h4 className="font-semibold text-gray-900">{event.name}</h4>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    daysUntil <= 7 ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                    daysUntil === 0 ? 'bg-orange-100 text-orange-800' : 
+                    daysUntil <= 7 ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-blue-100 text-blue-800'
                   }`}>
-                    {daysUntil > 0 ? `${daysUntil} days` : 'Today'}
+                    {getDaysUntilLabel(daysUntil)}
                   </span>
                 </div>
                 
@@ -54,9 +65,7 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
                   </div>
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-2" />
-                    <span>
-                      {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
-                    </span>
+                    <span>{formatDateRange(event.startDate, event.endDate)}</span>
                   </div>
                   <div className="flex items-center">
                     <Users className="w-4 h-4 mr-2" />

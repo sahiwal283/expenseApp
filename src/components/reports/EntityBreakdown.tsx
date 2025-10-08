@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2, DollarSign, FileText } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
+import { getCategoryColor } from '../../constants/appConstants';
 
 interface EntityBreakdownProps {
   expenses: Expense[];
@@ -38,18 +39,6 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
 
   const entities = Object.keys(entityData);
   const totalAmount = Object.values(entityData).reduce((sum, data) => sum + data.totalAmount, 0);
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
-  };
 
   return (
     <div className="space-y-6">

@@ -4,6 +4,8 @@ import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { api } from '../../utils/api';
+import { formatLocalDate } from '../../utils/dateUtils';
+import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -15,11 +17,17 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showReceiptUpload, setShowReceiptUpload] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterEvent, setFilterEvent] = useState('all');
   const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
+
+  // Column-level filters
+  const [dateFilter, setDateFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [merchantFilter, setMerchantFilter] = useState('');
+  const [cardFilter, setCardFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [reimbursementFilter, setReimbursementFilter] = useState('all');
 
   useEffect(() => {
     (async () => {
@@ -48,7 +56,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     if (api.USE_SERVER) {
       if (editingExpense) {
         await api.updateExpense(editingExpense.id, {
-          event_id: expenseData.tradeShowId, // FIXED: Include event_id on update
+          event_id: expenseData.tradeShowId,
           category: expenseData.category,
           merchant: expenseData.merchant,
           amount: expenseData.amount,
@@ -72,7 +80,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           location: expenseData.location,
         }, file || pendingReceiptFile || undefined);
       }
-      setPendingReceiptFile(null); // Clear after save
+      setPendingReceiptFile(null);
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {
@@ -91,16 +99,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setEditingExpense(null);
   };
 
-  const handleEditExpense = (expense: Expense) => {
+  const handleEditExpense = (expense: Expense, file?: File) => {
     setEditingExpense(expense);
     setShowForm(true);
-    setPendingReceiptFile(file); // Store the receipt file
+    if (file) setPendingReceiptFile(file);
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
     if (api.USE_SERVER) {
       await api.deleteExpense(expenseId);
-      setPendingReceiptFile(null); // Clear after save
+      setPendingReceiptFile(null);
       const refreshed = await api.getExpenses();
       setExpenses(refreshed || []);
     } else {
@@ -126,8 +134,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
     setEditingExpense(null);
     setShowForm(true);
-    setPendingReceiptFile(file); // Store the receipt file
-    // Pre-populate form with OCR data
+    setPendingReceiptFile(file);
     setTimeout(() => {
       const event = new CustomEvent('populateExpenseForm', { detail: newExpense });
       window.dispatchEvent(event);
@@ -135,36 +142,59 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setShowReceiptUpload(false);
   };
 
+  const clearAllFilters = () => {
+    setDateFilter('');
+    setEventFilter('all');
+    setCategoryFilter('all');
+    setMerchantFilter('');
+    setCardFilter('all');
+    setStatusFilter('all');
+    setReimbursementFilter('all');
+  };
+
+  // Get unique values for dropdowns
+  const uniqueCategories = Array.from(new Set(expenses.map(e => e.category))).sort();
+  const uniqueCards = Array.from(new Set(expenses.map(e => e.cardUsed).filter(Boolean))).sort();
+
+  // Filter and sort expenses (pending items at top)
   const filteredExpenses = expenses.filter(expense => {
-    const matchesSearch = expense.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || expense.status === filterStatus;
-    const matchesEvent = filterEvent === 'all' || expense.tradeShowId === filterEvent;
+    // Date filter
+    if (dateFilter && !expense.date.includes(dateFilter)) return false;
+    
+    // Event filter
+    if (eventFilter !== 'all' && expense.tradeShowId !== eventFilter) return false;
+    
+    // Category filter
+    if (categoryFilter !== 'all' && expense.category !== categoryFilter) return false;
+    
+    // Merchant filter
+    if (merchantFilter && !expense.merchant.toLowerCase().includes(merchantFilter.toLowerCase())) return false;
+    
+    // Card filter
+    if (cardFilter !== 'all' && expense.cardUsed !== cardFilter) return false;
+    
+    // Status filter
+    if (statusFilter !== 'all' && expense.status !== statusFilter) return false;
+    
+    // Reimbursement filter
+    if (reimbursementFilter === 'required' && !expense.reimbursementRequired) return false;
+    if (reimbursementFilter === 'not-required' && expense.reimbursementRequired) return false;
+    
+    // User permission filter
     const matchesUser = user.role === 'admin' || user.role === 'accountant' || expense.userId === user.id;
     
-    return matchesSearch && matchesStatus && matchesEvent && matchesUser;
+    return matchesUser;
+  }).sort((a, b) => {
+    // Sort: pending expenses at the top, then approved/rejected
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    // If both have the same status, sort by date (newest first)
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending'];
-  };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
-  };
+  const hasActiveFilters = dateFilter || eventFilter !== 'all' || categoryFilter !== 'all' || 
+                          merchantFilter || cardFilter !== 'all' || statusFilter !== 'all' || reimbursementFilter !== 'all';
 
   if (showForm) {
     return (
@@ -197,6 +227,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           <p className="text-gray-600 mt-1">Submit and track your trade show expenses</p>
         </div>
         <div className="flex space-x-3">
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="bg-gray-100 text-gray-700 px-4 py-3 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 flex items-center space-x-2"
+            >
+              <X className="w-5 h-5" />
+              <span>Clear Filters</span>
+            </button>
+          )}
           <button
             onClick={() => setShowForm(true)}
             className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/30"
@@ -207,56 +246,26 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search expenses..."
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-
-          <select
-            value={filterEvent}
-            onChange={(e) => setFilterEvent(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Events</option>
-            {events.map(event => (
-              <option key={event.id} value={event.id}>{event.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Expenses List */}
+      {/* Expenses Table */}
       {filteredExpenses.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Expenses Found</h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            {searchTerm || filterStatus !== 'all' || filterEvent !== 'all'
+            {hasActiveFilters
               ? 'Try adjusting your filters to see more expenses.'
               : 'Start by submitting your first expense with automatic OCR extraction from receipts.'
             }
           </p>
           <div className="flex justify-center space-x-4">
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200"
+              >
+                Clear Filters
+              </button>
+            )}
             <button
               onClick={() => setShowForm(true)}
               className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
@@ -270,17 +279,114 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
+                {/* Column Headers */}
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Merchant</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Category</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Card Used</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Amount</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Reimbursement</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Receipt</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Event</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Date</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Event</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Category</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Merchant</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Amount</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Card Used</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Receipt</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Status</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Reimbursement</th>
+                  <th className="px-6 py-3 text-right text-sm font-medium text-gray-900">Actions</th>
+                </tr>
+                {/* Inline Filters Row */}
+                <tr className="bg-gray-50 border-t border-gray-100">
+                  {/* Date Filter */}
+                  <th className="px-3 py-1.5">
+                    <input
+                      type="date"
+                      value={dateFilter}
+                      onChange={(e) => setDateFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    />
+                  </th>
+                  {/* Event Filter */}
+                  <th className="px-3 py-1.5">
+                    <select
+                      value={eventFilter}
+                      onChange={(e) => setEventFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    >
+                      <option value="all">All Events</option>
+                      {events.map(event => (
+                        <option key={event.id} value={event.id}>{event.name}</option>
+                      ))}
+                    </select>
+                  </th>
+                  {/* Category Filter */}
+                  <th className="px-3 py-1.5">
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    >
+                      <option value="all">All</option>
+                      {uniqueCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </th>
+                  {/* Merchant Filter */}
+                  <th className="px-3 py-1.5">
+                    <input
+                      type="text"
+                      value={merchantFilter}
+                      onChange={(e) => setMerchantFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                      placeholder="Search..."
+                    />
+                  </th>
+                  {/* Amount - No Filter */}
+                  <th className="px-3 py-1.5">
+                    <div className="text-xs text-gray-300 text-center">-</div>
+                  </th>
+                  {/* Card Filter */}
+                  <th className="px-3 py-1.5">
+                    <select
+                      value={cardFilter}
+                      onChange={(e) => setCardFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    >
+                      <option value="all">All</option>
+                      {uniqueCards.map(card => (
+                        <option key={card} value={card}>{card}</option>
+                      ))}
+                    </select>
+                  </th>
+                  {/* Receipt Filter - Placeholder */}
+                  <th className="px-3 py-1.5">
+                    <div className="text-xs text-gray-300 text-center">-</div>
+                  </th>
+                  {/* Status Filter */}
+                  <th className="px-3 py-1.5">
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    >
+                      <option value="all">All</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </th>
+                  {/* Reimbursement Filter */}
+                  <th className="px-3 py-1.5">
+                    <select
+                      value={reimbursementFilter}
+                      onChange={(e) => setReimbursementFilter(e.target.value)}
+                      className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    >
+                      <option value="all">All</option>
+                      <option value="required">Required</option>
+                      <option value="not-required">Not Required</option>
+                    </select>
+                  </th>
+                  {/* Actions - No filter */}
+                  <th className="px-3 py-1.5"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -289,9 +395,21 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   
                   return (
                     <tr key={expense.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {new Date(expense.date).toLocaleDateString()}
+                      {/* Date */}
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                        {formatLocalDate(expense.date)}
                       </td>
+                      {/* Event */}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {event ? event.name : 'No Event'}
+                      </td>
+                      {/* Category */}
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getCategoryColor(expense.category)}`}>
+                          {expense.category}
+                        </span>
+                      </td>
+                      {/* Merchant */}
                       <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{expense.merchant}</div>
@@ -300,44 +418,46 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
-                          {expense.category}
-                        </span>
+                      {/* Amount */}
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
+                        ${expense.amount.toFixed(2)}
                       </td>
+                      {/* Card Used */}
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {expense.cardUsed}
                       </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                        ${expense.amount.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {expense.reimbursementRequired ? 'Required' : 'Not Required'}
-                        </span>
-                      </td>
+                      {/* Receipt */}
                       <td className="px-6 py-4">
                         {expense.receiptUrl ? (
                           <button
                             onClick={() => setReceiptModalUrl(expense.receiptUrl.replace(/^\/uploads/, '/api/uploads'))}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap"
                           >
                             View Receipt
                           </button>
                         ) : (
-                          <span className="text-gray-400 text-sm">No receipt</span>
+                          <span className="text-gray-400 text-sm whitespace-nowrap">No receipt</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {event ? event.name : 'No Event'}
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(expense.status)}`}>
+                          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                        </span>
                       </td>
+                      {/* Reimbursement */}
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                          expense.reimbursementRequired 
+                            ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {expense.reimbursementRequired 
+                            ? `Required (${expense.reimbursementStatus || 'pending review'})` 
+                            : 'Not Required'}
+                        </span>
+                      </td>
+                      {/* Actions */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <button

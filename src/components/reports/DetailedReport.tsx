@@ -1,6 +1,8 @@
 import React from 'react';
 import { FileText, Calendar, MapPin, User, DollarSign } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
+import { formatLocalDate } from '../../utils/dateUtils';
+import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -13,26 +15,26 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   events, 
   onReimbursementApproval 
 }) => {
-  const getStatusColor = (status: string) => {
+  const getCategoryBarColor = (category: string) => {
     const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending'];
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
+      'Flights': 'bg-blue-500',
+      'Hotels': 'bg-emerald-500',
+      'Meals': 'bg-orange-500',
+      'Supplies': 'bg-purple-500',
+      'Transportation': 'bg-yellow-500',
+      'Other': 'bg-gray-500'
     };
     return colors[category as keyof typeof colors] || colors['Other'];
   };
+
+  // Calculate category breakdown
+  const categoryBreakdown = expenses.reduce((acc, expense) => {
+    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const categories = Object.keys(categoryBreakdown);
+  const maxAmount = Math.max(...Object.values(categoryBreakdown));
 
   if (expenses.length === 0) {
     return (
@@ -47,7 +49,47 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="space-y-6">
+      {/* Category Breakdown Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
+          <p className="text-sm text-gray-600 mt-1">For selected filters</p>
+        </div>
+        
+        {categories.length > 0 ? (
+          <div className="space-y-4">
+            {categories.map((category) => {
+              const amount = categoryBreakdown[category];
+              const percentage = (amount / maxAmount) * 100;
+              
+              return (
+                <div key={category} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900">{category}</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${getCategoryBarColor(category)} transition-all duration-500`}
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No category data available</p>
+          </div>
+        )}
+      </div>
+
+      {/* Detailed Expense Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -103,7 +145,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <div>
                       <div className="flex items-center text-sm text-gray-900">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {new Date(expense.date).toLocaleDateString()}
+                        {formatLocalDate(expense.date)}
                       </div>
                       {event && (
                         <div className="text-xs text-gray-500 mt-1">
@@ -147,7 +189,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
                     }`}>
                       {expense.reimbursementRequired ? 
-                        `Required (${expense.reimbursementStatus || 'pending'})` : 
+                        `Required (${expense.reimbursementStatus || 'pending review'})` : 
                         'Not Required'
                       }
                     </span>
@@ -166,7 +208,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   </td>
                   {onReimbursementApproval && (
                     <td className="px-6 py-4 text-right">
-                      {expense.reimbursementRequired && expense.reimbursementStatus === 'pending' && (
+                      {expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => onReimbursementApproval(expense, 'approved')}
@@ -230,6 +272,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

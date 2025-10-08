@@ -48,7 +48,15 @@ async function seedDatabase() {
        ('cardOptions', $1),
        ('entityOptions', $2)`,
       [
-        JSON.stringify(['Corporate Amex', 'Corporate Visa', 'Personal Card (Reimbursement)', 'Company Debit', 'Cash']),
+        JSON.stringify([
+          { name: 'Haute Intl USD Debit', lastFour: '0000' },
+          { name: 'Haute Inc GBP Amex', lastFour: '0000' },
+          { name: 'Haute Inc USD Amex', lastFour: '0000' },
+          { name: 'Haute Inc USD Debit', lastFour: '0000' },
+          { name: 'Haute LLC GBP Amex', lastFour: '0000' },
+          { name: 'Haute LLC USD Amex', lastFour: '0000' },
+          { name: 'Haute LLC USD Debit', lastFour: '0000' }
+        ]),
         JSON.stringify(['Entity A - Main Operations', 'Entity B - Sales Division', 'Entity C - Marketing Department', 'Entity D - International Operations'])
       ]
     );

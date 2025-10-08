@@ -10,10 +10,13 @@ import {
   User as UserIcon,
   CreditCard,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  Edit
 } from 'lucide-react';
 import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
+import { formatLocalDate } from '../../utils/dateUtils';
+import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
 
 interface ApprovalsProps {
   user: User;
@@ -33,6 +36,15 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterReimbursement, setFilterReimbursement] = useState('all');
   const [filterEntity, setFilterEntity] = useState('all');
+
+  // Filter modal state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
+  // Edit modal state
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editStatus, setEditStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [editReimbursementStatus, setEditReimbursementStatus] = useState<'pending review' | 'approved' | 'rejected' | 'paid'>('pending review');
+  const [editEntity, setEditEntity] = useState<string>('');
 
   // Load data
   useEffect(() => {
@@ -60,9 +72,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     }
   };
 
-  // Filter expenses
+  // Filter and sort expenses (pending items at top)
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
+    const filtered = expenses.filter(expense => {
       const matchesSearch = expense.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            expense.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filterCategory === 'all' || expense.category === filterCategory;
@@ -79,13 +91,21 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       return matchesSearch && matchesCategory && matchesUser && matchesEvent && 
              matchesStatus && matchesReimbursement && matchesEntity;
     });
+
+    // Sort: pending expenses at the top, then approved/rejected
+    return filtered.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      // If both have the same status, sort by date (newest first)
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
   }, [expenses, searchTerm, filterCategory, filterUser, filterEvent, filterStatus, filterReimbursement, filterEntity]);
 
   // Calculate stats
   const stats = useMemo(() => {
     const pendingExpenses = expenses.filter(e => e.status === 'pending');
-    const pendingReimbursements = expenses.filter(e => e.reimbursementRequired && e.reimbursementStatus === 'pending');
-    const unassignedEntities = expenses.filter(e => e.status === 'approved' && !e.zohoEntity);
+    const pendingReimbursements = expenses.filter(e => e.reimbursementRequired && e.reimbursementStatus === 'pending review');
+    const unassignedEntities = expenses.filter(e => !e.zohoEntity);
     const totalPendingAmount = pendingExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
     return {
@@ -145,25 +165,47 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-emerald-100 text-emerald-800',
-      'rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || colors['pending'];
+  const openEditModal = (expense: Expense) => {
+    setEditingExpense(expense);
+    setEditStatus(expense.status as 'pending' | 'approved' | 'rejected');
+    setEditReimbursementStatus(expense.reimbursementStatus as 'pending review' | 'approved' | 'rejected' | 'paid');
+    setEditEntity(expense.zohoEntity || '');
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-100 text-blue-800',
-      'Hotels': 'bg-emerald-100 text-emerald-800',
-      'Meals': 'bg-orange-100 text-orange-800',
-      'Supplies': 'bg-purple-100 text-purple-800',
-      'Transportation': 'bg-yellow-100 text-yellow-800',
-      'Other': 'bg-gray-100 text-gray-800'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
+  const closeEditModal = () => {
+    setEditingExpense(null);
+    setEditStatus('pending');
+    setEditReimbursementStatus('pending review');
+    setEditEntity('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingExpense) return;
+
+    try {
+      if (api.USE_SERVER) {
+        // Update status if changed
+        if (editStatus !== editingExpense.status) {
+          await api.reviewExpense(editingExpense.id, { status: editStatus });
+        }
+        
+        // Update reimbursement status if changed and reimbursement is required
+        if (editingExpense.reimbursementRequired && editReimbursementStatus !== editingExpense.reimbursementStatus) {
+          await api.setExpenseReimbursement(editingExpense.id, { reimbursement_status: editReimbursementStatus });
+        }
+        
+        // Update entity if changed
+        if (editEntity !== editingExpense.zohoEntity) {
+          await api.assignEntity(editingExpense.id, { zoho_entity: editEntity });
+        }
+      }
+      
+      await loadData(); // Refresh all data
+      closeEditModal();
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      alert('Failed to update expense. Please try again.');
+    }
   };
 
   const categories = Array.from(new Set(expenses.map(e => e.category)));
@@ -179,7 +221,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
@@ -224,105 +266,6 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
             Need entity assignment
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900">{filteredExpenses.length}</p>
-              <p className="text-gray-600">Total Expenses</p>
-            </div>
-          </div>
-          <div className="text-sm text-gray-600">
-            Matching filters
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search expenses..."
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Categories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterEvent}
-            onChange={(e) => setFilterEvent(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Events</option>
-            {events.map(event => (
-              <option key={event.id} value={event.id}>{event.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <select
-            value={filterUser}
-            onChange={(e) => setFilterUser(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Users</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>{user.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterReimbursement}
-            onChange={(e) => setFilterReimbursement(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Reimbursement</option>
-            <option value="required">Required</option>
-            <option value="not-required">Not Required</option>
-          </select>
-
-          <select
-            value={filterEntity}
-            onChange={(e) => setFilterEntity(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Entities</option>
-            <option value="unassigned">Unassigned</option>
-            {entityOptions.map((entity, index) => (
-              <option key={index} value={entity}>{entity}</option>
-            ))}
-          </select>
-        </div>
       </div>
 
       {/* Expenses Table */}
@@ -330,8 +273,17 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Expense Review</h3>
-            <div className="text-sm text-gray-600">
-              {filteredExpenses.length} expenses
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                {filteredExpenses.length} expenses
+              </div>
+              <button
+                onClick={() => setShowFilterModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="font-medium">Filters</span>
+              </button>
             </div>
           </div>
         </div>
@@ -384,7 +336,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <div>
                           <div className="flex items-center text-sm text-gray-900">
                             <Calendar className="w-4 h-4 mr-1" />
-                            {new Date(expense.date).toLocaleDateString()}
+                            {formatLocalDate(expense.date)}
                           </div>
                           <div className="flex items-center text-xs text-gray-500 mt-1">
                             <UserIcon className="w-3 h-3 mr-1" />
@@ -419,11 +371,15 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                            expense.reimbursementRequired 
+                              ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
+                              : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {expense.reimbursementRequired ? 'Required' : 'Not Required'}
+                            {expense.reimbursementRequired 
+                              ? `Required (${expense.reimbursementStatus || 'pending review'})` 
+                              : 'Not Required'}
                           </span>
-                          {expense.reimbursementRequired && expense.reimbursementStatus === 'pending' && (
+                          {expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
                             <div className="flex items-center space-x-1 mt-1">
                               <button
                                 onClick={() => handleReimbursementApproval(expense, 'approved')}
@@ -447,8 +403,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <select
                           value={expense.zohoEntity || ''}
                           onChange={(e) => handleAssignEntity(expense, e.target.value)}
-                          className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
-                          disabled={expense.status !== 'approved'}
+                          className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full ${
+                            expense.zohoEntity 
+                              ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
+                              : 'border-gray-300 bg-white text-gray-900'
+                          }`}
+                          disabled={!!expense.zohoEntity}
                         >
                           <option value="">Unassigned</option>
                           {entityOptions.map((entity, index) => (
@@ -476,6 +436,13 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                               </button>
                             </>
                           )}
+                          <button
+                            onClick={() => openEditModal(expense)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Expense"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -486,6 +453,296 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingExpense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Edit Expense</h2>
+                <button
+                  onClick={closeEditModal}
+                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Expense Details (Read-only) */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Merchant</p>
+                    <p className="text-base font-semibold text-gray-900">{editingExpense.merchant}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Amount</p>
+                    <p className="text-base font-semibold text-gray-900">${editingExpense.amount.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Category</p>
+                    <p className="text-base font-semibold text-gray-900">{editingExpense.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Date</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {formatLocalDate(editingExpense.date)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editable Fields */}
+              <div className="space-y-4">
+                {/* Approval Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Approval Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as 'pending' | 'approved' | 'rejected')}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+
+                {/* Reimbursement Status */}
+                {editingExpense.reimbursementRequired && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reimbursement Status
+                    </label>
+                    <select
+                      value={editReimbursementStatus}
+                      onChange={(e) => setEditReimbursementStatus(e.target.value as 'pending review' | 'approved' | 'rejected' | 'paid')}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="pending review">Pending Review</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Entity Assignment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Zoho Entity
+                  </label>
+                  <select
+                    value={editEntity}
+                    onChange={(e) => setEditEntity(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Unassigned</option>
+                    {entityOptions.map((entity, index) => (
+                      <option key={index} value={entity}>{entity}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-end space-x-3 border-t border-gray-200">
+              <button
+                onClick={closeEditModal}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white rounded-t-xl">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Filter className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Filter Expenses</h3>
+                  <p className="text-sm text-gray-600">Refine your expense search</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Search */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Search
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search expenses..."
+                      className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* First Row: Status, Category, Event */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category
+                    </label>
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Categories</option>
+                      {categories.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Event
+                    </label>
+                    <select
+                      value={filterEvent}
+                      onChange={(e) => setFilterEvent(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Events</option>
+                      {events.map(event => (
+                        <option key={event.id} value={event.id}>{event.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Second Row: User, Reimbursement, Entity */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      User
+                    </label>
+                    <select
+                      value={filterUser}
+                      onChange={(e) => setFilterUser(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Users</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>{user.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reimbursement
+                    </label>
+                    <select
+                      value={filterReimbursement}
+                      onChange={(e) => setFilterReimbursement(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Reimbursement</option>
+                      <option value="required">Required</option>
+                      <option value="not-required">Not Required</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Entity
+                    </label>
+                    <select
+                      value={filterEntity}
+                      onChange={(e) => setFilterEntity(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Entities</option>
+                      <option value="unassigned">Unassigned</option>
+                      {entityOptions.map((entity, index) => (
+                        <option key={index} value={entity}>{entity}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-between border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterStatus('all');
+                  setFilterCategory('all');
+                  setFilterEvent('all');
+                  setFilterUser('all');
+                  setFilterReimbursement('all');
+                  setFilterEntity('all');
+                }}
+                className="px-4 py-2 text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              >
+                Clear All
+              </button>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

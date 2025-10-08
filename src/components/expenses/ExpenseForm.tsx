@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { api } from '../../utils/api';
+import { formatForDateInput } from '../../utils/dateUtils';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -12,8 +13,13 @@ interface ExpenseFormProps {
 
 const categories = ['Flights', 'Hotels', 'Meals', 'Supplies', 'Transportation', 'Other'];
 
+interface CardOption {
+  name: string;
+  lastFour: string;
+}
+
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSave, onCancel }) => {
-  const [cardOptions, setCardOptions] = useState<string[]>([]);
+  const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [entityOptions, setEntityOptions] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
@@ -21,11 +27,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
     amount: expense?.amount || 0,
     category: expense?.category || '',
     merchant: expense?.merchant || '',
-    date: expense?.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    date: expense?.date ? formatForDateInput(expense.date) : new Date().toISOString().split('T')[0],
     description: expense?.description || '',
     cardUsed: expense?.cardUsed || '',
     reimbursementRequired: expense?.reimbursementRequired || false,
-    reimbursementStatus: expense?.reimbursementStatus || 'pending',
+    reimbursementStatus: expense?.reimbursementStatus || 'pending review',
     status: expense?.status || 'pending' as const,
     zohoEntity: expense?.zohoEntity || '',
     location: expense?.location || '',
@@ -42,7 +48,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
       if (api.USE_SERVER) {
         try {
           const settings = await api.getSettings();
-          setCardOptions(settings.cardOptions || []);
+          // Handle both old string format and new object format for backward compatibility
+          const cards = settings.cardOptions || [];
+          if (cards.length > 0 && typeof cards[0] === 'string') {
+            // Convert old string format to new object format
+            setCardOptions(cards.map((card: string) => ({ name: card, lastFour: '0000' })));
+          } else {
+            setCardOptions(cards);
+          }
           setEntityOptions(settings.entityOptions || []);
         } catch {
           setCardOptions([]);
@@ -50,7 +63,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
         }
       } else {
         const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
-        setCardOptions(settings.cardOptions || ['Corporate Amex','Corporate Visa','Personal Card (Reimbursement)','Company Debit','Cash']);
+        const cards = settings.cardOptions || [
+          { name: 'Corporate Amex', lastFour: '0000' },
+          { name: 'Corporate Visa', lastFour: '0000' },
+          { name: 'Personal Card (Reimbursement)', lastFour: '0000' },
+          { name: 'Company Debit', lastFour: '0000' },
+          { name: 'Cash', lastFour: '0000' }
+        ];
+        // Handle backward compatibility
+        if (cards.length > 0 && typeof cards[0] === 'string') {
+          setCardOptions(cards.map((card: string) => ({ name: card, lastFour: '0000' })));
+        } else {
+          setCardOptions(cards);
+        }
         setEntityOptions(settings.entityOptions || ['Entity A - Main Operations','Entity B - Sales Division','Entity C - Marketing Department','Entity D - International Operations']);
       }
     })();
@@ -401,9 +426,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 required
               >
                 <option value="">Select card used</option>
-                {cardOptions.map((card, index) => (
-                  <option key={index} value={card}>{card}</option>
-                ))}
+                {cardOptions.map((card, index) => {
+                  const cardValue = `${card.name} | ${card.lastFour}`;
+                  return (
+                    <option key={index} value={cardValue}>{cardValue}</option>
+                  );
+                })}
               </select>
               <p className="text-xs text-gray-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
@@ -439,31 +467,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               />
             </div>
           )}
-
-          {/* Reimbursement Required */}
-          <div className={`rounded-lg p-6 ${formData.reimbursementRequired ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50'}`}>
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="reimbursementRequired"
-                checked={formData.reimbursementRequired}
-                onChange={(e) => setFormData({ ...formData, reimbursementRequired: e.target.checked })}
-                disabled={formData.cardUsed.toLowerCase().includes('personal')}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
-              />
-              <label htmlFor="reimbursementRequired" className="text-sm font-medium text-gray-900">
-                Reimbursement Required
-                {formData.cardUsed.toLowerCase().includes('personal') && (
-                  <span className="ml-2 text-xs text-yellow-700 font-semibold">(Auto-flagged for Personal Card)</span>
-                )}
-              </label>
-            </div>
-            <p className="text-sm text-gray-600 mt-2 ml-7">
-              {formData.cardUsed.toLowerCase().includes('personal') 
-                ? 'Personal card expenses are automatically flagged for reimbursement approval.' 
-                : 'Check this box if this expense requires separate reimbursement approval from the accountant.'}
-            </p>
-          </div>
 
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
             <button

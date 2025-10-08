@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Save, CreditCard, Building2, Users } from 'lucide-react';
+import { Settings, Plus, Trash2, CreditCard, Building2, Users } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
@@ -8,20 +8,38 @@ interface AdminSettingsProps {
   user: User;
 }
 
+interface CardOption {
+  name: string;
+  lastFour: string;
+}
+
 interface AppSettings {
-  cardOptions: string[];
+  cardOptions: CardOption[];
   entityOptions: string[];
 }
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
+  // Access control: Only admins and accountants can access settings
+  if (user.role !== 'admin' && user.role !== 'accountant') {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">Access denied. Only administrators and accountants can access settings.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState<'system' | 'users'>('system');
   const [settings, setSettings] = useState<AppSettings>({
     cardOptions: [
-      'Corporate Amex',
-      'Corporate Visa',
-      'Personal Card (Reimbursement)',
-      'Company Debit',
-      'Cash'
+      { name: 'Haute Intl USD Debit', lastFour: '0000' },
+      { name: 'Haute Inc GBP Amex', lastFour: '0000' },
+      { name: 'Haute Inc USD Amex', lastFour: '0000' },
+      { name: 'Haute Inc USD Debit', lastFour: '0000' },
+      { name: 'Haute LLC GBP Amex', lastFour: '0000' },
+      { name: 'Haute LLC USD Amex', lastFour: '0000' },
+      { name: 'Haute LLC USD Debit', lastFour: '0000' }
     ],
     entityOptions: [
       'Entity A - Main Operations',
@@ -31,7 +49,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     ]
   });
 
-  const [newCardOption, setNewCardOption] = useState('');
+  const [newCardName, setNewCardName] = useState('');
+  const [newCardLastFour, setNewCardLastFour] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -69,21 +88,34 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   };
 
   const addCardOption = async () => {
-    if (newCardOption && !settings.cardOptions.includes(newCardOption)) {
-      const updatedSettings = {
-        ...settings,
-        cardOptions: [...settings.cardOptions, newCardOption]
-      };
-      setSettings(updatedSettings);
-      setNewCardOption('');
-      await saveSettings(updatedSettings);
+    if (newCardName && newCardLastFour && newCardLastFour.length === 4) {
+      const isDuplicate = settings.cardOptions.some(
+        card => card.name === newCardName && card.lastFour === newCardLastFour
+      );
+      
+      if (!isDuplicate) {
+        const updatedSettings = {
+          ...settings,
+          cardOptions: [...settings.cardOptions, { name: newCardName, lastFour: newCardLastFour }]
+        };
+        setSettings(updatedSettings);
+        setNewCardName('');
+        setNewCardLastFour('');
+        await saveSettings(updatedSettings);
+      } else {
+        alert('This card already exists.');
+      }
+    } else if (newCardLastFour && newCardLastFour.length !== 4) {
+      alert('Last 4 digits must be exactly 4 characters.');
     }
   };
 
-  const removeCardOption = async (option: string) => {
+  const removeCardOption = async (option: CardOption) => {
     const updatedSettings = {
       ...settings,
-      cardOptions: settings.cardOptions.filter(card => card !== option)
+      cardOptions: settings.cardOptions.filter(
+        card => !(card.name === option.name && card.lastFour === option.lastFour)
+      )
     };
     setSettings(updatedSettings);
     await saveSettings(updatedSettings);
@@ -113,21 +145,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-1">Manage system settings and user accounts</p>
-        </div>
-        {activeTab === 'system' && (
-          <button
-            onClick={() => saveSettings()}
-            disabled={isSaving}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
-          >
-            <Save className="w-5 h-5" />
-            <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
-          </button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-1">Manage system settings and user accounts</p>
       </div>
 
       {/* Tabs */}
@@ -189,15 +209,27 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             <div className="flex gap-3">
               <input
                 type="text"
-                value={newCardOption}
-                onChange={(e) => setNewCardOption(e.target.value)}
+                value={newCardName}
+                onChange={(e) => setNewCardName(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addCardOption()}
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter new card option..."
+                placeholder="Card name (e.g., Haute Inc USD Amex)"
+              />
+              <input
+                type="text"
+                value={newCardLastFour}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  setNewCardLastFour(value);
+                }}
+                onKeyPress={(e) => e.key === 'Enter' && addCardOption()}
+                className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Last 4"
+                maxLength={4}
               />
               <button
                 onClick={addCardOption}
-                disabled={!newCardOption || isSaving}
+                disabled={!newCardName || !newCardLastFour || newCardLastFour.length !== 4 || isSaving}
                 className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
@@ -208,7 +240,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             <div className="space-y-2">
               {settings.cardOptions.map((option, index) => (
                 <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                  <span className="text-gray-900">{option}</span>
+                  <span className="text-gray-900">{option.name} | {option.lastFour}</span>
                   <button
                     onClick={() => removeCardOption(option)}
                     disabled={isSaving}

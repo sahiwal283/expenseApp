@@ -39,9 +39,10 @@ export type ExpenseStatus = typeof EXPENSE_STATUS[keyof typeof EXPENSE_STATUS];
 
 // ========== REIMBURSEMENT STATUS ==========
 export const REIMBURSEMENT_STATUS = {
-  PENDING: 'pending',
+  PENDING_REVIEW: 'pending review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  PAID: 'paid',
 } as const;
 
 export type ReimbursementStatus = typeof REIMBURSEMENT_STATUS[keyof typeof REIMBURSEMENT_STATUS];
@@ -128,6 +129,25 @@ export const CATEGORY_COLORS = {
   'Marketing Materials': { bg: 'bg-pink-100', text: 'text-pink-800' },
   Shipping: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
   Other: { bg: 'bg-gray-100', text: 'text-gray-800' },
+} as const;
+
+export const REIMBURSEMENT_COLORS = {
+  [REIMBURSEMENT_STATUS.PENDING_REVIEW]: {
+    bg: 'bg-yellow-100',
+    text: 'text-yellow-800',
+  },
+  [REIMBURSEMENT_STATUS.APPROVED]: {
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-800',
+  },
+  [REIMBURSEMENT_STATUS.REJECTED]: {
+    bg: 'bg-red-100',
+    text: 'text-red-800',
+  },
+  [REIMBURSEMENT_STATUS.PAID]: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-800',
+  },
 } as const;
 
 // ========== DATE FORMATS ==========
@@ -238,16 +258,30 @@ export const hasPermission = (role: UserRole, permission: keyof typeof PERMISSIO
 
 /**
  * Get status color classes
+ * @returns Combined Tailwind classes (e.g., "bg-yellow-100 text-yellow-800")
  */
-export const getStatusColor = (status: ExpenseStatus) => {
-  return STATUS_COLORS[status] ?? STATUS_COLORS[EXPENSE_STATUS.PENDING];
+export const getStatusColor = (status: string): string => {
+  const colors = STATUS_COLORS[status as ExpenseStatus] ?? STATUS_COLORS[EXPENSE_STATUS.PENDING];
+  return `${colors.bg} ${colors.text}`;
 };
 
 /**
  * Get category color classes
+ * @returns Combined Tailwind classes (e.g., "bg-blue-100 text-blue-800")
  */
-export const getCategoryColor = (category: string) => {
-  return CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? CATEGORY_COLORS.Other;
+export const getCategoryColor = (category: string): string => {
+  const colors = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? CATEGORY_COLORS.Other;
+  return `${colors.bg} ${colors.text}`;
+};
+
+/**
+ * Get reimbursement status color classes
+ * @returns Combined Tailwind classes (e.g., "bg-yellow-100 text-yellow-800")
+ */
+export const getReimbursementStatusColor = (status: string | undefined): string => {
+  if (!status) return getReimbursementStatusColor(REIMBURSEMENT_STATUS.PENDING_REVIEW);
+  const colors = REIMBURSEMENT_COLORS[status as ReimbursementStatus] ?? REIMBURSEMENT_COLORS[REIMBURSEMENT_STATUS.PENDING_REVIEW];
+  return `${colors.bg} ${colors.text}`;
 };
 
 /**

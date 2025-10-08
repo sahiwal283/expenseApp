@@ -1,17 +1,20 @@
 import React from 'react';
-import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
+import { BarChart3, PieChart } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
+import { formatLocalDate } from '../../utils/dateUtils';
 
 interface ExpenseChartProps {
   expenses: Expense[];
   events: TradeShow[];
   categoryBreakdown: Record<string, number>;
+  onTradeShowClick?: (eventId: string) => void;
 }
 
 export const ExpenseChart: React.FC<ExpenseChartProps> = ({ 
   expenses, 
   events, 
-  categoryBreakdown 
+  categoryBreakdown,
+  onTradeShowClick
 }) => {
   const categories = Object.keys(categoryBreakdown);
   const maxAmount = Math.max(...Object.values(categoryBreakdown));
@@ -27,9 +30,10 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   const eventBreakdown = expenses.reduce((acc, expense) => {
     const event = events.find(e => e.id === expense.tradeShowId);
     const eventName = event?.name || 'No Event';
-    acc[eventName] = (acc[eventName] || 0) + expense.amount;
+    const eventId = event?.id || 'no-event';
+    acc[eventName] = { amount: (acc[eventName]?.amount || 0) + expense.amount, eventId };
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, { amount: number; eventId: string }>);
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -44,13 +48,74 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      {/* Category Breakdown */}
+    <div className="space-y-6">
+      {/* Event Breakdown - MOVED TO TOP */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
-          <PieChart className="w-5 h-5 text-blue-600" />
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Expenses by Trade Show</h3>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Click to view details</span>
+          </div>
         </div>
+        
+        {Object.keys(eventBreakdown).length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Object.entries(eventBreakdown)
+              .sort(([, a], [, b]) => b.amount - a.amount)
+              .map(([eventName, { amount, eventId }]) => {
+                const maxEventAmount = Math.max(...Object.values(eventBreakdown).map(e => e.amount));
+                const percentage = (amount / maxEventAmount) * 100;
+                
+                return (
+                  <div 
+                    key={eventName} 
+                    className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 hover:shadow-md transition-all duration-200 border border-transparent hover:border-purple-300"
+                    onClick={() => onTradeShowClick?.(eventId)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyPress={(e) => e.key === 'Enter' && onTradeShowClick?.(eventId)}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900 truncate hover:text-purple-700 transition-colors">
+                          {eventName}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          ${amount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {expenses.filter(e => {
+                          const event = events.find(ev => ev.id === e.tradeShowId);
+                          return (event?.name || 'No Event') === eventName;
+                        }).length} expenses
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No event data available</p>
+          </div>
+        )}
+      </div>
+
+      {/* Category and Monthly sections */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Category Breakdown */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
+          </div>
         
         {categories.length > 0 ? (
           <div className="space-y-4">
@@ -86,9 +151,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 
       {/* Monthly Trend */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Monthly Spending Trend</h3>
-          <TrendingUp className="w-5 h-5 text-emerald-600" />
         </div>
         
         {monthlyEntries.length > 0 ? (
@@ -101,10 +165,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 <div key={month} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900">
-                      {new Date(month + '-01').toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long' 
-                      })}
+                      {formatLocalDate(month + '-01', { year: 'numeric', month: 'long' })}
                     </span>
                     <span className="text-sm font-semibold text-gray-900">
                       ${amount.toLocaleString()}
@@ -127,54 +188,6 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           </div>
         )}
       </div>
-
-      {/* Event Breakdown */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 xl:col-span-2">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Expenses by Trade Show</h3>
-          <BarChart3 className="w-5 h-5 text-purple-600" />
-        </div>
-        
-        {Object.keys(eventBreakdown).length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {Object.entries(eventBreakdown).map(([eventName, amount]) => {
-              const maxEventAmount = Math.max(...Object.values(eventBreakdown));
-              const percentage = (amount / maxEventAmount) * 100;
-              
-              return (
-                <div key={eventName} className="bg-gray-50 rounded-lg p-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 truncate">
-                        {eventName}
-                      </span>
-                      <span className="text-sm font-semibold text-gray-900">
-                        ${amount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {expenses.filter(e => {
-                        const event = events.find(ev => ev.id === e.tradeShowId);
-                        return (event?.name || 'No Event') === eventName;
-                      }).length} expenses
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No event data available</p>
-          </div>
-        )}
       </div>
     </div>
   );

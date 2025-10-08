@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
+import { parseLocalDate, formatForDateInput, formatDateRange } from '../../utils/dateUtils';
 
 interface EventSetupProps {
   user: User;
@@ -12,6 +13,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TradeShow | null>(null);
+  const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -126,19 +128,14 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   const handleEdit = (event: TradeShow) => {
     setEditingEvent(event);
-    // Convert dates to YYYY-MM-DD format for date inputs
-    const formatDateForInput = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
-    };
     
     setFormData({
       name: event.name,
       venue: event.venue,
       city: event.city,
       state: event.state,
-      startDate: formatDateForInput(event.startDate),
-      endDate: formatDateForInput(event.endDate),
+      startDate: formatForDateInput(event.startDate),
+      endDate: formatForDateInput(event.endDate),
       budget: event.budget?.toString() || '',
       participants: event.participants
     });
@@ -196,29 +193,80 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     });
   };
 
-  if (user.role !== 'coordinator' && user.role !== 'admin') {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">Access denied. Only coordinators and admins can manage events.</p>
-        </div>
-      </div>
-    );
-  }
+  // Filter events based on end date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Filter events based on user role and permissions
+  const filteredEvents = events.filter(event => {
+    // Admin and coordinator can see all events
+    if (user.role === 'admin' || user.role === 'coordinator') {
+      return true;
+    }
+    // Other users can only see events they're assigned to as participants
+    return event.participants.some(p => p.id === user.id);
+  });
+
+  const activeEvents = filteredEvents.filter(event => {
+    const endDate = parseLocalDate(event.endDate);
+    return endDate >= today;
+  });
+
+  const pastEvents = filteredEvents.filter(event => {
+    const endDate = parseLocalDate(event.endDate);
+    return endDate < today;
+  });
+
+  const displayedEvents = viewMode === 'active' ? activeEvents : pastEvents;
+
+  // Only admins and coordinators can create/edit events
+  const canManageEvents = user.role === 'admin' || user.role === 'coordinator';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Event Management</h1>
-          <p className="text-gray-600 mt-1">Create and manage trade show events</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {canManageEvents ? 'Event Management' : 'My Events'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {canManageEvents 
+              ? 'Create and manage trade show events' 
+              : 'View events you are assigned to'}
+          </p>
         </div>
+        {canManageEvents && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Create Event</span>
+          </button>
+        )}
+      </div>
+
+      {/* View Mode Toggle */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
         <button
-          onClick={() => setShowForm(true)}
-          className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+          onClick={() => setViewMode('active')}
+          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+            viewMode === 'active'
+              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
         >
-          <Plus className="w-5 h-5" />
-          <span>Create Event</span>
+          Active Events ({activeEvents.length})
+        </button>
+        <button
+          onClick={() => setViewMode('past')}
+          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+            viewMode === 'past'
+              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Past Events ({pastEvents.length})
         </button>
       </div>
 
@@ -476,14 +524,20 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
       {/* Events List */}
       <div className="grid gap-6">
-        {events.length === 0 ? (
+        {displayedEvents.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No events created yet</h3>
-            <p className="text-gray-500">Create your first trade show event to get started.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {viewMode === 'active' ? 'No active events' : 'No past events'}
+            </h3>
+            <p className="text-gray-500">
+              {viewMode === 'active' 
+                ? 'Create your first trade show event to get started.' 
+                : 'Past events will appear here once their end date has passed.'}
+            </p>
           </div>
         ) : (
-          events.map((event) => (
+          displayedEvents.map((event) => (
             <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -495,7 +549,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                      {formatDateRange(event.startDate, event.endDate)}
                     </div>
                   </div>
                 </div>
@@ -506,18 +560,22 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                       <span className="font-medium">${event.budget.toLocaleString()}</span>
                     </div>
                   )}
-                  <button
-                    onClick={() => handleEdit(event)}
-                    className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(event.id)}
-                    className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    Delete
-                  </button>
+                  {canManageEvents && (
+                    <>
+                      <button
+                        onClick={() => handleEdit(event)}
+                        className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="px-3 py-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               
