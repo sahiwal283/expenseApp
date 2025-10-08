@@ -71,9 +71,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     }
   };
 
-  // Filter expenses
+  // Filter and sort expenses (pending items at top)
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
+    const filtered = expenses.filter(expense => {
       const matchesSearch = expense.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            expense.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filterCategory === 'all' || expense.category === filterCategory;
@@ -89,6 +89,14 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       
       return matchesSearch && matchesCategory && matchesUser && matchesEvent && 
              matchesStatus && matchesReimbursement && matchesEntity;
+    });
+
+    // Sort: pending expenses at the top, then approved/rejected
+    return filtered.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      // If both have the same status, sort by date (newest first)
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   }, [expenses, searchTerm, filterCategory, filterUser, filterEvent, filterStatus, filterReimbursement, filterEntity]);
 

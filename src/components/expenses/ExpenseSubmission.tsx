@@ -155,6 +155,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const uniqueCategories = Array.from(new Set(expenses.map(e => e.category))).sort();
   const uniqueCards = Array.from(new Set(expenses.map(e => e.cardUsed).filter(Boolean))).sort();
 
+  // Filter and sort expenses (pending items at top)
   const filteredExpenses = expenses.filter(expense => {
     // Date filter
     if (dateFilter && !expense.date.includes(dateFilter)) return false;
@@ -182,6 +183,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     const matchesUser = user.role === 'admin' || user.role === 'accountant' || expense.userId === user.id;
     
     return matchesUser;
+  }).sort((a, b) => {
+    // Sort: pending expenses at the top, then approved/rejected
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    // If both have the same status, sort by date (newest first)
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
   const getStatusColor = (status: string) => {

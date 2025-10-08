@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.32.1] - 2025-10-08
+
+### Changed
+- **Smart Expense Sorting**: Expenses now automatically sort with pending items at the top
+  - Pending expenses always appear first in the list
+  - Approved/rejected expenses move to the bottom
+  - Within each status group, expenses sorted by date (newest first)
+  - Applied to both Approvals page and Expense Submission page
+  - Makes it easier to focus on items requiring attention
+
+### Technical
+- Frontend version: 0.32.0 → 0.32.1
+- Updated filteredExpenses sorting logic in Approvals component
+- Updated filteredExpenses sorting logic in ExpenseSubmission component
+
+---
+
 ## [0.32.0] - 2025-10-08
 
 ### Added
