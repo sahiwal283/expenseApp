@@ -128,9 +128,18 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const handleEdit = (event: TradeShow) => {
     setEditingEvent(event);
     // Convert dates to YYYY-MM-DD format for date inputs
+    // Parse as local date to avoid timezone shift
     const formatDateForInput = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
+      // If already in YYYY-MM-DD format, return as-is
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      // Otherwise parse and format
+      const date = new Date(dateString + 'T00:00:00');
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     };
     
     setFormData({
@@ -544,7 +553,14 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                      {(() => {
+                        // Format date without timezone conversion
+                        const formatLocalDate = (dateStr: string) => {
+                          const [year, month, day] = dateStr.split('T')[0].split('-');
+                          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toLocaleDateString();
+                        };
+                        return `${formatLocalDate(event.startDate)} - ${formatLocalDate(event.endDate)}`;
+                      })()}
                     </div>
                   </div>
                 </div>

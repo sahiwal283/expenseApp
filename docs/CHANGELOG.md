@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.27.2] - 2025-10-08
+
+### Fixed
+- **Event Date Display Bug**: Fixed timezone conversion issue causing one-day offset in event dates
+  - Event overview now displays correct dates without timezone shift
+  - Edit modal now populates with correct dates matching the overview
+  - Dates stored as YYYY-MM-DD are now parsed as local dates, not UTC
+  - Resolves issue where overview showed "2/7/2026" but edit form showed "02/08/2026"
+
+### Technical
+- Frontend version: 0.27.1 → 0.27.2
+- Improved date parsing to avoid UTC conversion for date-only strings
+- Added local date formatting helper to prevent timezone-related date shifts
+
+---
+
 ## [0.27.1] - 2025-10-08
 
 ### Added
