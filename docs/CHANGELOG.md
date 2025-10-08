@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.33.2] - 2025-10-08
+
+### Changed
+- **Dynamic Color-Coded Reimbursement Status**:
+  - Reimbursement status badges now have dynamic colors for better scannability
+  - Color scheme: Pending Review (yellow), Approved (green), Rejected (red), Paid (blue)
+  - Applied consistently across Approvals and Expense Submission pages
+  - Status details now shown: "Required (pending review)" instead of just "Required"
+  - Improved visual hierarchy and at-a-glance status recognition
+
+### Technical
+- Frontend version: 0.33.1 → 0.33.2
+- Added `getReimbursementStatusColor()` helper function to both Approvals.tsx and ExpenseSubmission.tsx
+- Updated table cell rendering to use dynamic color classes based on status
+- Enhanced reimbursement status display to show full status text
+
+---
+
 ## [Backend 2.4.2] - 2025-10-08
 
 ### Fixed

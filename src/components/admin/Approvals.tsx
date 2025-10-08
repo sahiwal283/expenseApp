@@ -228,6 +228,16 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     return colors[category as keyof typeof colors] || colors['Other'];
   };
 
+  const getReimbursementStatusColor = (status: string | undefined) => {
+    const colors = {
+      'pending review': 'bg-yellow-100 text-yellow-800',
+      'approved': 'bg-emerald-100 text-emerald-800',
+      'rejected': 'bg-red-100 text-red-800',
+      'paid': 'bg-blue-100 text-blue-800'
+    };
+    return colors[status as keyof typeof colors] || colors['pending review'];
+  };
+
   const categories = Array.from(new Set(expenses.map(e => e.category)));
 
   return (
@@ -391,7 +401,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                            expense.reimbursementRequired 
+                              ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
+                              : 'bg-gray-100 text-gray-800'
                           }`}>
                             {expense.reimbursementRequired 
                               ? `Required (${expense.reimbursementStatus || 'pending review'})` 
