@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.23.0] - 2025-10-08
+
+### Added
+- **Interactive Trade Show Reports**: Trade show cards are now clickable for detailed analysis
+  - Clicking a trade show card automatically filters and switches to detailed report view
+  - Shows all expenses for that specific trade show
+  - Smooth scroll to detailed section
+  - Visual feedback on hover (gradient background, shadow, border highlight)
+  - "Click to view details" hint in header
+
+### Changed
+- **Trade Show Section Repositioned**: Moved "Expenses by Trade Show" to the top of Reports page
+  - Now the first chart users see (most important information)
+  - Sorted by highest spending trade shows first
+  - Better visibility and prominence for event-based analysis
+
+### Technical
+- Frontend version: 0.22.1 → 0.23.0
+
+---
+
 ## [0.22.1] - 2025-10-08
 
 ### Fixed

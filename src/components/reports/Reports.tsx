@@ -19,6 +19,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   const [selectedEntity, setSelectedEntity] = useState('all');
   const [reportType, setReportType] = useState<'overview' | 'detailed' | 'entity'>('overview');
 
+  const handleTradeShowClick = (eventId: string) => {
+    setSelectedEvent(eventId);
+    setReportType('detailed');
+    // Scroll to detailed report
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
@@ -350,6 +357,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           expenses={filteredExpenses} 
           events={events}
           categoryBreakdown={reportStats.categoryBreakdown}
+          onTradeShowClick={handleTradeShowClick}
         />
       )}
       
