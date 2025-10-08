@@ -43,13 +43,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   const stats = useMemo(() => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
     const pendingExpenses = expenses.filter(e => e.status === 'pending').length;
-    const upcomingEvents = events.filter(e => e.status === 'upcoming').length;
-    const activeEvents = events.filter(e => e.status === 'upcoming' || e.status === 'active').length;
+    
+    // Calculate active events based on end date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const activeEvents = events.filter(event => {
+      const endDate = new Date(event.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate >= today;
+    }).length;
 
     return {
       totalExpenses,
       pendingExpenses,
-      upcomingEvents,
+      upcomingEvents: activeEvents, // Same as activeEvents now
       activeEvents,
       totalEvents: events.length,
       averageExpense: expenses.length > 0 ? totalExpenses / expenses.length : 0,

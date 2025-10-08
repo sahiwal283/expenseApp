@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.26.1] - 2025-10-08
+
+### Fixed
+- **Dashboard Stats**: Active Events card now shows accurate count
+  - Changed calculation to use actual end date instead of status field
+  - Now matches the same logic used in Event Management page
+  - Only counts events where end date is today or in the future
+  - Past events no longer incorrectly counted as "active"
+
+### Technical
+- Frontend version: 0.26.0 → 0.26.1
+
+---
+
 ## [0.26.0] - 2025-10-08
 
 ### Added
