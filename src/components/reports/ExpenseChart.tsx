@@ -190,6 +190,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 };
