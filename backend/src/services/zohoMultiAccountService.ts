@@ -497,17 +497,18 @@ class ZohoMultiAccountService {
       const grouped = {
         expense: accounts.filter((a: any) => 
           a.account_type?.toLowerCase() === 'expense'
-        ).map((a: any) => a.account_name),
+        ).map((a: any) => ({ id: a.account_id, name: a.account_name })),
         
         cash: accounts.filter((a: any) => 
           a.account_type?.toLowerCase() === 'cash'
-        ).map((a: any) => a.account_name),
+        ).map((a: any) => ({ id: a.account_id, name: a.account_name })),
         
         bank: accounts.filter((a: any) => 
           a.account_type?.toLowerCase() === 'bank'
-        ).map((a: any) => a.account_name),
+        ).map((a: any) => ({ id: a.account_id, name: a.account_name })),
         
         all: accounts.map((a: any) => ({
+          id: a.account_id,
           name: a.account_name,
           type: a.account_type,
           balance: a.balance || 0,
