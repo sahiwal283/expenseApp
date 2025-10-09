@@ -90,7 +90,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl text-white p-8">
+      <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl text-white p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
@@ -151,7 +151,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           <UpcomingEvents events={stats.userEvents} onPageChange={onPageChange} />
           
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
               {(user.role === 'salesperson' || user.role === 'coordinator') && (

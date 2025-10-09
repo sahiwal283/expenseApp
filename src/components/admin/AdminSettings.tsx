@@ -146,7 +146,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-1">Manage system settings and user accounts</p>
       </div>
 
@@ -192,9 +192,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       ) : (
         <div className="space-y-6">
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
         {/* Card Options Management */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
           <div className="flex items-center space-x-3 mb-6">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
               <CreditCard className="w-6 h-6 text-white" />
@@ -239,7 +239,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
             <div className="space-y-2">
               {settings.cardOptions.map((option, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 p-3 rounded-lg">
                   <span className="text-gray-900">{option.name} | {option.lastFour}</span>
                   <button
                     onClick={() => removeCardOption(option)}
@@ -255,7 +255,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         </div>
 
         {/* Entity Options Management */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
           <div className="flex items-center space-x-3 mb-6">
             <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-6 h-6 text-white" />
@@ -288,7 +288,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
             <div className="space-y-2">
               {settings.entityOptions.map((option, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 p-3 rounded-lg">
                   <span className="text-gray-900">{option}</span>
                   <button
                     onClick={() => removeEntityOption(option)}
@@ -305,13 +305,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       </div>
 
       {/* Settings Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
         <div className="flex items-center space-x-3 mb-4">
           <Settings className="w-6 h-6 text-gray-600" />
           <h3 className="text-lg font-semibold text-gray-900">Settings Summary</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Card Options</h4>
             <p className="text-sm text-gray-600">{settings.cardOptions?.length || 0} options configured</p>

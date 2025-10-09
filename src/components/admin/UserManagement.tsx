@@ -138,9 +138,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600 mt-1">Manage team members and their access levels</p>
         </div>
         <button
@@ -153,7 +153,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -255,8 +255,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
       {/* User Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 md:p-5 lg:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
               <h3 className="text-lg font-semibold text-gray-900">
                 {editingUser ? 'Edit User' : 'Add New User'}
               </h3>

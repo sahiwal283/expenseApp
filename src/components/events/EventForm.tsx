@@ -57,7 +57,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <button
@@ -67,7 +67,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {event ? 'Edit Event' : 'Create New Event'}
               </h1>
               <p className="text-gray-600">Set up your trade show details and invite participants</p>
@@ -92,7 +92,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., CES 2025"
                 required
               />
@@ -106,7 +106,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="text"
                 value={formData.venue}
                 onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., Las Vegas Convention Center"
                 required
               />
@@ -120,7 +120,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., Las Vegas"
                 required
               />
@@ -134,7 +134,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="text"
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., Nevada"
                 required
               />
@@ -148,7 +148,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -161,7 +161,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -174,7 +174,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="number"
                 value={formData.budget}
                 onChange={(e) => setFormData({ ...formData, budget: e.target.value ? parseInt(e.target.value) : '' })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="50000"
                 min="0"
               />
@@ -187,7 +187,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="upcoming">Upcoming</option>
                 <option value="active">Active</option>
@@ -205,14 +205,14 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
                 type="text"
                 value={newParticipantName}
                 onChange={(e) => setNewParticipantName(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Full name"
               />
               <input
                 type="email"
                 value={newParticipantEmail}
                 onChange={(e) => setNewParticipantEmail(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Email address"
               />
             </div>

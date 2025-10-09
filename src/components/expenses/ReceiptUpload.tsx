@@ -100,7 +100,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <button
@@ -110,7 +110,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Receipt Scanner</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Receipt Scanner</h1>
               <p className="text-gray-600">Upload your receipt for automatic data extraction</p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
             {/* OCR Results */}
             {ocrResults && !processing && (
-              <div className="bg-gray-50 rounded-xl p-6">
+              <div className="bg-gray-50 rounded-xl p-4 sm:p-5 md:p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-6 h-6 text-emerald-600" />

@@ -224,9 +224,9 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">
             {canManageEvents ? 'Event Management' : 'My Events'}
           </h1>
           <p className="text-gray-600 mt-1">
@@ -238,7 +238,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
         {canManageEvents && (
           <button
             onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
           >
             <Plus className="w-5 h-5" />
             <span>Create Event</span>
@@ -273,10 +273,10 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       {/* Event Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8">
-            <div className="flex items-center justify-between mb-8">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-4 md:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">
                   {editingEvent ? 'Edit Event' : 'Create New Event'}
                 </h2>
                 <p className="text-gray-600">Set up your trade show details and invite participants</p>
@@ -294,7 +294,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
             
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Event Name *
@@ -423,7 +423,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                         type="button"
                         onClick={addParticipant}
                         disabled={!selectedUserId}
-                        className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="bg-blue-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                       >
                         <Plus className="w-5 h-5" />
                         <span>Add</span>
@@ -461,7 +461,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                       type="button"
                       onClick={addCustomParticipant}
                       disabled={!newParticipantName || !newParticipantEmail}
-                      className="bg-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      className="bg-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
                       <Plus className="w-5 h-5" />
                       <span>Add New</span>
@@ -473,7 +473,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="space-y-2">
                       {formData.participants.map((participant) => (
-                        <div key={participant.id} className="flex items-center justify-between bg-white p-3 rounded-lg">
+                        <div key={participant.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-white p-3 rounded-lg">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
                               <span className="text-white text-sm font-medium">
@@ -506,7 +506,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                     setShowForm(false);
                     resetForm();
                   }}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -523,7 +523,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       )}
 
       {/* Events List */}
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-5 lg:gap-6">
         {displayedEvents.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -538,7 +538,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           </div>
         ) : (
           displayedEvents.map((event) => (
-            <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{event.name}</h3>

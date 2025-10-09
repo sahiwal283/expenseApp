@@ -254,7 +254,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <button
@@ -264,7 +264,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {expense ? 'Edit Expense' : 'Add New Expense'}
               </h1>
               <p className="text-gray-600">Upload receipt for automatic OCR data extraction, or enter manually</p>
@@ -280,7 +280,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Receipt Upload - First Field */}
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 sm:p-5 md:p-6">
             <label className="block text-sm font-medium text-gray-900 mb-3">
               Receipt Image {expense ? <span className="text-gray-600">(Optional - Upload to replace)</span> : <span className="text-red-600">* (Upload First - Required)</span>}
             </label>
@@ -346,7 +346,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <select
                 value={formData.tradeShowId}
                 onChange={(e) => setFormData({ ...formData, tradeShowId: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Select an event</option>
@@ -365,7 +365,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="0.00"
                 required
               />
@@ -379,7 +379,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 type="text"
                 value={formData.merchant}
                 onChange={(e) => handleMerchantChange(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., Delta Airlines, Marriott Hotel"
                 required
               />
@@ -392,7 +392,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Select category</option>
@@ -410,7 +410,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -422,7 +422,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               <select
                 value={formData.cardUsed}
                 onChange={(e) => setFormData({ ...formData, cardUsed: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 <option value="">Select card used</option>
@@ -447,7 +447,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Additional details about this expense..."
             />
           </div>
@@ -462,7 +462,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 value={formData.ocrText}
                 readOnly
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg bg-gray-50 text-sm"
                 placeholder="OCR text will appear here after receipt processing..."
               />
             </div>

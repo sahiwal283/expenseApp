@@ -221,12 +221,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Expense Management</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Expense Management</h1>
           <p className="text-gray-600 mt-1">Submit and track your trade show expenses</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
@@ -238,7 +238,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           )}
           <button
             onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/30"
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/30"
           >
             <Receipt className="w-5 h-5" />
             <span>Add Expense</span>
@@ -261,14 +261,14 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200"
+                className="bg-gray-100 text-gray-700 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:bg-gray-200 transition-all duration-200"
               >
                 Clear Filters
               </button>
             )}
             <button
               onClick={() => setShowForm(true)}
-              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
             >
               Add Expense
             </button>
@@ -281,16 +281,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               <thead className="bg-gray-50">
                 {/* Column Headers */}
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Date</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Event</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Category</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Merchant</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Amount</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Card Used</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Receipt</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Reimbursement</th>
-                  <th className="px-6 py-3 text-right text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Date</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Event</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Category</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Merchant</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Amount</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Card Used</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Receipt</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Status</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Reimbursement</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-sm font-medium text-gray-900">Actions</th>
                 </tr>
                 {/* Inline Filters Row */}
                 <tr className="bg-gray-50 border-t border-gray-100">
@@ -489,7 +489,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       {receiptModalUrl && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setReceiptModalUrl(null)}>
           <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <h3 className="text-lg font-semibold text-gray-900">Receipt</h3>
               <button onClick={() => setReceiptModalUrl(null)} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

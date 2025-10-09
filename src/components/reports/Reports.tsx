@@ -202,9 +202,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="text-gray-600 mt-1">
             Analyze expenses and generate comprehensive reports
             <span className="ml-3 text-sm text-gray-500">
@@ -235,8 +235,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Trade Show Header Banner */}
       {selectedEvent !== 'all' && (
-        <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl shadow-lg border border-blue-600 p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl shadow-lg border border-blue-600 p-4 md:p-5 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
@@ -250,7 +250,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               </button>
               <div>
                 <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Trade Show</p>
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-xl md:text-2xl font-bold text-white">
                   {events.find(e => e.id === selectedEvent)?.name || 'Unknown Event'}
                 </h2>
               </div>
@@ -267,8 +267,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Header Banner */}
       {selectedEntity !== 'all' && (
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg border border-purple-700 p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg border border-purple-700 p-4 md:p-5 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
@@ -282,7 +282,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               </button>
               <div>
                 <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Entity</p>
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-xl md:text-2xl font-bold text-white">
                   {selectedEntity}
                 </h2>
               </div>
@@ -320,7 +320,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 tabIndex={0}
                 className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-lg hover:scale-105 hover:border-blue-300 transition-all duration-200 min-w-[200px] flex-shrink-0 cursor-pointer"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-600 mb-1 truncate" title={name}>
                       {name}
@@ -362,7 +362,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 tabIndex={0}
                 className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-lg hover:scale-105 hover:border-purple-300 transition-all duration-200 min-w-[200px] flex-shrink-0 cursor-pointer"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-600 mb-1 truncate" title={entity}>
                       {entity}
@@ -424,7 +424,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white rounded-t-xl">
+            <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 sticky top-0 bg-white rounded-t-xl">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                   <Filter className="w-5 h-5 text-white" />
@@ -515,7 +515,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
 
             {/* Modal Actions */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-between border-t border-gray-200">
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 border-t border-gray-200">
               <button
                 onClick={() => {
                   setSelectedEvent('all');
