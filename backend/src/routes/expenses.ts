@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { createWorker } from 'tesseract.js';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
+import { zohoBooksService } from '../services/zohoBooksService';
 
 const router = Router();
 
@@ -432,7 +433,58 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
       ]
     );
 
-    res.status(201).json(normalizeExpense(result.rows[0]));
+    const expense = result.rows[0];
+
+    // ========== ZOHO BOOKS INTEGRATION ==========
+    // Submit expense to Zoho Books (if configured)
+    if (zohoBooksService.isConfigured()) {
+      try {
+        // Get user and event details for Zoho submission
+        const userResult = await query('SELECT name FROM users WHERE id = $1', [req.user?.id]);
+        const eventResult = await query('SELECT name FROM events WHERE id = $1', [event_id]);
+        
+        const userName = userResult.rows[0]?.name || 'Unknown User';
+        const eventName = eventResult.rows[0]?.name || undefined;
+
+        // Prepare receipt file path
+        const receiptPath = req.file ? req.file.path : undefined;
+
+        // Submit to Zoho Books asynchronously (don't block response)
+        zohoBooksService.createExpense({
+          expenseId: expense.id,
+          date: date,
+          amount: parseFloat(amount),
+          category: category,
+          merchant: merchant,
+          description: description || undefined,
+          userName: userName,
+          eventName: eventName,
+          receiptPath: receiptPath,
+          reimbursementRequired: reimbursement_required === 'true' || reimbursement_required === true,
+        }).then((zohoResult) => {
+          if (zohoResult.success) {
+            console.log(`[Zoho] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
+            
+            // Optionally update our database with Zoho expense ID
+            if (zohoResult.zohoExpenseId) {
+              query('UPDATE expenses SET zoho_expense_id = $1 WHERE id = $2', [zohoResult.zohoExpenseId, expense.id])
+                .catch(err => console.error('[Zoho] Failed to store Zoho expense ID:', err));
+            }
+          } else {
+            console.warn(`[Zoho] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
+          }
+        }).catch(error => {
+          console.error(`[Zoho] Error submitting expense ${expense.id}:`, error);
+        });
+      } catch (error) {
+        // Log but don't fail the request - expense was saved to our database
+        console.error('[Zoho] Error preparing Zoho Books submission:', error);
+      }
+    } else {
+      console.log('[Zoho] Zoho Books integration not configured, skipping submission');
+    }
+
+    res.status(201).json(normalizeExpense(expense));
   } catch (error) {
     console.error('Error creating expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -669,6 +721,26 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error deleting expense:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ========== ZOHO BOOKS HEALTH CHECK ==========
+// GET /zoho/health - Check Zoho Books integration status
+router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+  try {
+    const health = await zohoBooksService.healthCheck();
+    res.json({
+      configured: zohoBooksService.isConfigured(),
+      ...health,
+    });
+  } catch (error) {
+    console.error('[Zoho] Health check failed:', error);
+    res.status(500).json({
+      configured: false,
+      healthy: false,
+      message: 'Health check failed',
+      error: String(error),
+    });
   }
 });
 
