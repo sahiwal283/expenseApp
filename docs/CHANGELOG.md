@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.2 / Backend 2.6.1] - 2025-10-09 - Toast Notifications for Zoho Submissions
+
+### ✨ Added
+
+#### Toast Notification System
+- **Visual Feedback**: Created reusable toast notification component with slide-in animation
+- **Real-time Alerts**: Instant notification when expenses are pushed to Zoho Books
+- **Mode Indication**: Clear distinction between real and mock Zoho submissions
+  - ✅ Real Zoho (haute): "Expense is being pushed to Haute Brands Zoho Books..."
+  - ℹ️ Mock Zoho (alpha/beta/gamma/delta): "Mock mode - simulated Zoho sync"
+- **Auto-dismiss**: Toasts automatically disappear after 5 seconds
+- **Manual Dismiss**: Click X to close toast immediately
+- **Multiple Toasts**: Support for stacked notifications
+
+#### User Experience Improvements
+- No more guessing if expense was synced to Zoho
+- Clear confirmation of entity assignment success
+- Professional UI with gradient colors and smooth animations
+- Color-coded by type: Success (green), Info (blue), Error (red), Warning (yellow)
+
+### 🛠️ Technical Changes
+
+**New Files:**
+- `src/components/common/Toast.tsx` - Toast component and useToast hook
+- `ZOHO_BOOKS_WHERE_TO_CHECK.md` - Comprehensive guide for verifying Zoho submissions
+
+**Modified Files:**
+- `src/components/admin/Approvals.tsx` - Integrated toast notifications in entity assignment
+- `src/components/common/index.ts` - Export toast components
+- `src/index.css` - Added slide-in animation keyframes
+
+**Integration Points:**
+- Approvals page: Entity dropdown assignment
+- Approvals page: Edit expense modal
+- Automatic detection of Zoho-enabled entities
+- Context-aware messages based on entity type
+
+### 📖 Documentation
+
+#### ZOHO_BOOKS_WHERE_TO_CHECK.md
+New comprehensive guide covering:
+- Step-by-step Zoho Books navigation
+- Expense Tracker field mapping
+- Search and filter instructions
+- Sync verification checklist
+- Troubleshooting guide
+- Mobile app access
+- Report generation
+- Real-time monitoring commands
+- Quick reference tables
+- Pro tips and best practices
+
+### 🎯 Impact
+
+**Before:**
+- Silent entity assignment
+- No confirmation of Zoho submission
+- Manual log checking required
+
+**After:**
+- Instant visual confirmation
+- Clear real vs mock indication
+- Professional user experience
+- Confidence in data sync
+
+---
+
 ## [0.35.0 / Backend 2.6.0] - 2025-10-09 - Zoho Books API Integration
 
 ### 🔗 Major Feature: Zoho Books Integration
