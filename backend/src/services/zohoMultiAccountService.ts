@@ -198,7 +198,7 @@ class ZohoAccountHandler {
         formattedDate = expenseData.date.split('T')[0];
       }
       
-      const entityLabel = this.config.mock ? `${this.config.entity}:MOCK` : `${this.config.entity}:REAL`;
+      const entityLabel = this.config.mock ? `${this.config.entityName}:MOCK` : `${this.config.entityName}:REAL`;
       console.log(`[Zoho:${entityLabel}] Expense date: ${expenseData.date} → Formatted: ${formattedDate}`);
       
       const expensePayload: any = {
