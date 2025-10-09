@@ -229,11 +229,12 @@ class ZohoAccountHandler {
       
       console.log(`[Zoho:${entityLabel}] Payload expense_date: ${expensePayload.expense_date}`);
 
-      // Add event name and merchant to reference field for easy identification
+      // Add event name to reference field (merchant is already in description and vendor_name)
+      // Zoho has a 50 character limit on reference_number
       if (expenseData.eventName) {
-        expensePayload.reference_number = `${expenseData.eventName} - ${expenseData.merchant}`;
-      } else {
-        expensePayload.reference_number = expenseData.merchant;
+        expensePayload.reference_number = expenseData.eventName.length > 50 
+          ? expenseData.eventName.substring(0, 47) + '...' 
+          : expenseData.eventName;
       }
 
       // Use account IDs if provided (more reliable), otherwise fall back to names

@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.13 / Backend 2.6.13] - 2025-10-09 - Fix: Reference Field Character Limit
+
+### 🐛 Critical Bug Fix
+
+#### Zoho Books - Reference Field Under 50 Characters
+**Issue**: Expenses were failing to submit with error "Please ensure that the Reference# has less than 50 characters."
+
+**Root Cause**: 
+- Zoho Books has a 50 character limit on the Reference # field
+- Using "Event Name - Merchant Name" format was exceeding this limit
+- Merchant name is redundant (already in Vendor Name and Description)
+
+**Solution**: 
+- Changed reference field to only include event name
+- Added 50 character truncation with "..." for long event names
+- Removed merchant name from reference (already in description)
+
+**Reference Field Format**:
+- **With event**: Event name only (e.g., "CES 2025")
+- **Without event**: No reference field
+- **Long events**: Truncated to 47 chars + "..."
+
+**Benefits**:
+- Avoids 50 character limit errors
+- Cleaner, more concise reference field
+- No redundant information (merchant already visible as Vendor Name)
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (lines 232-238)
+- `backend/src/services/zohoBooksService.ts` (lines 232-238)
+
+**Version Updates**:
+- Frontend: 0.35.12 → 0.35.13
+- Backend: 2.6.12 → 2.6.13
+
+---
+
 ## [0.35.12 / Backend 2.6.12] - 2025-10-09 - Fix: Handle Date Objects from Database
 
 ### 🐛 Critical Bug Fix
