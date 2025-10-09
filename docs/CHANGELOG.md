@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.7 / Backend 2.6.7] - 2025-10-09 - Fix: Use Account IDs Instead of Names
+
+### 🐛 Critical Bug Fix
+
+#### Zoho Books - Switch from Account Names to Account IDs
+**Issue**: Continued 404 errors with "Please enter valid expense account" despite using correct account names from Chart of Accounts.
+
+**Root Cause**: Zoho Books API requires account IDs, not account names, in the expense payload.
+
+**Solution**: 
+- Fetch account IDs from Zoho Books API
+- Use `account_id` and `paid_through_account_id` fields instead of `account_name` and `paid_through_account_name`
+- Fall back to names if IDs not provided (backward compatibility)
+
+**Account IDs Configured**:
+- Meals: `5254962000000091710`
+- Petty Cash: `5254962000000000361`
+
+**Technical Changes**:
+- Modified expense payload construction in both services
+- Added environment variables: `ZOHO_EXPENSE_ACCOUNT_ID` and `ZOHO_PAID_THROUGH_ACCOUNT_ID`
+- Updated diagnostic endpoint to show account IDs alongside names
+- Conditional logic: use IDs if available, otherwise fall back to names
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (lines 190-220)
+- `backend/src/services/zohoBooksService.ts` (lines 193-223)
+- `/etc/expenseapp/backend.env` on sandbox (added ID env vars)
+
+**Testing**: Re-assign entity to trigger submission with account IDs
+
+**Version Updates**:
+- Frontend: 0.35.6 → 0.35.7
+- Backend: 2.6.6 → 2.6.7
+
+---
+
 ## [0.35.6 / Backend 2.6.5] - 2025-10-09 - Config: Changed Zoho Expense Account
 
 ### 🔧 Configuration Changes

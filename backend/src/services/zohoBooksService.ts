@@ -194,8 +194,6 @@ class ZohoBooksService {
       // Note: customer_name and project_name removed because they must exist in Zoho Books first
       // User and event info is included in the description instead
       const expensePayload: any = {
-        account_name: this.config.expenseAccountName,
-        paid_through_account_name: this.config.paidThroughAccountName,
         expense_date: expenseData.date, // Zoho API expects 'expense_date' field
         amount: expenseData.amount,
         vendor_name: expenseData.merchant,
@@ -203,6 +201,22 @@ class ZohoBooksService {
         is_billable: expenseData.reimbursementRequired,
         is_inclusive_tax: false,
       };
+
+      // Use account IDs if provided (more reliable), otherwise fall back to names
+      const expenseAccountId = process.env.ZOHO_EXPENSE_ACCOUNT_ID;
+      const paidThroughAccountId = process.env.ZOHO_PAID_THROUGH_ACCOUNT_ID;
+
+      if (expenseAccountId) {
+        expensePayload.account_id = expenseAccountId;
+      } else {
+        expensePayload.account_name = this.config.expenseAccountName;
+      }
+
+      if (paidThroughAccountId) {
+        expensePayload.paid_through_account_id = paidThroughAccountId;
+      } else {
+        expensePayload.paid_through_account_name = this.config.paidThroughAccountName;
+      }
 
       // Only include customer/project if they already exist in Zoho Books
       // For now, we skip them to avoid 404 errors
