@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.3 / Backend 2.6.2] - 2025-10-09 - Critical Fix: Zoho Books Date Field
+
+### 🐛 Bug Fixes
+
+#### Zoho Books Integration - Date Field Name Correction
+**Issue**: Expenses were not being submitted to Zoho Books despite toast notifications showing success. Backend logs showed error: "Invalid value passed for Expense Date".
+
+**Root Cause**: The Zoho Books API expects the date field to be named `expense_date`, but the code was sending `date`.
+
+**Impact**: 
+- **Before**: All expense submissions to Zoho Books were failing silently (API rejected with 400 error)
+- **After**: Expenses successfully submitted to Zoho Books with correct date format
+
+**Technical Changes**:
+- `backend/src/services/zohoBooksService.ts`: Changed `date:` to `expense_date:` in expense payload (line 197)
+- `backend/src/services/zohoMultiAccountService.ts`: Changed `date:` to `expense_date:` in expense payload (line 194)
+
+**Testing**:
+- Verified with Zoho Books API documentation
+- Tested expense submission with "haute" entity
+- Confirmed expenses now appear in Zoho Books Expense Tracker
+
+**Version Updates**:
+- Frontend: 0.35.2 → 0.35.3
+- Backend: 2.6.1 → 2.6.2
+
+---
+
 ## [0.35.2 / Backend 2.6.1] - 2025-10-09 - Toast Notifications for Zoho Submissions
 
 ### ✨ Added

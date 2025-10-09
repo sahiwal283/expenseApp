@@ -191,7 +191,7 @@ class ZohoAccountHandler {
       const expensePayload = {
         account_name: this.config.expenseAccountName,
         paid_through_account_name: this.config.paidThroughAccountName,
-        date: expenseData.date,
+        expense_date: expenseData.date, // Zoho API expects 'expense_date' field
         amount: expenseData.amount,
         vendor_name: expenseData.merchant,
         description: this.buildDescription(expenseData),
