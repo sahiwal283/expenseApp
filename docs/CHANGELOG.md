@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.9 / Backend 2.6.9] - 2025-10-09 - Fix: Disable Billable Flag for Zoho
+
+### 🐛 Critical Bug Fix
+
+#### Zoho Books - Remove Billable Flag Requirement
+**Issue**: Expenses were failing to submit with error "Select a project to make this expense billable to the customer."
+
+**Root Cause**: 
+- Setting `is_billable: true` in Zoho Books requires a project to be assigned
+- We don't have projects configured in Zoho Books
+- Our reimbursement tracking is internal to the app, not Zoho
+
+**Solution**: 
+- Changed `is_billable` from `expenseData.reimbursementRequired` to `false`
+- Reimbursement status is tracked internally in our app database
+- Zoho Books only stores the basic expense data for accounting
+
+**Impact**:
+- ✅ Expenses now submit successfully without project requirement
+- ✅ Reimbursement tracking unaffected (handled in app)
+- ✅ No behavioral changes in the app UI
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (line 198)
+- `backend/src/services/zohoBooksService.ts` (line 201)
+
+**Version Updates**:
+- Frontend: 0.35.8 → 0.35.9
+- Backend: 2.6.8 → 2.6.9
+
+---
+
 ## [0.35.8 / Backend 2.6.8] - 2025-10-09 - Feature: Add Event Name to Reference Field
 
 ### ✨ Enhancement

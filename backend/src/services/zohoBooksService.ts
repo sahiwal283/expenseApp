@@ -198,7 +198,7 @@ class ZohoBooksService {
         amount: expenseData.amount,
         vendor_name: expenseData.merchant,
         description: this.buildDescription(expenseData),
-        is_billable: expenseData.reimbursementRequired,
+        is_billable: false, // Set to false since we don't have projects configured in Zoho
         is_inclusive_tax: false,
       };
 
