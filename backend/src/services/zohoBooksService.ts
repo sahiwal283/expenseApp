@@ -195,13 +195,30 @@ class ZohoBooksService {
       // User and event info is included in the description instead
       
       // Ensure date is in YYYY-MM-DD format for Zoho
-      let formattedDate = expenseData.date;
-      if (typeof expenseData.date === 'string' && expenseData.date.includes('T')) {
-        // If it's an ISO string, extract just the date part
-        formattedDate = expenseData.date.split('T')[0];
+      let formattedDate: string;
+      const dateValue = expenseData.date;
+      
+      if (dateValue instanceof Date || (typeof dateValue === 'object' && dateValue !== null)) {
+        // Handle Date object
+        const d = new Date(dateValue);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        formattedDate = `${year}-${month}-${day}`;
+      } else if (typeof dateValue === 'string') {
+        if (dateValue.includes('T')) {
+          // ISO string - extract date part
+          formattedDate = dateValue.split('T')[0];
+        } else {
+          // Already formatted
+          formattedDate = dateValue;
+        }
+      } else {
+        // Fallback - convert to string and try to parse
+        formattedDate = new Date(dateValue as any).toISOString().split('T')[0];
       }
       
-      console.log(`[Zoho] Expense date: ${expenseData.date} → Formatted: ${formattedDate}`);
+      console.log(`[Zoho] Expense date: ${dateValue} → Formatted: ${formattedDate}`);
       
       const expensePayload: any = {
         expense_date: formattedDate, // Zoho API expects 'expense_date' field in YYYY-MM-DD format

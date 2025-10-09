@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.12 / Backend 2.6.12] - 2025-10-09 - Fix: Handle Date Objects from Database
+
+### 🐛 Critical Bug Fix
+
+#### Zoho Books - Properly Handle Date Objects
+**Issue**: Dates were still showing as current date in Zoho Books because the database returns Date objects, not strings.
+
+**Root Cause**: 
+- PostgreSQL returns dates as JavaScript Date objects
+- Previous fix only handled string dates
+- Date objects were not being converted to YYYY-MM-DD format
+
+**Solution**: 
+- Added proper Date object handling with instanceof check
+- Extract year, month, day from Date object
+- Format as YYYY-MM-DD for Zoho API
+- Updated TypeScript interface to allow `date: string | Date`
+
+**Date Handling (Complete)**:
+1. **Date object**: Extract year/month/day → format as YYYY-MM-DD
+2. **ISO string with 'T'**: Extract date part before 'T'
+3. **Already formatted string**: Pass through unchanged
+4. **Fallback**: Convert any value to Date → ISO string → extract date
+
+**Example Conversion**:
+- Input: `Sat Apr 12 2025 00:00:00 GMT+0000`
+- Output: `2025-04-12`
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (interface + date handling)
+- `backend/src/services/zohoBooksService.ts` (date handling)
+
+**Version Updates**:
+- Frontend: 0.35.11 → 0.35.12
+- Backend: 2.6.11 → 2.6.12
+
+---
+
 ## [0.35.11 / Backend 2.6.11] - 2025-10-09 - Fix: Use Correct Expense Date in Zoho
 
 ### 🐛 Critical Bug Fix
