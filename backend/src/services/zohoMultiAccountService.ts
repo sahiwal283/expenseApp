@@ -228,6 +228,7 @@ class ZohoAccountHandler {
       };
       
       console.log(`[Zoho:${entityLabel}] Payload expense_date: ${expensePayload.expense_date}`);
+      console.log(`[Zoho:${entityLabel}] Full payload:`, JSON.stringify(expensePayload, null, 2));
 
       // Add event name to reference field (merchant is already in description and vendor_name)
       // Zoho has a 50 character limit on reference_number
@@ -373,6 +374,7 @@ class ZohoAccountHandler {
   private buildDescription(expenseData: ExpenseData): string {
     const parts = [
       `User: ${expenseData.userName}`,
+      `Merchant: ${expenseData.merchant}`,
       `Category: ${expenseData.category}`,
       expenseData.eventName ? `Event: ${expenseData.eventName}` : null,
       expenseData.description || null,

@@ -341,9 +341,11 @@ class ZohoBooksService {
     description?: string;
     eventName?: string;
     userName: string;
+    merchant: string;
   }): string {
     const parts = [
       `User: ${expenseData.userName}`,
+      `Merchant: ${expenseData.merchant}`,
       `Category: ${expenseData.category}`,
       expenseData.eventName ? `Event: ${expenseData.eventName}` : null,
       expenseData.description || null,

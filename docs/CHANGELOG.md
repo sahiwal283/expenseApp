@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.14 / Backend 2.6.14] - 2025-10-09 - Fix: Add Merchant to Description + Date Debugging
+
+### 🐛 Critical Bug Fixes
+
+#### 1. Missing Merchant Name in Description
+**Issue**: Merchant name was not appearing in the Zoho Books expense description.
+
+**Root Cause**: The `buildDescription` function was missing the merchant field.
+
+**Solution**: 
+- Added `Merchant: ${merchant}` to description
+- Order: User → Merchant → Category → Event → Notes
+
+**Description Format**:
+```
+User: Admin User | Merchant: Hertz Car Rental | Category: Transportation | Event: NAB Show 2025 | [notes if any]
+```
+
+#### 2. Date Still Showing Wrong in Zoho
+**Issue**: Sending `2025-10-07` but Zoho shows `09 Oct 2025`.
+
+**Investigation**: 
+- Added comprehensive payload logging to see exact data sent to Zoho
+- Will help identify if it's a timezone issue or API parameter issue
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (buildDescription + logging)
+- `backend/src/services/zohoBooksService.ts` (buildDescription signature)
+
+**Version Updates**:
+- Frontend: 0.35.13 → 0.35.14
+- Backend: 2.6.13 → 2.6.14
+
+**Next Steps**: Full payload logging will help diagnose the date issue
+
+---
+
 ## [0.35.13 / Backend 2.6.13] - 2025-10-09 - Fix: Reference Field Character Limit
 
 ### 🐛 Critical Bug Fix
