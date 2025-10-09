@@ -341,6 +341,39 @@ class ZohoAccountHandler {
   public clearSubmittedCache(): void {
     this.submittedExpenses.clear();
   }
+
+  /**
+   * Check if this is a mock account
+   */
+  public isMock(): boolean {
+    return this.config.mock;
+  }
+
+  /**
+   * Fetch Chart of Accounts from Zoho Books API
+   */
+  public async fetchChartOfAccounts(): Promise<any[]> {
+    if (this.config.mock) {
+      throw new Error('Cannot fetch real accounts from mock handler');
+    }
+
+    if (!this.apiClient) {
+      throw new Error('API client not initialized');
+    }
+
+    try {
+      const response = await this.apiClient.get('/chartofaccounts');
+      
+      if (response.data.code !== 0) {
+        throw new Error(`Zoho API error: ${response.data.message}`);
+      }
+
+      return response.data.chartofaccounts || [];
+    } catch (error) {
+      console.error('[Zoho] Failed to fetch chart of accounts:', error);
+      throw error;
+    }
+  }
 }
 
 /**
@@ -438,6 +471,56 @@ class ZohoMultiAccountService {
       handler.clearSubmittedCache();
     }
     console.log('[Zoho:MultiAccount] Cleared submission caches for all accounts');
+  }
+
+  /**
+   * Get available Zoho Books account names from the API
+   * Helps identify correct account names for configuration
+   */
+  public async getZohoAccountNames(): Promise<any> {
+    // Use the 'haute' account to fetch available accounts
+    const hauteHandler = this.accountHandlers.get('haute');
+    
+    if (!hauteHandler || hauteHandler.isMock()) {
+      throw new Error('Real Zoho account not configured. Cannot fetch account names.');
+    }
+
+    try {
+      const accounts = await hauteHandler.fetchChartOfAccounts();
+      
+      // Group accounts by type
+      const grouped = {
+        expense: accounts.filter((a: any) => 
+          a.account_type?.toLowerCase() === 'expense'
+        ).map((a: any) => a.account_name),
+        
+        cash: accounts.filter((a: any) => 
+          a.account_type?.toLowerCase() === 'cash'
+        ).map((a: any) => a.account_name),
+        
+        bank: accounts.filter((a: any) => 
+          a.account_type?.toLowerCase() === 'bank'
+        ).map((a: any) => a.account_name),
+        
+        all: accounts.map((a: any) => ({
+          name: a.account_name,
+          type: a.account_type,
+          balance: a.balance || 0,
+        })),
+      };
+
+      return {
+        configured: {
+          expense_account: process.env.ZOHO_EXPENSE_ACCOUNT_NAME || 'Not configured',
+          paid_through_account: process.env.ZOHO_PAID_THROUGH_ACCOUNT || 'Not configured',
+        },
+        available: grouped,
+        note: 'Use exact account names from "available" lists in your environment variables',
+      };
+    } catch (error) {
+      console.error('[Zoho:MultiAccount] Failed to fetch account names:', error);
+      throw error;
+    }
   }
 }
 

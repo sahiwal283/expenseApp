@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.4 / Backend 2.6.3] - 2025-10-09 - Diagnostic Endpoint for Zoho Account Names
+
+### ✨ Added
+
+#### Zoho Books Account Diagnostic Endpoint
+**Purpose**: Help identify correct account names for Zoho Books configuration
+
+**Issue**: Expenses failing with "Please enter valid expense account" error because configured account names don't match Zoho Books Chart of Accounts.
+
+**New Endpoint**: `GET /api/expenses/zoho/accounts`
+- Fetches actual account names from Zoho Books API
+- Groups accounts by type (Expense, Cash, Bank)
+- Shows currently configured names vs available names
+- Admin-only access
+
+**Response Format**:
+```json
+{
+  "configured": {
+    "expense_account": "Travel Expenses",
+    "paid_through_account": "Petty Cash"
+  },
+  "available": {
+    "expense": ["Account 1", "Account 2", ...],
+    "cash": ["Cash Account 1", ...],
+    "bank": ["Bank Account 1", ...],
+    "all": [{"name": "...", "type": "...", "balance": 0}, ...]
+  }
+}
+```
+
+**New Methods**:
+- `ZohoAccountHandler.isMock()` - Check if account is mock
+- `ZohoAccountHandler.fetchChartOfAccounts()` - Fetch Zoho accounts
+- `ZohoMultiAccountService.getZohoAccountNames()` - Get available accounts
+
+**Usage**:
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:5000/api/expenses/zoho/accounts
+```
+
+**Version Updates**:
+- Frontend: 0.35.3 → 0.35.4
+- Backend: 2.6.2 → 2.6.3
+
+---
+
 ## [0.35.3 / Backend 2.6.2] - 2025-10-09 - Critical Fix: Zoho Books Date Field
 
 ### 🐛 Bug Fixes

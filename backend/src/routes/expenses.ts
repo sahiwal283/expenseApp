@@ -788,5 +788,19 @@ router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accoun
   }
 });
 
+// GET /zoho/accounts - Get available Zoho Books account names for configuration
+router.get('/zoho/accounts', authenticateToken, authorize('admin'), async (req: AuthRequest, res) => {
+  try {
+    const accounts = await zohoMultiAccountService.getZohoAccountNames();
+    res.json(accounts);
+  } catch (error) {
+    console.error('[Zoho:MultiAccount] Failed to fetch account names:', error);
+    res.status(500).json({
+      error: 'Failed to fetch Zoho Books account names',
+      message: String(error),
+    });
+  }
+});
+
 export default router;
 
