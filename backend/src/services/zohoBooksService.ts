@@ -202,6 +202,11 @@ class ZohoBooksService {
         is_inclusive_tax: false,
       };
 
+      // Add event name to reference field if available
+      if (expenseData.eventName) {
+        expensePayload.reference_number = expenseData.eventName;
+      }
+
       // Use account IDs if provided (more reliable), otherwise fall back to names
       const expenseAccountId = process.env.ZOHO_EXPENSE_ACCOUNT_ID;
       const paidThroughAccountId = process.env.ZOHO_PAID_THROUGH_ACCOUNT_ID;

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.8 / Backend 2.6.8] - 2025-10-09 - Feature: Add Event Name to Reference Field
+
+### ✨ Enhancement
+
+#### Zoho Books - Event Name in Reference Field
+**Feature**: Automatically populate the Zoho Books expense "Reference #" field with the event name from the app.
+
+**Benefit**:
+- Easy identification of which trade show/event an expense belongs to
+- Better organization and filtering in Zoho Books
+- Quick reference without opening expense details
+
+**Implementation**:
+- Added `reference_number` field to expense payload
+- Conditionally includes event name if available
+- Applied to both multi-account and single-account services
+
+**Field Mapping**:
+- App: Event Name (e.g., "CES 2025")
+- Zoho Books: Reference # field
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (lines 202-205)
+- `backend/src/services/zohoBooksService.ts` (lines 205-208)
+
+**Testing**: Submit new expense with event assignment to verify reference field
+
+**Version Updates**:
+- Frontend: 0.35.7 → 0.35.8
+- Backend: 2.6.7 → 2.6.8
+
+---
+
 ## [0.35.7 / Backend 2.6.7] - 2025-10-09 - Fix: Use Account IDs Instead of Names
 
 ### 🐛 Critical Bug Fix
