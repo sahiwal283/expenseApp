@@ -191,18 +191,22 @@ class ZohoBooksService {
       console.log(`[Zoho] Creating expense for ${expenseData.merchant} - $${expenseData.amount}`);
 
       // Step 1: Create the expense
-      const expensePayload = {
+      // Note: customer_name and project_name removed because they must exist in Zoho Books first
+      // User and event info is included in the description instead
+      const expensePayload: any = {
         account_name: this.config.expenseAccountName,
         paid_through_account_name: this.config.paidThroughAccountName,
         expense_date: expenseData.date, // Zoho API expects 'expense_date' field
         amount: expenseData.amount,
         vendor_name: expenseData.merchant,
         description: this.buildDescription(expenseData),
-        customer_name: expenseData.userName,
-        project_name: expenseData.eventName || undefined,
         is_billable: expenseData.reimbursementRequired,
         is_inclusive_tax: false,
       };
+
+      // Only include customer/project if they already exist in Zoho Books
+      // For now, we skip them to avoid 404 errors
+      // TODO: Future enhancement - create customers/projects via API if they don't exist
 
       const createResponse = await this.apiClient.post('/expenses', expensePayload);
 
@@ -287,8 +291,10 @@ class ZohoBooksService {
     category: string;
     description?: string;
     eventName?: string;
+    userName: string;
   }): string {
     const parts = [
+      `User: ${expenseData.userName}`,
       `Category: ${expenseData.category}`,
       expenseData.eventName ? `Event: ${expenseData.eventName}` : null,
       expenseData.description || null,

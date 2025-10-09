@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.5 / Backend 2.6.4] - 2025-10-09 - Fix: Remove Customer/Project Requirement from Zoho
+
+### 🐛 Bug Fixes
+
+#### Zoho Books - Removed Customer/Project Name Requirements
+**Issue**: Expenses failing with 404 error because `customer_name` and `project_name` fields referenced entities that don't exist in Zoho Books.
+
+**Root Cause**: 
+- Zoho Books API requires customers and projects to exist BEFORE they can be referenced in expenses
+- App was sending `customer_name: "Admin User"` and `project_name: "ServSafe"` which don't exist in Zoho
+- API returned 404 errors causing all expense submissions to fail
+
+**Solution**:
+- Removed `customer_name` and `project_name` from expense payload
+- User and event information now included in the `description` field instead
+- Format: "User: [Name] | Category: [Category] | Event: [Event] | [Description]"
+
+**Impact**:
+- ✅ Expenses now submit successfully to Zoho Books
+- ✅ All information still captured (in description)
+- ✅ No longer requires pre-creating users/events in Zoho Books
+- ⚠️ Customers/Projects not linked in Zoho (future enhancement)
+
+**Technical Changes**:
+- `backend/src/services/zohoMultiAccountService.ts`: Removed customer_name/project_name from payload
+- `backend/src/services/zohoBooksService.ts`: Same fix for single-account service  
+- Updated `buildDescription()` methods to include user name
+- Added TODO for future enhancement to create customers/projects via API
+
+**Testing**:
+- Verified expense submission works without pre-existing customers/projects
+- Confirmed all data appears in Zoho Books description field
+
+**Version Updates**:
+- Frontend: 0.35.4 → 0.35.5
+- Backend: 2.6.3 → 2.6.4
+
+---
+
 ## [0.35.4 / Backend 2.6.3] - 2025-10-09 - Diagnostic Endpoint for Zoho Account Names
 
 ### ✨ Added
