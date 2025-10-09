@@ -198,8 +198,8 @@ class ZohoAccountHandler {
         formattedDate = expenseData.date.split('T')[0];
       }
       
-      const entityName = this.config.mock ? `${this.entityName}:MOCK` : `${this.entityName}:REAL`;
-      console.log(`[Zoho:${entityName}] Expense date: ${expenseData.date} → Formatted: ${formattedDate}`);
+      const entityLabel = this.config.mock ? `${this.config.entity}:MOCK` : `${this.config.entity}:REAL`;
+      console.log(`[Zoho:${entityLabel}] Expense date: ${expenseData.date} → Formatted: ${formattedDate}`);
       
       const expensePayload: any = {
         expense_date: formattedDate, // Zoho API expects 'expense_date' field in YYYY-MM-DD format
