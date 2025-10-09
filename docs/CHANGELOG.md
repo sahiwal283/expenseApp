@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.11 / Backend 2.6.11] - 2025-10-09 - Fix: Use Correct Expense Date in Zoho
+
+### 🐛 Critical Bug Fix
+
+#### Zoho Books - Use App Expense Date Instead of Current Date
+**Issue**: Expenses were being submitted to Zoho Books with today's date instead of the actual expense date from the app.
+
+**Root Cause**: 
+- Date from database may be in different formats (Date object, ISO string, etc.)
+- No date formatting/validation before sending to Zoho API
+- Zoho API expects YYYY-MM-DD format exactly
+
+**Solution**: 
+- Added date formatting logic to ensure YYYY-MM-DD format
+- Handle Date objects by extracting year, month, day
+- Handle ISO strings by extracting date portion before 'T'
+- Added logging to track date conversion
+
+**Date Handling**:
+- **Date object**: Convert to YYYY-MM-DD using getFullYear(), getMonth(), getDate()
+- **ISO string** (with 'T'): Extract date part before 'T'
+- **Already formatted**: Pass through unchanged
+- **Logging**: Shows original → formatted date for debugging
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (lines 194-207)
+- `backend/src/services/zohoBooksService.ts` (lines 197-210)
+
+**Version Updates**:
+- Frontend: 0.35.10 → 0.35.11
+- Backend: 2.6.10 → 2.6.11
+
+---
+
 ## [0.35.10 / Backend 2.6.10] - 2025-10-09 - Enhancement: Add Merchant to Reference Field
 
 ### ✨ Enhancement
