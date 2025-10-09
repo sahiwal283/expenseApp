@@ -226,6 +226,8 @@ class ZohoAccountHandler {
         is_billable: false, // Set to false since we don't have projects configured in Zoho
         is_inclusive_tax: false,
       };
+      
+      console.log(`[Zoho:${entityLabel}] Payload expense_date: ${expensePayload.expense_date}`);
 
       // Add event name and merchant to reference field for easy identification
       if (expenseData.eventName) {
