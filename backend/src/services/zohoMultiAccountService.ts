@@ -193,18 +193,13 @@ class ZohoAccountHandler {
       
       // Ensure date is in YYYY-MM-DD format for Zoho
       let formattedDate = expenseData.date;
-      if (expenseData.date instanceof Date) {
-        // Convert Date object to YYYY-MM-DD
-        const year = expenseData.date.getFullYear();
-        const month = String(expenseData.date.getMonth() + 1).padStart(2, '0');
-        const day = String(expenseData.date.getDate()).padStart(2, '0');
-        formattedDate = `${year}-${month}-${day}`;
-      } else if (typeof expenseData.date === 'string' && expenseData.date.includes('T')) {
+      if (typeof expenseData.date === 'string' && expenseData.date.includes('T')) {
         // If it's an ISO string, extract just the date part
         formattedDate = expenseData.date.split('T')[0];
       }
       
-      console.log(`[Zoho:${this.config.entity}] Expense date: ${expenseData.date} → Formatted: ${formattedDate}`);
+      const entityName = this.config.mock ? `${this.entityName}:MOCK` : `${this.entityName}:REAL`;
+      console.log(`[Zoho:${entityName}] Expense date: ${expenseData.date} → Formatted: ${formattedDate}`);
       
       const expensePayload: any = {
         expense_date: formattedDate, // Zoho API expects 'expense_date' field in YYYY-MM-DD format
