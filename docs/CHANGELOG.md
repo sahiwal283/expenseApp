@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.10 / Backend 2.6.10] - 2025-10-09 - Enhancement: Add Merchant to Reference Field
+
+### ✨ Enhancement
+
+#### Zoho Books - Event + Merchant in Reference Field
+**Feature**: Enhanced the Reference # field in Zoho Books to include both event name and merchant name.
+
+**Format**:
+- With event: `"CES 2025 - Business Center"` (Event - Merchant)
+- Without event: `"Business Center"` (Merchant only)
+
+**Benefit**:
+- Even better expense identification at a glance
+- Easy to see both what event and where the expense was made
+- Improved filtering and searching in Zoho Books
+
+**Implementation**:
+- Modified reference field construction to concatenate event and merchant
+- Fallback to merchant only if no event assigned
+- Applied to both multi-account and single-account services
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (lines 202-207)
+- `backend/src/services/zohoBooksService.ts` (lines 205-210)
+
+**Version Updates**:
+- Frontend: 0.35.9 → 0.35.10
+- Backend: 2.6.9 → 2.6.10
+
+---
+
 ## [0.35.9 / Backend 2.6.9] - 2025-10-09 - Fix: Disable Billable Flag for Zoho
 
 ### 🐛 Critical Bug Fix

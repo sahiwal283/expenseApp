@@ -202,9 +202,11 @@ class ZohoBooksService {
         is_inclusive_tax: false,
       };
 
-      // Add event name to reference field if available
+      // Add event name and merchant to reference field for easy identification
       if (expenseData.eventName) {
-        expensePayload.reference_number = expenseData.eventName;
+        expensePayload.reference_number = `${expenseData.eventName} - ${expenseData.merchant}`;
+      } else {
+        expensePayload.reference_number = expenseData.merchant;
       }
 
       // Use account IDs if provided (more reliable), otherwise fall back to names
