@@ -17,6 +17,7 @@ import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
+import { useToast, ToastContainer } from '../common/Toast';
 
 interface ApprovalsProps {
   user: User;
@@ -45,6 +46,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   const [editStatus, setEditStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [editReimbursementStatus, setEditReimbursementStatus] = useState<'pending review' | 'approved' | 'rejected' | 'paid'>('pending review');
   const [editEntity, setEditEntity] = useState<string>('');
+
+  // Toast notifications
+  const { toasts, addToast, removeToast } = useToast();
+
+  // Zoho-enabled entities (entities that have Zoho Books accounts configured)
+  const zohoEnabledEntities = ['haute', 'alpha', 'beta', 'gamma', 'delta'];
 
   // Load data
   useEffect(() => {
@@ -146,10 +153,25 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       if (api.USE_SERVER) {
         await api.assignEntity(expense.id, { zoho_entity: entity });
       }
+
+      // Check if entity has Zoho Books integration
+      const isZohoEntity = zohoEnabledEntities.includes(entity.toLowerCase());
+      const isRealZoho = entity.toLowerCase() === 'haute';
+      
+      if (isZohoEntity) {
+        if (isRealZoho) {
+          addToast(`✅ Entity assigned! Expense is being pushed to Haute Brands Zoho Books...`, 'success');
+        } else {
+          addToast(`✅ Entity assigned to ${entity}! (Mock mode - simulated Zoho sync)`, 'info');
+        }
+      } else {
+        addToast(`✅ Entity "${entity}" assigned successfully`, 'success');
+      }
+
       await loadData(); // Refresh all data
     } catch (error) {
       console.error('Failed to assign entity:', error);
-      alert('Failed to assign entity. Please try again.');
+      addToast('❌ Failed to assign entity. Please try again.', 'error');
     }
   };
 
@@ -183,6 +205,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     if (!editingExpense) return;
 
     try {
+      let entityChanged = false;
+      let newEntity = '';
+
       if (api.USE_SERVER) {
         // Update status if changed
         if (editStatus !== editingExpense.status) {
@@ -197,14 +222,34 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         // Update entity if changed
         if (editEntity !== editingExpense.zohoEntity) {
           await api.assignEntity(editingExpense.id, { zoho_entity: editEntity });
+          entityChanged = true;
+          newEntity = editEntity;
         }
       }
       
       await loadData(); // Refresh all data
       closeEditModal();
+
+      // Show toast notification if entity was changed
+      if (entityChanged && newEntity) {
+        const isZohoEntity = zohoEnabledEntities.includes(newEntity.toLowerCase());
+        const isRealZoho = newEntity.toLowerCase() === 'haute';
+        
+        if (isZohoEntity) {
+          if (isRealZoho) {
+            addToast(`✅ Changes saved! Expense is being pushed to Haute Brands Zoho Books...`, 'success');
+          } else {
+            addToast(`✅ Changes saved! Entity ${newEntity} (Mock mode - simulated Zoho sync)`, 'info');
+          }
+        } else {
+          addToast(`✅ Expense updated successfully`, 'success');
+        }
+      } else {
+        addToast(`✅ Expense updated successfully`, 'success');
+      }
     } catch (error) {
       console.error('Error updating expense:', error);
-      alert('Failed to update expense. Please try again.');
+      addToast('❌ Failed to update expense. Please try again.', 'error');
     }
   };
 
@@ -743,6 +788,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };
