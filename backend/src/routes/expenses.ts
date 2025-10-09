@@ -436,53 +436,10 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
     const expense = result.rows[0];
 
     // ========== ZOHO BOOKS INTEGRATION ==========
-    // Submit expense to Zoho Books (if configured)
-    if (zohoBooksService.isConfigured()) {
-      try {
-        // Get user and event details for Zoho submission
-        const userResult = await query('SELECT name FROM users WHERE id = $1', [req.user?.id]);
-        const eventResult = await query('SELECT name FROM events WHERE id = $1', [event_id]);
-        
-        const userName = userResult.rows[0]?.name || 'Unknown User';
-        const eventName = eventResult.rows[0]?.name || undefined;
-
-        // Prepare receipt file path
-        const receiptPath = req.file ? req.file.path : undefined;
-
-        // Submit to Zoho Books asynchronously (don't block response)
-        zohoBooksService.createExpense({
-          expenseId: expense.id,
-          date: date,
-          amount: parseFloat(amount),
-          category: category,
-          merchant: merchant,
-          description: description || undefined,
-          userName: userName,
-          eventName: eventName,
-          receiptPath: receiptPath,
-          reimbursementRequired: reimbursement_required === 'true' || reimbursement_required === true,
-        }).then((zohoResult) => {
-          if (zohoResult.success) {
-            console.log(`[Zoho] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
-            
-            // Optionally update our database with Zoho expense ID
-            if (zohoResult.zohoExpenseId) {
-              query('UPDATE expenses SET zoho_expense_id = $1 WHERE id = $2', [zohoResult.zohoExpenseId, expense.id])
-                .catch(err => console.error('[Zoho] Failed to store Zoho expense ID:', err));
-            }
-          } else {
-            console.warn(`[Zoho] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
-          }
-        }).catch(error => {
-          console.error(`[Zoho] Error submitting expense ${expense.id}:`, error);
-        });
-      } catch (error) {
-        // Log but don't fail the request - expense was saved to our database
-        console.error('[Zoho] Error preparing Zoho Books submission:', error);
-      }
-    } else {
-      console.log('[Zoho] Zoho Books integration not configured, skipping submission');
-    }
+    // Note: Expenses are NOT submitted to Zoho Books at creation time.
+    // They are submitted when the entity is assigned to "haute" via the PATCH /:id/entity endpoint.
+    // This ensures only "haute" entity expenses are synced to Zoho Books.
+    console.log('[Zoho] Expense created. Will sync to Zoho Books when entity is assigned to "haute".');
 
     res.status(201).json(normalizeExpense(expense));
   } catch (error) {
@@ -643,7 +600,66 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(normalizeExpense(result.rows[0]));
+    const expense = result.rows[0];
+
+    // ========== ZOHO BOOKS INTEGRATION ==========
+    // Submit to Zoho Books ONLY if entity is "haute" (case-insensitive)
+    if (zohoBooksService.isConfigured() && zoho_entity && zoho_entity.toLowerCase() === 'haute') {
+      try {
+        console.log(`[Zoho] Entity assigned to "haute" for expense ${id}, submitting to Zoho Books...`);
+
+        // Get user and event details for Zoho submission
+        const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
+        const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+        
+        const userName = userResult.rows[0]?.name || 'Unknown User';
+        const eventName = eventResult.rows[0]?.name || undefined;
+
+        // Prepare receipt file path (if exists)
+        let receiptPath = undefined;
+        if (expense.receipt_url) {
+          const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+          receiptPath = path.join(uploadDir, path.basename(expense.receipt_url));
+        }
+
+        // Submit to Zoho Books asynchronously (don't block response)
+        zohoBooksService.createExpense({
+          expenseId: expense.id,
+          date: expense.date,
+          amount: parseFloat(expense.amount),
+          category: expense.category,
+          merchant: expense.merchant,
+          description: expense.description || undefined,
+          userName: userName,
+          eventName: eventName,
+          receiptPath: receiptPath,
+          reimbursementRequired: expense.reimbursement_required,
+        }).then((zohoResult) => {
+          if (zohoResult.success) {
+            console.log(`[Zoho] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
+            
+            // Store Zoho expense ID in database
+            if (zohoResult.zohoExpenseId) {
+              query('UPDATE expenses SET zoho_expense_id = $1 WHERE id = $2', [zohoResult.zohoExpenseId, expense.id])
+                .catch(err => console.error('[Zoho] Failed to store Zoho expense ID:', err));
+            }
+          } else {
+            console.warn(`[Zoho] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
+          }
+        }).catch(error => {
+          console.error(`[Zoho] Error submitting expense ${expense.id}:`, error);
+        });
+      } catch (error) {
+        // Log but don't fail the request - entity was assigned successfully
+        console.error('[Zoho] Error preparing Zoho Books submission:', error);
+      }
+    } else if (zoho_entity && zoho_entity.toLowerCase() === 'haute') {
+      console.log('[Zoho] Entity is "haute" but Zoho Books integration not configured');
+    } else {
+      console.log(`[Zoho] Entity assigned to "${zoho_entity}", not submitting to Zoho Books (only "haute" expenses are synced)`);
+    }
+
+    res.json(normalizeExpense(expense));
   } catch (error) {
     console.error('Error assigning entity:', error);
     res.status(500).json({ error: 'Internal server error' });
