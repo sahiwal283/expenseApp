@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { createWorker } from 'tesseract.js';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
-import { zohoBooksService } from '../services/zohoBooksService';
+import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
 
 const router = Router();
 
@@ -602,11 +602,11 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
 
     const expense = result.rows[0];
 
-    // ========== ZOHO BOOKS INTEGRATION ==========
-    // Submit to Zoho Books ONLY if entity is "haute" (case-insensitive)
-    if (zohoBooksService.isConfigured() && zoho_entity && zoho_entity.toLowerCase() === 'haute') {
+    // ========== ZOHO BOOKS MULTI-ACCOUNT INTEGRATION ==========
+    // Submit to Zoho Books if entity has a configured account (real or mock)
+    if (zoho_entity && zohoMultiAccountService.isConfiguredForEntity(zoho_entity)) {
       try {
-        console.log(`[Zoho] Entity assigned to "haute" for expense ${id}, submitting to Zoho Books...`);
+        console.log(`[Zoho] Entity "${zoho_entity}" assigned to expense ${id}, submitting to Zoho Books...`);
 
         // Get user and event details for Zoho submission
         const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
@@ -623,7 +623,7 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
         }
 
         // Submit to Zoho Books asynchronously (don't block response)
-        zohoBooksService.createExpense({
+        zohoMultiAccountService.createExpense(zoho_entity, {
           expenseId: expense.id,
           date: expense.date,
           amount: parseFloat(expense.amount),
@@ -636,9 +636,10 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
           reimbursementRequired: expense.reimbursement_required,
         }).then((zohoResult) => {
           if (zohoResult.success) {
-            console.log(`[Zoho] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
+            const mode = zohoResult.mock ? 'MOCK' : 'REAL';
+            console.log(`[Zoho:${mode}] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
             
-            // Store Zoho expense ID in database
+            // Store Zoho expense ID in database (even for mock IDs for testing)
             if (zohoResult.zohoExpenseId) {
               query('UPDATE expenses SET zoho_expense_id = $1 WHERE id = $2', [zohoResult.zohoExpenseId, expense.id])
                 .catch(err => console.error('[Zoho] Failed to store Zoho expense ID:', err));
@@ -653,10 +654,8 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
         // Log but don't fail the request - entity was assigned successfully
         console.error('[Zoho] Error preparing Zoho Books submission:', error);
       }
-    } else if (zoho_entity && zoho_entity.toLowerCase() === 'haute') {
-      console.log('[Zoho] Entity is "haute" but Zoho Books integration not configured');
-    } else {
-      console.log(`[Zoho] Entity assigned to "${zoho_entity}", not submitting to Zoho Books (only "haute" expenses are synced)`);
+    } else if (zoho_entity) {
+      console.log(`[Zoho] Entity "${zoho_entity}" assigned, but no Zoho account configured (skipping sync)`);
     }
 
     res.json(normalizeExpense(expense));
@@ -740,17 +739,46 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// ========== ZOHO BOOKS HEALTH CHECK ==========
-// GET /zoho/health - Check Zoho Books integration status
+// ========== ZOHO BOOKS MULTI-ACCOUNT HEALTH CHECK ==========
+// GET /zoho/health - Check Zoho Books integration status for all accounts
 router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
   try {
-    const health = await zohoBooksService.healthCheck();
+    const healthStatus = await zohoMultiAccountService.getHealthStatus();
+    const statusArray = Array.from(healthStatus.entries()).map(([entity, status]) => ({
+      entity,
+      ...status,
+    }));
+
+    const overallHealthy = statusArray.every(s => s.healthy);
+    const realAccounts = statusArray.filter(s => !s.mock).length;
+    const mockAccounts = statusArray.filter(s => s.mock).length;
+
     res.json({
-      configured: zohoBooksService.isConfigured(),
-      ...health,
+      overall: {
+        healthy: overallHealthy,
+        totalAccounts: statusArray.length,
+        realAccounts,
+        mockAccounts,
+      },
+      accounts: statusArray,
     });
   } catch (error) {
-    console.error('[Zoho] Health check failed:', error);
+    console.error('[Zoho:MultiAccount] Health check failed:', error);
+    res.status(500).json({
+      overall: { healthy: false, message: 'Health check failed' },
+      error: String(error),
+    });
+  }
+});
+
+// GET /zoho/health/:entity - Check health for specific entity
+router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+  try {
+    const { entity } = req.params;
+    const health = await zohoMultiAccountService.getHealthForEntity(entity);
+    res.json(health);
+  } catch (error) {
+    console.error(`[Zoho:MultiAccount] Health check failed for ${req.params.entity}:`, error);
     res.status(500).json({
       configured: false,
       healthy: false,
