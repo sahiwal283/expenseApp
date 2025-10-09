@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.6 / Backend 2.6.5] - 2025-10-09 - Config: Changed Zoho Expense Account
+
+### 🔧 Configuration Changes
+
+#### Zoho Books Expense Account Name Updated
+**Issue**: "Trade Shows" account name continued to cause 404 errors despite being visible in Chart of Accounts.
+
+**Change**: Updated `ZOHO_EXPENSE_ACCOUNT_NAME` from "Trade Shows" to "Meals"
+- "Meals" is a simpler, more common account name
+- Less likely to have special characters or encoding issues
+- Widely used standard expense account
+
+**Location**: `/etc/expenseapp/backend.env` on sandbox server (LXC 203)
+
+**Impact**:
+- All submitted expenses will now be categorized under "Meals" in Zoho Books
+- Easier to identify and troubleshoot account name issues
+- Can be changed back to "Trade Shows" if this resolves the 404 error
+
+**Version Updates**:
+- Frontend: 0.35.5 → 0.35.6
+- Backend: 2.6.4 → 2.6.5
+
+**Next Steps**: Test expense submission with new account name
+
+---
+
 ## [0.35.5 / Backend 2.6.4] - 2025-10-09 - Fix: Remove Customer/Project Requirement from Zoho
 
 ### 🐛 Bug Fixes
