@@ -193,9 +193,9 @@ class ZohoAccountHandler {
       
       // Ensure date is in YYYY-MM-DD format for Zoho
       let formattedDate: string;
-      const dateValue = expenseData.date;
+      const dateValue: any = expenseData.date;
       
-      if (dateValue instanceof Date || (typeof dateValue === 'object' && dateValue !== null)) {
+      if (typeof dateValue === 'object' && dateValue !== null) {
         // Handle Date object
         const d = new Date(dateValue);
         const year = d.getFullYear();
@@ -212,7 +212,7 @@ class ZohoAccountHandler {
         }
       } else {
         // Fallback - convert to string and try to parse
-        formattedDate = new Date(dateValue as any).toISOString().split('T')[0];
+        formattedDate = new Date(dateValue).toISOString().split('T')[0];
       }
       
       const entityLabel = this.config.mock ? `${this.config.entityName}:MOCK` : `${this.config.entityName}:REAL`;
