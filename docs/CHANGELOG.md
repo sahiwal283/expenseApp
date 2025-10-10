@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.17 / Backend 2.6.17] - 2025-10-10 - Fix: Update Paid Through account to Business Checking
+
+### 🔧 Configuration Fix - Paid Through Account
+
+**Issue**: Expenses were still using Petty Cash instead of Business Checking.
+
+**Root Cause**: Environment variable `ZOHO_PAID_THROUGH_ACCOUNT_ID` was not properly saved to .env file.
+
+**Solution**: 
+- Added `ZOHO_PAID_THROUGH_ACCOUNT_ID=5254962000000129043` to backend .env
+- This corresponds to Business Checking account in Zoho Books
+- Backend restart required to pick up new environment variable
+
+**Previous Account**: 
+- Petty Cash (ID: `5254962000000000361`)
+
+**New Account**: 
+- Business Checking (ID: `5254962000000129043`)
+
+**Testing**: Next expense submitted to "haute" entity will use Business Checking.
+
+**Version Updates**:
+- Frontend: 0.35.16 → 0.35.17
+- Backend: 2.6.16 → 2.6.17
+
+---
+
 ## [0.35.16 / Backend 2.6.16] - 2025-10-10 - Fix: Change date field name from expense_date to date
 
 ### 🐛 Critical Bug Fix - Date Field Name
