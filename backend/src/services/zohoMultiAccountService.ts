@@ -275,17 +275,24 @@ class ZohoAccountHandler {
       // Use account IDs if provided (more reliable), otherwise fall back to names
       const expenseAccountId = process.env.ZOHO_EXPENSE_ACCOUNT_ID;
       const paidThroughAccountId = process.env.ZOHO_PAID_THROUGH_ACCOUNT_ID;
+      
+      console.log(`[Zoho:${entityLabel}] ENV CHECK - Expense Account ID: ${expenseAccountId || 'NOT SET'}`);
+      console.log(`[Zoho:${entityLabel}] ENV CHECK - Paid Through Account ID: ${paidThroughAccountId || 'NOT SET'}`);
 
       if (expenseAccountId) {
         expensePayload.account_id = expenseAccountId;
+        console.log(`[Zoho:${entityLabel}] Using account_id: ${expenseAccountId}`);
       } else {
         expensePayload.account_name = this.config.expenseAccountName;
+        console.log(`[Zoho:${entityLabel}] Using account_name: ${this.config.expenseAccountName}`);
       }
 
       if (paidThroughAccountId) {
         expensePayload.paid_through_account_id = paidThroughAccountId;
+        console.log(`[Zoho:${entityLabel}] Using paid_through_account_id: ${paidThroughAccountId}`);
       } else {
         expensePayload.paid_through_account_name = this.config.paidThroughAccountName;
+        console.log(`[Zoho:${entityLabel}] Using paid_through_account_name: ${this.config.paidThroughAccountName}`);
       }
 
       // Only include customer/project if they already exist in Zoho Books
