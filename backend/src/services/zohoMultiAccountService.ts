@@ -191,32 +191,66 @@ class ZohoAccountHandler {
       // Note: customer_name and project_name removed because they must exist in Zoho Books first
       // User and event info is included in the description instead
       
-      // Ensure date is in YYYY-MM-DD format for Zoho
+      // DATE FORMATTING INVESTIGATION:
+      // Issue: Zoho Books showing current date instead of expense date
+      // Tried: YYYY-MM-DD format (standard) - still shows wrong date
+      // Research: Zoho Books syncs in organization's timezone (help.databox.com/zoho-books)
+      // Next: Try ISO 8601 with timezone to prevent timezone conversion
+      
+      // Ensure date is in proper format for Zoho
       let formattedDate: string;
       const dateValue: any = expenseData.date;
+      
+      // Toggle for testing different date formats (set via env var)
+      const USE_ISO_DATE_FORMAT = process.env.ZOHO_USE_ISO_DATE === 'true';
       
       if (typeof dateValue === 'object' && dateValue !== null) {
         // Handle Date object
         const d = new Date(dateValue);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        formattedDate = `${year}-${month}-${day}`;
-      } else if (typeof dateValue === 'string') {
-        if (dateValue.includes('T')) {
-          // ISO string - extract date part
-          formattedDate = dateValue.split('T')[0];
+        
+        if (USE_ISO_DATE_FORMAT) {
+          // ISO 8601 format with timezone: 2025-10-07T00:00:00Z
+          // This explicitly sets UTC midnight to prevent timezone conversion
+          formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T00:00:00Z`;
         } else {
-          // Already formatted
-          formattedDate = dateValue;
+          // Standard YYYY-MM-DD format (current approach)
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          formattedDate = `${year}-${month}-${day}`;
+        }
+      } else if (typeof dateValue === 'string') {
+        if (USE_ISO_DATE_FORMAT) {
+          // Convert to ISO 8601 with timezone
+          if (dateValue.includes('T')) {
+            // Already ISO format, ensure it has timezone
+            formattedDate = dateValue.endsWith('Z') ? dateValue : `${dateValue}Z`;
+          } else {
+            // YYYY-MM-DD format, add time and timezone
+            formattedDate = `${dateValue}T00:00:00Z`;
+          }
+        } else {
+          // Standard format
+          if (dateValue.includes('T')) {
+            // ISO string - extract date part
+            formattedDate = dateValue.split('T')[0];
+          } else {
+            // Already formatted
+            formattedDate = dateValue;
+          }
         }
       } else {
         // Fallback - convert to string and try to parse
-        formattedDate = new Date(dateValue).toISOString().split('T')[0];
+        if (USE_ISO_DATE_FORMAT) {
+          formattedDate = new Date(dateValue).toISOString(); // Full ISO with timezone
+        } else {
+          formattedDate = new Date(dateValue).toISOString().split('T')[0];
+        }
       }
       
       const entityLabel = this.config.mock ? `${this.config.entityName}:MOCK` : `${this.config.entityName}:REAL`;
-      console.log(`[Zoho:${entityLabel}] Expense date: ${dateValue} → Formatted: ${formattedDate}`);
+      const dateFormat = USE_ISO_DATE_FORMAT ? 'ISO-8601+TZ' : 'YYYY-MM-DD';
+      console.log(`[Zoho:${entityLabel}] Expense date: ${dateValue} → Formatted (${dateFormat}): ${formattedDate}`);
       
       const expensePayload: any = {
         expense_date: formattedDate, // Zoho API expects 'expense_date' field in YYYY-MM-DD format
@@ -260,12 +294,17 @@ class ZohoAccountHandler {
 
       const createResponse = await this.apiClient.post('/expenses', expensePayload);
 
+      // Log the full API response to understand how Zoho is interpreting our data
+      console.log(`[Zoho:${this.config.entityName}:REAL] API Response:`, JSON.stringify(createResponse.data, null, 2));
+
       if (createResponse.data.code !== 0) {
         throw new Error(`Zoho API error: ${createResponse.data.message}`);
       }
 
       const zohoExpenseId = createResponse.data.expense.expense_id;
+      const zohoExpenseDate = createResponse.data.expense.date || createResponse.data.expense.expense_date;
       console.log(`[Zoho:${this.config.entityName}:REAL] Expense created with ID: ${zohoExpenseId}`);
+      console.log(`[Zoho:${this.config.entityName}:REAL] ⚠️  DATE CHECK: We sent: ${formattedDate}, Zoho stored: ${zohoExpenseDate}`);
 
       // Attach receipt if available
       if (expenseData.receiptPath && fs.existsSync(expenseData.receiptPath)) {

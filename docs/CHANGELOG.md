@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.15 / Backend 2.6.15] - 2025-10-10 - Investigation: Enhanced Date Debugging + API Response Logging
+
+### 🔍 Date Issue Investigation
+
+#### Enhanced API Response Logging
+**Purpose**: Capture Zoho's full API response to understand how they're interpreting our date field.
+
+**Implementation**:
+- Added comprehensive API response logging showing the complete Zoho response
+- Added explicit date comparison: "We sent: X, Zoho stored: Y"
+- This will reveal if Zoho is accepting our date but storing a different value
+
+#### Alternative Date Format Support
+**Theory**: Zoho might be applying timezone conversion to date-only fields (YYYY-MM-DD).
+
+**Solution**: Added configurable ISO 8601 date format with explicit timezone.
+- Environment variable: `ZOHO_USE_ISO_DATE=true` (defaults to false)
+- Standard format: `2025-10-07` (date only, may be subject to timezone conversion)
+- ISO format: `2025-10-07T00:00:00Z` (explicitly UTC midnight, prevents conversion)
+
+**Research Findings**:
+- Zoho Books syncs data in the organization's timezone settings
+- ISO 8601 format with timezone may prevent date shifting
+- Transaction Posting Date feature might affect date handling
+
+#### Testing Plan
+1. **First test** (current deployment): Use standard YYYY-MM-DD format with response logging
+   - Analyze what Zoho returns in the API response
+   - Check if Zoho acknowledges the correct date
+2. **Second test** (if needed): Set `ZOHO_USE_ISO_DATE=true` in backend .env
+   - Test with explicit timezone to prevent conversion
+   - Compare results
+
+**Files Changed**:
+- `backend/src/services/zohoMultiAccountService.ts` (response logging + ISO date format)
+- `backend/src/services/zohoBooksService.ts` (response logging)
+
+**Version Updates**:
+- Frontend: 0.35.14 → 0.35.15
+- Backend: 2.6.14 → 2.6.15
+
+**Expected Outcome**: API response logs will reveal:
+- What date Zoho actually stored
+- If there's a timezone conversion happening
+- If we need to switch to ISO format or adjust account settings
+
+---
+
 ## [0.35.14 / Backend 2.6.14] - 2025-10-09 - Fix: Add Merchant to Description + Date Debugging
 
 ### 🐛 Critical Bug Fixes

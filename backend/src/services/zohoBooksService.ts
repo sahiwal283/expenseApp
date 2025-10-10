@@ -259,12 +259,17 @@ class ZohoBooksService {
 
       const createResponse = await this.apiClient.post('/expenses', expensePayload);
 
+      // Log the full API response to understand how Zoho is interpreting our data
+      console.log(`[Zoho] API Response:`, JSON.stringify(createResponse.data, null, 2));
+
       if (createResponse.data.code !== 0) {
         throw new Error(`Zoho API error: ${createResponse.data.message}`);
       }
 
       const zohoExpenseId = createResponse.data.expense.expense_id;
+      const zohoExpenseDate = createResponse.data.expense.date || createResponse.data.expense.expense_date;
       console.log(`[Zoho] Expense created with ID: ${zohoExpenseId}`);
+      console.log(`[Zoho] ⚠️  DATE CHECK: We sent: ${formattedDate}, Zoho stored: ${zohoExpenseDate}`);
 
       // Step 2: Upload receipt if available
       if (expenseData.receiptPath && fs.existsSync(expenseData.receiptPath)) {
