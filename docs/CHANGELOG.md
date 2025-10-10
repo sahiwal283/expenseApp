@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.22 / Backend 2.6.22] - 2025-10-10 - Production API Configuration: Haute Brands
+
+### 🔐 Production API Setup - Haute Brands Entity
+
+**Status**: 🟡 In Progress - Awaiting user-provided credentials
+
+#### Credentials Received:
+- ✅ **Zoho Organization ID**: 856048585
+- ✅ **Client ID**: 1000.6XS1OS32BX1BGKV25XDOIBWHSQN9VI  
+- ✅ **Client Secret**: 3d9be2c0d9b132251c91bffacd01186b13a3f5a05a
+- ✅ **Production Domain**: https://expapp.duckdns.org/
+- ✅ **OAuth Redirect URI**: https://expapp.duckdns.org/auth/zoho/callback
+
+#### Application Secrets Generated:
+- ✅ **JWT_SECRET**: Auto-generated with `openssl rand -base64 32`
+- ✅ **SESSION_SECRET**: Auto-generated with `openssl rand -base64 32`
+
+#### Awaiting from User:
+1. **Zoho Refresh Token** (via OAuth flow - see `OAUTH_INSTRUCTIONS.md`)
+2. **Expense Account ID** (from Zoho Books Chart of Accounts)
+3. **Paid Through Account ID** (Business Checking account from Zoho Books)
+4. **Production Database Credentials** (or confirmation to use sandbox DB)
+
+#### New Files Created:
+1. **`OAUTH_INSTRUCTIONS.md`**
+   - Step-by-step OAuth flow guide
+   - Pre-filled authorization URL with actual client ID and redirect URI
+   - cURL command template for token exchange
+   - Instructions for finding account IDs in Zoho Books
+
+2. **`backend/env.production.READY`**
+   - Production environment file with all known values filled in
+   - Clear placeholders for missing credentials
+   - Ready to deploy as soon as user provides remaining info
+
+3. **`PRODUCTION_API_CONFIG.md`**
+   - Comprehensive checklist of what's received vs. what's needed
+   - Links to all relevant documentation
+   - Next steps clearly defined
+
+#### Technical Details:
+- **Frontend Version**: v0.35.22
+- **Backend Version**: v2.6.22
+- **Target Container**: 203 (Production)
+- **Configuration File Location**: `/etc/expenseapp/backend.env`
+- **Multi-Entity Setup**: Only Haute Brands enabled for production (other entities disabled/mocked)
+
+#### Deployment Plan:
+Once all credentials are received:
+1. Create final production environment file
+2. Deploy to Container 203
+3. Test expense submission to live Zoho Books API
+4. Verify correct posting (date, merchant, amount, accounts)
+5. Create production release notes
+
+---
+
 ## [0.35.21 / Backend 2.6.21] - 2025-10-10 - Docs: Production deployment plan and environment separation
 
 ### 📚 Production Release Documentation
