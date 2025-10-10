@@ -30,8 +30,8 @@ export function loadZohoAccountsConfig(): Map<string, ZohoAccountConfig> {
 
   // ========== ENTITY: HAUTE (Real Account in Sandbox & Production) ==========
   if (process.env.ZOHO_HAUTE_ENABLED === 'true' || process.env.ZOHO_CLIENT_ID) {
-    accounts.set('haute', {
-      entityName: 'haute',
+    const hauteConfig = {
+      entityName: process.env.ZOHO_HAUTE_ENTITY_NAME || 'Haute Brands', // Use display name from env
       enabled: true,
       mock: process.env.ZOHO_HAUTE_MOCK === 'true',
       clientId: process.env.ZOHO_CLIENT_ID || process.env.ZOHO_HAUTE_CLIENT_ID || '',
@@ -43,7 +43,12 @@ export function loadZohoAccountsConfig(): Map<string, ZohoAccountConfig> {
       paidThroughAccountName: process.env.ZOHO_PAID_THROUGH_ACCOUNT || process.env.ZOHO_HAUTE_PAID_THROUGH || 'Petty Cash',
       apiBaseUrl: process.env.ZOHO_API_BASE_URL || 'https://www.zohoapis.com/books/v3',
       accountsBaseUrl: process.env.ZOHO_ACCOUNTS_BASE_URL || 'https://accounts.zoho.com/oauth/v2',
-    });
+    };
+    // Register with both display name and short key for backward compatibility
+    accounts.set(hauteConfig.entityName.toLowerCase(), hauteConfig);
+    if (hauteConfig.entityName.toLowerCase() !== 'haute') {
+      accounts.set('haute', hauteConfig); // Also register as 'haute'
+    }
   }
 
   // ========== ENTITY: ALPHA (Mock Account for Sandbox) ==========

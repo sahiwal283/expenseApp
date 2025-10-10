@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.24 / Backend 2.6.24] - 2025-10-10 - 🎉 PRODUCTION SUCCESS - Zoho Integration Working
+
+### ✅ Production Fully Operational
+
+**Status**: 🟢 **PRODUCTION LIVE & VERIFIED**  
+**URL**: https://expapp.duckdns.org/  
+**Achievement**: First successful expense pushed to Zoho Books from production environment
+
+### Fixed
+- **Entity Name Resolution**: Fixed entity name mismatch where UI/database used "Haute Brands" but service expected "haute"
+  - Modified `backend/src/config/zohoAccounts.ts` to register account under both display name and short key
+  - Service now accepts both "haute" and "haute brands" as valid entity identifiers
+  - Added `ZOHO_HAUTE_ENTITY_NAME` environment variable for explicit configuration
+
+- **Database Configuration**: Corrected production backend (Container 201) to use correct database
+  - Changed `DB_NAME` from `expense_app_sandbox` to `expense_app`
+  - Reset admin user password in production database
+
+- **Zoho Credentials**: Added entity-specific environment variables required by multi-account service
+  - Added `ZOHO_HAUTE_CLIENT_ID`, `ZOHO_HAUTE_CLIENT_SECRET`, `ZOHO_HAUTE_REFRESH_TOKEN`
+  - Added `ZOHO_HAUTE_ORGANIZATION_ID`, `ZOHO_HAUTE_EXPENSE_ACCOUNT_ID`, `ZOHO_HAUTE_PAID_THROUGH_ACCOUNT_ID`
+  - Previous generic credentials (`ZOHO_CLIENT_ID`) insufficient for multi-account architecture
+
+- **Nginx Proxy Configuration**: User corrected Nginx Proxy Manager (Container 104) port configuration
+  - Changed backend proxy from port 5000 to port 3000
+  - Fixed both `/api` and `/api/uploads/` locations
+  - Resolved 502 Bad Gateway errors on HTTPS endpoint
+
+### Verified
+- ✅ Login working with admin/admin credentials
+- ✅ Expense submission working from production UI
+- ✅ Entity tagging with "Haute Brands" working
+- ✅ Zoho Books API integration **confirmed operational**
+- ✅ Expenses appearing in Zoho Books dashboard (https://books.zoho.com/app/856048585#/expenses)
+- ✅ Correct expense account (Trade Shows) and paid through (Business Checking) used
+
+### Documentation
+- Added `SESSION_SUMMARY_v0.35.24_PRODUCTION_SUCCESS.md` - Comprehensive session documentation
+  - Full troubleshooting timeline
+  - Root cause analysis for all issues
+  - Lessons learned and prevention strategies
+  - Deployment commands reference
+
+### Changed
+- `package.json`: Version 0.35.23 → 0.35.24
+- `backend/package.json`: Version 2.6.23 → 2.6.24
+
+### Deployment
+- **Backend**: Deployed to Container 201 (Production)
+- **Configuration**: Updated production `.env` with entity-specific Zoho credentials
+- **Database**: Production `expense_app` database connected and verified
+
+---
+
 ## [0.35.22 / Backend 2.6.22] - 2025-10-10 - 🚀 PRODUCTION DEPLOYED - Haute Brands Live API
 
 ### ✅ Production Deployment Complete
