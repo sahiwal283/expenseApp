@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   extracted_data JSONB,
   status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   zoho_entity VARCHAR(255),
+  zoho_expense_id VARCHAR(255),
   location VARCHAR(255),
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   reviewed_at TIMESTAMP WITH TIME ZONE,

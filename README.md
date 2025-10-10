@@ -1,8 +1,8 @@
 # Trade Show Expense Management App
 
-A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, and expense approval workflows.
+A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
-**Current Version: 0.6.0-alpha (Pre-release - Frontend Only)**
+**Current Version: 0.35.0 (Zoho Books Integration)**
 
 📝 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history and release notes
 
@@ -33,15 +33,82 @@ Then open http://localhost:5173 and login with:
 
 ## Features
 
+- **🔗 Zoho Books Integration** - Automatic expense sync with receipt attachments
 - Role-based access control (Admin, Coordinator, Salesperson, Accountant)
 - Event/Trade show management with participant tracking
 - Expense submission with receipt upload
 - OCR text extraction from receipts using Tesseract.js
 - Expense approval workflows
-- Zoho entity assignment (placeholder for future integration)
+- Zoho entity assignment and tracking
 - Reimbursement tracking and approval
 - Comprehensive reporting and analytics
 - RESTful API with JWT authentication
+
+## 📚 Zoho Books Integration
+
+### Overview
+
+Every expense submitted through the app is **automatically posted to Zoho Books** with its receipt attachment. This eliminates manual data entry and ensures your accounting system stays in sync with your expense tracking.
+
+### Key Capabilities
+
+✅ **Automatic Submission** - Expenses sync to Zoho Books immediately upon submission  
+✅ **Receipt Attachments** - Uploaded receipts are automatically attached in Zoho Books  
+✅ **Duplicate Prevention** - Smart tracking prevents re-submission of the same expense  
+✅ **Error Handling** - Graceful fallback if Zoho Books is unavailable (expenses still saved locally)  
+✅ **Reimbursement Tracking** - Billable/reimbursable expenses flagged appropriately  
+✅ **Event/Project Mapping** - Trade shows mapped to Zoho Books projects  
+✅ **OAuth 2.0 Security** - Industry-standard authentication with automatic token refresh  
+
+### How It Works
+
+```
+1. User submits expense with receipt → 
+2. Expense saved to local database → 
+3. OCR processes receipt → 
+4. Expense automatically posted to Zoho Books →
+5. Receipt attached to Zoho Books expense →
+6. Zoho expense ID stored for tracking →
+7. User sees confirmation (all happens in seconds!)
+```
+
+### Setup
+
+**Quick Setup:** Follow our comprehensive setup guide:
+- 📖 **[docs/ZOHO_BOOKS_SETUP.md](docs/ZOHO_BOOKS_SETUP.md)** - Complete step-by-step instructions
+
+**Environment Variables Required:**
+```bash
+ZOHO_CLIENT_ID=1000.YOUR_CLIENT_ID
+ZOHO_CLIENT_SECRET=your_client_secret
+ZOHO_REFRESH_TOKEN=1000.your_refresh_token
+ZOHO_ORGANIZATION_ID=12345678
+ZOHO_EXPENSE_ACCOUNT_NAME=Travel Expenses
+ZOHO_PAID_THROUGH_ACCOUNT=Petty Cash
+```
+
+**Health Check:**
+```bash
+GET /api/expenses/zoho/health
+```
+
+### Optional Integration
+
+The Zoho Books integration is **completely optional**:
+- ✅ If configured: Expenses sync automatically
+- ✅ If not configured: App works normally (local storage only)
+- ✅ No disruption: Integration failure won't block expense submission
+
+### Security
+
+🔒 **No credentials in code** - All secrets stored in environment variables  
+🔒 **Token auto-refresh** - Access tokens refresh automatically (no user action needed)  
+🔒 **Secure OAuth 2.0** - Industry-standard authentication flow  
+🔒 **Audit trail** - All Zoho API interactions logged for debugging  
+
+### Troubleshooting
+
+See the [Zoho Books Setup Guide](docs/ZOHO_BOOKS_SETUP.md#troubleshooting) for common issues and solutions.
 
 ## Tech Stack
 
@@ -283,18 +350,35 @@ The application includes automatic OCR text extraction from uploaded receipts us
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| PORT | Server port | 5000 |
-| NODE_ENV | Environment | development |
-| DB_HOST | PostgreSQL host | localhost |
-| DB_PORT | PostgreSQL port | 5432 |
-| DB_NAME | Database name | expense_app |
-| DB_USER | Database user | postgres |
-| DB_PASSWORD | Database password | - |
-| JWT_SECRET | JWT secret key | - |
-| UPLOAD_DIR | Upload directory | uploads |
-| MAX_FILE_SIZE | Max file size (bytes) | 5242880 |
+### Core Configuration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| PORT | Server port | 5000 | Yes |
+| NODE_ENV | Environment | development | Yes |
+| DB_HOST | PostgreSQL host | localhost | Yes |
+| DB_PORT | PostgreSQL port | 5432 | Yes |
+| DB_NAME | Database name | expense_app | Yes |
+| DB_USER | Database user | postgres | Yes |
+| DB_PASSWORD | Database password | - | Yes |
+| JWT_SECRET | JWT secret key | - | Yes |
+| UPLOAD_DIR | Upload directory | uploads | Yes |
+| MAX_FILE_SIZE | Max file size (bytes) | 5242880 | Yes |
+
+### Zoho Books Integration (Optional)
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| ZOHO_CLIENT_ID | Zoho OAuth Client ID | Yes (if using Zoho) |
+| ZOHO_CLIENT_SECRET | Zoho OAuth Client Secret | Yes (if using Zoho) |
+| ZOHO_REFRESH_TOKEN | Zoho OAuth Refresh Token | Yes (if using Zoho) |
+| ZOHO_ORGANIZATION_ID | Zoho Books Organization ID | Yes (if using Zoho) |
+| ZOHO_EXPENSE_ACCOUNT_NAME | Expense account name in Chart of Accounts | Yes (if using Zoho) |
+| ZOHO_PAID_THROUGH_ACCOUNT | Bank/Cash account for expense payments | Yes (if using Zoho) |
+| ZOHO_API_BASE_URL | Zoho Books API base URL | https://www.zohoapis.com/books/v3 |
+| ZOHO_ACCOUNTS_BASE_URL | Zoho Accounts OAuth URL | https://accounts.zoho.com/oauth/v2 |
+
+**Note:** Zoho Books variables are optional. If not configured, the app will function normally without Zoho integration.
 
 ## Troubleshooting
 

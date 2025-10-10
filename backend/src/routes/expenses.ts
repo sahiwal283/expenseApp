@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { createWorker } from 'tesseract.js';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
+import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
 
 const router = Router();
 
@@ -432,7 +433,15 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
       ]
     );
 
-    res.status(201).json(normalizeExpense(result.rows[0]));
+    const expense = result.rows[0];
+
+    // ========== ZOHO BOOKS INTEGRATION ==========
+    // Note: Expenses are NOT submitted to Zoho Books at creation time.
+    // They are submitted when the entity is assigned to "haute" via the PATCH /:id/entity endpoint.
+    // This ensures only "haute" entity expenses are synced to Zoho Books.
+    console.log('[Zoho] Expense created. Will sync to Zoho Books when entity is assigned to "haute".');
+
+    res.status(201).json(normalizeExpense(expense));
   } catch (error) {
     console.error('Error creating expense:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -591,7 +600,65 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
       return res.status(404).json({ error: 'Expense not found' });
     }
 
-    res.json(normalizeExpense(result.rows[0]));
+    const expense = result.rows[0];
+
+    // ========== ZOHO BOOKS MULTI-ACCOUNT INTEGRATION ==========
+    // Submit to Zoho Books if entity has a configured account (real or mock)
+    if (zoho_entity && zohoMultiAccountService.isConfiguredForEntity(zoho_entity)) {
+      try {
+        console.log(`[Zoho] Entity "${zoho_entity}" assigned to expense ${id}, submitting to Zoho Books...`);
+
+        // Get user and event details for Zoho submission
+        const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
+        const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+        
+        const userName = userResult.rows[0]?.name || 'Unknown User';
+        const eventName = eventResult.rows[0]?.name || undefined;
+
+        // Prepare receipt file path (if exists)
+        let receiptPath = undefined;
+        if (expense.receipt_url) {
+          const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+          receiptPath = path.join(uploadDir, path.basename(expense.receipt_url));
+        }
+
+        // Submit to Zoho Books asynchronously (don't block response)
+        zohoMultiAccountService.createExpense(zoho_entity, {
+          expenseId: expense.id,
+          date: expense.date,
+          amount: parseFloat(expense.amount),
+          category: expense.category,
+          merchant: expense.merchant,
+          description: expense.description || undefined,
+          userName: userName,
+          eventName: eventName,
+          receiptPath: receiptPath,
+          reimbursementRequired: expense.reimbursement_required,
+        }).then((zohoResult) => {
+          if (zohoResult.success) {
+            const mode = zohoResult.mock ? 'MOCK' : 'REAL';
+            console.log(`[Zoho:${mode}] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
+            
+            // Store Zoho expense ID in database (even for mock IDs for testing)
+            if (zohoResult.zohoExpenseId) {
+              query('UPDATE expenses SET zoho_expense_id = $1 WHERE id = $2', [zohoResult.zohoExpenseId, expense.id])
+                .catch(err => console.error('[Zoho] Failed to store Zoho expense ID:', err));
+            }
+          } else {
+            console.warn(`[Zoho] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
+          }
+        }).catch(error => {
+          console.error(`[Zoho] Error submitting expense ${expense.id}:`, error);
+        });
+      } catch (error) {
+        // Log but don't fail the request - entity was assigned successfully
+        console.error('[Zoho] Error preparing Zoho Books submission:', error);
+      }
+    } else if (zoho_entity) {
+      console.log(`[Zoho] Entity "${zoho_entity}" assigned, but no Zoho account configured (skipping sync)`);
+    }
+
+    res.json(normalizeExpense(expense));
   } catch (error) {
     console.error('Error assigning entity:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -669,6 +736,69 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error deleting expense:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ========== ZOHO BOOKS MULTI-ACCOUNT HEALTH CHECK ==========
+// GET /zoho/health - Check Zoho Books integration status for all accounts
+router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+  try {
+    const healthStatus = await zohoMultiAccountService.getHealthStatus();
+    const statusArray = Array.from(healthStatus.entries()).map(([entity, status]) => ({
+      entity,
+      ...status,
+    }));
+
+    const overallHealthy = statusArray.every(s => s.healthy);
+    const realAccounts = statusArray.filter(s => !s.mock).length;
+    const mockAccounts = statusArray.filter(s => s.mock).length;
+
+    res.json({
+      overall: {
+        healthy: overallHealthy,
+        totalAccounts: statusArray.length,
+        realAccounts,
+        mockAccounts,
+      },
+      accounts: statusArray,
+    });
+  } catch (error) {
+    console.error('[Zoho:MultiAccount] Health check failed:', error);
+    res.status(500).json({
+      overall: { healthy: false, message: 'Health check failed' },
+      error: String(error),
+    });
+  }
+});
+
+// GET /zoho/health/:entity - Check health for specific entity
+router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+  try {
+    const { entity } = req.params;
+    const health = await zohoMultiAccountService.getHealthForEntity(entity);
+    res.json(health);
+  } catch (error) {
+    console.error(`[Zoho:MultiAccount] Health check failed for ${req.params.entity}:`, error);
+    res.status(500).json({
+      configured: false,
+      healthy: false,
+      message: 'Health check failed',
+      error: String(error),
+    });
+  }
+});
+
+// GET /zoho/accounts - Get available Zoho Books account names for configuration
+router.get('/zoho/accounts', authenticateToken, authorize('admin'), async (req: AuthRequest, res) => {
+  try {
+    const accounts = await zohoMultiAccountService.getZohoAccountNames();
+    res.json(accounts);
+  } catch (error) {
+    console.error('[Zoho:MultiAccount] Failed to fetch account names:', error);
+    res.status(500).json({
+      error: 'Failed to fetch Zoho Books account names',
+      message: String(error),
+    });
   }
 });
 
