@@ -15,9 +15,7 @@
 - **Production Domain:** `https://expapp.duckdns.org/`
 
 ### 🔴 Still Required (User Action Needed)
-1. **Refresh Token** 
-   - ⏳ **ACTION:** Follow steps in [OAUTH_INSTRUCTIONS.md](OAUTH_INSTRUCTIONS.md)
-   - Visit the OAuth URL, get the code, exchange for token
+1. ✅ **Refresh Token** - RECEIVED: `1000.7e4e2b5188202a63b41db71745b82ab5.79add3219be6c28cbdd71e4f599997d6`
 
 2. **Expense Account ID**
    - Where: https://books.zoho.com/app/856048585#/accountant/chartofaccounts
