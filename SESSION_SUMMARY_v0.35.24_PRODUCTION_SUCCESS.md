@@ -162,7 +162,36 @@ if (hauteConfig.entityName.toLowerCase() !== 'haute') {
 
 ## What Went Wrong & Why
 
-### Mistake 1: Initial Credential Deployment to Wrong Container
+### Mistake 1: 🔴 CRITICAL - Failed to Separate Production and Sandbox Credentials
+**What Happened**: After fixing production (Container 201), I left Container 203 (sandbox) with the SAME production Zoho credentials and `ZOHO_HAUTE_MOCK=false`, meaning sandbox would hit the real Zoho API.
+
+**Why It Happened**: 
+- Fixed Container 201 to get production working but forgot to clean up Container 203
+- Didn't verify both environments after production deployment
+- Early session container confusion led to credentials being deployed to 203 first, then 201
+- No automated validation to catch this
+
+**Impact**: 
+- **POTENTIALLY CATASTROPHIC** - Any testing in sandbox would create real expenses in production Zoho Books
+- Could have polluted production data with test expenses
+- User caught this immediately by asking for verification before extensive testing
+- **Actual damage: NONE** - caught before significant testing occurred
+
+**Resolution**:
+- Updated Container 203 to `NODE_ENV=sandbox` and `ZOHO_HAUTE_MOCK=true`
+- Replaced all real credentials with mock values (`mock.sandbox.client.id`, Org ID: 999999)
+- Verified sandbox backend now shows `[Zoho:MultiAccount] ✓ HAUTE - MOCK`
+- Created backup of old config before changes
+- Documented in `CRITICAL_FIX_ENVIRONMENT_SEPARATION.md`
+
+**Prevention Next Time**:
+1. **ALWAYS verify BOTH environments after any credential changes**
+2. Create environment validation script that runs pre-deployment
+3. Add startup validation that errors if prod uses mock or sandbox uses real API
+4. Create `CONTAINER_MAPPING.md` as single source of truth
+5. Never copy production `.env` to sandbox - use separate template
+
+### Mistake 2: Initial Credential Deployment to Wrong Container
 **What Happened**: Early in troubleshooting, I deployed production Zoho credentials to Container 203 (sandbox) instead of Container 201 (production).
 
 **Why It Happened**: Confusion about container assignments due to user clarifying midway through that 201=production backend, 203=sandbox backend.
@@ -176,7 +205,7 @@ if (hauteConfig.entityName.toLowerCase() !== 'haute') {
 
 ---
 
-### Mistake 2: Didn't Catch Entity Name Mismatch Initially
+### Mistake 3: Didn't Catch Entity Name Mismatch Initially
 **What Happened**: Added entity-specific credentials but didn't realize the entity name "Haute Brands" from UI wouldn't match service key "haute".
 
 **Why It Happened**: 
@@ -196,7 +225,7 @@ if (hauteConfig.entityName.toLowerCase() !== 'haute') {
 
 ---
 
-### Mistake 3: Not Verifying Database Configuration First
+### Mistake 4: Not Verifying Database Configuration First
 **What Happened**: Spent time troubleshooting authentication before checking which database backend was connected to.
 
 **Why It Happened**: Assumed production container would naturally use production database.
