@@ -7,28 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.35.22 / Backend 2.6.22] - 2025-10-10 - Production API Configuration: Haute Brands
+## [0.35.22 / Backend 2.6.22] - 2025-10-10 - 🚀 PRODUCTION DEPLOYED - Haute Brands Live API
 
-### 🔐 Production API Setup - Haute Brands Entity
+### ✅ Production Deployment Complete
 
-**Status**: 🟡 In Progress - Awaiting user-provided credentials
+**Status**: 🟢 **DEPLOYED TO PRODUCTION**  
+**URL**: https://expapp.duckdns.org/  
+**Deployment Time**: October 10, 2025, 18:44 UTC
 
-#### Credentials Received:
+#### All Credentials Configured:
 - ✅ **Zoho Organization ID**: 856048585
 - ✅ **Client ID**: 1000.6XS1OS32BX1BGKV25XDOIBWHSQN9VI  
-- ✅ **Client Secret**: 3d9be2c0d9b132251c91bffacd01186b13a3f5a05a
+- ✅ **Client Secret**: Configured securely
+- ✅ **Refresh Token**: Obtained via OAuth flow
+- ✅ **Expense Account ID**: 5254962000000091094 (Trade Shows)
+- ✅ **Paid Through Account ID**: 5254962000000129043 (Business Checking)
 - ✅ **Production Domain**: https://expapp.duckdns.org/
 - ✅ **OAuth Redirect URI**: https://expapp.duckdns.org/auth/zoho/callback
 
 #### Application Secrets Generated:
-- ✅ **JWT_SECRET**: Auto-generated with `openssl rand -base64 32`
-- ✅ **SESSION_SECRET**: Auto-generated with `openssl rand -base64 32`
+- ✅ **JWT_SECRET**: Generated with `openssl rand -base64 32`
+- ✅ **SESSION_SECRET**: Generated with `openssl rand -base64 32`
 
-#### Awaiting from User:
-1. **Zoho Refresh Token** (via OAuth flow - see `OAUTH_INSTRUCTIONS.md`)
-2. **Expense Account ID** (from Zoho Books Chart of Accounts)
-3. **Paid Through Account ID** (Business Checking account from Zoho Books)
-4. **Production Database Credentials** (or confirmation to use sandbox DB)
+#### Deployment Completed:
+1. ✅ **Backend deployed to Container 203**
+   - Built TypeScript to JavaScript
+   - Installed 198 production dependencies
+   - Configured environment: `/etc/expenseapp/backend.env`
+   - Service running: `expenseapp-backend` (systemd)
+   - Port: 3000
+   - Status: Active and running
+
+2. ✅ **Frontend deployed to Container 202**
+   - Built with Vite (309.61 kB main bundle)
+   - Deployed to: `/opt/expenseapp/dist`
+   - Web server: Nginx (port 8080)
+   - Status: Active and serving
+
+3. ✅ **Zoho Books Integration**
+   - Entity: Haute Brands (REAL API, not mocked)
+   - Integration status: Active
+   - API Base: https://www.zohoapis.com/books/v3
+   - Organization: 856048585
 
 #### New Files Created:
 1. **`OAUTH_INSTRUCTIONS.md`**
