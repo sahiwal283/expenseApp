@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.19 / Backend 2.6.19] - 2025-10-10 - Fix: Update CORRECT environment file for Business Checking
+
+### 🐛 Critical Fix - Wrong Environment File
+
+**Issue**: Changes to `.env` file were not taking effect. Still showing Petty Cash.
+
+**Root Cause**: 
+- Systemd service uses `/etc/expenseapp/backend.env` NOT `/opt/expenseapp/backend/.env`
+- Was updating wrong file all along
+- Service definition: `EnvironmentFile=/etc/expenseapp/backend.env`
+
+**Solution**: 
+- Updated `/etc/expenseapp/backend.env` with correct Business Checking ID
+- Changed `ZOHO_PAID_THROUGH_ACCOUNT_ID=5254962000000000361` (Petty Cash)
+- To: `ZOHO_PAID_THROUGH_ACCOUNT_ID=5254962000000129043` (Business Checking)
+- Backend restarted to load new environment variable
+
+**Debugging Added**:
+- Environment variable logging to verify values are loaded
+- Shows which account ID/name is being used
+
+**Version Updates**:
+- Frontend: 0.35.18 → 0.35.19
+- Backend: 2.6.18 → 2.6.19
+
+---
+
+## [0.35.18 / Backend 2.6.18] - 2025-10-10 - Debug: Add environment variable logging
+
+---
+
 ## [0.35.17 / Backend 2.6.17] - 2025-10-10 - Fix: Update Paid Through account to Business Checking
 
 ### 🔧 Configuration Fix - Paid Through Account
