@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.16 / Backend 2.6.16] - 2025-10-10 - Fix: Change date field name from expense_date to date
+
+### 🐛 Critical Bug Fix - Date Field Name
+
+**Issue**: Zoho Books API was ignoring the date field and using today's date instead.
+
+**Root Cause**: We were using `expense_date` as the field name, but Zoho Books API expects `date` (as confirmed by API response structure).
+
+**Evidence from Logs**:
+- We sent: `"expense_date": "2025-10-07"` → Zoho stored: `"date": "2025-10-10"` (today)
+- API response shows Zoho uses `"date"` field, not `"expense_date"`
+
+**Solution**: Changed field name from `expense_date` to `date` in both services:
+- `backend/src/services/zohoMultiAccountService.ts`
+- `backend/src/services/zohoBooksService.ts`
+
+**Testing**: 
+- With ISO format enabled: `"date": "2025-10-07T00:00:00Z"`
+- Should now respect the provided date instead of defaulting to today
+
+**Version Updates**:
+- Frontend: 0.35.15 → 0.35.16
+- Backend: 2.6.15 → 2.6.16
+
+---
+
 ## [0.35.15 / Backend 2.6.15] - 2025-10-10 - Investigation: Enhanced Date Debugging + API Response Logging
 
 ### 🔍 Date Issue Investigation

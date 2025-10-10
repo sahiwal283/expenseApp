@@ -253,7 +253,7 @@ class ZohoAccountHandler {
       console.log(`[Zoho:${entityLabel}] Expense date: ${dateValue} → Formatted (${dateFormat}): ${formattedDate}`);
       
       const expensePayload: any = {
-        expense_date: formattedDate, // Zoho API expects 'expense_date' field in YYYY-MM-DD format
+        date: formattedDate, // Zoho API expects 'date' field (not 'expense_date')
         amount: expenseData.amount,
         vendor_name: expenseData.merchant,
         description: this.buildDescription(expenseData),
@@ -261,7 +261,7 @@ class ZohoAccountHandler {
         is_inclusive_tax: false,
       };
       
-      console.log(`[Zoho:${entityLabel}] Payload expense_date: ${expensePayload.expense_date}`);
+      console.log(`[Zoho:${entityLabel}] Payload date: ${expensePayload.date}`);
       console.log(`[Zoho:${entityLabel}] Full payload:`, JSON.stringify(expensePayload, null, 2));
 
       // Add event name to reference field (merchant is already in description and vendor_name)

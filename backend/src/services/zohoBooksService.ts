@@ -221,7 +221,7 @@ class ZohoBooksService {
       console.log(`[Zoho] Expense date: ${dateValue} → Formatted: ${formattedDate}`);
       
       const expensePayload: any = {
-        expense_date: formattedDate, // Zoho API expects 'expense_date' field in YYYY-MM-DD format
+        date: formattedDate, // Zoho API expects 'date' field (not 'expense_date')
         amount: expenseData.amount,
         vendor_name: expenseData.merchant,
         description: this.buildDescription(expenseData),
