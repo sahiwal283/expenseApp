@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.20 / Backend 2.6.20] - 2025-10-10 - Cleanup: Remove temporary session documentation
+
+### 🧹 Repository Cleanup
+
+**What Was Removed**:
+- `AI_SESSION_SUMMARY_v0.35.14.md` - Old session summary
+- `AI_SESSION_SUMMARY_v0.35.15.md` - Old session summary
+- `SESSION_STATUS_v0.35.14.md` - Old status file
+- `SESSION_STATUS_v0.35.15.md` - Old status file
+- `TESTING_GUIDE_v0.35.15.md` - Temporary testing guide
+- `MULTI_ENTITY_ZOHO_SUCCESS_v0.35.1.md` - Old success report
+- `ZOHO_BOOKS_WHERE_TO_CHECK.md` - Temporary reference
+- `ZOHO_DEPLOYMENT_SUCCESS_v0.35.0.md` - Old deployment report
+- `ZOHO_INTEGRATION_SUMMARY.md` - Old integration summary
+
+**What Remains**:
+- `README.md` - Main project documentation
+- `docs/` folder - All permanent documentation
+- `docs/CHANGELOG.md` - Complete change history
+
+**Reason**: These were temporary development/debugging files that are no longer needed now that the Zoho Books integration is working correctly.
+
+**Version Updates**:
+- Frontend: 0.35.19 → 0.35.20
+- Backend: 2.6.19 → 2.6.20
+
+---
+
 ## [0.35.19 / Backend 2.6.19] - 2025-10-10 - Fix: Update CORRECT environment file for Business Checking
 
 ### 🐛 Critical Fix - Wrong Environment File
