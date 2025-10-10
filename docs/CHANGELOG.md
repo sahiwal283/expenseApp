@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.21 / Backend 2.6.21] - 2025-10-10 - Docs: Production deployment plan and environment separation
+
+### 📚 Production Release Documentation
+
+**Added comprehensive production deployment documentation**:
+
+#### New Files Created:
+1. **`PRODUCTION_RELEASE_PLAN.md`**
+   - Complete release checklist
+   - Required production credentials list
+   - Deployment phases and timeline
+   - Rollback procedures
+   - Security checklist
+   - Success criteria
+
+2. **`backend/env.production.template`**
+   - Production environment configuration template
+   - Clear separation from sandbox
+   - Security best practices
+   - All required variables documented
+
+3. **`backend/env.sandbox.template`**
+   - Sandbox environment reference
+   - Documents current sandbox setup
+   - Helps prevent credential confusion
+
+4. **`docs/PRODUCTION_DEPLOYMENT.md`**
+   - Step-by-step deployment guide
+   - Environment separation procedures
+   - Post-deployment validation
+   - Monitoring and maintenance procedures
+   - Troubleshooting guide
+
+#### Key Features:
+- **Environment Separation**: Clear isolation between sandbox and production
+- **Security First**: Credentials management, permissions, secrets generation
+- **GitHub Best Practices**: Feature branches, PRs, atomic commits, versioning
+- **Rollback Plan**: Comprehensive procedures for emergency rollback
+- **Monitoring**: Health checks, log monitoring, performance validation
+
+#### Status:
+- ⏸️ **Awaiting Production Credentials**
+- ✅ Sandbox fully tested and operational (v0.35.20)
+- ✅ All code committed and documentation complete
+- 🚀 Ready for production deployment once credentials provided
+
+#### Next Steps:
+1. User provides production API credentials
+2. Create production environment
+3. Merge v0.35.0 branch to main via PR
+4. Tag release v0.35.21
+5. Deploy to production
+6. Validate and monitor
+
+**Version Updates**:
+- Frontend: 0.35.20 → 0.35.21
+- Backend: 2.6.20 → 2.6.21
+
+---
+
 ## [0.35.20 / Backend 2.6.20] - 2025-10-10 - Cleanup: Remove temporary session documentation
 
 ### 🧹 Repository Cleanup
