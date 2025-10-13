@@ -314,8 +314,15 @@ class ZohoAccountHandler {
       console.log(`[Zoho:${this.config.entityName}:REAL] ⚠️  DATE CHECK: We sent: ${formattedDate}, Zoho stored: ${zohoExpenseDate}`);
 
       // Attach receipt if available
-      if (expenseData.receiptPath && fs.existsSync(expenseData.receiptPath)) {
-        await this.attachReceipt(zohoExpenseId, expenseData.receiptPath);
+      if (expenseData.receiptPath) {
+        if (fs.existsSync(expenseData.receiptPath)) {
+          console.log(`[Zoho:${this.config.entityName}:REAL] 📎 Receipt file found: ${path.basename(expenseData.receiptPath)}`);
+          await this.attachReceipt(zohoExpenseId, expenseData.receiptPath);
+        } else {
+          console.warn(`[Zoho:${this.config.entityName}:REAL] ⚠️  Receipt file not found: ${expenseData.receiptPath}`);
+        }
+      } else {
+        console.log(`[Zoho:${this.config.entityName}:REAL] No receipt provided for expense ${expenseData.expenseId}`);
       }
 
       // Mark as submitted
@@ -338,14 +345,20 @@ class ZohoAccountHandler {
 
   private async attachReceipt(zohoExpenseId: string, receiptPath: string): Promise<void> {
     try {
-      console.log(`[Zoho:${this.config.entityName}:REAL] Attaching receipt to expense ${zohoExpenseId}`);
+      const fileName = path.basename(receiptPath);
+      const fileStats = fs.statSync(receiptPath);
+      const fileSizeMB = (fileStats.size / 1024 / 1024).toFixed(2);
+      
+      console.log(`[Zoho:${this.config.entityName}:REAL] 📎 Attaching receipt to expense ${zohoExpenseId}`);
+      console.log(`[Zoho:${this.config.entityName}:REAL]    File: ${fileName} (${fileSizeMB} MB)`);
 
       const accessToken = await this.getValidAccessToken();
       const formData = new FormData();
       formData.append('receipt', fs.createReadStream(receiptPath), {
-        filename: path.basename(receiptPath),
+        filename: fileName,
       });
 
+      const uploadStartTime = Date.now();
       const response = await axios.post(
         `${this.config.apiBaseUrl}/expenses/${zohoExpenseId}/receipt`,
         formData,
@@ -359,14 +372,21 @@ class ZohoAccountHandler {
         }
       );
 
+      const uploadDuration = ((Date.now() - uploadStartTime) / 1000).toFixed(2);
+
       if (response.data.code !== 0) {
         throw new Error(`Failed to attach receipt: ${response.data.message}`);
       }
 
-      console.log(`[Zoho:${this.config.entityName}:REAL] Receipt attached successfully`);
-    } catch (error) {
-      console.error(`[Zoho:${this.config.entityName}:REAL] Failed to attach receipt:`, error);
-      console.warn(`[Zoho:${this.config.entityName}:REAL] Continuing despite receipt attachment failure`);
+      console.log(`[Zoho:${this.config.entityName}:REAL] ✅ Receipt attached successfully in ${uploadDuration}s`);
+      console.log(`[Zoho:${this.config.entityName}:REAL]    Zoho Response:`, JSON.stringify(response.data, null, 2));
+    } catch (error: any) {
+      console.error(`[Zoho:${this.config.entityName}:REAL] ❌ Failed to attach receipt:`, error.message);
+      if (error.response) {
+        console.error(`[Zoho:${this.config.entityName}:REAL]    Status: ${error.response.status}`);
+        console.error(`[Zoho:${this.config.entityName}:REAL]    Response:`, JSON.stringify(error.response.data, null, 2));
+      }
+      console.warn(`[Zoho:${this.config.entityName}:REAL]    ⚠️  Continuing despite receipt attachment failure - expense will exist without receipt`);
     }
   }
 
