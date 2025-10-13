@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, CreditCard as Edit2, Trash2, Search, UserCheck, UserX, Mail } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, Search, UserCheck, UserX, Mail, AlertTriangle, X } from 'lucide-react';
 import { User, UserRole } from '../../App';
 import { api } from '../../utils/api';
 
@@ -13,6 +13,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [showActivationModal, setShowActivationModal] = useState(false);
+  const [activatingUser, setActivatingUser] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole>('salesperson');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -105,6 +108,36 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     if (user) {
       alert(`Invitation email sent to ${user.email}`);
     }
+  };
+
+  const handleActivateUser = async () => {
+    if (!activatingUser) return;
+    
+    try {
+      await api.updateUser(activatingUser.id, {
+        name: activatingUser.name,
+        email: activatingUser.email,
+        role: selectedRole,
+      });
+      const refreshed = await api.getUsers();
+      setUsers(refreshed || []);
+      setShowActivationModal(false);
+      setActivatingUser(null);
+      alert(`User ${activatingUser.name} activated with role: ${getRoleLabel(selectedRole)}`);
+    } catch (error) {
+      console.error('Failed to activate user:', error);
+      alert('Failed to activate user');
+    }
+  };
+
+  const openActivationModal = (user: User) => {
+    setActivatingUser(user);
+    setSelectedRole('salesperson'); // Default
+    setShowActivationModal(true);
+  };
+
+  const isPendingUser = (user: User) => {
+    return !user.role || user.role === null || user.role === '';
   };
 
   const filteredUsers = users.filter(user => {
@@ -209,25 +242,49 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}`}>
-                      {getRoleLabel(user.role)}
-                    </span>
+                    {isPendingUser(user) ? (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        Pending Role
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}`}>
+                        {getRoleLabel(user.role)}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <UserCheck className="w-4 h-4 text-emerald-600 mr-2" />
-                      <span className="text-sm text-emerald-600 font-medium">Active</span>
-                    </div>
+                    {isPendingUser(user) ? (
+                      <div className="flex items-center">
+                        <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2" />
+                        <span className="text-sm text-yellow-600 font-medium">Awaiting Activation</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <UserCheck className="w-4 h-4 text-emerald-600 mr-2" />
+                        <span className="text-sm text-emerald-600 font-medium">Active</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => handleInviteUser(user.id)}
-                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Send Invitation"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </button>
+                      {isPendingUser(user) ? (
+                        <button
+                          onClick={() => openActivationModal(user)}
+                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 flex items-center space-x-2"
+                          title="Activate User"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                          <span>Activate User</span>
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleInviteUser(user.id)}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Send Invitation"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </button>
                       <button
                         onClick={() => handleEditUser(user)}
                         className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -243,6 +300,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -251,6 +310,80 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
           </table>
         </div>
       </div>
+
+      {/* Activation Modal */}
+      {showActivationModal && activatingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Activate User</h3>
+                  <p className="text-sm text-gray-600">Assign a role to activate this account</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowActivationModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {activatingUser.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">{activatingUser.name}</div>
+                  <div className="text-sm text-gray-600">{activatingUser.username} • {activatingUser.email}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assign Role
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="salesperson">Salesperson</option>
+                <option value="coordinator">Event Coordinator</option>
+                <option value="accountant">Accountant</option>
+                <option value="admin">Administrator</option>
+              </select>
+              <p className="mt-2 text-xs text-gray-500">
+                This will activate the user and allow them to log in with their chosen credentials.
+              </p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowActivationModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleActivateUser}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-lg hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>Activate</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* User Form Modal */}
       {showForm && (

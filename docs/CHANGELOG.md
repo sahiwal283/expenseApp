@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Frontend 0.36.1] - 2025-10-13 - UX: One-Click User Activation
+
+### 🎨 User Experience Improvements
+
+**Problem Solved:**
+- Admins could see pending users in Quick Actions and User Management, but there was no clear "approve" action
+- Previous workflow required navigating to Edit User, which was not intuitive for approvals
+- No visual distinction between pending and active users in User Management
+
+**New Features:**
+✅ **Prominent Activation Buttons**
+- Pending users now display a bright "Activate User" button directly in User Management
+- Button uses gradient styling (emerald-to-blue) to stand out
+- Replaces Edit/Delete buttons for pending users to prevent confusion
+
+✅ **Visual Status Indicators**
+- Pending users show yellow "Pending Role" badge instead of role name
+- Status column displays "⚠️ Awaiting Activation" with yellow warning icon
+- Active users continue to show "✅ Active" with green checkmark
+
+✅ **Quick Activation Modal**
+- Single-click opens a clean activation dialog
+- Shows user details (name, username, email) for verification
+- Simple dropdown to assign role
+- Clear explanation: "This will activate the user and allow them to log in"
+- Confirms activation with success message
+
+**User Workflow (Admin):**
+1. See "1 New Users Need Roles" in Quick Actions
+2. Click "Go to User Management"
+3. See pending user with yellow "Pending Role" badge and "Awaiting Activation" status
+4. Click bright "Activate User" button
+5. Select role from dropdown (Salesperson/Coordinator/Accountant/Administrator)
+6. Click "Activate"
+7. User can now log in immediately
+
+**Technical Changes:**
+- Added `isPendingUser()` helper function to identify NULL roles
+- Conditional rendering for pending vs active users in table
+- New activation modal with role selector
+- Imports `AlertTriangle` and `X` icons from lucide-react
+
+### 📦 Version
+- Frontend: 0.36.0 → 0.36.1
+- Backend: 2.7.1 (no changes)
+
+---
+
 ## [Backend 2.7.0 / Frontend 0.36.0] - 2025-10-13 - 🎉 MAJOR FEATURE: User Registration System
 
 ### 🚀 New Features
