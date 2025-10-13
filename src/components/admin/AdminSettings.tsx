@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, CreditCard, Building2, Users } from 'lucide-react';
+import { Settings, Plus, Trash2, CreditCard, Building2, Users, Pencil, Check, X } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
@@ -53,6 +53,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [newCardLastFour, setNewCardLastFour] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
+  const [editCardName, setEditCardName] = useState('');
+  const [editCardLastFour, setEditCardLastFour] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -119,6 +122,36 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     };
     setSettings(updatedSettings);
     await saveSettings(updatedSettings);
+  };
+
+  const startEditCard = (index: number) => {
+    setEditingCardIndex(index);
+    setEditCardName(settings.cardOptions[index].name);
+    setEditCardLastFour(settings.cardOptions[index].lastFour);
+  };
+
+  const cancelEditCard = () => {
+    setEditingCardIndex(null);
+    setEditCardName('');
+    setEditCardLastFour('');
+  };
+
+  const saveEditCard = async (index: number) => {
+    if (editCardName && editCardLastFour && editCardLastFour.length === 4) {
+      const updatedCards = [...settings.cardOptions];
+      updatedCards[index] = { name: editCardName, lastFour: editCardLastFour };
+      const updatedSettings = {
+        ...settings,
+        cardOptions: updatedCards
+      };
+      setSettings(updatedSettings);
+      setEditingCardIndex(null);
+      setEditCardName('');
+      setEditCardLastFour('');
+      await saveSettings(updatedSettings);
+    } else if (editCardLastFour && editCardLastFour.length !== 4) {
+      alert('Last 4 digits must be exactly 4 characters.');
+    }
   };
 
   const addEntityOption = async () => {
@@ -239,15 +272,71 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
             <div className="space-y-2">
               {settings.cardOptions.map((option, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 p-3 rounded-lg">
-                  <span className="text-gray-900">{option.name} | {option.lastFour}</span>
-                  <button
-                    onClick={() => removeCardOption(option)}
-                    disabled={isSaving}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
+                  {editingCardIndex === index ? (
+                    <>
+                      <div className="flex-1 flex gap-2">
+                        <input
+                          type="text"
+                          value={editCardName}
+                          onChange={(e) => setEditCardName(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Card name"
+                        />
+                        <input
+                          type="text"
+                          value={editCardLastFour}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            setEditCardLastFour(value);
+                          }}
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Last 4"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEditCard(index)}
+                          disabled={isSaving || !editCardName || !editCardLastFour || editCardLastFour.length !== 4}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Save"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditCard}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                          title="Cancel"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-gray-900">{option.name} | {option.lastFour}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEditCard(index)}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => removeCardOption(option)}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
