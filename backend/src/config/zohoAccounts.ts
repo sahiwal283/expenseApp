@@ -51,6 +51,29 @@ export function loadZohoAccountsConfig(): Map<string, ZohoAccountConfig> {
     }
   }
 
+  // ========== ENTITY: BOOMIN (Real Account in Production) ==========
+  if (process.env.ZOHO_BOOMIN_ENABLED === 'true') {
+    const boominConfig = {
+      entityName: process.env.ZOHO_BOOMIN_ENTITY_NAME || 'Boomin Brands',
+      enabled: true,
+      mock: process.env.ZOHO_BOOMIN_MOCK === 'true', // Default to real
+      clientId: process.env.ZOHO_BOOMIN_CLIENT_ID || '',
+      clientSecret: process.env.ZOHO_BOOMIN_CLIENT_SECRET || '',
+      refreshToken: process.env.ZOHO_BOOMIN_REFRESH_TOKEN || '',
+      organizationId: process.env.ZOHO_BOOMIN_ORGANIZATION_ID || '',
+      organizationName: process.env.ZOHO_BOOMIN_ORG_NAME || 'Boomin Brands',
+      expenseAccountName: process.env.ZOHO_BOOMIN_EXPENSE_ACCOUNT || 'Trade Shows',
+      paidThroughAccountName: process.env.ZOHO_BOOMIN_PAID_THROUGH || 'Business Checking Plus',
+      apiBaseUrl: process.env.ZOHO_API_BASE_URL || 'https://www.zohoapis.com/books/v3',
+      accountsBaseUrl: process.env.ZOHO_ACCOUNTS_BASE_URL || 'https://accounts.zoho.com/oauth/v2',
+    };
+    // Register with both display name and short key for backward compatibility
+    accounts.set(boominConfig.entityName.toLowerCase(), boominConfig);
+    if (boominConfig.entityName.toLowerCase() !== 'boomin') {
+      accounts.set('boomin', boominConfig); // Also register as 'boomin'
+    }
+  }
+
   // ========== ENTITY: ALPHA (Mock Account for Sandbox) ==========
   if (process.env.ZOHO_ALPHA_ENABLED === 'true') {
     accounts.set('alpha', {

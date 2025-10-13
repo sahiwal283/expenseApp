@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.26 / Backend 2.6.26] - 2025-10-13 - 🏢 Boomin Brands Entity Added
+
+### Added
+- **Second Production Entity**: Boomin Brands Zoho Books integration
+  - Org ID: 842978819
+  - Expense Account: 4849689000000626507 (Trade Shows)
+  - Paid Through: 4849689000000430009 (Business Checking Plus)
+  - Follows same pattern as Haute Brands (dual registration, receipt upload, error handling)
+
+### Configuration
+- Added `ZOHO_BOOMIN_*` environment variables to production
+- Entity registered as both "boomin brands" and "boomin" for UI flexibility
+- Real API mode (not mock) with production credentials
+
+### Verified
+- ✅ Both Haute Brands and Boomin Brands initialized at startup
+- ✅ Dual-entity support confirmed in logs
+- ✅ Ready for testing with expenses tagged to Boomin Brands
+
+### Changed
+- `backend/src/config/zohoAccounts.ts`: Added Boomin Brands configuration
+- `package.json`: 0.35.25 → 0.35.26
+- `backend/package.json`: 2.6.25 → 2.6.26
+
+---
+
 ## [0.35.25 / Backend 2.6.25] - 2025-10-13 - 📎 Enhanced Receipt Upload Logging & Verification
 
 ### ✅ Receipt Upload Feature Already Implemented
