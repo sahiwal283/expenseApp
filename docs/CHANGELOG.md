@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Backend 2.6.32] - 2025-10-13 - 🐛 Fixed DevDashboard Date Errors & Empty Tabs
+
+### Bug Fixes - Developer Dashboard Now Fully Functional
+
+**Problems Found:**
+1. **"Invalid Date" errors** in Sessions and Alerts tabs
+2. **Empty tabs** - Overview, Metrics, and other tabs showing no data
+
+**Root Causes:**
+1. Backend was returning string `'Never'` for null dates, causing JS Date parsing to fail
+2. Backend field names didn't match what the frontend expected (e.g., `users.total` vs `total_users`)
+
+#### Fixes Applied
+
+**Date Formatting Fixed:**
+- ✅ Sessions: `lastActive` now returns ISO 8601 string or `null` (not "Never" string)
+- ✅ Added `lastActiveFormatted` field with human-readable dates ("Oct 13, 2025, 6:42 PM" or "Never")
+- ✅ Alerts: Added `timestampFormatted` for all alerts with proper US date formatting
+- ✅ Audit Logs: Added `timestampFormatted` for all log entries
+- ✅ All timestamps in ISO 8601 format: `YYYY-MM-DDTHH:mm:ss.sssZ`
+
+**Data Structure Fixed:**
+- ✅ Summary endpoint now returns frontend-expected fields:
+  - `total_users`, `active_sessions`, `recent_actions`
+  - `active_alerts`, `critical_alerts`, `active_events`
+  - `pending_expenses`, `total_expenses`, `approved_expenses`
+  - `total_amount`, `pushed_to_zoho`, `health_score`, `health_status`
+- ✅ Maintains nested structure (`users.total`, etc.) for backward compatibility
+
+**Enhanced Data:**
+- ✅ Sessions: Added `ipAddress` and `expires` fields
+- ✅ Audit Logs: Added `user_role` field
+- ✅ Audit Logs: Format amounts as currency (e.g., "$102.77")
+- ✅ Proper null handling (no more string conversions of null dates)
+
+#### Impact
+- ✅ No more "Invalid Date" errors
+- ✅ All dashboard tabs now display live data
+- ✅ Dates show in readable format
+- ✅ Consistent date handling across all endpoints
+- ✅ Complete system visibility for admins
+
+---
+
 ## [Backend 2.6.31] - 2025-10-13 - 📊 Developer Dashboard Backend Implementation
 
 ### New Feature - Fully Functional Developer Dashboard
