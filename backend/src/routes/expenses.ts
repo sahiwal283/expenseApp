@@ -241,6 +241,7 @@ const normalizeExpense = (expense: any) => ({
   reimbursementStatus: expense.reimbursement_status || null,
   ocrText: expense.ocr_text || null,
   zohoEntity: expense.zoho_entity || null,
+  zohoExpenseId: expense.zoho_expense_id || null,
   userId: expense.user_id,
 });
 
