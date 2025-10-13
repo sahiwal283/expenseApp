@@ -78,11 +78,11 @@ router.put('/:id', authorize('admin'), async (req: AuthRequest, res) => {
     if (password) {
       // If password is provided, hash it and update
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, password = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, username, name, email, role';
+      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, password = $4, registration_pending = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, username, name, email, role';
       queryParams = [name, email, role, hashedPassword, id];
     } else {
       // If no password, update other fields only
-      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, name, email, role';
+      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, registration_pending = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, name, email, role';
       queryParams = [name, email, role, id];
     }
 
