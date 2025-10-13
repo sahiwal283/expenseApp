@@ -2,7 +2,8 @@ import express from 'express';
 import { pool } from '../config/database';
 import { authenticateToken } from '../middleware/auth';
 import pkg from '../../package.json';
-import frontendPkg from '../../../package.json';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = express.Router();
 
@@ -20,6 +21,11 @@ router.get('/version', async (req, res) => {
   try {
     // Get versions from package.json files
     const backendVersion = pkg.version;
+    
+    // Read frontend version from package.json at runtime
+    const frontendPkgPath = path.join(__dirname, '../../../package.json');
+    const frontendPkgContent = fs.readFileSync(frontendPkgPath, 'utf-8');
+    const frontendPkg = JSON.parse(frontendPkgContent);
     const frontendVersion = frontendPkg.version;
     
     // Get database info
