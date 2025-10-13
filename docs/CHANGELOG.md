@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.37] - 2025-10-13 - 🐛 Fixed Receipt Expansion in ExpenseForm
+
+### Bug Fix - Receipt Expansion Now Works
+
+**Problem:** Receipt expansion feature (v0.35.36) didn't work in the Add New Expense flow. The expandable functionality was only added to ReceiptUpload and ExpenseSubmission components, but users view the receipt in ExpenseForm after OCR processing.
+
+**Solution:** Added expandable receipt functionality to ExpenseForm component.
+
+#### What Was Fixed
+- ✅ Added `showFullReceipt` state to ExpenseForm
+- ✅ Made receipt preview clickable with "Click to view full size" hover hint
+- ✅ Added fullscreen modal matching other components
+- ✅ Receipt expansion now works in the primary expense creation flow
+
+#### Impact
+- Users can now click receipts to expand them when adding/editing expenses
+- Consistent UX across all receipt viewing locations
+- No more confusion about why receipts aren't expandable
+
+---
+
 ## [0.35.36] - 2025-10-13 - 🖼️ Expandable Receipt Images
 
 ### UX Enhancement - Better Receipt Viewing
