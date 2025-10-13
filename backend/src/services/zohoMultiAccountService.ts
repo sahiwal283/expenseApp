@@ -31,6 +31,8 @@ interface ExpenseData {
   description?: string;
   userName: string;
   eventName?: string;
+  eventStartDate?: string;
+  eventEndDate?: string;
   receiptPath?: string;
   reimbursementRequired: boolean;
 }
@@ -437,11 +439,31 @@ class ZohoAccountHandler {
   // ========== HELPER METHODS ==========
 
   private buildDescription(expenseData: ExpenseData): string {
+    // Format event name with dates if available
+    let eventInfo = null;
+    if (expenseData.eventName) {
+      if (expenseData.eventStartDate && expenseData.eventEndDate) {
+        // Format dates as MM/DD/YY
+        const formatDate = (dateStr: string) => {
+          const date = new Date(dateStr);
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const day = date.getDate().toString().padStart(2, '0');
+          const year = date.getFullYear().toString().slice(-2);
+          return `${month}/${day}/${year}`;
+        };
+        const startFormatted = formatDate(expenseData.eventStartDate);
+        const endFormatted = formatDate(expenseData.eventEndDate);
+        eventInfo = `Event: ${expenseData.eventName}: ${startFormatted} - ${endFormatted}`;
+      } else {
+        eventInfo = `Event: ${expenseData.eventName}`;
+      }
+    }
+
     const parts = [
       `User: ${expenseData.userName}`,
       `Merchant: ${expenseData.merchant}`,
       `Category: ${expenseData.category}`,
-      expenseData.eventName ? `Event: ${expenseData.eventName}` : null,
+      eventInfo,
       expenseData.description || null,
     ].filter(Boolean);
     return parts.join(' | ');

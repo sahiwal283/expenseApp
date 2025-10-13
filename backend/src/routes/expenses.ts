@@ -651,10 +651,12 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: A
 
     // Get user and event details for Zoho submission
     const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
-    const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+    const eventResult = await query('SELECT name, start_date, end_date FROM events WHERE id = $1', [expense.event_id]);
     
     const userName = userResult.rows[0]?.name || 'Unknown User';
     const eventName = eventResult.rows[0]?.name || undefined;
+    const eventStartDate = eventResult.rows[0]?.start_date || undefined;
+    const eventEndDate = eventResult.rows[0]?.end_date || undefined;
 
     // Prepare receipt file path (if exists)
     let receiptPath = undefined;
@@ -675,6 +677,8 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: A
       description: expense.description || undefined,
       userName: userName,
       eventName: eventName,
+      eventStartDate: eventStartDate,
+      eventEndDate: eventEndDate,
       receiptPath: receiptPath,
       reimbursementRequired: expense.reimbursement_required,
     });
