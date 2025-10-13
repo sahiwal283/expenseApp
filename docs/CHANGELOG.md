@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.35] - 2025-10-13 - 🚨 EMERGENCY HOTFIX: Fixed Breaking Changes
+
+### Critical Bugs Fixed (Introduced by Another Developer)
+
+**Impact:** Reports and Approvals pages completely broken (blank screens)
+
+#### Bugs Found
+1. **Duplicate Sidebar Import** in `src/App.tsx`
+   - Caused runtime error breaking the entire app
+2. **Deleted `getSettings()` Function** in `src/utils/api.ts`
+   - AdminSettings component (used by Reports/Approvals) depends on this
+   - Caused all pages using settings to fail
+3. **Duplicate `updateSettings()` Function** in `src/utils/api.ts`
+   - Code duplication error
+
+#### Root Cause
+- Other developer added DevDashboard feature
+- **Did not increment version number** (stayed at 0.35.34)
+- Introduced breaking changes without testing
+- Merged directly to main without review
+
+#### Fixes Applied
+- ✅ Removed duplicate Sidebar import
+- ✅ Restored `api.getSettings()` function
+- ✅ Removed duplicate `updateSettings()` declaration
+- ✅ Preserved functional DevDashboard code
+- ✅ Incremented version to 0.35.35
+- ✅ Emergency deployment to production
+
+#### Lessons Learned
+- **Always increment version numbers** with every change
+- **Test before pushing to main**, especially in production environments
+- **Use PRs and code review** for all changes
+- **Run linter and build** before committing
+
+---
+
 ## [0.35.31 / Backend 2.6.28] - 2025-10-13 - 🔄 CRITICAL: Manual Zoho Push Architecture
 
 ### ⚠️ BREAKING WORKFLOW CHANGE
