@@ -9,6 +9,7 @@ import eventRoutes from './routes/events';
 import expenseRoutes from './routes/expenses';
 import settingsRoutes from './routes/settings';
 import devDashboardRoutes from './routes/devDashboard';
+import quickActionsRoutes from './routes/quickActions';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -40,6 +41,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/dev-dashboard', devDashboardRoutes);
+app.use('/api/quick-actions', quickActionsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

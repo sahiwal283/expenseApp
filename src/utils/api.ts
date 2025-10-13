@@ -70,6 +70,17 @@ export const api = {
   getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 
+  // Authentication & Registration
+  register: (data: { name: string; email: string; username: string; password: string }) =>
+    apiClient.post('/auth/register', data),
+  checkAvailability: (data: { username?: string; email?: string }) =>
+    apiClient.post('/auth/check-availability', data),
+
+  // Quick Actions / Pending Tasks
+  quickActions: {
+    getTasks: () => apiClient.get('/quick-actions'),
+  },
+
   // Developer Dashboard
   devDashboard: {
     getVersion: () => apiClient.get('/dev-dashboard/version'),

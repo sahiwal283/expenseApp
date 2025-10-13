@@ -32,7 +32,7 @@ router.get('/version', async (req, res) => {
     
     res.json({
       frontend: {
-        version: '0.35.41'
+        version: '0.36.0'
       },
       backend: {
         version: backendVersion,

@@ -39,3 +39,6 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+// Alias for convenience
+export const authenticate = authenticateToken;

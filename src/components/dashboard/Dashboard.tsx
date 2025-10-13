@@ -6,6 +6,8 @@ import { StatsCard } from './StatsCard';
 import { RecentExpenses } from './RecentExpenses';
 import { UpcomingEvents } from './UpcomingEvents';
 import { BudgetOverview } from './BudgetOverview';
+import { QuickActions } from './QuickActions';
+import { InstallPWA } from '../common/InstallPWA';
 import { parseLocalDate } from '../../utils/dateUtils';
 
 interface DashboardProps {
@@ -91,7 +93,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl text-white p-4 md:p-6 lg:p-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">
               {getGreeting()}, {user.name.split(' ')[0]}!
@@ -108,6 +110,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
               <Calendar className="w-16 h-16 text-white" />
             </div>
           </div>
+        </div>
+        {/* PWA Install Button */}
+        <div className="flex justify-start">
+          <InstallPWA />
         </div>
       </div>
 
@@ -150,30 +156,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
         <div className="space-y-6">
           <UpcomingEvents events={stats.userEvents} onPageChange={onPageChange} />
           
-          {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              {(user.role === 'salesperson' || user.role === 'coordinator') && (
-                <button className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center justify-center" onClick={() => onPageChange("expenses")}>
-                  <DollarSign className="w-5 h-5 mr-2" />
-                  Submit New Expense
-                </button>
-              )}
-              {user.role === 'coordinator' && (
-                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center" onClick={() => onPageChange("events")}>
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Create Trade Show
-                </button>
-              )}
-              {user.role === 'accountant' && (
-                <button className="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center" onClick={() => onPageChange("expenses")}>
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Review Expenses
-                </button>
-              )}
-            </div>
-          </div>
+          {/* Pending Tasks / Quick Actions */}
+          <QuickActions user={user} onNavigate={onPageChange} />
         </div>
       </div>
     </div>

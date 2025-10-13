@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, Key, ArrowRight, AlertCircle } from 'lucide-react';
+import { User, Key, ArrowRight, AlertCircle, UserPlus } from 'lucide-react';
+import { RegistrationForm } from './RegistrationForm';
 
 interface LoginFormProps {
   onLogin: (username: string, password: string) => Promise<boolean> | boolean;
@@ -10,6 +11,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showRegistration, setShowRegistration] = useState(false);
 
   // Detect environment based on hostname
   const isProduction = window.location.hostname.includes('duckdns.org') || 
@@ -44,6 +46,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
   const displayUsers = isSandbox ? sandboxUsers : productionUsers;
   const passwordHint = isSandbox ? 'sandbox123' : 'Use your assigned credentials';
+
+  // Show registration form if requested
+  if (showRegistration) {
+    return <RegistrationForm onBack={() => setShowRegistration(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4">
@@ -114,6 +121,26 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               )}
             </button>
           </form>
+
+          {/* New User Registration Button */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowRegistration(true)}
+              className="mt-4 w-full bg-white border-2 border-blue-500 text-blue-600 py-3 px-4 rounded-lg font-medium hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group"
+            >
+              <UserPlus className="mr-2 w-5 h-5" />
+              Create New Account
+            </button>
+          </div>
 
           {displayUsers.length > 0 && (
             <div className="mt-8 pt-6 border-t border-gray-200">
