@@ -339,10 +339,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="salesperson">Sales Person</option>
-                  <option value="coordinator">Show Coordinator</option>
-                  <option value="accountant">Accountant</option>
                   <option value="admin">Administrator</option>
+                  <option value="accountant">Accountant</option>
+                  <option value="coordinator">Show Coordinator</option>
+                  <option value="salesperson">Sales Person</option>
                 </select>
               </div>
 
