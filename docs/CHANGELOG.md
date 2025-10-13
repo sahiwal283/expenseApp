@@ -7,6 +7,112 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Frontend 0.35.41] - 2025-10-13 - 🎨 UX Fix: Removed Non-Functional Alert Buttons
+
+### User Report: "These buttons on the alert page don't do anything"
+
+**The Problem:**
+- "Acknowledge" and "Resolve" buttons on Alerts tab did nothing when clicked
+- Users clicked them expecting something to happen
+- Confusing and frustrating UX
+
+#### Why the Buttons Didn't Work
+
+These are **dynamic real-time alerts**, not persistent notifications:
+
+**How Alerts are Generated:**
+```sql
+-- Zoho Books Sync Pending Alert:
+SELECT COUNT(*) FROM expenses 
+WHERE zoho_entity IS NOT NULL 
+  AND zoho_expense_id IS NULL 
+  AND status = 'approved'
+
+-- Pending Expenses Alert:
+SELECT COUNT(*) FROM expenses WHERE status = 'pending'
+
+-- Missing Receipts Alert:
+SELECT COUNT(*) FROM expenses WHERE receipt_url IS NULL
+```
+
+The alerts automatically disappear when you fix the underlying condition:
+- ✅ Push expenses to Zoho → Zoho sync alert clears (zoho_expense_id gets set)
+- ✅ Approve expenses → Pending alert clears (status changes to 'approved')
+- ✅ Upload receipts → Missing receipts alert clears (receipt_url gets set)
+
+**The Backend Endpoints:**
+```javascript
+// backend/src/routes/devDashboard.ts
+router.post('/alerts/:id/acknowledge', (req, res) => {
+  res.status(200).json({ message: 'Alert acknowledged' }); // ❌ Just a placeholder!
+});
+
+router.post('/alerts/:id/resolve', (req, res) => {
+  res.status(200).json({ message: 'Alert resolved' }); // ❌ Doesn't actually do anything!
+});
+```
+
+These were placeholder endpoints. To make them work, we'd need to:
+1. Create an `alerts` table in the database, OR
+2. Make the buttons actually fix the issue (e.g., "Resolve Zoho Sync" pushes to Zoho)
+
+Neither approach makes sense for these dynamic alerts.
+
+#### The Fix
+
+**Removed the Buttons** ❌
+- No more "Acknowledge" and "Resolve" buttons
+- Users aren't confused by non-functional UI elements
+
+**Added Helpful Info Banner** ✅
+- Blue info box at the top of Alerts tab
+- Explains: "These alerts are generated automatically based on current system conditions"
+- Provides clear guidance on how to resolve each alert:
+  - **Pending Expenses:** Approve expenses on the Approvals page
+  - **Zoho Books Sync:** Use "Push to Zoho" button on Reports page
+  - **Missing Receipts:** Upload receipts when creating/editing expenses
+
+**Before:**
+```
+[Alert Card]
+Title: Zoho Books Sync Pending
+Description: 1 approved expense has not been pushed...
+[Acknowledge] [Resolve]  ← These buttons did nothing!
+```
+
+**After:**
+```
+[Info Banner]
+Real-Time System Alerts
+These alerts clear automatically when you resolve the issue:
+• Pending Expenses: Approve expenses on Approvals page
+• Zoho Books Sync: Use "Push to Zoho" button on Reports page
+• Missing Receipts: Upload receipts when creating expenses
+
+[Alert Card]
+Title: Zoho Books Sync Pending
+Description: 1 approved expense has not been pushed...
+[No buttons - just information]
+```
+
+#### Impact
+
+**Better UX:**
+- ✅ No more confusing non-functional buttons
+- ✅ Clear instructions on how to resolve each alert type
+- ✅ Users understand these are dynamic status indicators
+- ✅ Alerts automatically disappear when issues are fixed
+
+**Developer Note:**
+If you want actionable alerts in the future, consider:
+1. Making alerts clickable navigation links (e.g., click Zoho alert → go to Reports page)
+2. Creating a persistent alerts table in the database for manual acknowledgment
+3. Implementing smart actions (e.g., "Resolve All Zoho Syncs" button that actually pushes expenses)
+
+For now, the simple approach (remove buttons, add info) provides the best UX.
+
+---
+
 ## [Backend 2.6.35 / Frontend 0.35.40] - 2025-10-13 - 🎯 FINAL FIX - All Tabs Now Showing Data
 
 ### The Last Missing Piece - Field Name Mismatches
