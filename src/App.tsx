@@ -8,7 +8,6 @@ import { DevDashboard } from './components/developer/DevDashboard';
 import { Approvals } from './components/admin/Approvals';
 import { Reports } from './components/reports/Reports';
 import { Sidebar } from './components/layout/Sidebar';
-import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { useAuth } from './hooks/useAuth';
 import { useLocalStorage } from './hooks/useLocalStorage';

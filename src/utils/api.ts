@@ -67,7 +67,7 @@ export const api = {
   deleteExpense: (id: string) => apiClient.delete(`/expenses/${id}`),
 
   // Settings
-  updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
+  getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 
   // Developer Dashboard
