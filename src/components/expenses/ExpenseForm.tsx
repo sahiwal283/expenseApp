@@ -42,6 +42,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [ocrResults, setOcrResults] = useState<any>(null);
+  const [showFullReceipt, setShowFullReceipt] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -307,11 +308,23 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
               {/* Receipt Preview */}
               {formData.receiptUrl && (
                 <div className="relative">
-                  <img
-                    src={formData.receiptUrl}
-                    alt="Receipt preview"
-                    className="w-full max-w-md h-48 object-cover rounded-lg border mx-auto"
-                  />
+                  <div 
+                    onClick={() => !isProcessingOCR && setShowFullReceipt(true)}
+                    className="cursor-pointer group relative mx-auto max-w-md"
+                  >
+                    <img
+                      src={formData.receiptUrl}
+                      alt="Receipt preview"
+                      className="w-full h-48 object-cover rounded-lg border group-hover:shadow-xl transition-shadow"
+                    />
+                    {!isProcessingOCR && (
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all flex items-center justify-center">
+                        <div className="bg-white bg-opacity-90 px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-sm font-medium text-gray-900">Click to view full size</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   {isProcessingOCR && (
                     <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
                       <div className="text-center">
@@ -486,6 +499,30 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
           </div>
         </form>
       </div>
+
+      {/* Full Receipt Modal */}
+      {showFullReceipt && formData.receiptUrl && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowFullReceipt(false)}
+        >
+          <button
+            onClick={() => setShowFullReceipt(false)}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+            title="Close"
+          >
+            <X className="w-6 h-6 text-gray-900" />
+          </button>
+          <div className="max-w-5xl max-h-[90vh] overflow-auto">
+            <img
+              src={formData.receiptUrl}
+              alt="Receipt full size"
+              className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
