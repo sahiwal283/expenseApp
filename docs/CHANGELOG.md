@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.36] - 2025-10-13 - 🖼️ Expandable Receipt Images
+
+### UX Enhancement - Better Receipt Viewing
+
+**Problem:** Receipt previews were zoomed in and cut off, making it difficult to see all the details on the receipt.
+
+**Solution:** Made receipt images clickable to expand to fullscreen for detailed viewing.
+
+#### Features Added
+- ✅ **Clickable Receipt Previews** - Click any receipt to view full size
+- ✅ **Fullscreen Modal** - Dark overlay (90% opacity) for better focus
+- ✅ **Hover Hints** - "Click to view full size" appears on hover
+- ✅ **Close Options** - Click X button (top-right) or click outside modal
+- ✅ **Responsive Sizing** - Maximum 90vh height with scroll for tall receipts
+- ✅ **Smooth Transitions** - Enhanced shadow on hover for visual feedback
+
+#### Components Updated
+1. **ReceiptUpload.tsx**
+   - Added `showFullImage` state
+   - Added fullscreen modal overlay
+   - Applied hover effects to preview
+2. **ExpenseSubmission.tsx**
+   - Updated existing receipt modal to fullscreen style
+   - Improved from small centered box to large fullscreen view
+
+#### User Benefits
+- 📸 See full receipt details clearly
+- 🔍 Verify all expense information accurately
+- 💡 Intuitive click-to-expand interaction
+- 🎨 Clean, modern modal design
+
+---
+
 ## [0.35.35] - 2025-10-13 - 🚨 EMERGENCY HOTFIX: Fixed Breaking Changes
 
 ### Critical Bugs Fixed (Introduced by Another Developer)
