@@ -12,16 +12,15 @@ import { Header } from './components/layout/Header';
 import { useAuth } from './hooks/useAuth';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
-export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant';
+export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'pending';
 
 export interface User {
   id: string;
   name: string;
   username: string;
   email: string;
-  role: UserRole | null;
+  role: UserRole;
   avatar?: string;
-  registration_pending?: boolean;
   registration_date?: string;
 }
 

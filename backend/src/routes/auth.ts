@@ -14,7 +14,7 @@ router.post('/login', async (req, res) => {
     }
 
     const result = await query(
-      'SELECT id, username, password, name, email, role, registration_pending FROM users WHERE username = $1',
+      'SELECT id, username, password, name, email, role FROM users WHERE username = $1',
       [username]
     );
 
@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Prevent login if account is pending role assignment
-    if (!user.role || user.registration_pending) {
+    if (user.role === 'pending') {
       return res.status(403).json({ 
         error: 'Account pending approval',
         message: 'Your account is awaiting administrator approval. Please contact an administrator to activate your account.'
@@ -148,11 +148,11 @@ router.post('/register', async (req, res) => {
     // Get client IP
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
 
-    // Insert new user with NO ROLE (pending admin assignment)
+    // Insert new user with 'pending' role (awaiting admin assignment)
     const result = await query(
-      `INSERT INTO users (username, password, name, email, role, registration_pending, registration_ip, registration_date) 
-       VALUES ($1, $2, $3, $4, NULL, TRUE, $5, CURRENT_TIMESTAMP) 
-       RETURNING id, username, name, email, role, registration_pending, created_at`,
+      `INSERT INTO users (username, password, name, email, role, registration_ip, registration_date) 
+       VALUES ($1, $2, $3, $4, 'pending', $5, CURRENT_TIMESTAMP) 
+       RETURNING id, username, name, email, role, created_at`,
       [username, hashedPassword, name, email, clientIp]
     );
 

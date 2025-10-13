@@ -22,7 +22,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       const pendingUsersResult = await query(
         `SELECT id, username, name, email, registration_date 
          FROM users 
-         WHERE role IS NULL OR registration_pending = TRUE 
+         WHERE role = 'pending' 
          ORDER BY registration_date ASC`
       );
       

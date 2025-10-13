@@ -137,12 +137,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
   };
 
   const isPendingUser = (user: User) => {
-    // Check registration_pending flag first (most reliable)
-    if (user.registration_pending === true) {
-      return true;
-    }
-    // Fallback: check if role is null/empty
-    return !user.role || user.role === null || user.role === '';
+    return user.role === 'pending';
   };
 
   const filteredUsers = users.filter(user => {
@@ -159,9 +154,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
       'admin': 'bg-purple-100 text-purple-800',
       'coordinator': 'bg-blue-100 text-blue-800',
       'salesperson': 'bg-emerald-100 text-emerald-800',
-      'accountant': 'bg-orange-100 text-orange-800'
+      'accountant': 'bg-orange-100 text-orange-800',
+      'pending': 'bg-yellow-100 text-yellow-800'
     };
-    return colors[role as keyof typeof colors] || colors['salesperson'];
+    return colors[role as keyof typeof colors] || 'bg-yellow-100 text-yellow-800';
   };
 
   const getRoleLabel = (role: string) => {
@@ -169,9 +165,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
       'admin': 'Administrator',
       'coordinator': 'Show Coordinator',
       'salesperson': 'Sales Person',
-      'accountant': 'Accountant'
+      'accountant': 'Accountant',
+      'pending': 'Pending Approval'
     };
-    return labels[role as keyof typeof labels] || 'Sales Person';
+    return labels[role as keyof typeof labels] || 'Pending Approval';
   };
 
   return (

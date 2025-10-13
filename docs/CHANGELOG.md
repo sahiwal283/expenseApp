@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Backend 2.8.0 / Frontend 0.37.0] - 2025-10-13 - REFACTOR: Pending Role System
+
+### 🔄 Major Refactor - Simpler & More Reliable
+
+**The Problem with Previous Approach:**
+- Used `role = NULL` + `registration_pending` flag
+- Browser caching issues with optional fields
+- Inconsistent frontend display (showed "Sales Person" default)
+- Complex logic checking multiple fields
+
+**New Approach - "pending" Role:**
+✅ Added new role type: `'pending'`
+✅ New users get `role = 'pending'` (not NULL)
+✅ Login blocked for `role === 'pending'`
+✅ Frontend simply checks `user.role === 'pending'`
+✅ No more optional fields or NULL checks
+✅ No more browser caching issues
+
+**Benefits:**
+- **Simpler**: One field (`role`) instead of two (`role` + `registration_pending`)
+- **More Reliable**: Role field always sent by API, no caching issues
+- **Clearer UX**: "Pending Approval" badge in yellow
+- **Consistent**: Same logic everywhere - just check the role
+
+**Database Changes:**
+- Added 'pending' to role CHECK constraint
+- Migrated NULL roles to 'pending'
+- Made role column NOT NULL
+- Dropped `registration_pending` column
+- New index: `idx_users_pending` for quick lookups
+
+**Backend Changes (2.7.2→2.8.0):**
+- Registration sets `role = 'pending'` instead of `NULL`
+- Login blocks `role === 'pending'`
+- Removed all `registration_pending` references
+- Simplified user queries
+- Updated Quick Actions to check `role = 'pending'`
+
+**Frontend Changes (0.36.2→0.37.0):**
+- Added 'pending' to UserRole type
+- `isPendingUser()` now just: `user.role === 'pending'`
+- Added yellow badge styling for pending role
+- Role label: "Pending Approval"
+- Removed `registration_pending` field from User interface
+
+**Migration:**
+```sql
+-- Run: backend/src/database/migrations/add_pending_role.sql
+-- Updates CHECK constraint, migrates NULL roles, drops old column
+```
+
+**User Experience:**
+1. User registers → Gets role = 'pending'
+2. Cannot log in (blocked at login)
+3. Admin sees yellow "Pending Approval" badge
+4. Admin clicks "Activate User" → assigns real role
+5. User can now log in! ✅
+
+### 📦 Versions
+- Backend: 2.7.2 → 2.8.0 (minor - new feature)
+- Frontend: 0.36.2 → 0.37.0 (minor - new feature)
+
+---
+
 ## [Backend 2.7.2 / Frontend 0.36.2] - 2025-10-13 - CRITICAL FIX: User Approval Workflow
 
 ### 🐛 Critical Bug Fix
