@@ -4,8 +4,10 @@ import { Dashboard } from './components/dashboard/Dashboard';
 import { EventSetup } from './components/events/EventSetup';
 import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
 import { AdminSettings } from './components/admin/AdminSettings';
+import { DevDashboard } from './components/developer/DevDashboard';
 import { Approvals } from './components/admin/Approvals';
 import { Reports } from './components/reports/Reports';
+import { Sidebar } from './components/layout/Sidebar';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { useAuth } from './hooks/useAuth';
@@ -116,6 +118,7 @@ function App() {
           {currentPage === 'approvals' && <Approvals user={user} />}
           {currentPage === 'reports' && <Reports user={user} />}
           {currentPage === 'settings' && <AdminSettings user={user} />}
+          {currentPage === 'devdashboard' && <DevDashboard user={user} />}
         </main>
       </div>
     </div>

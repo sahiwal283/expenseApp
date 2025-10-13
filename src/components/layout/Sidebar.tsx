@@ -9,7 +9,7 @@ import {
   Settings,
   X,
   CheckSquare
-} from 'lucide-react';
+,  Code } from 'lucide-react';
 import { User, UserRole } from '../../App';
 
 interface SidebarProps {
@@ -29,6 +29,7 @@ const navigationItems = [
   { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant'] },
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant'] },
   { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant'] },
+  { id: 'devdashboard', label: 'Dev Dashboard', icon: Code, roles: ['admin'] },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ 

@@ -67,8 +67,20 @@ export const api = {
   deleteExpense: (id: string) => apiClient.delete(`/expenses/${id}`),
 
   // Settings
-  getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
+  updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
+
+  // Developer Dashboard
+  devDashboard: {
+    getVersion: () => apiClient.get('/dev-dashboard/version'),
+    getMetrics: (timeRange?: string) => apiClient.get('/dev-dashboard/metrics', { params: { timeRange } }),
+    getAuditLogs: (params?: Record<string, any>) => apiClient.get('/dev-dashboard/audit-logs', { params }),
+    getSessions: () => apiClient.get('/dev-dashboard/sessions'),
+    getApiAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/api-analytics', { params: { timeRange } }),
+    getAlerts: (status?: string, severity?: string) => apiClient.get('/dev-dashboard/alerts', { params: { status, severity } }),
+    acknowledgeAlert: (id: string) => apiClient.post(`/dev-dashboard/alerts/${id}/acknowledge`),
+    resolveAlert: (id: string) => apiClient.post(`/dev-dashboard/alerts/${id}/resolve`),
+    getPageAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/page-analytics', { params: { timeRange } }),
+    getSummary: () => apiClient.get('/dev-dashboard/summary'),
+  },
 };
-
-
