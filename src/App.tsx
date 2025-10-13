@@ -51,6 +51,7 @@ export interface Expense {
   receiptUrl?: string;
   status: 'pending' | 'approved' | 'rejected';
   zohoEntity?: string;
+  zohoExpenseId?: string;
   location?: string;
   ocrText?: string;
   extractedData?: {

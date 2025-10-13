@@ -4,6 +4,7 @@ import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
 import { api } from '../../utils/api';
+import { useToast, ToastContainer } from '../common/Toast';
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -16,6 +17,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   events, 
   onReimbursementApproval 
 }) => {
+  const { toasts, addToast, removeToast } = useToast();
   const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
   const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(
     new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id))
@@ -23,7 +25,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
   const handlePushToZoho = async (expense: Expense) => {
     if (!expense.zohoEntity) {
-      alert('No entity assigned to this expense. Please assign an entity first.');
+      addToast('No entity assigned to this expense. Please assign an entity first.', 'warning');
       return;
     }
 
@@ -35,11 +37,11 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
     try {
       await api.pushToZoho(expense.id);
       setPushedExpenses(prev => new Set(prev).add(expense.id));
-      alert(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`);
+      addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
     } catch (error: any) {
       console.error('Failed to push to Zoho:', error);
       const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
-      alert(`❌ Failed to push to Zoho Books: ${errorMsg}`);
+      addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
     } finally {
       setPushingExpenseId(null);
     }
@@ -78,7 +80,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <div className="space-y-6">
       {/* Category Breakdown Chart */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="mb-6">
@@ -334,6 +338,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
         </div>
       </div>
     </div>
-    </div>
+      </div>
+    </>
   );
 };
