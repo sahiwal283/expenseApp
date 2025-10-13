@@ -77,10 +77,38 @@ router.get('/summary', async (req, res) => {
       ? Math.round((1 - (pendingCount / totalExpenses)) * 100)
       : 100;
     
+    // Calculate active alerts count
+    let alertCount = 0;
+    if (pendingCount > 10) alertCount++;
+    const notPushedResult = await pool.query(`
+      SELECT COUNT(*) as count 
+      FROM expenses 
+      WHERE zoho_entity IS NOT NULL 
+        AND zoho_expense_id IS NULL 
+        AND status = 'approved'
+    `);
+    if (parseInt(notPushedResult.rows[0].count) > 0) alertCount++;
+    
     res.json({
+      // Frontend expects these specific field names
+      total_users: parseInt(usersResult.rows[0].count),
+      active_sessions: parseInt(usersResult.rows[0].count),
+      recent_actions: parseInt(recentExpensesResult.rows[0].count),
+      active_alerts: alertCount,
+      critical_alerts: 0,
+      active_events: parseInt(eventsResult.rows[0].count),
+      pending_expenses: pendingCount,
+      total_expenses: totalExpenses,
+      approved_expenses: totalExpenses - pendingCount,
+      total_amount: parseFloat(totalAmountResult.rows[0].total),
+      pushed_to_zoho: parseInt(zohoPushedResult.rows[0].count),
+      health_score: healthScore,
+      health_status: healthScore >= 80 ? 'healthy' : healthScore >= 50 ? 'warning' : 'critical',
+      uptime: 'N/A',
+      // Also include nested structure for compatibility
       users: {
         total: parseInt(usersResult.rows[0].count),
-        active: parseInt(usersResult.rows[0].count) // All users considered active for now
+        active: parseInt(usersResult.rows[0].count)
       },
       expenses: {
         total: totalExpenses,
@@ -191,6 +219,7 @@ router.get('/audit-logs', async (req, res) => {
         e.id,
         e.created_at as timestamp,
         u.username as user,
+        u.role as user_role,
         'expense' as resource_type,
         e.status as action,
         e.merchant as resource,
@@ -217,8 +246,23 @@ router.get('/audit-logs', async (req, res) => {
     
     const result = await pool.query(query, params);
     
+    // Format logs with proper date formatting
+    const formattedLogs = result.rows.map(log => ({
+      ...log,
+      timestamp: new Date(log.timestamp).toISOString(),
+      timestampFormatted: new Date(log.timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }),
+      details: typeof log.details === 'number' ? `$${parseFloat(log.details).toFixed(2)}` : log.details
+    }));
+    
     res.json({
-      logs: result.rows,
+      logs: formattedLogs,
       total: result.rowCount
     });
   } catch (error) {
@@ -250,11 +294,23 @@ router.get('/sessions', async (req, res) => {
       username: row.username,
       role: row.role,
       email: row.email || 'N/A',
-      lastActive: row.last_active || 'Never',
+      lastActive: row.last_active ? new Date(row.last_active).toISOString() : null,
+      lastActiveFormatted: row.last_active 
+        ? new Date(row.last_active).toLocaleString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric', 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          })
+        : 'Never',
       status: row.last_active && new Date(row.last_active) > new Date(Date.now() - 3600000) 
         ? 'active' 
         : 'idle',
-      activityCount: parseInt(row.activity_count)
+      activityCount: parseInt(row.activity_count),
+      ipAddress: 'N/A',
+      expires: null
     }));
     
     res.json({ sessions });
@@ -396,11 +452,32 @@ router.get('/alerts', async (req, res) => {
         status: 'active',
         message: 'All systems operational',
         timestamp: new Date().toISOString(),
+        timestampFormatted: new Date().toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
         acknowledged: false
       });
     }
     
-    res.json({ alerts });
+    // Format all alert timestamps
+    const formattedAlerts = alerts.map(alert => ({
+      ...alert,
+      timestampFormatted: new Date(alert.timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    }));
+    
+    res.json({ alerts: formattedAlerts });
   } catch (error) {
     console.error('Alerts endpoint error:', error);
     res.status(500).json({ error: 'Failed to fetch alerts' });
