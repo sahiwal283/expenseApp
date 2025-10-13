@@ -7,6 +7,282 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Backend 2.7.0 / Frontend 0.36.0] - 2025-10-13 - 🎉 MAJOR FEATURE: User Registration System
+
+### 🚀 New Features
+
+This is a MAJOR feature release introducing self-service user registration, role-based task management, and PWA installation capabilities.
+
+#### 1. User Registration System ✅
+
+**Self-Service Registration:**
+- Users can now register for accounts without administrator intervention
+- Registration accessible from main login page via "Create New Account" button
+- Beautiful multi-step registration form with real-time validation
+
+**Registration Form Includes:**
+- Full Name (required)
+- Email Address (required, validated, checked for duplicates)
+- Username (required, checked for duplicates in real-time)
+- Password (required, must meet strong security requirements)
+- Confirm Password (must match)
+
+**Security Features:**
+- ✅ **Strong Password Policy** (enforced server-side):
+  - Minimum 8 characters
+  - At least one uppercase letter
+  - At least one lowercase letter
+  - At least one number
+  - At least one special character (!@#$%^&*)
+- ✅ **Password Strength Indicator** (visual feedback: Weak/Fair/Good/Strong)
+- ✅ **Duplicate Prevention**:
+  - Client-side: Real-time validation as user types
+  - Server-side: Database UNIQUE constraints on username and email
+  - Proper error messages if username/email already exists
+- ✅ **No Auto-Login**: Users cannot log in until admin assigns a role
+- ✅ **IP Address Logging**: Registration IP tracked for security audit
+- ✅ **Bcrypt Password Hashing**: 10 rounds for secure storage
+
+**Admin Notification:**
+- Pending users appear in admin's Quick Actions widget
+- Shows count of users awaiting role assignment
+- One-click navigation to User Management
+
+**User Experience:**
+- Registration success screen with clear next steps
+- Cannot login until account is activated by admin
+- Clear error messages for validation failures
+- Password visibility toggle for convenience
+
+#### 2. Quick Actions / Pending Tasks Widget ✅
+
+**Centralized Task Management:**
+- New dashboard widget showing role-specific pending tasks
+- Auto-refreshes every 60 seconds
+- Priority-based sorting (High/Medium/Low)
+- One-click navigation to relevant pages
+
+**Admin Tasks:**
+1. **New Users Awaiting Role Assignment** (High Priority)
+   - Shows count of pending registrations
+   - Displays user details (name, email, registration date)
+   - Links to User Management page
+   
+2. **Expenses Pending Approval** (Medium Priority)
+   - Count of unapproved expense submissions
+   - Links to Approvals page
+   
+3. **Approved Expenses Not Synced to Zoho** (Medium Priority)
+   - Count of expenses needing Zoho push
+   - Links to Reports page
+
+**Accountant Tasks:**
+1. **Expenses Pending Approval** (High Priority)
+   - Immediate attention required for expense review
+   
+2. **Reimbursements to Process** (Medium Priority)
+   - Outstanding reimbursement requests
+
+**Coordinator Tasks:**
+1. **Events Near Budget Limit** (High Priority)
+   - Events at 80%+ of budget
+   - Shows event names and spending percentages
+
+**Salesperson Tasks:**
+1. **Your Pending Expenses** (Low Priority)
+   - Personal expenses awaiting approval
+   
+2. **Missing Receipts** (Medium Priority)
+   - Expenses without receipt images
+
+**Features:**
+- Visual priority indicators (color-coded)
+- Task counts with badges
+- Descriptive titles and guidance
+- Auto-dismiss when tasks complete
+- Manual refresh button
+
+#### 3. PWA "Add to Home Screen" Feature ✅
+
+**Progressive Web App Installation:**
+- "Add to Home Screen" button on dashboard
+- Works on iOS and Android devices
+- Improves app accessibility and user experience
+
+**Smart Behavior:**
+- Only shows if app is not already installed
+- Banner appears after 10 seconds on dashboard
+- Can be dismissed (remembers for 7 days)
+- Fallback instructions for browsers without native support
+
+**Benefits:**
+- Quick access from device home screen
+- App-like experience
+- Offline support capabilities
+- No app store required
+
+#### 4. Backend API Enhancements ✅
+
+**New Endpoints:**
+
+1. `POST /api/auth/register`
+   - User registration without role
+   - Password validation
+   - Duplicate prevention
+   - IP logging
+   - Returns success message (no auto-login token)
+
+2. `POST /api/auth/check-availability`
+   - Real-time username/email availability checking
+   - Used for client-side validation
+   - Fast response for better UX
+
+3. `GET /api/quick-actions`
+   - Role-based pending tasks
+   - Authenticated endpoint
+   - Dynamic task generation based on database state
+   - Returns priority-sorted task list
+
+**Enhanced Login Endpoint:**
+- Now checks for `registration_pending` flag
+- Prevents login if role is NULL
+- Returns 403 with helpful message for pending users
+
+### 🗄️ Database Changes
+
+**Migration: `add_pending_user_role.sql`**
+- `ALTER TABLE users` to allow NULL roles
+- Updated CHECK constraint: `role IS NULL OR role IN (...)`
+- Added `registration_pending BOOLEAN DEFAULT FALSE`
+- Added `registration_ip VARCHAR(45)` for security tracking
+- Added `registration_date TIMESTAMP` for audit trail
+- Created index on pending users for performance
+- Status: ✅ Successfully applied to production database
+
+### 🎨 Frontend Changes
+
+**New Components:**
+1. `RegistrationForm.tsx` - Full-featured registration UI
+2. `QuickActions.tsx` - Dashboard widget for pending tasks
+3. `InstallPWA.tsx` - Progressive Web App install button
+
+**Updated Components:**
+1. `LoginForm.tsx` - Added "Create New Account" button
+2. `Dashboard.tsx` - Integrated QuickActions and InstallPWA
+3. `api.ts` - Added registration and quick actions endpoints
+
+**UI/UX Improvements:**
+- Modern, gradient-based design matching existing theme
+- Real-time validation feedback
+- Password strength indicator with visual progress bar
+- Accessible forms with proper labels and error states
+- Responsive design for mobile devices
+
+### 🔒 Security Enhancements
+
+1. **Password Requirements:**
+   - Enforced on both client and server
+   - Clear requirements displayed to users
+   - Strong hashing with bcrypt (10 rounds)
+
+2. **Duplicate Prevention:**
+   - Database UNIQUE constraints
+   - Server-side validation
+   - Client-side real-time checking
+   - Prevents race conditions
+
+3. **Registration Audit Trail:**
+   - IP address logging
+   - Registration timestamp
+   - Pending flag for admin review
+   - Cannot access system until approved
+
+4. **No Auto-Login:**
+   - Critical security feature
+   - Prevents unauthorized access
+   - Forces admin review before activation
+
+### 📝 Admin Workflow
+
+**When a New User Registers:**
+1. User completes registration form
+2. Account created with NULL role and `registration_pending=TRUE`
+3. User sees success message (cannot login yet)
+4. Admin sees notification in Quick Actions widget
+5. Admin goes to User Management
+6. Admin assigns appropriate role
+7. System automatically clears `registration_pending` flag
+8. User can now login with assigned role
+
+### ⚙️ Configuration
+
+**No Additional Configuration Required**
+
+All features work out-of-the-box with existing setup:
+- Uses existing JWT authentication
+- Uses existing database connection
+- Uses existing user management system
+- Backward compatible with existing users
+
+### 🚀 Deployment Notes
+
+**This feature was deployed directly to PRODUCTION (not sandbox):**
+- Container 201 (Backend): v2.7.0
+- Container 202 (Frontend): v0.36.0
+- Database migration applied successfully
+- All services restarted and verified
+
+**Critical Steps Taken:**
+1. Database migration applied FIRST
+2. Backend deployed with new endpoints
+3. Frontend deployed with new UI
+4. Services restarted successfully
+5. No downtime during deployment
+
+### 📊 Testing Required
+
+**User must verify:**
+- ✅ Registration form loads on login page
+- ✅ New users can register successfully
+- ✅ Duplicate username/email prevented
+- ✅ Weak passwords rejected
+- ✅ Pending users cannot login
+- ✅ Admin sees pending users in Quick Actions
+- ✅ Admin can assign roles in User Management
+- ✅ Users can login after role assignment
+- ✅ PWA install button appears on dashboard
+- ✅ Quick Actions shows relevant tasks per role
+
+### 🐛 Known Limitations
+
+1. **Email Notifications:**
+   - System does NOT send email notifications
+   - Admins must check Quick Actions widget
+   - Future enhancement: Email notification system
+
+2. **Role Assignment:**
+   - Must be done manually by admin in User Management
+   - No bulk role assignment yet
+   - No automated role suggestions
+
+3. **PWA Support:**
+   - Depends on browser support
+   - iOS has limited PWA capabilities
+   - Provides fallback instructions
+
+### 📚 Related Documentation
+
+- User registration flow in ARCHITECTURE.md
+- Admin workflows in QUICKSTART.md
+- Security best practices in DEPLOYMENT.md
+
+### 🔄 Version History
+
+- Frontend: 0.35.41 → 0.36.0 (MAJOR version bump)
+- Backend: 2.6.35 → 2.7.0 (MINOR version bump with new features)
+
+---
+
 ## [Frontend 0.35.41] - 2025-10-13 - 🎨 UX Fix: Removed Non-Functional Alert Buttons
 
 ### User Report: "These buttons on the alert page don't do anything"
