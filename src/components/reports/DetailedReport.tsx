@@ -1,8 +1,9 @@
-import React from 'react';
-import { FileText, Calendar, MapPin, User, DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, Calendar, MapPin, User, DollarSign, Upload, CheckCircle2, Loader2 } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
+import { api } from '../../utils/api';
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -15,6 +16,34 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   events, 
   onReimbursementApproval 
 }) => {
+  const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
+  const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(
+    new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id))
+  );
+
+  const handlePushToZoho = async (expense: Expense) => {
+    if (!expense.zohoEntity) {
+      alert('No entity assigned to this expense. Please assign an entity first.');
+      return;
+    }
+
+    if (expense.zohoExpenseId || pushedExpenses.has(expense.id)) {
+      return; // Already pushed
+    }
+
+    setPushingExpenseId(expense.id);
+    try {
+      await api.pushToZoho(expense.id);
+      setPushedExpenses(prev => new Set(prev).add(expense.id));
+      alert(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`);
+    } catch (error: any) {
+      console.error('Failed to push to Zoho:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+      alert(`❌ Failed to push to Zoho Books: ${errorMsg}`);
+    } finally {
+      setPushingExpenseId(null);
+    }
+  };
   const getCategoryBarColor = (category: string) => {
     const colors = {
       'Flights': 'bg-blue-500',
@@ -133,6 +162,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Description
               </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Zoho Push
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -203,6 +235,35 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <div className="text-sm text-gray-900 max-w-xs truncate" title={expense.description}>
                       {expense.description || (
                         <span className="text-gray-400 italic">No description</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center">
+                      {!expense.zohoEntity ? (
+                        <span className="text-xs text-gray-400 italic">No entity</span>
+                      ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
+                        <div className="flex items-center space-x-1 text-emerald-600">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span className="text-xs font-medium">Pushed</span>
+                        </div>
+                      ) : pushingExpenseId === expense.id ? (
+                        <button
+                          disabled
+                          className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded border border-blue-200 cursor-not-allowed"
+                        >
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Pushing...</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handlePushToZoho(expense)}
+                          className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                          title={`Push to ${expense.zohoEntity} Zoho Books`}
+                        >
+                          <Upload className="w-3 h-3" />
+                          <span>Push to Zoho</span>
+                        </button>
                       )}
                     </div>
                   </td>

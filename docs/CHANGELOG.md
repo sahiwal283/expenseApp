@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.35.31 / Backend 2.6.28] - 2025-10-13 - 🔄 CRITICAL: Manual Zoho Push Architecture
+
+### ⚠️ BREAKING WORKFLOW CHANGE
+
+**Old Workflow (Deprecated):**
+- Entity assignment on Approvals page → Auto-push to Zoho Books
+
+**New Workflow (Current):**
+- Entity assignment on Approvals page → Updates database only (no push)
+- Manual "Push to Zoho" button on Reports page → Explicit push to Zoho Books
+
+### Why This Change
+- **User Control**: Accountants/admins explicitly control when expenses sync to Zoho
+- **Duplicate Prevention**: Atomic, one-time push per expense with visual confirmation
+- **Better Visibility**: Clear status indication (Not Pushed / Pushing / Pushed)
+- **Error Recovery**: Failed pushes don't affect entity assignment
+- **Audit Trail**: Explicit action creates clear timeline of when sync occurred
+
+### Backend Changes
+
+#### New Endpoint
+- **POST** `/api/expenses/:id/push-to-zoho` (admin/accountant only)
+  - Validates expense has entity assigned
+  - Validates expense not already pushed (`zoho_expense_id` is null)
+  - Validates entity has Zoho configuration
+  - Synchronously pushes to Zoho Books with full error handling
+  - Stores `zoho_expense_id` in database on success
+  - Returns detailed response with success/failure status
+
+#### Modified Endpoint
+- **PATCH** `/api/expenses/:id/entity` - **REMOVED AUTO-PUSH**
+  - Now only updates `zoho_entity` field in database
+  - No longer triggers Zoho Books submission
+  - Simplified to pure entity assignment
+
+#### Error Handling
+- Pre-flight checks: missing entity, already pushed, no config
+- Comprehensive logging: `[Zoho:ManualPush]` prefix for all manual operations
+- Returns user-friendly error messages for all failure scenarios
+
+### Frontend Changes
+
+#### Reports Page - DetailedReport Component
+- **New Column**: "Zoho Push" in expense table
+- **Three States**:
+  1. **No Entity**: Shows "No entity" (gray italic text)
+  2. **Already Pushed**: Shows green checkmark + "Pushed" (read-only)
+  3. **Ready to Push**: Shows blue "Push to Zoho" button (clickable)
+  4. **Pushing**: Shows loading spinner + "Pushing..." (disabled)
+
+- **Button Logic**:
+  - Only visible if expense has `zohoEntity` assigned
+  - Disabled/hidden if `zohoExpenseId` exists (already pushed)
+  - Click triggers `api.pushToZoho(expense.id)`
+  - Success: Updates local state, shows success alert
+  - Failure: Shows error alert with detailed message
+
+#### API Client
+- Added `pushToZoho(id: string)` method
+- POST to `/api/expenses/:id/push-to-zoho`
+
+#### Approvals Page - No Changes to UI
+- Entity assignment dropdown still works identically
+- Success toast no longer mentions Zoho push
+- Entity saved to database only
+
+### Database
+- No schema changes required
+- Existing `zoho_expense_id` field acts as "pushed" flag
+- Null = not pushed, Value = pushed with Zoho ID
+
+### Validation & Safety
+- **Idempotency**: Cannot push same expense twice (backend validates)
+- **Entity Required**: Cannot push without entity assignment
+- **Config Required**: Cannot push to unconfigured entity
+- **Full Logging**: All push attempts logged with entity name and result
+- **Receipt Upload**: Maintained from previous implementation
+
+### Migration Notes
+- ✅ No database migration required
+- ✅ Existing expenses with `zoho_expense_id` show as "Pushed"
+- ✅ Backward compatible: Old expenses still have correct Zoho IDs
+- ⚠️ **User Training**: Accountants must now manually push from Reports page
+
+### Testing Required
+- [ ] Push Haute Brands expense from Reports page
+- [ ] Push Boomin Brands expense from Reports page
+- [ ] Verify "Pushed" state persists after refresh
+- [ ] Verify cannot push same expense twice
+- [ ] Verify entity assignment no longer auto-pushes
+- [ ] Verify receipt uploads with manual push
+
+### Files Modified
+
+**Backend:**
+- `backend/src/routes/expenses.ts`: New endpoint + removed auto-push
+- `backend/package.json`: 2.6.27 → 2.6.28
+
+**Frontend:**
+- `src/components/reports/DetailedReport.tsx`: Added push button column
+- `src/utils/api.ts`: Added `pushToZoho()` method
+- `package.json`: 0.35.30 → 0.35.31
+
+### Deployment
+- ✅ Backend v2.6.28 deployed to Container 201
+- ✅ Frontend v0.35.31 deployed to Container 202
+- ✅ Both production entities (Haute Brands, Boomin Brands) operational
+
+---
+
 ## [0.35.26 / Backend 2.6.26] - 2025-10-13 - 🏢 Boomin Brands Entity Added
 
 ### Added

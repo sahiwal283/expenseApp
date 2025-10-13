@@ -58,6 +58,9 @@ export const api = {
   assignEntity: (id: string, payload: { zoho_entity: string }) =>
     apiClient.patch(`/expenses/${id}/entity`, payload),
   
+  pushToZoho: (id: string) =>
+    apiClient.post(`/expenses/${id}/push-to-zoho`, {}),
+  
   setExpenseReimbursement: (id: string, payload: { reimbursement_status: 'pending review' | 'approved' | 'rejected' | 'paid' }) =>
     apiClient.patch(`/expenses/${id}/reimbursement`, payload),
   

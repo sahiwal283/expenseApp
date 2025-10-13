@@ -582,7 +582,7 @@ router.patch('/:id/review', authorize('admin', 'accountant'), async (req: AuthRe
   }
 });
 
-// Assign Zoho entity (accountant only)
+// Assign Zoho entity (accountant only) - NO AUTO-PUSH
 router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -601,67 +601,112 @@ router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRe
     }
 
     const expense = result.rows[0];
-
-    // ========== ZOHO BOOKS MULTI-ACCOUNT INTEGRATION ==========
-    // Submit to Zoho Books if entity has a configured account (real or mock)
-    if (zoho_entity && zohoMultiAccountService.isConfiguredForEntity(zoho_entity)) {
-      try {
-        console.log(`[Zoho] Entity "${zoho_entity}" assigned to expense ${id}, submitting to Zoho Books...`);
-
-        // Get user and event details for Zoho submission
-        const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
-        const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
-        
-        const userName = userResult.rows[0]?.name || 'Unknown User';
-        const eventName = eventResult.rows[0]?.name || undefined;
-
-        // Prepare receipt file path (if exists)
-        let receiptPath = undefined;
-        if (expense.receipt_url) {
-          const uploadDir = process.env.UPLOAD_DIR || 'uploads';
-          receiptPath = path.join(uploadDir, path.basename(expense.receipt_url));
-        }
-
-        // Submit to Zoho Books asynchronously (don't block response)
-        zohoMultiAccountService.createExpense(zoho_entity, {
-          expenseId: expense.id,
-          date: expense.date,
-          amount: parseFloat(expense.amount),
-          category: expense.category,
-          merchant: expense.merchant,
-          description: expense.description || undefined,
-          userName: userName,
-          eventName: eventName,
-          receiptPath: receiptPath,
-          reimbursementRequired: expense.reimbursement_required,
-        }).then((zohoResult) => {
-          if (zohoResult.success) {
-            const mode = zohoResult.mock ? 'MOCK' : 'REAL';
-            console.log(`[Zoho:${mode}] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
-            
-            // Store Zoho expense ID in database (even for mock IDs for testing)
-            if (zohoResult.zohoExpenseId) {
-              query('UPDATE expenses SET zoho_expense_id = $1 WHERE id = $2', [zohoResult.zohoExpenseId, expense.id])
-                .catch(err => console.error('[Zoho] Failed to store Zoho expense ID:', err));
-            }
-          } else {
-            console.warn(`[Zoho] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
-          }
-        }).catch(error => {
-          console.error(`[Zoho] Error submitting expense ${expense.id}:`, error);
-        });
-      } catch (error) {
-        // Log but don't fail the request - entity was assigned successfully
-        console.error('[Zoho] Error preparing Zoho Books submission:', error);
-      }
-    } else if (zoho_entity) {
-      console.log(`[Zoho] Entity "${zoho_entity}" assigned, but no Zoho account configured (skipping sync)`);
-    }
+    console.log(`[Entity Assignment] Entity "${zoho_entity}" assigned to expense ${id} (manual push required)`);
 
     res.json(normalizeExpense(expense));
   } catch (error) {
     console.error('Error assigning entity:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Manual push to Zoho Books (accountant/admin only)
+router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get expense with full details
+    const result = await query(
+      `SELECT * FROM expenses WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+
+    const expense = result.rows[0];
+
+    // Check if already pushed to Zoho
+    if (expense.zoho_expense_id) {
+      return res.status(400).json({ 
+        error: 'Expense already pushed to Zoho Books',
+        zoho_expense_id: expense.zoho_expense_id
+      });
+    }
+
+    // Check if entity is assigned
+    if (!expense.zoho_entity) {
+      return res.status(400).json({ 
+        error: 'No entity assigned to this expense. Please assign an entity first.'
+      });
+    }
+
+    // Check if entity has Zoho configuration
+    if (!zohoMultiAccountService.isConfiguredForEntity(expense.zoho_entity)) {
+      return res.status(400).json({ 
+        error: `Entity "${expense.zoho_entity}" does not have Zoho Books integration configured`
+      });
+    }
+
+    // Get user and event details for Zoho submission
+    const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
+    const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+    
+    const userName = userResult.rows[0]?.name || 'Unknown User';
+    const eventName = eventResult.rows[0]?.name || undefined;
+
+    // Prepare receipt file path (if exists)
+    let receiptPath = undefined;
+    if (expense.receipt_url) {
+      const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+      receiptPath = path.join(uploadDir, path.basename(expense.receipt_url));
+    }
+
+    console.log(`[Zoho:ManualPush] Pushing expense ${id} to ${expense.zoho_entity} Zoho Books...`);
+
+    // Submit to Zoho Books synchronously (wait for response)
+    const zohoResult = await zohoMultiAccountService.createExpense(expense.zoho_entity, {
+      expenseId: expense.id,
+      date: expense.date,
+      amount: parseFloat(expense.amount),
+      category: expense.category,
+      merchant: expense.merchant,
+      description: expense.description || undefined,
+      userName: userName,
+      eventName: eventName,
+      receiptPath: receiptPath,
+      reimbursementRequired: expense.reimbursement_required,
+    });
+
+    if (zohoResult.success) {
+      const mode = zohoResult.mock ? 'MOCK' : 'REAL';
+      console.log(`[Zoho:ManualPush:${mode}] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
+      
+      // Store Zoho expense ID in database
+      if (zohoResult.zohoExpenseId) {
+        await query('UPDATE expenses SET zoho_expense_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', 
+          [zohoResult.zohoExpenseId, expense.id]
+        );
+      }
+
+      // Return updated expense
+      const updatedResult = await query('SELECT * FROM expenses WHERE id = $1', [id]);
+      return res.json({
+        success: true,
+        message: `Expense pushed to ${expense.zoho_entity} Zoho Books successfully`,
+        zoho_expense_id: zohoResult.zohoExpenseId,
+        expense: normalizeExpense(updatedResult.rows[0])
+      });
+    } else {
+      console.error(`[Zoho:ManualPush] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
+      return res.status(500).json({ 
+        error: `Failed to push to Zoho Books: ${zohoResult.error}`
+      });
+    }
+  } catch (error) {
+    console.error('[Zoho:ManualPush] Error pushing expense to Zoho:', error);
+    res.status(500).json({ error: 'Internal server error while pushing to Zoho Books' });
   }
 });
 
