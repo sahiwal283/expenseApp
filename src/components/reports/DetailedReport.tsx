@@ -254,18 +254,18 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       ) : pushingExpenseId === expense.id ? (
                         <button
                           disabled
-                          className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded border border-blue-200 cursor-not-allowed"
+                          className="flex items-center space-x-2 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-400 to-blue-500 rounded-lg shadow-sm cursor-not-allowed opacity-75"
                         >
-                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin" />
                           <span>Pushing...</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handlePushToZoho(expense)}
-                          className="flex items-center space-x-1 px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                          className="flex items-center space-x-2 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                           title={`Push to ${expense.zohoEntity} Zoho Books`}
                         >
-                          <Upload className="w-3 h-3" />
+                          <Upload className="w-4 h-4" />
                           <span>Push to Zoho</span>
                         </button>
                       )}
