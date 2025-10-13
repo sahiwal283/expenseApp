@@ -13,6 +13,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResults, setOcrResults] = useState<any>(null);
+  const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -186,11 +187,23 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             {/* Image Preview */}
             <div className="flex justify-center">
               <div className="relative max-w-md">
-                <img
-                  src={uploadedImage}
-                  alt="Uploaded receipt"
-                  className="w-full h-auto rounded-lg shadow-md"
-                />
+                <div 
+                  onClick={() => !processing && setShowFullImage(true)}
+                  className="cursor-pointer group relative"
+                >
+                  <img
+                    src={uploadedImage}
+                    alt="Uploaded receipt"
+                    className="w-full h-auto rounded-lg shadow-md group-hover:shadow-xl transition-shadow"
+                  />
+                  {!processing && (
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all flex items-center justify-center">
+                      <div className="bg-white bg-opacity-90 px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-sm font-medium text-gray-900">Click to view full size</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {processing && (
                   <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
                     <div className="text-center">
@@ -284,6 +297,30 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
           </div>
         )}
       </div>
+
+      {/* Full Image Modal */}
+      {showFullImage && uploadedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowFullImage(false)}
+        >
+          <button
+            onClick={() => setShowFullImage(false)}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+            title="Close"
+          >
+            <X className="w-6 h-6 text-gray-900" />
+          </button>
+          <div className="max-w-5xl max-h-[90vh] overflow-auto">
+            <img
+              src={uploadedImage}
+              alt="Receipt full size"
+              className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

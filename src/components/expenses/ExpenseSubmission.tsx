@@ -487,19 +487,24 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
       {/* Receipt Modal */}
       {receiptModalUrl && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setReceiptModalUrl(null)}>
-          <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-              <h3 className="text-lg font-semibold text-gray-900">Receipt</h3>
-              <button onClick={() => setReceiptModalUrl(null)} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6">
-              <img src={receiptModalUrl} alt="Receipt" className="max-w-md mx-auto rounded-lg shadow-lg" />
-            </div>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" 
+          onClick={() => setReceiptModalUrl(null)}
+        >
+          <button
+            onClick={() => setReceiptModalUrl(null)}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+            title="Close"
+          >
+            <X className="w-6 h-6 text-gray-900" />
+          </button>
+          <div className="max-w-5xl max-h-[90vh] overflow-auto">
+            <img
+              src={receiptModalUrl}
+              alt="Receipt full size"
+              className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
       )}
