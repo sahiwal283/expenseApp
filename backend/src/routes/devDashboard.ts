@@ -32,7 +32,7 @@ router.get('/version', async (req, res) => {
     
     res.json({
       backend: backendVersion,
-      frontend: '0.35.37', // This should match your current frontend version
+      frontend: '0.35.38', // This should match your current frontend version
       database: dbVersion.match(/\d+\.\d+/)?.[0] || 'PostgreSQL', // Extract version number
       node: process.version,
       uptime: uptime,
