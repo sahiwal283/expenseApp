@@ -31,10 +31,14 @@ router.get('/version', async (req, res) => {
     const uptime = Math.floor(uptimeResult.rows[0].uptime);
     
     res.json({
-      backend: backendVersion,
-      frontend: '0.35.38', // This should match your current frontend version
-      database: dbVersion.match(/\d+\.\d+/)?.[0] || 'PostgreSQL', // Extract version number
-      node: process.version,
+      frontend: {
+        version: '0.35.39'
+      },
+      backend: {
+        version: backendVersion,
+        nodeVersion: process.version
+      },
+      database: dbVersion.match(/\d+\.\d+/)?.[0] || 'PostgreSQL',
       uptime: uptime,
       environment: process.env.NODE_ENV || 'development'
     });
@@ -192,13 +196,28 @@ router.get('/metrics', async (req, res) => {
     `);
     
     res.json({
-      expenseTrends: expenseTrendsResult.rows,
-      categoryBreakdown: categoryResult.rows,
-      userActivity: userActivityResult.rows,
+      system: {
+        memory: {
+          usagePercent: 0, // Placeholder - would need OS-level access
+          usedGB: 0,
+          totalGB: 0
+        },
+        cpu: {
+          loadAverage: [0, 0, 0], // Placeholder
+          cores: 4 // Placeholder
+        }
+      },
       database: {
         size: dbSizeResult.rows[0].size,
-        connections: parseInt(connectionResult.rows[0].count),
-        maxConnections: 100 // Default PostgreSQL max
+        activeConnections: parseInt(connectionResult.rows[0].count),
+        totalConnections: 100 // Default PostgreSQL max
+      },
+      expenses: {
+        trends: expenseTrendsResult.rows,
+        categoryBreakdown: categoryResult.rows
+      },
+      users: {
+        activity: userActivityResult.rows
       },
       timeRange: timeRange
     });
@@ -389,7 +408,11 @@ router.get('/alerts', async (req, res) => {
         id: 'alert-pending',
         severity: 'warning',
         status: 'active',
+        title: 'High Pending Expenses',
+        description: `${pendingCount} expenses are pending approval. Consider reviewing and approving them to keep operations running smoothly.`,
         message: `${pendingCount} expenses pending approval`,
+        metric_value: pendingCount.toString(),
+        threshold_value: '10',
         timestamp: new Date().toISOString(),
         acknowledged: false
       });
@@ -410,7 +433,10 @@ router.get('/alerts', async (req, res) => {
         id: 'alert-zoho',
         severity: 'warning',
         status: 'active',
+        title: 'Zoho Books Sync Pending',
+        description: `${notPushedCount} approved expenses have not been pushed to Zoho Books yet. Use the "Push to Zoho" button on the Reports page to sync them.`,
         message: `${notPushedCount} approved expenses not yet pushed to Zoho`,
+        metric_value: notPushedCount.toString(),
         timestamp: new Date().toISOString(),
         acknowledged: false
       });
@@ -427,7 +453,11 @@ router.get('/alerts', async (req, res) => {
         id: 'alert-receipts',
         severity: 'info',
         status: 'active',
+        title: 'Missing Receipt Images',
+        description: `${noReceiptCount} expenses are missing receipt images. Remind users to upload receipts for proper documentation and compliance.`,
         message: `${noReceiptCount} expenses without receipts`,
+        metric_value: noReceiptCount.toString(),
+        threshold_value: '5',
         timestamp: new Date().toISOString(),
         acknowledged: false
       });
@@ -439,16 +469,10 @@ router.get('/alerts', async (req, res) => {
         id: 'alert-healthy',
         severity: 'success',
         status: 'active',
+        title: 'All Systems Operational',
+        description: 'All expense management systems are running smoothly. No pending approvals, all Zoho syncs complete, and receipts are properly attached.',
         message: 'All systems operational',
         timestamp: new Date().toISOString(),
-        timestampFormatted: new Date().toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
         acknowledged: false
       });
     }
