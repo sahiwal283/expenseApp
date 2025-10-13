@@ -32,7 +32,7 @@ router.get('/version', async (req, res) => {
     
     res.json({
       frontend: {
-        version: '0.35.39'
+        version: '0.35.40'
       },
       backend: {
         version: backendVersion,
@@ -375,14 +375,15 @@ router.get('/api-analytics', async (req, res) => {
       avg_response_time: Math.round(avgResponseTime * 1000),
       error_rate: 0,
       success_rate: 100,
-      endpoints: endpointStats.rows.map(row => ({
+      endpointStats: endpointStats.rows.map(row => ({
         endpoint: row.endpoint,
         method: 'POST',
         call_count: parseInt(row.calls),
         avg_response_time: Math.round(parseFloat(row.avg_response_time) * 1000), // Convert to ms
         max_response_time: Math.round(parseFloat(row.avg_response_time) * 1500), // Estimate max as 1.5x avg
         error_count: parseInt(row.errors)
-      }))
+      })),
+      slowestEndpoints: [] // Placeholder
     });
   } catch (error) {
     console.error('API analytics endpoint error:', error);
@@ -534,12 +535,12 @@ router.get('/page-analytics', async (req, res) => {
       unique_visitors: uniqueUsers,
       avg_session_duration: '5m 30s',
       bounce_rate: '15%',
-      top_pages: [
-        { page: '/expenses', views: Math.round(totalActions * 1.5), unique_users: uniqueUsers, avg_duration: '3m 20s' },
-        { page: '/dashboard', views: Math.round(totalActions * 1.2), unique_users: uniqueUsers, avg_duration: '2m 10s' },
-        { page: '/reports', views: Math.round(totalActions * 0.8), unique_users: Math.round(uniqueUsers * 0.8), avg_duration: '4m 50s' },
-        { page: '/events', views: Math.round(totalActions * 0.5), unique_users: Math.round(uniqueUsers * 0.6), avg_duration: '2m 30s' },
-        { page: '/settings', views: Math.round(totalActions * 0.3), unique_users: Math.round(uniqueUsers * 0.4), avg_duration: '1m 45s' }
+      pageStats: [
+        { page_title: 'Expenses', page_path: '/expenses', view_count: Math.round(totalActions * 1.5), unique_users: uniqueUsers, avg_duration: '200' },
+        { page_title: 'Dashboard', page_path: '/dashboard', view_count: Math.round(totalActions * 1.2), unique_users: uniqueUsers, avg_duration: '130' },
+        { page_title: 'Reports', page_path: '/reports', view_count: Math.round(totalActions * 0.8), unique_users: Math.round(uniqueUsers * 0.8), avg_duration: '290' },
+        { page_title: 'Events', page_path: '/events', view_count: Math.round(totalActions * 0.5), unique_users: Math.round(uniqueUsers * 0.6), avg_duration: '150' },
+        { page_title: 'Settings', page_path: '/settings', view_count: Math.round(totalActions * 0.3), unique_users: Math.round(uniqueUsers * 0.4), avg_duration: '105' }
       ]
     });
   } catch (error) {
