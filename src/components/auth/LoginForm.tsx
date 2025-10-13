@@ -39,16 +39,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     { username: 'accountant', password: 'sandbox123', role: 'Accountant' }
   ];
 
-  // Production accounts
-  const productionUsers = [
-    { username: 'admin', password: 'admin', role: 'Administrator' },
-    { username: 'sarah', password: 'password123', role: 'Coordinator' },
-    { username: 'mike', password: 'password123', role: 'Salesperson' },
-    { username: 'lisa', password: 'password123', role: 'Accountant' }
-  ];
+  // Production accounts - credentials not displayed for security
+  const productionUsers: { username: string; password: string; role: string; }[] = [];
 
   const displayUsers = isSandbox ? sandboxUsers : productionUsers;
-  const passwordHint = isSandbox ? 'sandbox123' : 'admin / password123';
+  const passwordHint = isSandbox ? 'sandbox123' : 'Use your assigned credentials';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4">
@@ -120,31 +115,33 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">
-              {isSandbox ? 'Sandbox Test Accounts:' : 'Production Accounts:'}
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              {displayUsers.map((user, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setUsername(user.username);
-                    setPassword(user.password);
-                  }}
-                  className="text-left p-3 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-semibold">{user.username}</span>
-                      <span className="text-gray-500 ml-2">({user.role})</span>
+          {displayUsers.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                {isSandbox ? 'Sandbox Test Accounts:' : 'Production Accounts:'}
+              </h3>
+              <div className="grid grid-cols-1 gap-2">
+                {displayUsers.map((user, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setUsername(user.username);
+                      setPassword(user.password);
+                    }}
+                    className="text-left p-3 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-semibold">{user.username}</span>
+                        <span className="text-gray-500 ml-2">({user.role})</span>
+                      </div>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{user.password}</span>
                     </div>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{user.password}</span>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
