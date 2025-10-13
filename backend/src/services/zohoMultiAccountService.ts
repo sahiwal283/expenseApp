@@ -272,12 +272,11 @@ class ZohoAccountHandler {
           : expenseData.eventName;
       }
 
-      // Use account IDs if provided (more reliable), otherwise fall back to names
-      const expenseAccountId = process.env.ZOHO_EXPENSE_ACCOUNT_ID;
-      const paidThroughAccountId = process.env.ZOHO_PAID_THROUGH_ACCOUNT_ID;
+      // Use account IDs if provided in config (more reliable), otherwise fall back to names
+      const expenseAccountId = this.config.expenseAccountId;
+      const paidThroughAccountId = this.config.paidThroughAccountId;
       
-      console.log(`[Zoho:${entityLabel}] ENV CHECK - Expense Account ID: ${expenseAccountId || 'NOT SET'}`);
-      console.log(`[Zoho:${entityLabel}] ENV CHECK - Paid Through Account ID: ${paidThroughAccountId || 'NOT SET'}`);
+      console.log(`[Zoho:${entityLabel}] Entity-specific Account IDs - Expense: ${expenseAccountId || 'NOT SET'}, Paid Through: ${paidThroughAccountId || 'NOT SET'}`);
 
       if (expenseAccountId) {
         expensePayload.account_id = expenseAccountId;

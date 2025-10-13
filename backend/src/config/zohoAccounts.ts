@@ -17,6 +17,8 @@ export interface ZohoAccountConfig {
   organizationName: string;
   expenseAccountName: string;
   paidThroughAccountName: string;
+  expenseAccountId?: string; // Account ID for more reliable API calls
+  paidThroughAccountId?: string; // Paid through account ID
   apiBaseUrl?: string;
   accountsBaseUrl?: string;
 }
@@ -41,6 +43,8 @@ export function loadZohoAccountsConfig(): Map<string, ZohoAccountConfig> {
       organizationName: process.env.ZOHO_HAUTE_ORG_NAME || 'Haute Brands',
       expenseAccountName: process.env.ZOHO_EXPENSE_ACCOUNT_NAME || process.env.ZOHO_HAUTE_EXPENSE_ACCOUNT || 'Travel Expenses',
       paidThroughAccountName: process.env.ZOHO_PAID_THROUGH_ACCOUNT || process.env.ZOHO_HAUTE_PAID_THROUGH || 'Petty Cash',
+      expenseAccountId: process.env.ZOHO_EXPENSE_ACCOUNT_ID || process.env.ZOHO_HAUTE_EXPENSE_ACCOUNT_ID,
+      paidThroughAccountId: process.env.ZOHO_PAID_THROUGH_ACCOUNT_ID || process.env.ZOHO_HAUTE_PAID_THROUGH_ACCOUNT_ID,
       apiBaseUrl: process.env.ZOHO_API_BASE_URL || 'https://www.zohoapis.com/books/v3',
       accountsBaseUrl: process.env.ZOHO_ACCOUNTS_BASE_URL || 'https://accounts.zoho.com/oauth/v2',
     };
@@ -64,6 +68,8 @@ export function loadZohoAccountsConfig(): Map<string, ZohoAccountConfig> {
       organizationName: process.env.ZOHO_BOOMIN_ORG_NAME || 'Boomin Brands',
       expenseAccountName: process.env.ZOHO_BOOMIN_EXPENSE_ACCOUNT || 'Trade Shows',
       paidThroughAccountName: process.env.ZOHO_BOOMIN_PAID_THROUGH || 'Business Checking Plus',
+      expenseAccountId: process.env.ZOHO_BOOMIN_EXPENSE_ACCOUNT_ID,
+      paidThroughAccountId: process.env.ZOHO_BOOMIN_PAID_THROUGH_ACCOUNT_ID,
       apiBaseUrl: process.env.ZOHO_API_BASE_URL || 'https://www.zohoapis.com/books/v3',
       accountsBaseUrl: process.env.ZOHO_ACCOUNTS_BASE_URL || 'https://accounts.zoho.com/oauth/v2',
     };
