@@ -137,6 +137,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
   };
 
   const isPendingUser = (user: User) => {
+    // Check registration_pending flag first (most reliable)
+    if (user.registration_pending === true) {
+      return true;
+    }
+    // Fallback: check if role is null/empty
     return !user.role || user.role === null || user.role === '';
   };
 

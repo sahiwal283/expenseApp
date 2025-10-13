@@ -8,8 +8,10 @@ export interface User {
   name: string;
   username: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
   avatar?: string;
+  registration_pending?: boolean;
+  registration_date?: string;
 }
 
 export interface TradeShow {

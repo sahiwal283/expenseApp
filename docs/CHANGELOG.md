@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Backend 2.7.2 / Frontend 0.36.2] - 2025-10-13 - CRITICAL FIX: User Approval Workflow
+
+### 🐛 Critical Bug Fix
+
+**The Problem:**
+- Users registered with `role = NULL` in database ✅ (backend correct)
+- BUT the API wasn't sending `registration_pending` field to frontend ❌
+- Frontend couldn't detect pending users, always showed them as "Active"
+- Pending users showed as "Sales Person" (the default in getRoleLabel)
+- **Entire approval workflow was non-functional**
+
+**Root Cause:**
+- `GET /api/users` query didn't include `registration_pending` or `registration_date` columns
+- Frontend `isPendingUser()` could only check role, which is NULL for both:
+  - Newly registered users (pending approval) ← should show pending
+  - Old users from before migration (shouldn't exist in prod)
+- Without `registration_pending` flag, frontend couldn't distinguish
+
+**The Fix:**
+
+**Backend Changes:**
+✅ `backend/src/routes/users.ts`:
+- Added `registration_pending, registration_date` to GET all users query
+- Added `registration_pending, registration_date` to GET user by ID query
+- Now sends complete user data to frontend
+
+**Frontend Changes:**
+✅ `src/App.tsx` & `src/types/types.ts`:
+- Updated `User` interface:
+  - `role: UserRole | null` (allow null)
+  - `registration_pending?: boolean` (NEW)
+  - `registration_date?: string` (NEW)
+
+✅ `src/components/admin/UserManagement.tsx`:
+- Updated `isPendingUser()` to check `registration_pending` flag FIRST
+- Fallback to role null check for edge cases
+- Now correctly identifies pending vs active users
+
+**Result:**
+✅ Pending users now show "Pending Role" badge (yellow)
+✅ Status shows "⚠️ Awaiting Activation" (yellow)
+✅ "Activate User" button appears for pending users
+✅ Active users show normal role badges
+✅ Approval workflow fully functional
+
+**Testing:**
+- Existing "demo" user should now show as "Pending Role" + "Awaiting Activation"
+- Admin can click "Activate User" to assign role
+- After activation, user can log in
+
+### 📦 Versions
+- Backend: 2.7.1 → 2.7.2
+- Frontend: 0.36.1 → 0.36.2
+
+---
+
 ## [Frontend 0.36.1] - 2025-10-13 - UX: One-Click User Activation
 
 ### 🎨 User Experience Improvements
