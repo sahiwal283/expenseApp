@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../config/database';
 import { authenticateToken } from '../middleware/auth';
 import pkg from '../../package.json';
+import frontendPkg from '../../../package.json';
 
 const router = express.Router();
 
@@ -17,8 +18,9 @@ router.use((req: any, res, next) => {
 // GET /api/dev-dashboard/version
 router.get('/version', async (req, res) => {
   try {
-    // Get backend version from package.json
+    // Get versions from package.json files
     const backendVersion = pkg.version;
+    const frontendVersion = frontendPkg.version;
     
     // Get database info
     const dbResult = await pool.query('SELECT version()');
@@ -32,7 +34,7 @@ router.get('/version', async (req, res) => {
     
     res.json({
       frontend: {
-        version: '0.37.0'
+        version: frontendVersion
       },
       backend: {
         version: backendVersion,
