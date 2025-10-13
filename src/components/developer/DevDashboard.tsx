@@ -704,6 +704,24 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
           {/* Alerts Tab */}
           {activeTab === 'alerts' && (
             <div className="space-y-4">
+              {/* Info Banner */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-1">Real-Time System Alerts</h4>
+                    <p className="text-sm text-blue-800">
+                      These alerts are generated automatically based on current system conditions. They will clear automatically when you resolve the underlying issue:
+                    </p>
+                    <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
+                      <li><strong>Pending Expenses:</strong> Approve expenses on the Approvals page</li>
+                      <li><strong>Zoho Books Sync:</strong> Use "Push to Zoho" button on Reports page</li>
+                      <li><strong>Missing Receipts:</strong> Upload receipts when creating/editing expenses</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               {/* Alert Filter */}
               <div className="flex items-center space-x-3">
                 <select
@@ -754,29 +772,8 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                             {new Date(alert.created_at).toLocaleString()}
                           </p>
                         </div>
-                        {alert.status === 'active' && (
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={async () => {
-                                await api.devDashboard.acknowledgeAlert(alert.id);
-                                loadDashboardData();
-                              }}
-                              className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                            >
-                              Acknowledge
-                            </button>
-                            <button
-                              onClick={async () => {
-                                await api.devDashboard.resolveAlert(alert.id);
-                                loadDashboardData();
-                              }}
-                              className="px-3 py-1.5 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600"
-                            >
-                              Resolve
-                            </button>
-                          </div>
-                        )}
                       </div>
+                      {/* Note: These alerts are dynamic and will automatically clear when the underlying issue is resolved */}
                     </div>
                   ))
                 )}
