@@ -12,8 +12,12 @@ async function seedDatabase() {
       process.exit(0);
     }
 
-    // Hash password for demo users
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    // Use sandbox123 for development/sandbox, password123 for production
+    const isSandbox = process.env.NODE_ENV === 'development' || process.env.DB_NAME?.includes('sandbox');
+    const defaultPassword = isSandbox ? 'sandbox123' : 'password123';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    
+    console.log(`Using default password: ${defaultPassword} (Environment: ${process.env.NODE_ENV || 'not set'})`);
 
     // Create demo users
     const users = [
@@ -63,10 +67,10 @@ async function seedDatabase() {
 
     console.log('Database seeded successfully!');
     console.log('Demo users created:');
-    console.log('  - admin / password123 (Admin)');
-    console.log('  - sarah / password123 (Coordinator)');
-    console.log('  - mike / password123 (Salesperson)');
-    console.log('  - lisa / password123 (Accountant)');
+    console.log(`  - admin / ${defaultPassword} (Admin)`);
+    console.log(`  - sarah / ${defaultPassword} (Coordinator)`);
+    console.log(`  - mike / ${defaultPassword} (Salesperson)`);
+    console.log(`  - lisa / ${defaultPassword} (Accountant)`);
     
     process.exit(0);
   } catch (error) {
