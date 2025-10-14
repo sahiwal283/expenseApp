@@ -386,7 +386,8 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
       description,
       card_used,
       reimbursement_required,
-      location
+      location,
+      zoho_entity
     } = req.body;
 
     if (!event_id || !category || !merchant || !amount || !date) {
@@ -411,11 +412,15 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
       console.log(`Receipt OCR completed with ${(ocrConfidence * 100).toFixed(2)}% confidence`);
     }
 
+    // Set default zoho_entity to 'haute' if not provided
+    // This ensures the "Push to Zoho" button will be visible in the UI
+    const defaultZohoEntity = zoho_entity || 'haute';
+
     const result = await query(
       `INSERT INTO expenses (
         event_id, user_id, category, merchant, amount, date, description, 
-        card_used, reimbursement_required, receipt_url, ocr_text, location, extracted_data
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+        card_used, reimbursement_required, receipt_url, ocr_text, location, extracted_data, zoho_entity
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
       RETURNING *`,
       [
         event_id,
@@ -430,7 +435,8 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
         receiptUrl,
         ocrText,
         location,
-        extractedData ? JSON.stringify(extractedData) : null
+        extractedData ? JSON.stringify(extractedData) : null,
+        defaultZohoEntity
       ]
     );
 
@@ -438,9 +444,9 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
 
     // ========== ZOHO BOOKS INTEGRATION ==========
     // Note: Expenses are NOT submitted to Zoho Books at creation time.
-    // They are submitted when the entity is assigned to "haute" via the PATCH /:id/entity endpoint.
-    // This ensures only "haute" entity expenses are synced to Zoho Books.
-    console.log('[Zoho] Expense created. Will sync to Zoho Books when entity is assigned to "haute".');
+    // They are submitted manually via the "Push to Zoho" button in the Reports page.
+    // Entity can be changed later via the PATCH /:id/entity endpoint.
+    console.log(`[Zoho] Expense created with entity: ${defaultZohoEntity}. Ready for manual push to Zoho Books.`);
 
     res.status(201).json(normalizeExpense(expense));
   } catch (error) {

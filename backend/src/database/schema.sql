@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson')),
+  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson', 'pending')),
+  registration_ip VARCHAR(45),
+  registration_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -79,3 +81,4 @@ CREATE INDEX IF NOT EXISTS idx_expenses_status ON expenses(status);
 CREATE INDEX IF NOT EXISTS idx_events_coordinator_id ON events(coordinator_id);
 CREATE INDEX IF NOT EXISTS idx_event_participants_event_id ON event_participants(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_participants_user_id ON event_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_pending ON users(role) WHERE role = 'pending';
