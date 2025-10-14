@@ -233,6 +233,14 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <p className="font-semibold">Error Loading Events</p>
+          <p className="text-sm mt-1">{loadError}</p>
+          <p className="text-xs mt-2 text-red-600">Check browser console (F12) for more details</p>
+        </div>
+      )}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-gray-900">
