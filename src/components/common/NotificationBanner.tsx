@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Wifi, WifiOff, Loader } from 'lucide-react';
+import { generateUUID } from '../../utils/uuid';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -204,7 +205,7 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const addNotification = (notification: Omit<Notification, 'id'>) => {
-    const id = crypto.randomUUID();
+    const id = generateUUID();
     const newNotification: Notification = {
       id,
       ...notification

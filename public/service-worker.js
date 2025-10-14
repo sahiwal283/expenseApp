@@ -1,8 +1,10 @@
 // ExpenseApp Service Worker
-// Version: 1.0.12 - SYNC BAR AUTO-HIDE FIX
+// Version: 1.0.13 - UUID POLYFILL FIX
 // Date: October 14, 2025
 // 
-// Changes from v1.0.11:
+// Changes from v1.0.12:
+// - Added UUID polyfill for crypto.randomUUID() compatibility
+// - Fixes "crypto.randomUUID is not a function" error in older browsers
 // - Fixed sync status bar to auto-hide after 10 seconds when synced
 // - Bar no longer shows on initial page load if everything is synced
 // - Fixed auto-logout on token expiration
@@ -14,8 +16,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.12';  // BUMPED VERSION for sync bar fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.12';
+const CACHE_NAME = 'expenseapp-v1.0.13';  // BUMPED VERSION for UUID polyfill
+const STATIC_CACHE = 'expenseapp-static-v1.0.13';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -25,7 +27,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.12...');
+  console.log('[ServiceWorker] Installing v1.0.13...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -116,7 +118,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.12...');
+  console.log('[ServiceWorker] Activating v1.0.13...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -130,7 +132,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.12 activated and ready!');
+      console.log('[ServiceWorker] v1.0.13 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

@@ -8,6 +8,7 @@
  */
 
 import Dexie, { Table } from 'dexie';
+import { generateUUID } from './uuid';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -89,7 +90,7 @@ export class OfflineDatabase extends Dexie {
    */
   async addToQueue(item: Omit<SyncQueueItem, 'id' | 'retryCount' | 'timestamp' | 'status'>): Promise<string> {
     const queueItem: SyncQueueItem = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: Date.now(),
       retryCount: 0,
       status: 'pending',
@@ -270,7 +271,7 @@ export class OfflineDatabase extends Dexie {
     
     if (!deviceId) {
       // Generate a new device ID
-      deviceId = `device-${crypto.randomUUID()}`;
+      deviceId = `device-${generateUUID()}`;
       await this.setMetadata('deviceId', deviceId);
       console.log('[OfflineDB] Generated new device ID:', deviceId);
     }

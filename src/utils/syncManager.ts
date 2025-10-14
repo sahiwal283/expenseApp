@@ -8,6 +8,7 @@
 import { offlineDb, SyncQueueItem } from './offlineDb';
 import { networkMonitor } from './networkDetection';
 import * as api from './api';
+import { generateUUID } from './uuid';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -81,7 +82,7 @@ export class SyncManager {
   ): Promise<string> {
     const userId = this.getCurrentUserId();
     const deviceId = await offlineDb.getDeviceId();
-    const idempotencyKey = crypto.randomUUID();
+    const idempotencyKey = generateUUID();
 
     const queueId = await offlineDb.addToQueue({
       action,
