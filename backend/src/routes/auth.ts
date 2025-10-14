@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
-      { expiresIn: '24h' }
+      { expiresIn: '20m' } // 20 minutes - aligns with 15min inactivity + 5min buffer
     );
 
     res.json({
@@ -178,6 +178,56 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Username or email already exists' });
     }
     console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Token refresh endpoint
+router.post('/refresh', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+
+    // Verify current token (even if expired, we'll still check it's valid)
+    try {
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
+        { ignoreExpiration: true } // Allow expired tokens for refresh
+      ) as any;
+
+      // Get fresh user data from database
+      const result = await query(
+        'SELECT id, username, role FROM users WHERE id = $1',
+        [decoded.id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      const user = result.rows[0];
+
+      // Issue new token
+      const newToken = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
+        { expiresIn: '20m' }
+      );
+
+      console.log(`[Auth] Token refreshed for user: ${user.username}`);
+
+      res.json({ token: newToken });
+    } catch (jwtError) {
+      console.error('[Auth] Token refresh failed - invalid token:', jwtError);
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+  } catch (error) {
+    console.error('[Auth] Token refresh error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
