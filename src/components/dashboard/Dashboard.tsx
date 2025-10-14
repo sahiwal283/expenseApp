@@ -24,19 +24,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
     let mounted = true;
     (async () => {
       if (api.USE_SERVER) {
+        console.log('[Dashboard] Loading data...');
+        
+        // Fetch expenses (critical for dashboard stats)
         try {
-          const [ev, ex, us] = await Promise.all([
-            api.getEvents(),
-            api.getExpenses(),
-            api.getUsers(),
-          ]);
+          const ex = await api.getExpenses();
           if (mounted) {
-            setEvents(ev || []);
+            console.log('[Dashboard] Loaded expenses:', ex?.length || 0);
             setExpenses(ex || []);
+          }
+        } catch (error) {
+          console.error('[Dashboard] Error loading expenses:', error);
+          if (mounted) setExpenses([]);
+        }
+
+        // Fetch events (critical for dashboard)
+        try {
+          const ev = await api.getEvents();
+          if (mounted) {
+            console.log('[Dashboard] Loaded events:', ev?.length || 0);
+            setEvents(ev || []);
+          }
+        } catch (error) {
+          console.error('[Dashboard] Error loading events:', error);
+          if (mounted) setEvents([]);
+        }
+
+        // Fetch users (non-critical)
+        try {
+          const us = await api.getUsers();
+          if (mounted) {
+            console.log('[Dashboard] Loaded users:', us?.length || 0);
             setUsers(us || []);
           }
-        } catch {
-          // graceful fallback to empty
+        } catch (error) {
+          console.error('[Dashboard] Error loading users (non-critical):', error);
+          if (mounted) setUsers([]);
         }
       }
     })();
