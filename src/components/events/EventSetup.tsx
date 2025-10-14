@@ -218,8 +218,16 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   // Filter events based on user role and permissions
   const filteredEvents = events.filter(event => {
-    // Admin and coordinator can see all events
-    if (user.role === 'admin' || user.role === 'coordinator') {
+    // Admin can see all events for transparency, with filter option
+    if (user.role === 'admin') {
+      if (filterMode === 'all') {
+        return true; // Show all events
+      }
+      // Show only events they're assigned to
+      return event.participants.some(p => p.id === user.id);
+    }
+    // Coordinator can see all events (no filter needed, they manage everything)
+    if (user.role === 'coordinator') {
       return true;
     }
     // Accountant can see all events for transparency, but can filter to "My Events"
@@ -280,14 +288,16 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-            {canManageEvents ? 'Event Management' : 'Events'}
+            {user.role === 'coordinator' ? 'Event Management' : 'Events'}
           </h1>
           <p className="text-gray-600 mt-1">
-            {canManageEvents 
+            {user.role === 'coordinator'
               ? 'Create and manage trade show events' 
-              : user.role === 'accountant'
-                ? 'View all events and participants for transparency'
-                : 'View events you are assigned to'}
+              : user.role === 'admin'
+                ? 'View all events and participants, manage settings'
+                : user.role === 'accountant'
+                  ? 'View all events and participants for transparency'
+                  : 'View events you are assigned to'}
           </p>
         </div>
         {canManageEvents && (
@@ -326,8 +336,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           </button>
         </div>
 
-        {/* Accountant Filter Toggle */}
-        {user.role === 'accountant' && (
+        {/* Admin & Accountant Filter Toggle */}
+        {(user.role === 'admin' || user.role === 'accountant') && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
             <button
               onClick={() => setFilterMode('all')}
