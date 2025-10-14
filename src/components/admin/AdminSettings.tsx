@@ -77,9 +77,21 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     (async () => {
       if (api.USE_SERVER) {
         try {
+          console.log('[AdminSettings] Fetching settings...');
           const data = await api.getSettings();
-          setSettings(data || settings);
-        } catch {
+          console.log('[AdminSettings] Received settings:', data);
+          
+          // Merge with defaults to ensure all fields exist
+          const mergedSettings = {
+            cardOptions: data?.cardOptions || settings.cardOptions,
+            entityOptions: data?.entityOptions || settings.entityOptions,
+            categoryOptions: data?.categoryOptions || settings.categoryOptions
+          };
+          
+          console.log('[AdminSettings] Merged settings:', mergedSettings);
+          setSettings(mergedSettings);
+        } catch (error) {
+          console.error('[AdminSettings] Error loading settings:', error);
           // keep defaults
         }
       } else {
