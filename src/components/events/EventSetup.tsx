@@ -662,25 +662,31 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                 </div>
               </div>
               
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <Users className="w-4 h-4" />
-                <span>{event.participants?.length || 0} participants</span>
-              </div>
-              
-              {event.participants?.length || 0 > 0 && (
-                <div className="mt-3">
-                  <div className="flex flex-wrap gap-2">
-                    {event.participants.map((participant, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-sm"
-                      >
-                        {participant.name}
-                      </span>
-                    ))}
-                  </div>
+              {/* Participants with hover popup */}
+              <div className="relative inline-block group">
+                <div className="flex items-center gap-1 text-sm text-gray-600 cursor-help">
+                  <Users className="w-4 h-4" />
+                  <span>{event.participants?.length || 0} participants</span>
                 </div>
-              )}
+                
+                {/* Popup on hover */}
+                {event.participants?.length > 0 && (
+                  <div className="absolute left-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[200px]">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Participants:</div>
+                    <div className="space-y-1">
+                      {event.participants.map((participant, index) => (
+                        <div
+                          key={index}
+                          className="text-sm text-gray-600 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          {participant.name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}
