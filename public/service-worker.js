@@ -1,12 +1,13 @@
 // ExpenseApp Service Worker
-// Version: 1.0.17 - AUTO-REMOVE OLD EVENTS & DOCS CLEANUP
+// Version: 1.0.18 - NAV REORDER & CHANGELOG RECOVERY
 // Date: October 14, 2025
 // 
-// Changes from v1.0.16:
+// Changes from v1.0.17:
+// - Improved navigation order (moved Pending Sync to bottom near Settings)
+// - Recovered and merged comprehensive changelog history
 // - Events auto-remove from expense dropdown 1 month + 1 day after end date
 // - Consolidated documentation files into AI_MASTER_GUIDE.md
 // - Restored CHANGELOG.md for GitHub best practices
-// - Developer role now has access to Settings page
 // - Simplified sync bar logic - no longer shows "All Synced" message
 // - Bar ONLY shows when there's actual activity (offline, syncing, pending, failed)
 // - Removed persistent "All Synced" bar that wouldn't hide
@@ -23,8 +24,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.17';  // BUMPED VERSION for event filtering and docs cleanup
-const STATIC_CACHE = 'expenseapp-static-v1.0.17';
+const CACHE_NAME = 'expenseapp-v1.0.18';  // BUMPED VERSION for nav reorder and changelog recovery
+const STATIC_CACHE = 'expenseapp-static-v1.0.18';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -34,7 +35,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.17...');
+  console.log('[ServiceWorker] Installing v1.0.18...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -125,7 +126,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.17...');
+  console.log('[ServiceWorker] Activating v1.0.18...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -139,7 +140,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.17 activated and ready!');
+      console.log('[ServiceWorker] v1.0.18 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
