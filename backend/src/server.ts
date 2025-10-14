@@ -43,13 +43,37 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/dev-dashboard', devDashboardRoutes);
 app.use('/api/quick-actions', quickActionsRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    version: VERSION,
-    timestamp: new Date().toISOString() 
-  });
+// Health check (with database connectivity test)
+app.get('/api/health', async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    // Dynamic import to avoid circular dependency
+    const { query } = await import('./config/database');
+    await query('SELECT 1');
+    
+    const responseTime = Date.now() - startTime;
+    
+    res.json({
+      status: 'ok',
+      version: VERSION,
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      responseTime: `${responseTime}ms`,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error: any) {
+    console.error('[Health] Health check failed:', error);
+    
+    res.status(503).json({
+      status: 'error',
+      version: VERSION,
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: 'Database connection failed',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  }
 });
 
 // Error handling (must be after routes)
