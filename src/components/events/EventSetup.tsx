@@ -14,6 +14,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TradeShow | null>(null);
   const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -38,12 +39,16 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           console.log('[EventSetup] Fetching events from API...');
           const ev = await api.getEvents();
           console.log('[EventSetup] Received events:', ev?.length || 0, 'events');
+          console.log('[EventSetup] First event:', ev?.[0]);
           setEvents(ev || []);
+          setLoadError(null);
           const users = await api.getUsers();
           console.log('[EventSetup] Received users:', users?.length || 0, 'users');
           setAllUsers(users || []);
-        } catch (error) {
+        } catch (error: any) {
+          const errorMsg = error?.message || error?.toString() || 'Unknown error';
           console.error('[EventSetup] Error fetching data:', error);
+          setLoadError(`Failed to load events: ${errorMsg}`);
           setEvents([]);
           setAllUsers([]);
         }
