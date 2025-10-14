@@ -281,16 +281,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               <thead className="bg-gray-50">
                 {/* Column Headers */}
                 <tr>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Date</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Event</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Category</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Merchant</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Amount</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Card Used</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Receipt</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Status</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-sm font-medium text-gray-900">Reimbursement</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Date</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Event</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Category</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Merchant</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Amount</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Card Used</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Receipt</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Status</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Reimbursement</th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900">Actions</th>
                 </tr>
                 {/* Inline Filters Row */}
                 <tr className="bg-gray-50 border-t border-gray-100">
@@ -396,42 +396,42 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   return (
                     <tr key={expense.id} className="hover:bg-gray-50">
                       {/* Date */}
-                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900 whitespace-nowrap">
                         {formatLocalDate(expense.date)}
                       </td>
                       {/* Event */}
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900">
                         {event ? event.name : 'No Event'}
                       </td>
                       {/* Category */}
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getCategoryColor(expense.category)}`}>
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getCategoryColor(expense.category)}`}>
                           {expense.category}
                         </span>
                       </td>
                       {/* Merchant */}
-                      <td className="px-6 py-4">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{expense.merchant}</div>
+                          <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
                           {expense.location && (
-                            <div className="text-sm text-gray-500">{expense.location}</div>
+                            <div className="text-xs sm:text-sm text-gray-500">{expense.location}</div>
                           )}
                         </div>
                       </td>
                       {/* Amount */}
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
                         ${expense.amount.toFixed(2)}
                       </td>
                       {/* Card Used */}
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900">
                         {expense.cardUsed}
                       </td>
                       {/* Receipt */}
-                      <td className="px-6 py-4">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
                         {expense.receiptUrl ? (
                           <button
                             onClick={() => setReceiptModalUrl(expense.receiptUrl.replace(/^\/uploads/, '/api/uploads'))}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap"
+                            className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium whitespace-nowrap"
                           >
                             View Receipt
                           </button>
@@ -440,14 +440,14 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         )}
                       </td>
                       {/* Status */}
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(expense.status)}`}>
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(expense.status)}`}>
                           {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
                         </span>
                       </td>
                       {/* Reimbursement */}
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${
                           expense.reimbursementRequired 
                             ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
                             : 'bg-gray-100 text-gray-800'
@@ -458,7 +458,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         </span>
                       </td>
                       {/* Actions */}
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => handleEditExpense(expense)}

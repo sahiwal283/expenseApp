@@ -217,20 +217,20 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
 
       {/* Users Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">User</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Role</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Status</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-900">Actions</th>
+                <th className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-left text-xs sm:text-sm font-medium text-gray-900">User</th>
+                <th className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-left text-xs sm:text-sm font-medium text-gray-900">Role</th>
+                <th className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-left text-xs sm:text-sm font-medium text-gray-900">Status</th>
+                <th className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-right text-xs sm:text-sm font-medium text-gray-900">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-medium text-sm">
@@ -239,11 +239,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-600">{user.username} • {user.email}</div>
+                        <div className="text-xs sm:text-sm text-gray-600">{user.username} • {user.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                     {isPendingUser(user) ? (
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                         Pending Role
@@ -254,7 +254,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                     {isPendingUser(user) ? (
                       <div className="flex items-center">
                         <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2" />
@@ -267,7 +267,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       {isPendingUser(user) ? (
                         <button
@@ -324,7 +324,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">Activate User</h3>
-                  <p className="text-sm text-gray-600">Assign a role to activate this account</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Assign a role to activate this account</p>
                 </div>
               </div>
               <button
@@ -344,7 +344,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                 </div>
                 <div>
                   <div className="font-medium text-gray-900">{activatingUser.name}</div>
-                  <div className="text-sm text-gray-600">{activatingUser.username} • {activatingUser.email}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">{activatingUser.username} • {activatingUser.email}</div>
                 </div>
               </div>
             </div>

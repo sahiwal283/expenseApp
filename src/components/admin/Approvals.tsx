@@ -277,7 +277,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
               <p className="text-gray-600">Pending Approval</p>
             </div>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             ${stats.pendingAmount.toLocaleString()} total
           </div>
         </div>
@@ -292,7 +292,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
               <p className="text-gray-600">Reimbursements</p>
             </div>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             Pending approval
           </div>
         </div>
@@ -307,7 +307,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
               <p className="text-gray-600">Unassigned Entities</p>
             </div>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             Need entity assignment
           </div>
         </div>
@@ -315,18 +315,18 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
       {/* Expenses Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <h3 className="text-lg font-semibold text-gray-900">Expense Review</h3>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600">
                 {filteredExpenses.length} expenses
               </div>
               <button
                 onClick={() => setShowFilterModal(true)}
                 className="flex items-center space-x-2 px-3 sm:px-4 py-2 min-h-[44px] bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
               >
-                <Filter className="w-4 h-4" />
+                <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="font-medium">Filters</span>
               </button>
             </div>
@@ -337,28 +337,28 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date & User
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Merchant & Event
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Reimbursement
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Entity
                 </th>
-                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -377,10 +377,10 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                   
                   return (
                     <tr key={expense.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
                         <div>
-                          <div className="flex items-center text-sm text-gray-900">
-                            <Calendar className="w-4 h-4 mr-1" />
+                          <div className="flex items-center text-xs sm:text-sm text-gray-900">
+                            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                             {formatLocalDate(expense.date)}
                           </div>
                           <div className="flex items-center text-xs text-gray-500 mt-1">
@@ -389,33 +389,33 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{expense.merchant}</div>
+                          <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
                           <div className="text-xs text-gray-500 mt-1">
                             {event?.name || 'No Event'}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <span className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
                           {expense.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm font-semibold text-gray-900">
-                          <DollarSign className="w-4 h-4 mr-1" />
+                          <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                           {expense.amount.toFixed(2)}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
                           {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
                         <div className="space-y-1">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          <span className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded-full ${
                             expense.reimbursementRequired 
                               ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
                               : 'bg-gray-100 text-gray-800'
@@ -444,7 +444,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
                         <select
                           value={expense.zohoEntity || ''}
                           onChange={(e) => handleAssignEntity(expense, e.target.value)}
@@ -461,32 +461,32 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           ))}
                         </select>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           {expense.status === 'pending' && (
                             <>
                               <button
                                 onClick={() => handleApproveExpense(expense)}
-                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                className="p-1.5 sm:p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                 title="Approve Expense"
                               >
-                                <CheckCircle className="w-4 h-4" />
+                                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               </button>
                               <button
                                 onClick={() => handleRejectExpense(expense)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Reject Expense"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               </button>
                             </>
                           )}
                           <button
                             onClick={() => openEditModal(expense)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Edit Expense"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </td>
@@ -503,7 +503,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       {editingExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-t-xl">
+            <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-t-xl">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                 <h2 className="text-xl font-bold">Edit Expense</h2>
                 <button
@@ -550,7 +550,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as 'pending' | 'approved' | 'rejected')}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
@@ -567,7 +567,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={editReimbursementStatus}
                       onChange={(e) => setEditReimbursementStatus(e.target.value as 'pending review' | 'approved' | 'rejected' | 'paid')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="pending review">Pending Review</option>
                       <option value="approved">Approved</option>
@@ -585,7 +585,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                   <select
                     value={editEntity}
                     onChange={(e) => setEditEntity(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Unassigned</option>
                     {entityOptions.map((entity, index) => (
@@ -597,7 +597,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
             </div>
 
             {/* Modal Actions */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-end space-x-3 border-t border-gray-200">
+            <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 bg-gray-50 rounded-b-xl flex items-center justify-end space-x-3 border-t border-gray-200">
               <button
                 onClick={closeEditModal}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
@@ -620,14 +620,14 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 sticky top-0 bg-white rounded-t-xl">
+            <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 sticky top-0 bg-white rounded-t-xl">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                   <Filter className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Filter Expenses</h3>
-                  <p className="text-sm text-gray-600">Refine your expense search</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Refine your expense search</p>
                 </div>
               </div>
               <button
@@ -667,7 +667,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Status</option>
                       <option value="pending">Pending</option>
@@ -683,7 +683,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Categories</option>
                       {categories.map(category => (
@@ -699,7 +699,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={filterEvent}
                       onChange={(e) => setFilterEvent(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Events</option>
                       {events.map(event => (
@@ -718,7 +718,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={filterUser}
                       onChange={(e) => setFilterUser(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Users</option>
                       {users.map(user => (
@@ -734,7 +734,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={filterReimbursement}
                       onChange={(e) => setFilterReimbursement(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Reimbursement</option>
                       <option value="required">Required</option>
@@ -749,7 +749,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <select
                       value={filterEntity}
                       onChange={(e) => setFilterEntity(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Entities</option>
                       <option value="unassigned">Unassigned</option>
@@ -763,7 +763,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
             </div>
 
             {/* Modal Actions */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 border-t border-gray-200">
+            <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 bg-gray-50 rounded-b-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 border-t border-gray-200">
               <button
                 onClick={() => {
                   setSearchTerm('');
