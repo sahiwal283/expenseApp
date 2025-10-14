@@ -35,11 +35,15 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     (async () => {
       if (api.USE_SERVER) {
         try {
+          console.log('[EventSetup] Fetching events from API...');
           const ev = await api.getEvents();
+          console.log('[EventSetup] Received events:', ev?.length || 0, 'events');
           setEvents(ev || []);
           const users = await api.getUsers();
+          console.log('[EventSetup] Received users:', users?.length || 0, 'users');
           setAllUsers(users || []);
-        } catch {
+        } catch (error) {
+          console.error('[EventSetup] Error fetching data:', error);
           setEvents([]);
           setAllUsers([]);
         }
