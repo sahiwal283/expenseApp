@@ -1,14 +1,14 @@
 // ExpenseApp Service Worker
-// Version: 1.0.20 - RECEIPT DISPLAY & DOCS CLEANUP
+// Version: 1.0.21 - REMOVE RECEIPT COLUMN & CREDENTIAL CONSOLIDATION
 // Date: October 14, 2025
 // 
-// Changes from v1.0.19:
-// - Fixed receipt display in Expense Details modal
-// - Receipt now shows at FULL SIZE by default (was cropped preview)
-// - "Hide" button collapses receipt (removes cropped preview entirely)
-// - Much better UX - users can actually see receipt details
-// - Deleted docs/SESSION_MANAGEMENT.md (consolidated into code comments)
-// - Kept BOOMIN_CREDENTIALS.md separate (security best practice for sensitive data)
+// Changes from v1.0.20:
+// - Removed redundant "Receipt" column from Expenses table
+// - Users now use "View Details" button (eye icon) to see receipts
+// - Cleaner table layout with one less column
+// - Created HAUTE_CREDENTIALS.md for consistency with Boomin
+// - Both credential files now follow same security pattern
+// - Removed unused receiptModalUrl state and modal component
 // - Events auto-remove from expense dropdown 1 month + 1 day after end date
 // - Consolidated documentation files into AI_MASTER_GUIDE.md
 // - Restored CHANGELOG.md for GitHub best practices
@@ -28,8 +28,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.20';  // BUMPED VERSION for receipt display fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.20';
+const CACHE_NAME = 'expenseapp-v1.0.21';  // BUMPED VERSION for receipt column removal
+const STATIC_CACHE = 'expenseapp-static-v1.0.21';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -39,7 +39,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.20...');
+  console.log('[ServiceWorker] Installing v1.0.21...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -130,7 +130,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.20...');
+  console.log('[ServiceWorker] Activating v1.0.21...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -144,7 +144,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.20 activated and ready!');
+      console.log('[ServiceWorker] v1.0.21 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

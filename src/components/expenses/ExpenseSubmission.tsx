@@ -19,7 +19,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showReceiptUpload, setShowReceiptUpload] = useState(false);
-  const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true); // Default to showing full receipt
@@ -340,7 +339,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Merchant</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Amount</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Card Used</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Receipt</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Status</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Reimbursement</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900">Actions</th>
@@ -409,10 +407,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       ))}
                     </select>
                   </th>
-                  {/* Receipt Filter - Placeholder */}
-                  <th className="px-3 py-1.5">
-                    <div className="text-xs text-gray-300 text-center">-</div>
-                  </th>
                   {/* Status Filter */}
                   <th className="px-3 py-1.5">
                     <select
@@ -479,19 +473,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900">
                         {expense.cardUsed}
                       </td>
-                      {/* Receipt */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
-                        {expense.receiptUrl ? (
-                          <button
-                            onClick={() => setReceiptModalUrl(expense.receiptUrl.replace(/^\/uploads/, '/api/uploads'))}
-                            className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium whitespace-nowrap"
-                          >
-                            View Receipt
-                          </button>
-                        ) : (
-                          <span className="text-gray-400 text-sm whitespace-nowrap">No receipt</span>
-                        )}
-                      </td>
                       {/* Status */}
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
                         <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(expense.status)}`}>
@@ -534,30 +515,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 })}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Receipt Modal */}
-      {receiptModalUrl && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" 
-          onClick={() => setReceiptModalUrl(null)}
-        >
-          <button
-            onClick={() => setReceiptModalUrl(null)}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
-            title="Close"
-          >
-            <X className="w-6 h-6 text-gray-900" />
-          </button>
-          <div className="max-w-5xl max-h-[90vh] overflow-auto">
-            <img
-              src={receiptModalUrl}
-              alt="Receipt full size"
-              className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
           </div>
         </div>
       )}

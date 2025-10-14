@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.21] - 2025-10-14
+
+### Changed
+- **Removed Receipt Column from Expenses Table**:
+  - Eliminated redundant "Receipt" column (with "View Receipt" link)
+  - Users now use "View Details" button (eye icon) to view receipts
+  - Cleaner, less cluttered table layout
+  - Removed unused `receiptModalUrl` state and standalone receipt modal
+  - Receipt viewing now only happens through Expense Details modal
+
+### Added
+- **HAUTE_CREDENTIALS.md**: Created credential file for Haute Brands
+  - Matches format and security pattern of BOOMIN_CREDENTIALS.md
+  - Contains Zoho Books OAuth credentials, account IDs, environment variables
+  - Security best practice: keeps sensitive credentials in separate, clearly-labeled files
+  - Makes it easy to exclude from certain access controls and audit who views them
+
+### Documentation
+- Both Haute and Boomin credential files now follow consistent pattern
+- Sensitive data properly separated from general documentation
+
 ## [1.0.20] - 2025-10-14
 
 ### Fixed
