@@ -31,7 +31,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     );
   }
 
-  const [activeTab, setActiveTab] = useState<'system' | 'users'>('system');
+  // Check URL hash for initial tab (e.g., #users)
+  const initialTab = window.location.hash === '#users' ? 'users' : 'system';
+  const [activeTab, setActiveTab] = useState<'system' | 'users'>(initialTab);
   const [settings, setSettings] = useState<AppSettings>({
     cardOptions: [
       { name: 'Haute Intl USD Debit', lastFour: '0000' },
@@ -99,6 +101,18 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         if (storedSettings) setSettings(JSON.parse(storedSettings));
       }
     })();
+  }, []);
+
+  // Watch for hash changes to switch tabs
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#users') {
+        setActiveTab('users');
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const saveSettings = async (updatedSettings?: AppSettings) => {
@@ -237,7 +251,10 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6" aria-label="Tabs">
             <button
-              onClick={() => setActiveTab('system')}
+              onClick={() => {
+                setActiveTab('system');
+                window.location.hash = ''; // Clear hash when manually switching
+              }}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'system'
                   ? 'border-blue-500 text-blue-600'
@@ -251,7 +268,10 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             </button>
             {(user.role === 'admin' || user.role === 'developer') && (
               <button
-                onClick={() => setActiveTab('users')}
+                onClick={() => {
+                  setActiveTab('users');
+                  window.location.hash = 'users'; // Set hash when manually switching to users
+                }}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'users'
                     ? 'border-blue-500 text-blue-600'

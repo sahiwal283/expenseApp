@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.22] - 2025-10-14
+
+### Fixed
+- **Direct Navigation to User Management Tab**:
+  - Fixed "Go to User Management" link in Dashboard pending tasks widget
+  - Previously took users to general Settings page (requiring scroll + click to reach User Management)
+  - Now navigates DIRECTLY to User Management tab via URL hash (#users)
+  - Settings page detects `#users` hash and automatically opens User Management tab
+  - Saves time and improves UX - no more scrolling or clicking required
+  - Hash automatically syncs with manual tab switching for consistency
+
+### Changed
+- Settings tabs now update URL hash when manually switching
+- System tab: clears hash
+- User Management tab: sets #users hash
+- Enables deep linking and browser back/forward navigation
+
 ## [1.0.21] - 2025-10-14
 
 ### Changed

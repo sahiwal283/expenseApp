@@ -144,7 +144,15 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                     <button
                       onClick={() => {
                         // Extract page name from link
-                        const page = task.link.replace('/', '');
+                        let page = task.link.replace('/', '');
+                        
+                        // If it's a user management task, append hash for direct navigation to User Management tab
+                        if (task.type === 'pending_users' && page === 'settings') {
+                          window.location.hash = 'users';
+                        } else {
+                          window.location.hash = '';
+                        }
+                        
                         onNavigate(page);
                       }}
                       className={`inline-flex items-center text-sm font-medium transition-colors ${
