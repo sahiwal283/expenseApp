@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, Calendar, DollarSign, CreditCard, User as UserIcon } from 'lucide-react';
 import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
@@ -19,6 +19,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [showReceiptUpload, setShowReceiptUpload] = useState(false);
   const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
+  const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
+  const [showFullReceipt, setShowFullReceipt] = useState(false);
 
   // Column-level filters
   const [dateFilter, setDateFilter] = useState('');
@@ -461,6 +463,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <button
+                            onClick={() => setViewingExpense(expense)}
+                            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="View Details & Receipt"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleEditExpense(expense)}
                             className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Edit"
@@ -505,6 +514,201 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Expense Details Modal */}
+      {viewingExpense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">Expense Details</h2>
+                <p className="text-sm text-purple-100">
+                  {events.find(e => e.id === viewingExpense.tradeShowId)?.name || 'N/A'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setViewingExpense(null);
+                  setShowFullReceipt(false);
+                }}
+                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Basic Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Date</p>
+                    <p className="font-semibold text-gray-900">{formatLocalDate(viewingExpense.date)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Amount</p>
+                    <p className="font-semibold text-gray-900 text-xl">${viewingExpense.amount.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Category</p>
+                    <p className="font-semibold text-gray-900">{viewingExpense.category}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Receipt className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Merchant</p>
+                    <p className="font-semibold text-gray-900">{viewingExpense.merchant}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Card Used</p>
+                    <p className="font-semibold text-gray-900">{viewingExpense.cardUsed}</p>
+                  </div>
+                </div>
+
+                {viewingExpense.location && (
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Location</p>
+                      <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {viewingExpense.description && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-2">Description</p>
+                  <p className="text-gray-900">{viewingExpense.description}</p>
+                </div>
+              )}
+
+              {/* Status Badges */}
+              <div className="flex flex-wrap gap-3">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Status</p>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
+                    {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Reimbursement</p>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                    viewingExpense.reimbursementRequired 
+                      ? getReimbursementStatusColor(viewingExpense.reimbursementStatus || 'pending review')
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {viewingExpense.reimbursementRequired 
+                      ? viewingExpense.reimbursementStatus || 'Pending Review'
+                      : 'Not Required'}
+                  </span>
+                </div>
+                {viewingExpense.zohoEntity && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Entity</p>
+                    <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+                      {viewingExpense.zohoEntity}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Receipt Section */}
+              {viewingExpense.receiptUrl && (
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Receipt className="w-5 h-5 text-purple-600" />
+                      <h3 className="font-semibold text-gray-900">Receipt</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowFullReceipt(!showFullReceipt)}
+                      className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-1"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>{showFullReceipt ? 'Hide' : 'View Full Size'}</span>
+                    </button>
+                  </div>
+                  
+                  {showFullReceipt ? (
+                    <div className="bg-white rounded-lg p-4">
+                      <img
+                        src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
+                        alt="Receipt"
+                        className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 shadow-md"
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-lg p-4 group cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowFullReceipt(true)}>
+                      <img
+                        src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
+                        alt="Receipt preview"
+                        className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
+                      />
+                      <p className="text-center text-sm text-gray-500 mt-3 group-hover:text-purple-600 transition-colors">
+                        Click to view full size
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setViewingExpense(null);
+                  setShowFullReceipt(false);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  handleEditExpense(viewingExpense);
+                  setViewingExpense(null);
+                  setShowFullReceipt(false);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+              >
+                Edit Expense
+              </button>
+            </div>
           </div>
         </div>
       )}
