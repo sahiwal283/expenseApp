@@ -412,10 +412,8 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
       console.log(`Receipt OCR completed with ${(ocrConfidence * 100).toFixed(2)}% confidence`);
     }
 
-    // Set default zoho_entity to 'haute' if not provided
-    // This ensures the "Push to Zoho" button will be visible in the UI
-    const defaultZohoEntity = zoho_entity || 'haute';
-
+    // zoho_entity is optional - expenses start as unassigned and are assigned by accountants
+    // Push to Zoho button will only appear after entity is assigned
     const result = await query(
       `INSERT INTO expenses (
         event_id, user_id, category, merchant, amount, date, description, 
@@ -436,7 +434,7 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
         ocrText,
         location,
         extractedData ? JSON.stringify(extractedData) : null,
-        defaultZohoEntity
+        zoho_entity || null
       ]
     );
 
@@ -445,8 +443,9 @@ router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
     // ========== ZOHO BOOKS INTEGRATION ==========
     // Note: Expenses are NOT submitted to Zoho Books at creation time.
     // They are submitted manually via the "Push to Zoho" button in the Reports page.
-    // Entity can be changed later via the PATCH /:id/entity endpoint.
-    console.log(`[Zoho] Expense created with entity: ${defaultZohoEntity}. Ready for manual push to Zoho Books.`);
+    // Entity assignment is done by accountants/admins in the Approvals page.
+    const entityStatus = expense.zoho_entity ? `assigned to ${expense.zoho_entity}` : 'unassigned';
+    console.log(`[Zoho] Expense created (${entityStatus}). Entity can be assigned in Approvals page.`);
 
     res.status(201).json(normalizeExpense(expense));
   } catch (error) {
