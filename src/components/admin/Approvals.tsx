@@ -677,7 +677,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                       className="cursor-pointer group relative"
                     >
                       <img
-                        src={viewingExpense.receiptUrl.startsWith('/') ? `/api${viewingExpense.receiptUrl}` : viewingExpense.receiptUrl}
+                        src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
                         alt="Receipt"
                         className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 group-hover:border-purple-500 transition-all shadow-md group-hover:shadow-xl"
                       />
@@ -736,7 +736,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           </button>
           <div className="max-w-5xl max-h-[90vh] overflow-auto">
             <img
-              src={viewingExpense.receiptUrl.startsWith('/') ? `/api${viewingExpense.receiptUrl}` : viewingExpense.receiptUrl}
+              src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
               alt="Receipt full size"
               className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
