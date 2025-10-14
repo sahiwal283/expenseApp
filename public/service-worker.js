@@ -1,7 +1,16 @@
 // ExpenseApp Service Worker
-// Version: 1.0.23 - SMART NAVIGATION TO ZOHO PUSH
+// Version: 1.0.24 - CLEAN DASHBOARD & CONSISTENT BUTTON TEXT
 // Date: October 14, 2025
 // 
+// Changes from v1.0.23:
+// - Removed meaningless decorations from Dashboard stat cards
+// - Removed fake "+12.5%" trend (was always there, provided no value)
+// - Removed useless "Normal" status under Pending Approvals
+// - Removed redundant "1 total" under Active Events
+// - Cards now show only the important info (number and title)
+// - Button text always "Push to Zoho" (was "Go to Reports" for multiple events)
+// - Makes sense since we navigate directly to event with most items anyway
+//
 // Changes from v1.0.22:
 // - Fixed "Push to Zoho" link in Dashboard pending tasks
 // - Now navigates DIRECTLY to the event's detailed report (not general Reports page)
@@ -30,8 +39,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.23';  // BUMPED VERSION for zoho push navigation fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.23';
+const CACHE_NAME = 'expenseapp-v1.0.24';  // BUMPED VERSION for dashboard cleanup
+const STATIC_CACHE = 'expenseapp-static-v1.0.24';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -41,7 +50,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.23...');
+  console.log('[ServiceWorker] Installing v1.0.24...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -132,7 +141,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.23...');
+  console.log('[ServiceWorker] Activating v1.0.24...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -146,7 +155,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.23 activated and ready!');
+      console.log('[ServiceWorker] v1.0.24 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

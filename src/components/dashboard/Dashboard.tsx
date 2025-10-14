@@ -148,24 +148,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           value={`$${stats.totalExpenses.toLocaleString()}`}
           icon={DollarSign}
           color="blue"
-          trend="+12.5%"
-          trendUp={true}
         />
         <StatsCard
           title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' ? 'Pending Approvals' : 'My Pending Approvals'}
           value={stats.pendingExpenses.toString()}
           icon={AlertTriangle}
           color="orange"
-          trend={stats.pendingExpenses > 5 ? 'High' : 'Normal'}
-          trendUp={false}
         />
         <StatsCard
           title={user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
           value={stats.activeEvents.toString()}
           icon={Calendar}
           color="emerald"
-          trend={`${stats.totalEvents} total`}
-          trendUp={true}
         />
       </div>
 

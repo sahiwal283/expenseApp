@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.24] - 2025-10-14
+
+### Removed
+- **Meaningless Dashboard Decorations**:
+  - Removed fake "+12.5%" trend from Total Expenses card (was hardcoded, provided no value)
+  - Removed useless "Normal" status from Pending Approvals card (showed "Normal" even when 0)
+  - Removed redundant "1 total" text from Active Events card
+  - Dashboard cards now show only important information (number and title)
+  - Cleaner, less cluttered UI
+
+### Changed
+- **Consistent Button Text for Zoho Push**:
+  - Button always says "Push to Zoho" (not "Go to Reports")
+  - Makes sense since we navigate directly to event with most unsynced items
+  - User lands exactly where push button is - button text should reflect that
+
+### Technical
+- Backend: v1.0.11
+- Frontend: v1.0.24
+- Removed trend/trendUp props from StatsCard usage in Dashboard
+
 ## [1.0.23] - 2025-10-14
 
 ### Fixed

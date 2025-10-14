@@ -105,7 +105,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           title: `${unpushedCount} Expense${unpushedCount > 1 ? 's' : ''} Not Synced to Zoho`,
           description: `Push approved expenses to Zoho Books`,
           count: unpushedCount,
-          action: eventIds.length === 1 ? 'Push to Zoho' : 'Go to Reports',
+          action: 'Push to Zoho', // Always "Push to Zoho" since we navigate smartly to the right event
           link: '/reports',
           icon: 'Upload',
           eventIds: eventIds,
