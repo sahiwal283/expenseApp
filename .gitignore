@@ -22,6 +22,10 @@ backend/.env.local
 *.pem
 *.key
 
+# Credentials folder (sensitive API keys, OAuth tokens, etc.)
+credentials/
+*CREDENTIALS.md
+
 # User uploads & data
 uploads/
 backend/uploads/
