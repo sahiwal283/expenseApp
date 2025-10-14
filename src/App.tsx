@@ -10,8 +10,10 @@ import { Reports } from './components/reports/Reports';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { InstallPrompt } from './components/layout/InstallPrompt';
+import { InactivityWarning } from './components/common/InactivityWarning';
 import { useAuth } from './hooks/useAuth';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { sessionManager } from './utils/sessionManager';
 
 export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'pending';
 
@@ -71,9 +73,57 @@ function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
 
-  // Server-backed mode: disable demo data seeding
-  useEffect(() => {}, []);
+  // Initialize session manager
+  useEffect(() => {
+    if (user) {
+      console.log('[App] User logged in, initializing session manager');
+      
+      sessionManager.init(
+        // On warning callback
+        () => {
+          console.log('[App] Showing inactivity warning');
+          setShowInactivityWarning(true);
+          setTimeRemaining(sessionManager.getTimeRemaining());
+        },
+        // On logout callback
+        () => {
+          console.log('[App] Session expired, logging out user');
+          setShowInactivityWarning(false);
+          logout();
+        }
+      );
+
+      return () => {
+        console.log('[App] Cleaning up session manager');
+        sessionManager.cleanup();
+      };
+    }
+  }, [user, logout]);
+
+  // Update time remaining while warning is shown
+  useEffect(() => {
+    if (showInactivityWarning) {
+      const interval = setInterval(() => {
+        setTimeRemaining(sessionManager.getTimeRemaining());
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [showInactivityWarning]);
+
+  const handleStayLoggedIn = () => {
+    console.log('[App] User chose to stay logged in');
+    sessionManager.dismissWarning();
+    setShowInactivityWarning(false);
+  };
+
+  const handleDismissWarning = () => {
+    console.log('[App] User dismissed warning');
+    setShowInactivityWarning(false);
+  };
 
   if (!user) {
     return <LoginForm onLogin={login} />;
@@ -124,6 +174,14 @@ function App() {
 n      {/* PWA Install Prompt */}
       <InstallPrompt />
       </div>
+
+      {/* Inactivity Warning Modal */}
+      <InactivityWarning
+        isOpen={showInactivityWarning}
+        onClose={handleDismissWarning}
+        onStayLoggedIn={handleStayLoggedIn}
+        timeRemaining={timeRemaining}
+      />
     </div>
   );
 }
