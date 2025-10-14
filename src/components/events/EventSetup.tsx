@@ -35,6 +35,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
+        // Fetch events and users separately so one failure doesn't clear both
         try {
           console.log('[EventSetup] Fetching events from API...');
           const ev = await api.getEvents();
@@ -42,14 +43,22 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           console.log('[EventSetup] First event:', ev?.[0]);
           setEvents(ev || []);
           setLoadError(null);
+        } catch (error: any) {
+          const errorMsg = error?.message || error?.toString() || 'Unknown error';
+          console.error('[EventSetup] Error fetching events:', error);
+          setLoadError(`Failed to load events: ${errorMsg}`);
+          setEvents([]);
+        }
+
+        // Fetch users separately - if this fails, events are still shown
+        try {
+          console.log('[EventSetup] Fetching users from API...');
           const users = await api.getUsers();
           console.log('[EventSetup] Received users:', users?.length || 0, 'users');
           setAllUsers(users || []);
         } catch (error: any) {
-          const errorMsg = error?.message || error?.toString() || 'Unknown error';
-          console.error('[EventSetup] Error fetching data:', error);
-          setLoadError(`Failed to load events: ${errorMsg}`);
-          setEvents([]);
+          console.error('[EventSetup] Error fetching users (non-critical):', error);
+          // Don't show error to user, just log it
           setAllUsers([]);
         }
       } else {
