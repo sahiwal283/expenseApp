@@ -23,13 +23,13 @@ interface SidebarProps {
 }
 
 const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
-  { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
-  { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant'] },
-  { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant'] },
-  { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant'] },
-  { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant'] },
-  { id: 'devdashboard', label: 'Dev Dashboard', icon: Code, roles: ['admin'] },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
+  { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
+  { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
+  { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant', 'developer'] },
+  { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'developer'] },
+  { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant', 'developer'] },
+  { id: 'devdashboard', label: 'Dev Dashboard', icon: Code, roles: ['developer'] },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
