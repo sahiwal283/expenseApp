@@ -8,8 +8,10 @@ import {
   ChevronLeft,
   Settings,
   X,
-  CheckSquare
-,  Code } from 'lucide-react';
+  CheckSquare,
+  Code,
+  Clock
+} from 'lucide-react';
 import { User, UserRole } from '../../App';
 
 interface SidebarProps {
@@ -26,6 +28,7 @@ const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
   { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
+  { id: 'pending-actions', label: 'Pending Sync', icon: Clock, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
   { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant', 'developer'] },
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'developer'] },
   { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant', 'developer'] },

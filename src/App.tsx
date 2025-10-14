@@ -7,13 +7,20 @@ import { AdminSettings } from './components/admin/AdminSettings';
 import { DevDashboard } from './components/developer/DevDashboard';
 import { Approvals } from './components/admin/Approvals';
 import { Reports } from './components/reports/Reports';
+import { PendingActions } from './components/common/PendingActions';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
+import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
+import { SyncStatusBar } from './components/common/SyncStatusBar';
 import { useAuth } from './hooks/useAuth';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { sessionManager } from './utils/sessionManager';
+import { syncManager } from './utils/syncManager';
+import { networkMonitor } from './utils/networkDetection';
+import { offlineDb } from './utils/offlineDb';
+import { clearEncryptionData } from './utils/encryption';
 
 export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'pending';
 
@@ -75,6 +82,7 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
+  const notifications = useNotifications();
 
   // Initialize session manager
   useEffect(() => {
@@ -114,6 +122,79 @@ function App() {
     }
   }, [showInactivityWarning]);
 
+  // Initialize sync manager and network monitoring
+  useEffect(() => {
+    if (user) {
+      console.log('[App] Initializing offline sync system');
+
+      // Listen for sync events
+      const unsubscribeSync = syncManager.addEventListener((event) => {
+        console.log('[App] Sync event:', event.type);
+        
+        if (event.type === 'sync-start') {
+          notifications.showSyncing('Syncing your changes...');
+        } else if (event.type === 'sync-complete') {
+          const { synced, failed } = event.data;
+          if (synced > 0) {
+            notifications.showSuccess('Sync Complete', `${synced} item(s) synced successfully`);
+          }
+          if (failed > 0) {
+            notifications.showWarning('Partial Sync', `${failed} item(s) failed to sync. Check Pending Actions.`);
+          }
+        } else if (event.type === 'sync-error') {
+          notifications.showError('Sync Failed', event.data.error || 'Unknown error occurred', false);
+        }
+      });
+
+      // Listen for network status changes
+      const unsubscribeNetwork = networkMonitor.addListener((state) => {
+        console.log('[App] Network status:', state.status);
+        
+        if (!state.isOnline) {
+          notifications.showOffline();
+        } else if (state.status === 'degraded') {
+          notifications.showWarning('Slow Connection', 'Your connection is slow. Sync may take longer.');
+        }
+      });
+
+      // Register background sync if supported
+      if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
+        navigator.serviceWorker.ready.then(registration => {
+          console.log('[App] Registering background sync');
+          return registration.sync.register('expense-sync');
+        }).catch(err => {
+          console.log('[App] Background sync registration failed:', err);
+        });
+      }
+
+      return () => {
+        console.log('[App] Cleaning up offline sync system');
+        unsubscribeSync();
+        unsubscribeNetwork();
+      };
+    }
+  }, [user, notifications]);
+
+  // Enhanced logout with data cleanup
+  const handleLogout = async () => {
+    console.log('[App] Logging out and clearing local data...');
+    
+    try {
+      // Clear offline database
+      await offlineDb.clearAllData();
+      
+      // Clear encryption keys
+      await clearEncryptionData();
+      
+      console.log('[App] Local data cleared successfully');
+    } catch (error) {
+      console.error('[App] Error clearing local data:', error);
+    }
+    
+    // Call original logout
+    logout();
+  };
+
   const handleStayLoggedIn = () => {
     console.log('[App] User chose to stay logged in');
     sessionManager.dismissWarning();
@@ -136,6 +217,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Sync Status Bar */}
+      <SyncStatusBar position="top" />
+
       <Sidebar 
         user={user} 
         currentPage={currentPage} 
@@ -154,10 +238,10 @@ function App() {
         />
       )}
       
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-64"}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-64"} mt-12`}>
         <Header 
           user={user} 
-          onLogout={logout}
+          onLogout={handleLogout}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
@@ -170,10 +254,18 @@ function App() {
           {currentPage === 'reports' && <Reports user={user} />}
           {currentPage === 'settings' && <AdminSettings user={user} />}
           {currentPage === 'devdashboard' && <DevDashboard user={user} />}
+          {currentPage === 'pending-actions' && <PendingActions />}
         </main>
-n      {/* PWA Install Prompt */}
-      <InstallPrompt />
+        
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
       </div>
+
+      {/* Notification Banner */}
+      <NotificationBanner 
+        notifications={notifications.notifications}
+        onDismiss={notifications.removeNotification}
+      />
 
       {/* Inactivity Warning Modal */}
       <InactivityWarning
