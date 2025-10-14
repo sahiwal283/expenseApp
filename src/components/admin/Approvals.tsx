@@ -948,7 +948,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                       className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="all">All Events</option>
-                      {events.map(event => (
+                      {activeEvents.map(event => (
                         <option key={event.id} value={event.id}>{event.name}</option>
                       ))}
                     </select>

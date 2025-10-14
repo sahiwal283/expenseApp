@@ -1034,6 +1034,129 @@ npm run build
 
 ---
 
+## 🔗 ZOHO BOOKS INTEGRATION
+
+### Current Setup
+
+**Active Entities** (Production):
+- ✅ **Haute Brands** (Org ID: 856048585)
+- ✅ **Boomin Brands** (Org ID: 842978819)
+
+### OAuth Setup Process
+
+To add a new Zoho Books entity:
+
+**Step 1: Get Authorization Code**
+
+Generate OAuth URL:
+```
+https://accounts.zoho.com/oauth/v2/auth?scope=ZohoBooks.expenses.CREATE,ZohoBooks.expenses.READ,ZohoBooks.settings.READ,ZohoBooks.accountants.READ&client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=https://expapp.duckdns.org/auth/zoho/callback&access_type=offline&prompt=consent
+```
+
+1. Replace `YOUR_CLIENT_ID` with your Zoho app's Client ID
+2. Open the URL in a browser
+3. Log in to Zoho and authorize the app
+4. Copy the entire callback URL (contains the `code` parameter)
+
+**Step 2: Exchange Code for Refresh Token**
+
+```bash
+curl -X POST https://accounts.zoho.com/oauth/v2/token \
+  -d "client_id=YOUR_CLIENT_ID" \
+  -d "client_secret=YOUR_CLIENT_SECRET" \
+  -d "code=YOUR_CODE_HERE" \
+  -d "grant_type=authorization_code" \
+  -d "redirect_uri=https://expapp.duckdns.org/auth/zoho/callback"
+```
+
+The response contains your `refresh_token` - save it securely!
+
+**Step 3: Get Account IDs from Zoho Books**
+
+1. **Expense Account ID**:
+   - Go to Chart of Accounts: `https://books.zoho.com/app/YOUR_ORG_ID#/accountant/chartofaccounts`
+   - Find your expense account (e.g., "Trade Shows", "Meals & Entertainment")
+   - Click on it - the ID is in the URL
+
+2. **Paid Through Account ID**:
+   - Same page - find your payment account (e.g., "Business Checking")
+   - Click on it - grab the ID from URL
+
+**Step 4: Add to Configuration**
+
+Edit `backend/src/config/zohoAccounts.ts`:
+
+```typescript
+const newEntityConfig = {
+  entityName: process.env.ZOHO_NEWENTITY_ENTITY_NAME || 'New Entity Name',
+  enabled: true,
+  mock: process.env.ZOHO_NEWENTITY_MOCK === 'true',
+  clientId: process.env.ZOHO_NEWENTITY_CLIENT_ID || '',
+  clientSecret: process.env.ZOHO_NEWENTITY_CLIENT_SECRET || '',
+  refreshToken: process.env.ZOHO_NEWENTITY_REFRESH_TOKEN || '',
+  organizationId: process.env.ZOHO_NEWENTITY_ORGANIZATION_ID || '',
+  expenseAccountId: process.env.ZOHO_NEWENTITY_EXPENSE_ACCOUNT_ID || '',
+  paidThroughAccountId: process.env.ZOHO_NEWENTITY_PAID_THROUGH_ACCOUNT_ID || '',
+  // Display names
+  orgName: process.env.ZOHO_NEWENTITY_ORG_NAME || 'New Entity Org',
+  expenseAccount: process.env.ZOHO_NEWENTITY_EXPENSE_ACCOUNT || 'Trade Shows',
+  paidThrough: process.env.ZOHO_NEWENTITY_PAID_THROUGH || 'Business Checking'
+};
+accounts.set(newEntityConfig.entityName.toLowerCase(), newEntityConfig);
+```
+
+**Step 5: Add Environment Variables**
+
+Add to `backend/.env` (production):
+
+```bash
+ZOHO_NEWENTITY_ENABLED=true
+ZOHO_NEWENTITY_MOCK=false
+ZOHO_NEWENTITY_ENTITY_NAME=New Entity Name
+ZOHO_NEWENTITY_CLIENT_ID=your_client_id
+ZOHO_NEWENTITY_CLIENT_SECRET=your_client_secret
+ZOHO_NEWENTITY_REFRESH_TOKEN=your_refresh_token
+ZOHO_NEWENTITY_ORGANIZATION_ID=your_org_id
+ZOHO_NEWENTITY_EXPENSE_ACCOUNT_ID=your_expense_account_id
+ZOHO_NEWENTITY_PAID_THROUGH_ACCOUNT_ID=your_paid_through_account_id
+ZOHO_NEWENTITY_ORG_NAME=Your Org Display Name
+ZOHO_NEWENTITY_EXPENSE_ACCOUNT=Account Name
+ZOHO_NEWENTITY_PAID_THROUGH=Payment Account Name
+```
+
+**Step 6: Deploy and Test**
+
+1. Deploy backend to production
+2. Add entity name to Settings → Entity Options
+3. Create test expense with new entity
+4. Verify expense appears in Zoho Books
+
+### Boomin Brands Setup (Reference)
+
+**Status**: ✅ Deployed to Production (v0.35.26)
+
+**Configuration**:
+- Entity Name: Boomin Brands
+- Organization ID: 842978819
+- Expense Account: Trade Shows (4849689000000626507)
+- Paid Through: Business Checking Plus (4849689000000430009)
+
+**Features**:
+- ✅ Expense creation
+- ✅ Receipt upload to Zoho
+- ✅ Independent operation from Haute Brands
+- ✅ Dual registration ("boomin brands" and "boomin")
+
+**Testing**:
+1. Create expense in app, assign to "Boomin Brands"
+2. Submit with receipt (optional)
+3. Verify in Zoho Books: `https://one.zoho.com/zohoone/boominbrands/home/cxapp/books/app/842978819#/expenses`
+4. Confirm receipt attached (if provided)
+
+For detailed Zoho Books setup, see `BOOMIN_CREDENTIALS.md` (sensitive credentials).
+
+---
+
 ## 📖 ADDITIONAL RESOURCES
 
 ### Repository

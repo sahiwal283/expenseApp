@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput } from '../../utils/dateUtils';
+import { filterActiveEvents } from '../../utils/eventUtils';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -17,6 +18,9 @@ interface CardOption {
 }
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSave, onCancel }) => {
+  // Filter events to only show those within 1 month + 1 day of their end date
+  const activeEvents = useMemo(() => filterActiveEvents(events), [events]);
+  
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [entityOptions, setEntityOptions] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([
@@ -377,7 +381,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
                 required
               >
                 <option value="">Select an event</option>
-                {events.map(event => (
+                {activeEvents.map(event => (
                   <option key={event.id} value={event.id}>{event.name}</option>
                 ))}
               </select>

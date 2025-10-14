@@ -1,8 +1,11 @@
 // ExpenseApp Service Worker
-// Version: 1.0.16 - DEVELOPER SETTINGS ACCESS
+// Version: 1.0.17 - AUTO-REMOVE OLD EVENTS & DOCS CLEANUP
 // Date: October 14, 2025
 // 
-// Changes from v1.0.15:
+// Changes from v1.0.16:
+// - Events auto-remove from expense dropdown 1 month + 1 day after end date
+// - Consolidated documentation files into AI_MASTER_GUIDE.md
+// - Restored CHANGELOG.md for GitHub best practices
 // - Developer role now has access to Settings page
 // - Simplified sync bar logic - no longer shows "All Synced" message
 // - Bar ONLY shows when there's actual activity (offline, syncing, pending, failed)
@@ -20,8 +23,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.16';  // BUMPED VERSION for developer settings access
-const STATIC_CACHE = 'expenseapp-static-v1.0.16';
+const CACHE_NAME = 'expenseapp-v1.0.17';  // BUMPED VERSION for event filtering and docs cleanup
+const STATIC_CACHE = 'expenseapp-static-v1.0.17';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -31,7 +34,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.16...');
+  console.log('[ServiceWorker] Installing v1.0.17...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -122,7 +125,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.16...');
+  console.log('[ServiceWorker] Activating v1.0.17...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -136,7 +139,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.16 activated and ready!');
+      console.log('[ServiceWorker] v1.0.17 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
