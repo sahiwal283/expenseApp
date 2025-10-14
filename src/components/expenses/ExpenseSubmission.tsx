@@ -22,7 +22,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [receiptModalUrl, setReceiptModalUrl] = useState<string | null>(null);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
-  const [showFullReceipt, setShowFullReceipt] = useState(false);
+  const [showFullReceipt, setShowFullReceipt] = useState(true); // Default to showing full receipt
   const [showPendingSync, setShowPendingSync] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -577,7 +577,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               <button
                 onClick={() => {
                   setViewingExpense(null);
-                  setShowFullReceipt(false);
+                  setShowFullReceipt(true); // Reset to show full receipt next time
                 }}
                 className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
               >
@@ -707,24 +707,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </button>
                   </div>
                   
-                  {showFullReceipt ? (
+                  {showFullReceipt && (
                     <div className="bg-white rounded-lg p-4">
                       <img
                         src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
                         alt="Receipt"
                         className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 shadow-md"
                       />
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-lg p-4 group cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowFullReceipt(true)}>
-                      <img
-                        src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
-                        alt="Receipt preview"
-                        className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
-                      />
-                      <p className="text-center text-sm text-gray-500 mt-3 group-hover:text-purple-600 transition-colors">
-                        Click to view full size
-                      </p>
                     </div>
                   )}
                 </div>
@@ -736,7 +725,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               <button
                 onClick={() => {
                   setViewingExpense(null);
-                  setShowFullReceipt(false);
+                  setShowFullReceipt(true); // Reset to show full receipt next time
                 }}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               >
@@ -746,7 +735,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 onClick={() => {
                   handleEditExpense(viewingExpense);
                   setViewingExpense(null);
-                  setShowFullReceipt(false);
+                  setShowFullReceipt(true); // Reset to show full receipt next time
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
               >

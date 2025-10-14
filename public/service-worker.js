@@ -1,13 +1,14 @@
 // ExpenseApp Service Worker
-// Version: 1.0.19 - PENDING SYNC UI IMPROVEMENTS
+// Version: 1.0.20 - RECEIPT DISPLAY & DOCS CLEANUP
 // Date: October 14, 2025
 // 
-// Changes from v1.0.18:
-// - Removed Pending Sync from sidebar navigation
-// - Added Pending Sync button to Expenses page header (shows count badge)
-// - Opens as modal instead of separate page
-// - Cleaner UX with contextual placement
-// - Deleted redundant documentation files (TEST_CHECKLIST, ZOHO_BOOKS_SETUP)
+// Changes from v1.0.19:
+// - Fixed receipt display in Expense Details modal
+// - Receipt now shows at FULL SIZE by default (was cropped preview)
+// - "Hide" button collapses receipt (removes cropped preview entirely)
+// - Much better UX - users can actually see receipt details
+// - Deleted docs/SESSION_MANAGEMENT.md (consolidated into code comments)
+// - Kept BOOMIN_CREDENTIALS.md separate (security best practice for sensitive data)
 // - Events auto-remove from expense dropdown 1 month + 1 day after end date
 // - Consolidated documentation files into AI_MASTER_GUIDE.md
 // - Restored CHANGELOG.md for GitHub best practices
@@ -27,8 +28,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.19';  // BUMPED VERSION for pending sync UI improvements
-const STATIC_CACHE = 'expenseapp-static-v1.0.19';
+const CACHE_NAME = 'expenseapp-v1.0.20';  // BUMPED VERSION for receipt display fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.20';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -38,7 +39,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.19...');
+  console.log('[ServiceWorker] Installing v1.0.20...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -129,7 +130,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.19...');
+  console.log('[ServiceWorker] Activating v1.0.20...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -143,7 +144,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.19 activated and ready!');
+      console.log('[ServiceWorker] v1.0.20 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

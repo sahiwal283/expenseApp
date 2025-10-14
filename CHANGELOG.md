@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.20] - 2025-10-14
+
+### Fixed
+- **Receipt Display in Expense Details Modal**:
+  - Receipt now displays at FULL SIZE by default (previously showed cropped preview)
+  - "Hide" button collapses receipt completely (removes image entirely when hidden)
+  - "View Full Size" button expands receipt when hidden
+  - Much better UX - users can actually read receipt details
+  - No more useless cropped preview that provided no information
+
+### Removed
+- Deleted `docs/SESSION_MANAGEMENT.md` (technical details can be referenced from code)
+
+### Documentation
+- Kept `BOOMIN_CREDENTIALS.md` separate (security best practice for sensitive credentials)
+- Contains passwords, API keys, tokens that should NOT be in consolidated docs
+
 ## [1.0.19] - 2025-10-14
 
 ### Changed
