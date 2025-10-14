@@ -10,6 +10,7 @@ import expenseRoutes from './routes/expenses';
 import settingsRoutes from './routes/settings';
 import devDashboardRoutes from './routes/devDashboard';
 import quickActionsRoutes from './routes/quickActions';
+import syncRoutes from './routes/sync';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -42,6 +43,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/dev-dashboard', devDashboardRoutes);
 app.use('/api/quick-actions', quickActionsRoutes);
+app.use('/api/sync', syncRoutes);
 
 // Health check (with database connectivity test)
 app.get('/api/health', async (req, res) => {

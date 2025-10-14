@@ -1,15 +1,17 @@
 // ExpenseApp Service Worker
-// Version: 1.0.1 - FIXED MOBILE CACHING ISSUES
+// Version: 1.0.9 - OFFLINE-FIRST SYNC SUPPORT
 // Date: October 14, 2025
 // 
-// Changes from v1.0.0:
+// Changes from v1.0.1:
+// - Background Sync API integration for offline queue processing
+// - Sync event handler for automatic retry
+// - Better offline support with sync queue
 // - Network-first strategy for API calls (fixes stale data on mobile)
 // - Cache-first only for static assets
 // - Proper cache versioning
-// - Excludes API responses from cache
 
-const CACHE_NAME = 'expenseapp-v1.0.1';  // BUMPED VERSION to force update
-const STATIC_CACHE = 'expenseapp-static-v1.0.1';
+const CACHE_NAME = 'expenseapp-v1.0.9';  // BUMPED VERSION for offline-first
+const STATIC_CACHE = 'expenseapp-static-v1.0.9';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -19,7 +21,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.1...');
+  console.log('[ServiceWorker] Installing v1.0.9...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -110,7 +112,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.1...');
+  console.log('[ServiceWorker] Activating v1.0.9...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -124,17 +126,116 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.1 activated and ready!');
+      console.log('[ServiceWorker] v1.0.9 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
   );
 });
 
-// Message event - allow clients to skip waiting
+// Message event - handle commands from clients
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     console.log('[ServiceWorker] Received SKIP_WAITING message');
     self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'SYNC_NOW') {
+    console.log('[ServiceWorker] Received SYNC_NOW message');
+    // Trigger sync if supported
+    if (self.registration.sync) {
+      self.registration.sync.register('expense-sync').then(() => {
+        console.log('[ServiceWorker] Sync registered');
+      }).catch((error) => {
+        console.error('[ServiceWorker] Sync registration failed:', error);
+      });
+    }
+  }
+});
+
+// Background Sync event - process sync queue when online
+// Note: Not supported on iOS Safari - fallback handled in app
+self.addEventListener('sync', (event) => {
+  console.log('[ServiceWorker] Sync event triggered:', event.tag);
+  
+  if (event.tag === 'expense-sync') {
+    event.waitUntil(
+      processSyncQueue()
+        .then(() => {
+          console.log('[ServiceWorker] Sync queue processed successfully');
+        })
+        .catch((error) => {
+          console.error('[ServiceWorker] Sync queue processing failed:', error);
+          // Re-throw to retry sync later
+          throw error;
+        })
+    );
+  }
+});
+
+// Process sync queue by notifying all clients
+async function processSyncQueue() {
+  console.log('[ServiceWorker] Processing sync queue...');
+  
+  try {
+    // Notify all clients to process their sync queues
+    const clients = await self.clients.matchAll({
+      includeUncontrolled: true,
+      type: 'window'
+    });
+    
+    if (clients.length === 0) {
+      console.log('[ServiceWorker] No clients available for sync');
+      return;
+    }
+    
+    // Send sync message to all clients
+    const syncPromises = clients.map(client => {
+      return new Promise((resolve, reject) => {
+        const messageChannel = new MessageChannel();
+        
+        messageChannel.port1.onmessage = (event) => {
+          if (event.data.error) {
+            reject(new Error(event.data.error));
+          } else {
+            resolve(event.data);
+          }
+        };
+        
+        client.postMessage({
+          type: 'PROCESS_SYNC_QUEUE'
+        }, [messageChannel.port2]);
+        
+        // Timeout after 30 seconds
+        setTimeout(() => {
+          reject(new Error('Sync timeout'));
+        }, 30000);
+      });
+    });
+    
+    await Promise.all(syncPromises);
+    console.log('[ServiceWorker] All clients synced successfully');
+    
+  } catch (error) {
+    console.error('[ServiceWorker] Sync failed:', error);
+    throw error;
+  }
+}
+
+// Periodic Background Sync (if supported)
+// This allows syncing even when the app is closed
+self.addEventListener('periodicsync', (event) => {
+  console.log('[ServiceWorker] Periodic sync event triggered:', event.tag);
+  
+  if (event.tag === 'expense-periodic-sync') {
+    event.waitUntil(
+      processSyncQueue()
+        .then(() => {
+          console.log('[ServiceWorker] Periodic sync completed');
+        })
+        .catch((error) => {
+          console.error('[ServiceWorker] Periodic sync failed:', error);
+        })
+    );
   }
 });
