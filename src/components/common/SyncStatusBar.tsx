@@ -26,6 +26,7 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [hasShownInitially, setHasShownInitially] = useState(false);
 
   useEffect(() => {
     // Listen for network changes
@@ -65,30 +66,36 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
 
   // Auto-hide logic based on status
   useEffect(() => {
-    const shouldShow = 
+    const needsAttention = 
       !networkState.isOnline || // Show when offline
       isSyncing || // Show when syncing
       (syncStatus && syncStatus.pendingCount > 0) || // Show when items pending
       (syncStatus && syncStatus.failedCount > 0); // Show when items failed
 
-    if (shouldShow) {
+    if (needsAttention) {
       // Clear any existing hide timeout
       if (hideTimeout) {
         clearTimeout(hideTimeout);
         setHideTimeout(null);
       }
       setIsVisible(true);
-    } else {
-      // Everything is synced and online - auto-hide after 3 seconds
+      setHasShownInitially(true);
+    } else if (hasShownInitially) {
+      // Only show "All Synced" if we previously had something to show
+      // Auto-hide after 10 seconds
       if (isVisible && !hideTimeout) {
         const timeout = setTimeout(() => {
           setIsVisible(false);
           setHideTimeout(null);
-        }, 3000);
+        }, 10000); // 10 seconds
         setHideTimeout(timeout);
+      } else if (!isVisible) {
+        // Don't show the bar at all if nothing needs attention
+        setIsVisible(false);
       }
     }
-  }, [networkState.isOnline, isSyncing, syncStatus, isVisible, hideTimeout]);
+    // On initial load, don't show if everything is fine
+  }, [networkState.isOnline, isSyncing, syncStatus, isVisible, hideTimeout, hasShownInitially]);
 
   const refreshSyncStatus = async () => {
     const status = await syncManager.getStatus();

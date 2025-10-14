@@ -1,8 +1,10 @@
 // ExpenseApp Service Worker
-// Version: 1.0.11 - AUTO-LOGOUT FIX
+// Version: 1.0.12 - SYNC BAR AUTO-HIDE FIX
 // Date: October 14, 2025
 // 
-// Changes from v1.0.9:
+// Changes from v1.0.11:
+// - Fixed sync status bar to auto-hide after 10 seconds when synced
+// - Bar no longer shows on initial page load if everything is synced
 // - Fixed auto-logout on token expiration
 // - Prevents empty data display on auth errors
 // - Background Sync API integration for offline queue processing
@@ -12,8 +14,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.11';  // BUMPED VERSION for auto-logout fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.11';
+const CACHE_NAME = 'expenseapp-v1.0.12';  // BUMPED VERSION for sync bar fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.12';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -23,7 +25,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.11...');
+  console.log('[ServiceWorker] Installing v1.0.12...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -114,7 +116,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.11...');
+  console.log('[ServiceWorker] Activating v1.0.12...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -128,7 +130,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.11 activated and ready!');
+      console.log('[ServiceWorker] v1.0.12 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
