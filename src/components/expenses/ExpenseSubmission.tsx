@@ -181,7 +181,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     if (reimbursementFilter === 'not-required' && expense.reimbursementRequired) return false;
     
     // User permission filter
-    const matchesUser = user.role === 'admin' || user.role === 'accountant' || expense.userId === user.id;
+    const matchesUser = user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || expense.userId === user.id;
     
     return matchesUser;
   }).sort((a, b) => {

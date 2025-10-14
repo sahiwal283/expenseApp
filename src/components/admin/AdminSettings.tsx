@@ -249,7 +249,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                 <span>System Settings</span>
               </div>
             </button>
-            {user.role === 'admin' && (
+            {(user.role === 'admin' || user.role === 'developer') && (
               <button
                 onClick={() => setActiveTab('users')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${

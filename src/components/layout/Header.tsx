@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
       if (api.USE_SERVER) {
         try {
           const ex = await api.getExpenses();
-          const pending = (ex || []).filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant' || user.role === 'coordinator'));
+          const pending = (ex || []).filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
           setNotifications(pending);
           
           // Reset viewed flag if new notifications arrive
@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
         }
       } else {
         const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
-        const pendingExpenses = expenses.filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'accountant' || user.role === 'coordinator'));
+        const pendingExpenses = expenses.filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
         setNotifications(pendingExpenses);
         
         // Reset viewed flag if new notifications arrive

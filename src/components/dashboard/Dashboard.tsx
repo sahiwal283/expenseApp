@@ -68,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
 
   const stats = useMemo(() => {
     // Filter data based on user role
-    const isAdminOrAccountant = user.role === 'admin' || user.role === 'accountant';
+    const isAdminOrAccountant = user.role === 'admin' || user.role === 'developer' || user.role === 'accountant';
     
     // For non-admin/accountant users, only show their own expenses
     const userExpenses = isAdminOrAccountant 
@@ -76,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       : expenses.filter(e => e.userId === user.id);
     
     // For non-admin/coordinator users, only show events they're assigned to
-    const userEvents = (user.role === 'admin' || user.role === 'coordinator')
+    const userEvents = (user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator')
       ? events
       : events.filter(event => event.participants.some(p => p.id === user.id));
     
@@ -126,6 +126,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
               {user.role === 'salesperson' && 'Submit your expenses and view your activity'}
               {user.role === 'accountant' && 'Review expenses and manage entity mappings'}
               {user.role === 'admin' && 'Oversee all operations and manage users'}
+              {user.role === 'developer' && 'Full system access with dev tools'}
             </p>
           </div>
           <div className="hidden md:block">
@@ -143,7 +144,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <StatsCard
-          title={user.role === 'admin' || user.role === 'accountant' ? 'Total Expenses' : 'My Expenses'}
+          title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' ? 'Total Expenses' : 'My Expenses'}
           value={`$${stats.totalExpenses.toLocaleString()}`}
           icon={DollarSign}
           color="blue"
@@ -151,7 +152,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           trendUp={true}
         />
         <StatsCard
-          title={user.role === 'admin' || user.role === 'accountant' ? 'Pending Approvals' : 'My Pending Approvals'}
+          title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' ? 'Pending Approvals' : 'My Pending Approvals'}
           value={stats.pendingExpenses.toString()}
           icon={AlertTriangle}
           color="orange"
@@ -159,7 +160,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           trendUp={false}
         />
         <StatsCard
-          title={user.role === 'admin' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
+          title={user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
           value={stats.activeEvents.toString()}
           icon={Calendar}
           color="emerald"
@@ -172,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
           <RecentExpenses expenses={stats.userExpenses} onPageChange={onPageChange} />
-          {(user.role === 'admin' || user.role === 'accountant') && (
+          {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
             <BudgetOverview events={stats.userEvents} expenses={stats.userExpenses} />
           )}
         </div>
