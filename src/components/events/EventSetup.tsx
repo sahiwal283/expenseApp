@@ -218,8 +218,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   // Filter events based on user role and permissions
   const filteredEvents = events.filter(event => {
-    // Admin can see all events for transparency, with filter option
-    if (user.role === 'admin') {
+    // Admin & Developer can see all events for transparency, with filter option
+    if (user.role === 'admin' || user.role === 'developer') {
       if (filterMode === 'all') {
         return true; // Show all events
       }
@@ -272,8 +272,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
 
   const displayedEvents = viewMode === 'active' ? activeEvents : pastEvents;
 
-  // Only admins and coordinators can create/edit events
-  const canManageEvents = user.role === 'admin' || user.role === 'coordinator';
+  // Only admins, developers, and coordinators can create/edit events
+  const canManageEvents = user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator';
 
   return (
     <div className="space-y-6">
@@ -293,7 +293,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           <p className="text-gray-600 mt-1">
             {user.role === 'coordinator'
               ? 'Create and manage trade show events' 
-              : user.role === 'admin'
+              : user.role === 'admin' || user.role === 'developer'
                 ? 'View all events and participants, manage settings'
                 : user.role === 'accountant'
                   ? 'View all events and participants for transparency'
@@ -336,8 +336,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           </button>
         </div>
 
-        {/* Admin & Accountant Filter Toggle */}
-        {(user.role === 'admin' || user.role === 'accountant') && (
+        {/* Admin, Developer & Accountant Filter Toggle */}
+        {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
             <button
               onClick={() => setFilterMode('all')}
@@ -471,8 +471,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                 </div>
               </div>
               
-              {/* Budget field - Admin and Accountant only */}
-              {(user.role === 'admin' || user.role === 'accountant') && (
+              {/* Budget field - Admin, Developer and Accountant only */}
+              {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Budget (Optional)
@@ -647,7 +647,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {event.budget && (user.role === 'admin' || user.role === 'accountant') && (
+                  {event.budget && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
                     <div className="flex items-center gap-1 text-emerald-600">
                       <DollarSign className="w-4 h-4" />
                       <span className="font-medium">${event.budget.toLocaleString()}</span>
