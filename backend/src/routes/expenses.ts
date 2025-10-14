@@ -510,36 +510,68 @@ router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
     }
 
     // Build dynamic query based on whether receipt is uploaded
+    // Admin, accountant, and developer can edit any expense, others only their own
+    const canEditAny = ['admin', 'accountant', 'developer'].includes(req.user?.role || '');
+    
     let updateQuery: string;
     let queryParams: any[];
     
     if (receiptUrl) {
       // Update with new receipt and OCR data
-      updateQuery = `UPDATE expenses 
-       SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
-           card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-           receipt_url = $11, ocr_text = $12, extracted_data = $13, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $14 AND user_id = $15
-       RETURNING *`;
-      queryParams = [
-        event_id, category, merchant, amount, date, description, 
-        card_used, reimbursement_required, location, zoho_entity,
-        receiptUrl, ocrText, extractedData ? JSON.stringify(extractedData) : null,
-        id, req.user?.id
-      ];
+      if (canEditAny) {
+        updateQuery = `UPDATE expenses 
+         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
+             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
+             receipt_url = $11, ocr_text = $12, extracted_data = $13, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $14
+         RETURNING *`;
+        queryParams = [
+          event_id, category, merchant, amount, date, description, 
+          card_used, reimbursement_required, location, zoho_entity,
+          receiptUrl, ocrText, extractedData ? JSON.stringify(extractedData) : null,
+          id
+        ];
+      } else {
+        updateQuery = `UPDATE expenses 
+         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
+             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
+             receipt_url = $11, ocr_text = $12, extracted_data = $13, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $14 AND user_id = $15
+         RETURNING *`;
+        queryParams = [
+          event_id, category, merchant, amount, date, description, 
+          card_used, reimbursement_required, location, zoho_entity,
+          receiptUrl, ocrText, extractedData ? JSON.stringify(extractedData) : null,
+          id, req.user?.id
+        ];
+      }
     } else {
       // Update without changing receipt
-      updateQuery = `UPDATE expenses 
-       SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
-           card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11 AND user_id = $12
-       RETURNING *`;
-      queryParams = [
-        event_id, category, merchant, amount, date, description, 
-        card_used, reimbursement_required, location, zoho_entity, 
-        id, req.user?.id
-      ];
+      if (canEditAny) {
+        updateQuery = `UPDATE expenses 
+         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
+             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $11
+         RETURNING *`;
+        queryParams = [
+          event_id, category, merchant, amount, date, description, 
+          card_used, reimbursement_required, location, zoho_entity, 
+          id
+        ];
+      } else {
+        updateQuery = `UPDATE expenses 
+         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
+             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $11 AND user_id = $12
+         RETURNING *`;
+        queryParams = [
+          event_id, category, merchant, amount, date, description, 
+          card_used, reimbursement_required, location, zoho_entity, 
+          id, req.user?.id
+        ];
+      }
     }
 
     console.log(`Updating expense ${id} with:`, { event_id, category, merchant, card_used, hasReceipt: !!receiptUrl });
