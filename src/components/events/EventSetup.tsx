@@ -216,15 +216,33 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     return event.participants.some(p => p.id === user.id);
   });
 
+  console.log('[EventSetup] Total events:', events.length);
+  console.log('[EventSetup] After role filter:', filteredEvents.length);
+  console.log('[EventSetup] Today:', today.toISOString());
+
   const activeEvents = filteredEvents.filter(event => {
-    const endDate = parseLocalDate(event.endDate);
-    return endDate >= today;
+    try {
+      const endDate = parseLocalDate(event.endDate);
+      console.log(`[EventSetup] Event "${event.name}": endDate=${event.endDate}, parsed=${endDate.toISOString()}, isActive=${endDate >= today}`);
+      return endDate >= today;
+    } catch (error) {
+      console.error(`[EventSetup] Error parsing date for event "${event.name}":`, error);
+      return false;
+    }
   });
 
   const pastEvents = filteredEvents.filter(event => {
-    const endDate = parseLocalDate(event.endDate);
-    return endDate < today;
+    try {
+      const endDate = parseLocalDate(event.endDate);
+      return endDate < today;
+    } catch (error) {
+      console.error(`[EventSetup] Error parsing date for event "${event.name}":`, error);
+      return false;
+    }
   });
+
+  console.log('[EventSetup] Active events:', activeEvents.length);
+  console.log('[EventSetup] Past events:', pastEvents.length);
 
   const displayedEvents = viewMode === 'active' ? activeEvents : pastEvents;
 
