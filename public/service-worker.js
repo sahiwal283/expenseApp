@@ -1,8 +1,10 @@
 // ExpenseApp Service Worker
-// Version: 1.0.13 - UUID POLYFILL FIX
+// Version: 1.0.14 - USER REJECTION FEATURE
 // Date: October 14, 2025
 // 
-// Changes from v1.0.12:
+// Changes from v1.0.13:
+// - Added "Reject" button for pending user registrations
+// - Admins can now reject/delete pending users with confirmation modal
 // - Added UUID polyfill for crypto.randomUUID() compatibility
 // - Fixes "crypto.randomUUID is not a function" error in older browsers
 // - Fixed sync status bar to auto-hide after 10 seconds when synced
@@ -16,8 +18,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.13';  // BUMPED VERSION for UUID polyfill
-const STATIC_CACHE = 'expenseapp-static-v1.0.13';
+const CACHE_NAME = 'expenseapp-v1.0.14';  // BUMPED VERSION for user rejection feature
+const STATIC_CACHE = 'expenseapp-static-v1.0.14';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -27,7 +29,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.13...');
+  console.log('[ServiceWorker] Installing v1.0.14...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -118,7 +120,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.13...');
+  console.log('[ServiceWorker] Activating v1.0.14...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -132,7 +134,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.13 activated and ready!');
+      console.log('[ServiceWorker] v1.0.14 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

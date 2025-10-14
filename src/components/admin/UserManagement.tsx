@@ -16,6 +16,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [activatingUser, setActivatingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole>('salesperson');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectingUser, setRejectingUser] = useState<User | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -134,6 +136,30 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     setActivatingUser(user);
     setSelectedRole('salesperson'); // Default
     setShowActivationModal(true);
+  };
+
+  const handleRejectUser = async () => {
+    if (!rejectingUser) return;
+    
+    try {
+      await api.deleteUser(rejectingUser.id);
+      
+      // Refresh users list
+      const data = await api.getUsers();
+      setUsers(data || []);
+      
+      setShowRejectModal(false);
+      setRejectingUser(null);
+      alert(`User ${rejectingUser.name} has been rejected and removed`);
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      alert('Failed to reject user');
+    }
+  };
+
+  const openRejectModal = (user: User) => {
+    setRejectingUser(user);
+    setShowRejectModal(true);
   };
 
   const isPendingUser = (user: User) => {
@@ -270,14 +296,24 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                   <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       {isPendingUser(user) ? (
-                        <button
-                          onClick={() => openActivationModal(user)}
-                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 flex items-center space-x-2"
-                          title="Activate User"
-                        >
-                          <UserCheck className="w-4 h-4" />
-                          <span>Activate User</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => openActivationModal(user)}
+                            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 flex items-center space-x-2"
+                            title="Activate User"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            <span>Activate User</span>
+                          </button>
+                          <button
+                            onClick={() => openRejectModal(user)}
+                            className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 flex items-center space-x-2"
+                            title="Reject User"
+                          >
+                            <UserX className="w-4 h-4" />
+                            <span>Reject</span>
+                          </button>
+                        </>
                       ) : (
                         <>
                           <button
@@ -381,6 +417,75 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
               >
                 <UserCheck className="w-4 h-4" />
                 <span>Activate</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Confirmation Modal */}
+      {showRejectModal && rejectingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <UserX className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Reject User Registration</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-red-800 font-medium mb-1">
+                    Are you sure you want to reject this registration?
+                  </p>
+                  <p className="text-sm text-red-700">
+                    <strong>{rejectingUser.name}</strong> ({rejectingUser.email}) will be permanently removed and will need to register again if they want access.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {rejectingUser.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">{rejectingUser.name}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">{rejectingUser.username} • {rejectingUser.email}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectUser}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <UserX className="w-4 h-4" />
+                <span>Reject User</span>
               </button>
             </div>
           </div>
