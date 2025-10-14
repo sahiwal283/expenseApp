@@ -14,6 +14,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TradeShow | null>(null);
   const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
+  const [filterMode, setFilterMode] = useState<'all' | 'my'>('all'); // For accountant: 'all' or 'my'
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -221,6 +222,14 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
     if (user.role === 'admin' || user.role === 'coordinator') {
       return true;
     }
+    // Accountant can see all events for transparency, but can filter to "My Events"
+    if (user.role === 'accountant') {
+      if (filterMode === 'all') {
+        return true; // Show all events
+      }
+      // Show only events they're assigned to
+      return event.participants.some(p => p.id === user.id);
+    }
     // Other users can only see events they're assigned to as participants
     return event.participants.some(p => p.id === user.id);
   });
@@ -271,12 +280,14 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-            {canManageEvents ? 'Event Management' : 'My Events'}
+            {canManageEvents ? 'Event Management' : 'Events'}
           </h1>
           <p className="text-gray-600 mt-1">
             {canManageEvents 
               ? 'Create and manage trade show events' 
-              : 'View events you are assigned to'}
+              : user.role === 'accountant'
+                ? 'View all events and participants for transparency'
+                : 'View events you are assigned to'}
           </p>
         </div>
         {canManageEvents && (
@@ -291,27 +302,55 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       </div>
 
       {/* View Mode Toggle */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
-        <button
-          onClick={() => setViewMode('active')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-            viewMode === 'active'
-              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Active Events ({activeEvents.length})
-        </button>
-        <button
-          onClick={() => setViewMode('past')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-            viewMode === 'past'
-              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Past Events ({pastEvents.length})
-        </button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
+          <button
+            onClick={() => setViewMode('active')}
+            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+              viewMode === 'active'
+                ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Active Events ({activeEvents.length})
+          </button>
+          <button
+            onClick={() => setViewMode('past')}
+            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+              viewMode === 'past'
+                ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Past Events ({pastEvents.length})
+          </button>
+        </div>
+
+        {/* Accountant Filter Toggle */}
+        {user.role === 'accountant' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
+            <button
+              onClick={() => setFilterMode('all')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                filterMode === 'all'
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All Events
+            </button>
+            <button
+              onClick={() => setFilterMode('my')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                filterMode === 'my'
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Events
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Event Form Modal */}
