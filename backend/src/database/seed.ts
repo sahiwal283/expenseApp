@@ -24,7 +24,8 @@ async function seedDatabase() {
       { username: 'admin', password: hashedPassword, name: 'Admin User', email: 'admin@company.com', role: 'admin' },
       { username: 'sarah', password: hashedPassword, name: 'Sarah Johnson', email: 'sarah@company.com', role: 'coordinator' },
       { username: 'mike', password: hashedPassword, name: 'Mike Chen', email: 'mike@company.com', role: 'salesperson' },
-      { username: 'lisa', password: hashedPassword, name: 'Lisa Williams', email: 'lisa@company.com', role: 'accountant' }
+      { username: 'lisa', password: hashedPassword, name: 'Lisa Williams', email: 'lisa@company.com', role: 'accountant' },
+      { username: 'developer', password: hashedPassword, name: 'Developer User', email: 'developer@company.com', role: 'developer' }
     ];
 
     for (const user of users) {
@@ -71,6 +72,7 @@ async function seedDatabase() {
     console.log(`  - sarah / ${defaultPassword} (Coordinator)`);
     console.log(`  - mike / ${defaultPassword} (Salesperson)`);
     console.log(`  - lisa / ${defaultPassword} (Accountant)`);
+    console.log(`  - developer / ${defaultPassword} (Developer)`);
     
     process.exit(0);
   } catch (error) {
