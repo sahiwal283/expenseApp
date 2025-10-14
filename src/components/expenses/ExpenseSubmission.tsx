@@ -55,50 +55,67 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   }, []);
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
-    if (api.USE_SERVER) {
-      if (editingExpense) {
-        await api.updateExpense(editingExpense.id, {
-          event_id: expenseData.tradeShowId,
-          category: expenseData.category,
-          merchant: expenseData.merchant,
-          amount: expenseData.amount,
-          date: expenseData.date,
-          description: expenseData.description,
-          card_used: expenseData.cardUsed,
-          reimbursement_required: expenseData.reimbursementRequired,
-          location: expenseData.location,
-          zoho_entity: expenseData.zohoEntity,
-        }, file || undefined);
+    try {
+      console.log('[ExpenseSubmission] Saving expense...', { isEdit: !!editingExpense, hasFile: !!file });
+      
+      if (api.USE_SERVER) {
+        if (editingExpense) {
+          console.log('[ExpenseSubmission] Updating expense:', editingExpense.id);
+          await api.updateExpense(editingExpense.id, {
+            event_id: expenseData.tradeShowId,
+            category: expenseData.category,
+            merchant: expenseData.merchant,
+            amount: expenseData.amount,
+            date: expenseData.date,
+            description: expenseData.description,
+            card_used: expenseData.cardUsed,
+            reimbursement_required: expenseData.reimbursementRequired,
+            location: expenseData.location,
+            zoho_entity: expenseData.zohoEntity,
+          }, file || undefined);
+          console.log('[ExpenseSubmission] Expense updated successfully');
+        } else {
+          console.log('[ExpenseSubmission] Creating new expense');
+          await api.createExpense({
+            event_id: expenseData.tradeShowId,
+            category: expenseData.category,
+            merchant: expenseData.merchant,
+            amount: expenseData.amount,
+            date: expenseData.date,
+            description: expenseData.description,
+            card_used: expenseData.cardUsed,
+            reimbursement_required: expenseData.reimbursementRequired,
+            location: expenseData.location,
+          }, file || pendingReceiptFile || undefined);
+          console.log('[ExpenseSubmission] Expense created successfully');
+        }
+        setPendingReceiptFile(null);
+        
+        console.log('[ExpenseSubmission] Refreshing expense list...');
+        const refreshed = await api.getExpenses();
+        setExpenses(refreshed || []);
+        console.log('[ExpenseSubmission] Expense list refreshed:', refreshed?.length || 0, 'expenses');
       } else {
-        await api.createExpense({
-          event_id: expenseData.tradeShowId,
-          category: expenseData.category,
-          merchant: expenseData.merchant,
-          amount: expenseData.amount,
-          date: expenseData.date,
-          description: expenseData.description,
-          card_used: expenseData.cardUsed,
-          reimbursement_required: expenseData.reimbursementRequired,
-          location: expenseData.location,
-        }, file || pendingReceiptFile || undefined);
+        const newExpense: Expense = {
+          ...expenseData,
+          id: editingExpense?.id || Date.now().toString(),
+          userId: user.id
+        };
+        const updatedExpenses = editingExpense
+          ? expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense)
+          : [...expenses, newExpense];
+        setExpenses(updatedExpenses);
+        localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
       }
-      setPendingReceiptFile(null);
-      const refreshed = await api.getExpenses();
-      setExpenses(refreshed || []);
-    } else {
-      const newExpense: Expense = {
-        ...expenseData,
-        id: editingExpense?.id || Date.now().toString(),
-        userId: user.id
-      };
-      const updatedExpenses = editingExpense
-        ? expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense)
-        : [...expenses, newExpense];
-      setExpenses(updatedExpenses);
-      localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+      
+      // Close the form
+      console.log('[ExpenseSubmission] Closing form');
+      setShowForm(false);
+      setEditingExpense(null);
+    } catch (error) {
+      console.error('[ExpenseSubmission] Error saving expense:', error);
+      alert('Failed to save expense. Please try again.');
     }
-    setShowForm(false);
-    setEditingExpense(null);
   };
 
   const handleEditExpense = (expense: Expense, file?: File) => {
@@ -468,13 +485,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                             title="View Details & Receipt"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEditExpense(expense)}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteExpense(expense.id)}
