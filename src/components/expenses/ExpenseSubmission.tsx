@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, Calendar, DollarSign, CreditCard, User as UserIcon } from 'lucide-react';
+import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, Calendar, DollarSign, CreditCard, User as UserIcon, Clock } from 'lucide-react';
 import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
+import { PendingActions } from '../common/PendingActions';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
+import { offlineDb } from '../../utils/offlineDb';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -21,6 +23,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(false);
+  const [showPendingSync, setShowPendingSync] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Column-level filters
   const [dateFilter, setDateFilter] = useState('');
@@ -52,6 +56,24 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         if (storedEvents) setEvents(JSON.parse(storedEvents));
       }
     })();
+  }, []);
+
+  // Load pending sync count
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const queue = await offlineDb.syncQueue.toArray();
+        const pending = queue.filter(item => item.status === 'pending' || item.status === 'failed');
+        setPendingCount(pending.length);
+      } catch (error) {
+        console.error('Failed to load pending count:', error);
+      }
+    };
+
+    loadPendingCount();
+    // Refresh count every 5 seconds
+    const interval = setInterval(loadPendingCount, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
@@ -253,6 +275,18 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             >
               <X className="w-5 h-5" />
               <span>Clear Filters</span>
+            </button>
+          )}
+          {pendingCount > 0 && (
+            <button
+              onClick={() => setShowPendingSync(true)}
+              className="relative bg-orange-50 text-orange-700 border border-orange-200 px-4 py-3 rounded-lg font-medium hover:bg-orange-100 transition-all duration-200 flex items-center space-x-2"
+            >
+              <Clock className="w-5 h-5" />
+              <span>Pending Sync</span>
+              <span className="ml-1 px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
+                {pendingCount}
+              </span>
             </button>
           )}
           <button
@@ -718,6 +752,29 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               >
                 Edit Expense
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Sync Modal */}
+      {showPendingSync && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={() => setShowPendingSync(false)}></div>
+            <div className="relative bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden z-50">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900">Pending Sync</h2>
+                <button
+                  onClick={() => setShowPendingSync(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+                <PendingActions user={user} />
+              </div>
             </div>
           </div>
         </div>

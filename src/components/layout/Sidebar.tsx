@@ -31,7 +31,6 @@ const navigationItems = [
   { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant', 'developer'] },
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'developer'] },
   { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant', 'developer'] },
-  { id: 'pending-actions', label: 'Pending Sync', icon: Clock, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
   { id: 'devdashboard', label: 'Dev Dashboard', icon: Code, roles: ['developer'] },
 ];
 

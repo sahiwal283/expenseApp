@@ -7,17 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Auto-removal of events from expense entry dropdown after 1 month + 1 day past end date
-  - Events older than cutoff date no longer appear in "Select an event" dropdown when creating expenses
-  - Keeps dropdown clean long-term while preserving historical data in reports and approvals
-  - Implemented via `filterActiveEvents()` utility function in `src/utils/eventUtils.ts`
+## [1.0.19] - 2025-10-14
+
+### Changed
+- **Pending Sync UX Improvements**:
+  - Removed "Pending Sync" from sidebar navigation (was cluttering the menu)
+  - Added contextual "Pending Sync" button to Expenses page header
+  - Button shows count badge (e.g., "Pending Sync 3") when items need syncing
+  - Opens as modal overlay instead of separate page
+  - Only appears when there are actually pending items
+  - Cleaner, more intuitive user experience
+
+### Removed
+- Deleted redundant documentation files:
+  - `docs/TEST_CHECKLIST.md` (no longer used)
+  - `docs/ZOHO_BOOKS_SETUP.md` (fully covered in AI_MASTER_GUIDE.md)
+
+## [1.0.18] - 2025-10-14
 
 ### Changed
 - Improved navigation order following UI best practices
   - Moved "Pending Sync" from middle of nav to bottom (near Settings)
   - New order: Dashboard → Events → Expenses → Approvals → Reports → Settings → Pending Sync → Dev Dashboard
-  - Creates better visual flow and groups utility items together
+
+### Added
+- Recovered comprehensive changelog history from git (351 lines)
+- Merged historical version notes from v1.0.0 to v1.0.18
+
+## [1.0.17] - 2025-10-14
+
+### Added
+- Auto-removal of events from expense entry dropdown after 1 month + 1 day past end date
+  - Events older than cutoff date no longer appear in "Select an event" dropdown when creating expenses
+  - Keeps dropdown clean long-term while preserving historical data in reports and approvals
+  - Implemented via `filterActiveEvents()` utility function in `src/utils/eventUtils.ts`
+- Restored `CHANGELOG.md` for GitHub best practices
+- Consolidated Zoho Books setup into AI_MASTER_GUIDE.md
 
 ## [1.0.16] - 2025-10-14
 

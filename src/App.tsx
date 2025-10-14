@@ -7,7 +7,6 @@ import { AdminSettings } from './components/admin/AdminSettings';
 import { DevDashboard } from './components/developer/DevDashboard';
 import { Approvals } from './components/admin/Approvals';
 import { Reports } from './components/reports/Reports';
-import { PendingActions } from './components/common/PendingActions';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { InstallPrompt } from './components/layout/InstallPrompt';
@@ -272,7 +271,6 @@ function App() {
           {currentPage === 'reports' && <Reports user={user} />}
           {currentPage === 'settings' && <AdminSettings user={user} />}
           {currentPage === 'devdashboard' && <DevDashboard user={user} />}
-          {currentPage === 'pending-actions' && <PendingActions />}
         </main>
         
         {/* PWA Install Prompt */}
