@@ -52,10 +52,18 @@ class TokenManager {
 class ApiClient {
   private baseURL: string;
   private defaultTimeout: number;
+  private onUnauthorized: (() => void) | null = null;
 
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
     this.defaultTimeout = API_CONFIG.TIMEOUT;
+  }
+
+  /**
+   * Set callback for unauthorized (401/403) responses
+   */
+  setUnauthorizedCallback(callback: () => void): void {
+    this.onUnauthorized = callback;
   }
 
   /**
@@ -176,11 +184,15 @@ class ApiClient {
       const result = await this.handleResponse<T>(response);
       return result.data;
     } catch (error: any) {
-      // Handle token expiration
-      if (error.statusCode === 401) {
+      // Handle token expiration and unauthorized access
+      if (error.statusCode === 401 || error.statusCode === 403) {
+        console.error('[API] Unauthorized access detected, logging out user');
         TokenManager.removeToken();
-        // Optionally redirect to login
-        // window.location.href = '/login';
+        
+        // Trigger logout callback if set
+        if (this.onUnauthorized) {
+          this.onUnauthorized();
+        }
       }
 
       throw error;
@@ -230,30 +242,45 @@ class ApiClient {
     fileFieldName: string = 'file',
     method: 'POST' | 'PUT' = 'POST'
   ): Promise<T> {
-    const formData = new FormData();
-    
-    // Add form fields
-    Object.entries(data).forEach(([key, value]) => {
-      formData.append(key, String(value));
-    });
-    
-    // Add file
-    formData.append(fileFieldName, file);
+    try {
+      const formData = new FormData();
+      
+      // Add form fields
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+      
+      // Add file
+      formData.append(fileFieldName, file);
 
-    const token = TokenManager.getToken();
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      const token = TokenManager.getToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${this.baseURL}${path}`, {
+        method,
+        headers,
+        body: formData,
+      });
+
+      const result = await this.handleResponse<T>(response);
+      return result.data;
+    } catch (error: any) {
+      // Handle token expiration and unauthorized access
+      if (error.statusCode === 401 || error.statusCode === 403) {
+        console.error('[API] Unauthorized access detected in upload, logging out user');
+        TokenManager.removeToken();
+        
+        // Trigger logout callback if set
+        if (this.onUnauthorized) {
+          this.onUnauthorized();
+        }
+      }
+
+      throw error;
     }
-
-    const response = await fetch(`${this.baseURL}${path}`, {
-      method,
-      headers,
-      body: formData,
-    });
-
-    const result = await this.handleResponse<T>(response);
-    return result.data;
   }
 }
 

@@ -21,6 +21,7 @@ import { syncManager } from './utils/syncManager';
 import { networkMonitor } from './utils/networkDetection';
 import { offlineDb } from './utils/offlineDb';
 import { clearEncryptionData } from './utils/encryption';
+import { apiClient } from './utils/apiClient';
 
 export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'pending';
 
@@ -83,6 +84,23 @@ function App() {
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
   const notifications = useNotifications();
+
+  // Register API unauthorized callback to auto-logout on token expiration
+  useEffect(() => {
+    console.log('[App] Registering API unauthorized callback');
+    apiClient.setUnauthorizedCallback(() => {
+      console.log('[App] API detected unauthorized access, forcing logout');
+      notifications.showWarning(
+        'Session Expired',
+        'Your session has expired. Please log in again.',
+        false
+      );
+      // Use setTimeout to ensure the notification is shown before logout
+      setTimeout(() => {
+        handleLogout();
+      }, 100);
+    });
+  }, [notifications]);
 
   // Initialize session manager
   useEffect(() => {
