@@ -60,21 +60,49 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
   const loadData = async () => {
     if (api.USE_SERVER) {
+      // Fetch data independently so one failure doesn't clear everything
+      console.log('[Approvals] Loading data...');
+      
+      // Fetch expenses (critical)
       try {
-        const [ev, ex, us, st] = await Promise.all([
-          api.getEvents(),
-          api.getExpenses(),
-          api.getUsers(),
-          api.getSettings()
-        ]);
-        setEvents(ev || []);
+        const ex = await api.getExpenses();
+        console.log('[Approvals] Loaded expenses:', ex?.length || 0);
         setExpenses(ex || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading expenses:', error);
+        setExpenses([]);
+      }
+
+      // Fetch events (important but non-critical)
+      try {
+        const ev = await api.getEvents();
+        console.log('[Approvals] Loaded events:', ev?.length || 0);
+        setEvents(ev || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading events:', error);
+        setEvents([]);
+      }
+
+      // Fetch users (non-critical)
+      try {
+        const us = await api.getUsers();
+        console.log('[Approvals] Loaded users:', us?.length || 0);
         setUsers(us || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading users (non-critical):', error);
+        setUsers([]);
+      }
+
+      // Fetch settings (non-critical)
+      try {
+        const st = await api.getSettings();
         setCardOptions(st?.cardOptions || []);
         console.log('[Approvals] Entity options from API:', st?.entityOptions);
         setEntityOptions(st?.entityOptions || []);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('[Approvals] Error loading settings:', error);
+        setCardOptions([]);
+        setEntityOptions([]);
       }
     }
   };
