@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { User, Key, ArrowRight, AlertCircle, UserPlus } from 'lucide-react';
-import { RegistrationForm } from './RegistrationForm';
+import { User, Key, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface LoginFormProps {
   onLogin: (username: string, password: string) => Promise<boolean> | boolean;
@@ -11,7 +10,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showRegistration, setShowRegistration] = useState(false);
 
   // Detect environment based on hostname
   const isProduction = window.location.hostname.includes('duckdns.org') || 
@@ -47,32 +45,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const displayUsers = isSandbox ? sandboxUsers : productionUsers;
   const passwordHint = isSandbox ? 'sandbox123' : 'Use your assigned credentials';
 
-  // Show registration form if requested
-  if (showRegistration) {
-    return <RegistrationForm onBack={() => setShowRegistration(false)} />;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full px-3 sm:px-0">
-        <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-4 sm:p-5 md:p-6 lg:p-8">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Key className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Welcome Back</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
             <p className="text-gray-600 mt-2">Sign in to TradeShow Expense Manager</p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div className="flex items-center">
                 <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
                 <span className="text-red-700 text-sm">{error}</span>
               </div>
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Username
@@ -121,26 +114,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               )}
             </button>
           </form>
-
-          {/* New User Registration Button */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowRegistration(true)}
-              className="mt-4 w-full bg-white border-2 border-blue-500 text-blue-600 py-3 px-4 rounded-lg font-medium hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group"
-            >
-              <UserPlus className="mr-2 w-5 h-5" />
-              Create New Account
-            </button>
-          </div>
 
           {displayUsers.length > 0 && (
             <div className="mt-8 pt-6 border-t border-gray-200">

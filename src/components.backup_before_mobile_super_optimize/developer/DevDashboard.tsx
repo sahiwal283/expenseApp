@@ -138,7 +138,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
@@ -268,7 +268,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
         <div className="p-4 md:p-6">
           {/* Overview Tab */}
           {activeTab === 'overview' && versionInfo && metrics && (
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Version Info */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-200">
@@ -392,7 +392,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
 
           {/* Metrics Tab */}
           {activeTab === 'metrics' && metrics && (
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -605,7 +605,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
 
           {/* API Analytics Tab */}
           {activeTab === 'api' && apiAnalytics && (
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-6">
               {/* Endpoint Stats */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="p-4 border-b border-gray-200">
@@ -704,24 +704,6 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
           {/* Alerts Tab */}
           {activeTab === 'alerts' && (
             <div className="space-y-4">
-              {/* Info Banner */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-semibold text-blue-900 mb-1">Real-Time System Alerts</h4>
-                    <p className="text-sm text-blue-800">
-                      These alerts are generated automatically based on current system conditions. They will clear automatically when you resolve the underlying issue:
-                    </p>
-                    <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
-                      <li><strong>Pending Expenses:</strong> Approve expenses on the Approvals page</li>
-                      <li><strong>Zoho Books Sync:</strong> Use "Push to Zoho" button on Reports page</li>
-                      <li><strong>Missing Receipts:</strong> Upload receipts when creating/editing expenses</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
               {/* Alert Filter */}
               <div className="flex items-center space-x-3">
                 <select
@@ -772,8 +754,29 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                             {new Date(alert.created_at).toLocaleString()}
                           </p>
                         </div>
+                        {alert.status === 'active' && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={async () => {
+                                await api.devDashboard.acknowledgeAlert(alert.id);
+                                loadDashboardData();
+                              }}
+                              className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                            >
+                              Acknowledge
+                            </button>
+                            <button
+                              onClick={async () => {
+                                await api.devDashboard.resolveAlert(alert.id);
+                                loadDashboardData();
+                              }}
+                              className="px-3 py-1.5 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600"
+                            >
+                              Resolve
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      {/* Note: These alerts are dynamic and will automatically clear when the underlying issue is resolved */}
                     </div>
                   ))
                 )}
@@ -783,7 +786,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
 
           {/* Page Analytics Tab */}
           {activeTab === 'analytics' && pageAnalytics && (
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-6">
               {/* Page Stats */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="p-4 border-b border-gray-200">

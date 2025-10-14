@@ -51,7 +51,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 sm:gap-5 md:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {entities.map((entityName) => {
             const data = entityData[entityName];
             const percentage = (data.totalAmount / totalAmount) * 100;
@@ -60,7 +60,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
               .slice(0, 3);
 
             return (
-              <div key={entityName} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+              <div key={entityName} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
@@ -76,7 +76,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-gray-900">
                       ${data.totalAmount.toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-600">
@@ -141,18 +141,18 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
 
       {/* Summary Section */}
       {entities.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Entity Summary</h3>
             <FileText className="w-5 h-5 text-gray-600" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 sm:gap-5 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Building2 className="w-8 h-8 text-blue-600" />
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{entities.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{entities.length}</p>
               <p className="text-sm text-gray-600">Total Entities</p>
             </div>
 
@@ -160,7 +160,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <DollarSign className="w-8 h-8 text-emerald-600" />
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 ${Math.round(totalAmount / entities.length).toLocaleString()}
               </p>
               <p className="text-sm text-gray-600">Avg per Entity</p>
@@ -170,7 +170,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <FileText className="w-8 h-8 text-orange-600" />
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {entityData['Unassigned']?.expenseCount || 0}
               </p>
               <p className="text-sm text-gray-600">Unassigned Expenses</p>

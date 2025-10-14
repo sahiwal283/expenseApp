@@ -17,7 +17,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   if (user.role === 'coordinator' || user.role === 'salesperson') {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700">
             Access denied. {user.role === 'coordinator' ? 'Coordinators' : 'Salespeople'} do not have access to reports.
           </p>
@@ -204,7 +204,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-xl md:text-xl sm:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="text-gray-600 mt-1">
             Analyze expenses and generate comprehensive reports
             <span className="ml-3 text-sm text-gray-500">
@@ -218,14 +218,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setShowFilterModal(true)}
-            className="bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 min-h-[44px] rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
           >
             <Filter className="w-4 h-4" />
             <span>Filters</span>
           </button>
           <button
             onClick={handleExportCSV}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
           >
             <Download className="w-5 h-5" />
             <span>Export CSV</span>
@@ -235,9 +235,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Trade Show Header Banner */}
       {selectedEvent !== 'all' && (
-        <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl shadow-lg border border-blue-600 p-3 sm:p-4 md:p-5 lg:p-6">
+        <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl shadow-lg border border-blue-600 p-4 md:p-5 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-            <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
                   setSelectedEvent('all');
@@ -250,14 +250,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               </button>
               <div>
                 <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Trade Show</p>
-                <h2 className="text-xl md:text-xl sm:text-2xl font-bold text-white">
+                <h2 className="text-xl md:text-2xl font-bold text-white">
                   {events.find(e => e.id === selectedEvent)?.name || 'Unknown Event'}
                 </h2>
               </div>
             </div>
             <div className="text-right">
               <p className="text-white text-opacity-90 text-sm font-medium mb-1">Total Expenses</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white">
+              <p className="text-3xl font-bold text-white">
                 ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </p>
             </div>
@@ -267,9 +267,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Header Banner */}
       {selectedEntity !== 'all' && (
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg border border-purple-700 p-3 sm:p-4 md:p-5 lg:p-6">
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg border border-purple-700 p-4 md:p-5 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-            <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
                   setSelectedEntity('all');
@@ -282,14 +282,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               </button>
               <div>
                 <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Entity</p>
-                <h2 className="text-xl md:text-xl sm:text-2xl font-bold text-white">
+                <h2 className="text-xl md:text-2xl font-bold text-white">
                   {selectedEntity}
                 </h2>
               </div>
             </div>
             <div className="text-right">
               <p className="text-white text-opacity-90 text-sm font-medium mb-1">Total Expenses</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white">
+              <p className="text-3xl font-bold text-white">
                 ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </p>
             </div>
@@ -299,7 +299,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Trade Show Breakdown - Show when viewing specific entity */}
       {tradeShowBreakdown.length > 0 && selectedEntity !== 'all' && selectedEvent === 'all' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
               <Calendar className="w-4 h-4 text-white" />
@@ -341,7 +341,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Totals Dashboard - Show when not filtering by entity */}
       {entityTotals.length > 0 && selectedEntity === 'all' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-4 h-4 text-white" />
@@ -421,7 +421,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Filter Modal */}
       {showFilterModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 sticky top-0 bg-white rounded-t-xl">
@@ -523,7 +523,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   setSelectedEntity('all');
                   setReportType('overview');
                 }}
-                className="px-3 sm:px-4 py-2 min-h-[44px] text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
               >
                 Clear All
               </button>

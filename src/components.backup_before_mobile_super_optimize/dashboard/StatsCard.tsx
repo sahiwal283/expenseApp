@@ -26,7 +26,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   trendUp 
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className={`w-12 h-12 bg-gradient-to-r ${colorClasses[color]} rounded-lg flex items-center justify-center`}>
           <Icon className="w-6 h-6 text-white" />
@@ -39,7 +39,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         )}
       </div>
       <div>
-        <p className="text-base sm:text-lg sm:text-xl sm:text-2xl font-bold text-gray-900 mb-1">{value}</p>
+        <p className="text-2xl font-bold text-gray-900 mb-1">{value}</p>
         <p className="text-gray-600">{title}</p>
       </div>
     </div>

@@ -50,7 +50,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   return (
     <div className="space-y-6">
       {/* Event Breakdown - MOVED TO TOP */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Expenses by Trade Show</h3>
@@ -59,7 +59,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
         </div>
         
         {Object.keys(eventBreakdown).length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {Object.entries(eventBreakdown)
               .sort(([, a], [, b]) => b.amount - a.amount)
               .map(([eventName, { amount, eventId }]) => {
@@ -69,7 +69,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 return (
                   <div 
                     key={eventName} 
-                    className="bg-gray-50 rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 hover:shadow-md transition-all duration-200 border border-transparent hover:border-purple-300"
+                    className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 hover:shadow-md transition-all duration-200 border border-transparent hover:border-purple-300"
                     onClick={() => onTradeShowClick?.(eventId)}
                     role="button"
                     tabIndex={0}
@@ -110,9 +110,9 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
       </div>
 
       {/* Category and Monthly sections */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 sm:gap-5 md:gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Category Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
           </div>
@@ -150,7 +150,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
       </div>
 
       {/* Monthly Trend */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Monthly Spending Trend</h3>
         </div>

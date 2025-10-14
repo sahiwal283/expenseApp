@@ -13,9 +13,9 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
   const recentExpenses = expenses.slice(0, 5);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Expenses</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Recent Expenses</h3>
         <button onClick={() => onPageChange('expenses')} className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
       </div>
 
@@ -28,8 +28,8 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
       ) : (
         <div className="space-y-4">
           {recentExpenses.map((expense) => (
-            <div key={expense.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
+            <div key={expense.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>

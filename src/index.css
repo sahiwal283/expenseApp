@@ -66,3 +66,49 @@
     animation: slide-in 0.3s ease-out;
   }
 }
+
+/* Additional Mobile Optimizations */
+@layer utilities {
+  /* Prevent horizontal scroll on mobile */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Better tap highlighting */
+  * {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+  }
+
+  /* Smooth scrolling on mobile */
+  @media (max-width: 768px) {
+    * {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Prevent text scaling issues on iOS */
+  input, textarea, select, button {
+    font-size: 16px !important;
+  }
+
+  /* Better mobile table scrolling */
+  @media (max-width: 768px) {
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+    
+    table {
+      min-width: 640px;
+    }
+  }
+
+  /* Improved mobile spacing */
+  @media (max-width: 640px) {
+    .space-y-6 > * + * {
+      margin-top: 1rem !important;
+    }
+  }
+}
