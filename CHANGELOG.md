@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.23] - 2025-10-14
+
+### Fixed
+- **Smart Navigation to Zoho Push from Dashboard**:
+  - Fixed "Push to Zoho" link in Dashboard pending tasks widget
+  - Previously took users to general Reports page (requiring click on trade show to push)
+  - Now navigates DIRECTLY to the event's detailed report with push button visible
+  - Backend now provides event intelligence (which events have unsynced expenses)
+  - If single event with unsynced items: goes directly to that event (button: "Push to Zoho")
+  - If multiple events: goes to event with most unsynced items (button: "Go to Reports")
+  - No extra clicks required - user lands exactly where they need to be!
+
+### Changed
+- Reports page now supports deep linking via URL hash (#event=123)
+- Automatically selects and displays detailed report for specified event
+- Backend quick-actions endpoint enhanced to include:
+  - Array of event IDs with unsynced expenses
+  - Primary event ID (event with most unsynced items)
+  - Dynamic button text based on context
+
+### Technical
+- Backend: v1.0.10
+- Frontend: v1.0.23
+- Uses hash-based deep linking for event selection
+- Event auto-selection persists across page refreshes
+
 ## [1.0.22] - 2025-10-14
 
 ### Fixed

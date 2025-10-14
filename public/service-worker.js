@@ -1,14 +1,16 @@
 // ExpenseApp Service Worker
-// Version: 1.0.22 - FIX DIRECT NAVIGATION TO USER MANAGEMENT
+// Version: 1.0.23 - SMART NAVIGATION TO ZOHO PUSH
 // Date: October 14, 2025
 // 
-// Changes from v1.0.21:
-// - Fixed "Go to User Management" link in Dashboard pending tasks
-// - Now navigates DIRECTLY to User Management tab (not general Settings)
-// - Uses URL hash (#users) for deep linking to specific settings tabs
-// - Settings page detects hash and opens correct tab automatically
-// - No more scrolling/clicking required - saves user time
-// - Hash syncs with manual tab switching for consistency
+// Changes from v1.0.22:
+// - Fixed "Push to Zoho" link in Dashboard pending tasks
+// - Now navigates DIRECTLY to the event's detailed report (not general Reports page)
+// - Backend provides event info (which events have unsynced expenses)
+// - If single event: goes directly to that event's report (instant push)
+// - If multiple events: goes to event with most unsynced expenses
+// - Button text changes: "Push to Zoho" (single) vs "Go to Reports" (multiple)
+// - No more clicking trade show cards - straight to push button!
+// - Uses URL hash deep linking: #event=123
 // - Events auto-remove from expense dropdown 1 month + 1 day after end date
 // - Consolidated documentation files into AI_MASTER_GUIDE.md
 // - Restored CHANGELOG.md for GitHub best practices
@@ -28,8 +30,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.22';  // BUMPED VERSION for user management navigation fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.22';
+const CACHE_NAME = 'expenseapp-v1.0.23';  // BUMPED VERSION for zoho push navigation fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.23';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -39,7 +41,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.22...');
+  console.log('[ServiceWorker] Installing v1.0.23...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -130,7 +132,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.22...');
+  console.log('[ServiceWorker] Activating v1.0.23...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -144,7 +146,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.22 activated and ready!');
+      console.log('[ServiceWorker] v1.0.23 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

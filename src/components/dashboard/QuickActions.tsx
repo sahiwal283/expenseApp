@@ -16,6 +16,8 @@ interface Task {
   action: string;
   link: string;
   icon: string;
+  eventIds?: string[];
+  primaryEventId?: string;
 }
 
 interface QuickActionsProps {
@@ -146,9 +148,20 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                         // Extract page name from link
                         let page = task.link.replace('/', '');
                         
-                        // If it's a user management task, append hash for direct navigation to User Management tab
+                        // Handle specific task types with deep linking
                         if (task.type === 'pending_users' && page === 'settings') {
+                          // Direct navigation to User Management tab
                           window.location.hash = 'users';
+                        } else if (task.type === 'unpushed_zoho' && page === 'reports') {
+                          // Direct navigation to specific event if only one event has unsynced expenses
+                          if (task.eventIds && task.eventIds.length === 1) {
+                            window.location.hash = `event=${task.eventIds[0]}`;
+                          } else if (task.primaryEventId) {
+                            // Navigate to event with most unsynced expenses
+                            window.location.hash = `event=${task.primaryEventId}`;
+                          } else {
+                            window.location.hash = '';
+                          }
                         } else {
                           window.location.hash = '';
                         }

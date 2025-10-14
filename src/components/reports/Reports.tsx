@@ -26,12 +26,21 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     );
   }
 
+  // Check URL hash for initial event selection (e.g., #event=123)
+  const getInitialEvent = () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#event=')) {
+      return hash.replace('#event=', '');
+    }
+    return 'all';
+  };
+
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState('all');
+  const [selectedEvent, setSelectedEvent] = useState(getInitialEvent());
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedEntity, setSelectedEntity] = useState('all');
-  const [reportType, setReportType] = useState<'overview' | 'detailed' | 'entity'>('overview');
+  const [reportType, setReportType] = useState<'overview' | 'detailed' | 'entity'>(getInitialEvent() !== 'all' ? 'detailed' : 'overview');
   const [activeEntityOptions, setActiveEntityOptions] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
@@ -72,6 +81,21 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         }
       }
     })();
+  }, []);
+
+  // Watch for hash changes to auto-select event
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#event=')) {
+        const eventId = hash.replace('#event=', '');
+        setSelectedEvent(eventId);
+        setReportType('detailed');
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const handleUpdateExpense = async (updatedExpense: Expense) => {

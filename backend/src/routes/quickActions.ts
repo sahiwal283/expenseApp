@@ -63,6 +63,19 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 
       // 3. Approved expenses not pushed to Zoho
       const unpushedExpensesResult = await query(
+        `SELECT COUNT(*) as count, 
+                ARRAY_AGG(DISTINCT event_id) as event_ids,
+                event_id as primary_event
+         FROM expenses 
+         WHERE status = 'approved' 
+           AND zoho_entity IS NOT NULL 
+           AND zoho_expense_id IS NULL
+         GROUP BY event_id
+         ORDER BY COUNT(*) DESC
+         LIMIT 1`
+      );
+      
+      const unpushedCountQuery = await query(
         `SELECT COUNT(*) as count 
          FROM expenses 
          WHERE status = 'approved' 
@@ -70,18 +83,33 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
            AND zoho_expense_id IS NULL`
       );
       
-      const unpushedCount = parseInt(unpushedExpensesResult.rows[0].count);
+      const unpushedCount = parseInt(unpushedCountQuery.rows[0].count);
       if (unpushedCount > 0) {
+        // Get all unique event IDs with unpushed expenses
+        const eventsQuery = await query(
+          `SELECT DISTINCT event_id 
+           FROM expenses 
+           WHERE status = 'approved' 
+             AND zoho_entity IS NOT NULL 
+             AND zoho_expense_id IS NULL
+           ORDER BY event_id`
+        );
+        
+        const eventIds = eventsQuery.rows.map(row => row.event_id);
+        const primaryEventId = unpushedExpensesResult.rows[0]?.primary_event; // Event with most unpushed
+        
         tasks.push({
           id: 'unpushed-zoho',
-          type: 'admin',
+          type: 'unpushed_zoho',
           priority: 'medium',
           title: `${unpushedCount} Expense${unpushedCount > 1 ? 's' : ''} Not Synced to Zoho`,
           description: `Push approved expenses to Zoho Books`,
           count: unpushedCount,
-          action: 'Push to Zoho',
+          action: eventIds.length === 1 ? 'Push to Zoho' : 'Go to Reports',
           link: '/reports',
-          icon: 'Upload'
+          icon: 'Upload',
+          eventIds: eventIds,
+          primaryEventId: primaryEventId // Event with most unsynced expenses
         });
       }
     }
