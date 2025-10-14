@@ -26,7 +26,6 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [hasShownInitially, setHasShownInitially] = useState(false);
 
   useEffect(() => {
     // Listen for network changes
@@ -72,30 +71,20 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
       (syncStatus && syncStatus.pendingCount > 0) || // Show when items pending
       (syncStatus && syncStatus.failedCount > 0); // Show when items failed
 
-    if (needsAttention) {
-      // Clear any existing hide timeout
-      if (hideTimeout) {
-        clearTimeout(hideTimeout);
-        setHideTimeout(null);
-      }
-      setIsVisible(true);
-      setHasShownInitially(true);
-    } else if (hasShownInitially) {
-      // Only show "All Synced" if we previously had something to show
-      // Auto-hide after 10 seconds
-      if (isVisible && !hideTimeout) {
-        const timeout = setTimeout(() => {
-          setIsVisible(false);
-          setHideTimeout(null);
-        }, 10000); // 10 seconds
-        setHideTimeout(timeout);
-      } else if (!isVisible) {
-        // Don't show the bar at all if nothing needs attention
-        setIsVisible(false);
-      }
+    // Clear any existing timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      setHideTimeout(null);
     }
-    // On initial load, don't show if everything is fine
-  }, [networkState.isOnline, isSyncing, syncStatus, isVisible, hideTimeout, hasShownInitially]);
+
+    if (needsAttention) {
+      // Show immediately when there's something that needs attention
+      setIsVisible(true);
+    } else {
+      // Nothing needs attention - hide immediately (don't even show "All Synced")
+      setIsVisible(false);
+    }
+  }, [networkState.isOnline, isSyncing, syncStatus?.pendingCount, syncStatus?.failedCount]);
 
   const refreshSyncStatus = async () => {
     const status = await syncManager.getStatus();
