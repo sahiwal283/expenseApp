@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, CreditCard, Building2, Users, Pencil, Check, X } from 'lucide-react';
+import { Settings, Plus, Trash2, CreditCard, Building2, Users, Pencil, Check, X, Tag } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
@@ -16,6 +16,7 @@ interface CardOption {
 interface AppSettings {
   cardOptions: CardOption[];
   entityOptions: string[];
+  categoryOptions: string[];
 }
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
@@ -46,12 +47,27 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       'Entity B - Sales Division',
       'Entity C - Marketing Department',
       'Entity D - International Operations'
+    ],
+    categoryOptions: [
+      'Booth / Marketing / Tools',
+      'Travel - Flight',
+      'Accommodation - Hotel',
+      'Transportation - Uber / Lyft / Others',
+      'Parking Fees',
+      'Rental - Car / U-haul',
+      'Meal and Entertainment',
+      'Gas / Fuel',
+      'Show Allowances - Per Diem',
+      'Model',
+      'Shipping Charges',
+      'Other'
     ]
   });
 
   const [newCardName, setNewCardName] = useState('');
   const [newCardLastFour, setNewCardLastFour] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
+  const [newCategoryOption, setNewCategoryOption] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editCardName, setEditCardName] = useState('');
@@ -170,6 +186,27 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     const updatedSettings = {
       ...settings,
       entityOptions: settings.entityOptions.filter(entity => entity !== option)
+    };
+    setSettings(updatedSettings);
+    await saveSettings(updatedSettings);
+  };
+
+  const addCategoryOption = async () => {
+    if (newCategoryOption && !settings.categoryOptions.includes(newCategoryOption)) {
+      const updatedSettings = {
+        ...settings,
+        categoryOptions: [...settings.categoryOptions, newCategoryOption]
+      };
+      setSettings(updatedSettings);
+      setNewCategoryOption('');
+      await saveSettings(updatedSettings);
+    }
+  };
+
+  const removeCategoryOption = async (option: string) => {
+    const updatedSettings = {
+      ...settings,
+      categoryOptions: settings.categoryOptions.filter(category => category !== option)
     };
     setSettings(updatedSettings);
     await saveSettings(updatedSettings);
@@ -391,6 +428,55 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             </div>
           </div>
         </div>
+
+        {/* Category Options Management */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Tag className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Expense Categories</h3>
+              <p className="text-gray-600">Manage expense category options</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={newCategoryOption}
+                onChange={(e) => setNewCategoryOption(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addCategoryOption()}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter new category option..."
+              />
+              <button
+                onClick={addCategoryOption}
+                disabled={!newCategoryOption || isSaving}
+                className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add</span>
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {settings.categoryOptions.map((option, index) => (
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 p-3 rounded-lg">
+                  <span className="text-gray-900">{option}</span>
+                  <button
+                    onClick={() => removeCategoryOption(option)}
+                    disabled={isSaving}
+                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Settings Summary */}
@@ -400,7 +486,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           <h3 className="text-lg font-semibold text-gray-900">Settings Summary</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Card Options</h4>
             <p className="text-sm text-gray-600">{settings.cardOptions?.length || 0} options configured</p>
@@ -408,6 +494,10 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Entity Options</h4>
             <p className="text-sm text-gray-600">{settings.entityOptions?.length || 0} entities configured</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Category Options</h4>
+            <p className="text-sm text-gray-600">{settings.categoryOptions?.length || 0} categories configured</p>
           </div>
         </div>
 

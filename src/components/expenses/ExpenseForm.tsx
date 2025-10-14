@@ -11,8 +11,6 @@ interface ExpenseFormProps {
   onCancel: () => void;
 }
 
-const categories = ['Flights', 'Hotels', 'Meals', 'Supplies', 'Transportation', 'Other'];
-
 interface CardOption {
   name: string;
   lastFour: string;
@@ -21,6 +19,20 @@ interface CardOption {
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSave, onCancel }) => {
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [entityOptions, setEntityOptions] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([
+    'Booth / Marketing / Tools',
+    'Travel - Flight',
+    'Accommodation - Hotel',
+    'Transportation - Uber / Lyft / Others',
+    'Parking Fees',
+    'Rental - Car / U-haul',
+    'Meal and Entertainment',
+    'Gas / Fuel',
+    'Show Allowances - Per Diem',
+    'Model',
+    'Shipping Charges',
+    'Other'
+  ]);
 
   const [formData, setFormData] = useState({
     tradeShowId: expense?.tradeShowId || '',
@@ -58,6 +70,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
             setCardOptions(cards);
           }
           setEntityOptions(settings.entityOptions || []);
+          setCategories(settings.categoryOptions || categories);
         } catch {
           setCardOptions([]);
           setEntityOptions([]);
@@ -78,6 +91,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSav
           setCardOptions(cards);
         }
         setEntityOptions(settings.entityOptions || ['Entity A - Main Operations','Entity B - Sales Division','Entity C - Marketing Department','Entity D - International Operations']);
+        setCategories(settings.categoryOptions || categories);
       }
     })();
   }, []);
