@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson', 'pending')),
+  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson', 'developer', 'pending')),
   registration_ip VARCHAR(45),
   registration_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

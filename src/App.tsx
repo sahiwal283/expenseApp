@@ -15,7 +15,7 @@ import { useAuth } from './hooks/useAuth';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { sessionManager } from './utils/sessionManager';
 
-export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'pending';
+export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'pending';
 
 export interface User {
   id: string;
