@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.49] - 2025-10-15 (Frontend) / Backend 1.0.20
+
+### Fixed
+- **CRITICAL: Event Creation Without Participants (Transaction Bug)**:
+  - **Root cause:** Event inserted first, then participants added after
+  - If participant insertion failed, event already existed in database (no rollback)
+  - User saw error but event was saved anyway → orphaned events
+  - **Example:** Create event with duplicate email → event created, participant failed, no rollback
+  - **Solution:** Wrapped entire operation in database transaction (BEGIN/COMMIT/ROLLBACK)
+  - All-or-nothing behavior: event + participants or nothing
+  - Both CREATE and UPDATE routes now use transactions
+  - Added extensive logging for debugging transaction flow
+
+- **Better Error Messages for Event Creation**:
+  - Now returns specific errors based on PostgreSQL error codes:
+    - `23505` (Unique constraint): "A user with that email or username already exists"
+    - `23503` (Foreign key): "Invalid participant ID provided"
+    - Generic: "Failed to create event. Please try again."
+  - Helps users understand what went wrong
+
+- **Version Display Not Dynamic**:
+  - **Root cause:** Version was hardcoded in devDashboard.ts (1.0.48)
+  - Had to manually update every deployment, easy to forget
+  - **Solution:** Dev dashboard now reads from backend package.json
+  - Frontend and backend versions kept in sync (incremented together)
+  - One source of truth: backend package.json version
+
+### Backend Changes (v1.0.20)
+- `routes/events.ts`:
+  - Imported `pool` from database config for transaction support
+  - POST route: Uses `pool.connect()` to get client for transaction
+  - `BEGIN` before any inserts, `COMMIT` if all succeed, `ROLLBACK` on error
+  - PUT route: Also uses transactions for event updates
+  - Added transaction logging: "Starting transaction", "Committed", "Rolled back"
+  - Added participant creation logging for debugging
+  - Better error handling with specific messages per error code
+- `routes/devDashboard.ts`:
+  - Removed hardcoded version string
+  - Now reads `pkg.version` from backend package.json
+  - `frontendVersion = backendVersion` (kept in sync)
+
+### Impact
+- ✅ Events only created if ALL participants added successfully
+- ✅ No more orphaned events without participants
+- ✅ Clear, actionable error messages
+- ✅ Version display always accurate (no manual updates needed)
+- ✅ Better debugging with transaction logs
+- ✅ Atomic database operations (all-or-nothing)
+
 ## [1.0.48] - 2025-10-15 (Frontend) / Backend 1.0.19
 
 ### Fixed
