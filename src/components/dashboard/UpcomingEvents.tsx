@@ -43,7 +43,14 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
       ) : (
         <div className="space-y-4">
           {upcomingEvents.map((event) => {
-            const daysUntil = getDaysUntil(event.startDate);
+            // Check if event is currently in progress (between start and end date)
+            const startDate = parseLocalDate(event.startDate);
+            const endDate = parseLocalDate(event.endDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const isInProgress = today >= startDate && today <= endDate;
+            const daysUntil = isInProgress ? 0 : getDaysUntil(event.startDate);
             
             return (
               <div key={event.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">

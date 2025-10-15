@@ -1,17 +1,15 @@
 // ExpenseApp Service Worker
-// Version: 1.1.2 - UX: Entity Change Through Details Modal
+// Version: 1.1.3 - FIX: Event Days Display
 // Date: October 15, 2025
 //
-// Changes from v1.1.1:
-// - UX: Entity dropdown disabled in table (cleaner, prevents accidental changes)
-// - Added: Entity editing through View Details modal (deliberate action)
-// - Improved: Warning still shows when changing already-pushed expense
-// - Improved: Modal updates in real-time after entity change
-// - Better: Tooltip "Use View Details to change" on disabled dropdown
+// Changes from v1.1.2:
+// - FIXED: Events in progress now show "Today" instead of negative days
+// - Improved: Dashboard Upcoming Events checks if event is between start/end date
+// - Better: Shows "Today" for entire event duration (start date to end date)
 //
-// Changes from v1.1.0:
-// - FIXED: Entity change after Zoho push (backend clears zoho_expense_id)
-// - Added: Warning dialog for already-pushed expenses
+// Changes from v1.1.1:
+// - UX: Entity dropdown disabled in table
+// - Added: Entity editing through View Details modal
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -76,8 +74,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.2';  // BUMPED VERSION for modal entity editing
-const STATIC_CACHE = 'expenseapp-static-v1.1.2';
+const CACHE_NAME = 'expenseapp-v1.1.3';  // BUMPED VERSION for event days fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -87,7 +85,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.2...');
+  console.log('[ServiceWorker] Installing v1.1.3...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -178,7 +176,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.2...');
+  console.log('[ServiceWorker] Activating v1.1.3...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -192,7 +190,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.2 activated and ready!');
+      console.log('[ServiceWorker] v1.1.3 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
