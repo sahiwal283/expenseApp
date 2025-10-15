@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.44] - 2025-10-15
+
+### Fixed
+- **Event Creation Failure with Custom Participants**:
+  - "Create Event" button had no response (500 error)
+  - Backend error: `invalid input syntax for type uuid: "1760544911767"`
+  - **Root cause:** Custom participants used `Date.now().toString()` for ID generation
+  - **Problem:** Database expects UUIDs, not timestamps
+  - **Solution:** Use `generateUUID()` utility for proper UUID format
+  - Event creation now works correctly with custom participants
+
+### Technical
+- `EventSetup/hooks/useEventForm.ts`:
+  - Import `generateUUID` from utils
+  - Replace `Date.now().toString()` with `generateUUID()`
+- `EventForm.tsx`:
+  - Import `generateUUID` from utils
+  - Replace `Date.now().toString()` with `generateUUID()`
+
+### Impact
+- ✅ Events with custom participants can be created
+- ✅ No more 500 errors from backend
+- ✅ Database validation passes
+- ✅ Proper UUID format for all participants
+
 ## [1.0.43] - 2025-10-15
 
 ### Fixed
