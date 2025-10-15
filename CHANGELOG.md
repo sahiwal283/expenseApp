@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.38] - 2025-10-15
+
+### Fixed
+- **CRITICAL: Empty Entity Assignment Causing Update Failures**:
+  - "Failed to update expense" error when selecting "Unassigned" entity
+  - Root cause: Frontend sent empty string `""` to backend
+  - Backend validation rejected: "Zoho entity name is required"
+  - **Solution:** Skip API call when entity is empty/unassigned
+  - Affects both quick entity dropdown and edit modal
+  - Silent handling - no error, no API call, just skip
+
+### Changed
+- **Entity Assignment Validation**:
+  - `handleAssignEntity()`: Check if entity is empty before API call
+  - `handleSaveEdit()`: Added `editEntity.trim().length > 0` check
+  - Selecting "Unassigned" no longer triggers backend error
+  - Backend validation remains strict (security maintained)
+
+### Technical
+- Backend: v1.0.15 (no changes)
+- Frontend: v1.0.37 → v1.0.38
+- Modified: `src/components/admin/Approvals.tsx` (2 functions updated)
+- Better UX: Silent skip instead of confusing error message
+
 ## [1.0.37] - 2025-10-15
 
 ### Fixed
