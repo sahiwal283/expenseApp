@@ -35,7 +35,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
       const newParticipant: User = {
         id: generateUUID(), // Generate proper UUID for database
         name: newParticipantName,
-        username: newParticipantEmail.split('@')[0].toLowerCase(),
+        username: newParticipantName.split(' ')[0].toLowerCase(), // Use first name as username
         email: newParticipantEmail,
         role: 'temporary' // Custom participants are temporary attendees
       };

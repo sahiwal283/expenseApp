@@ -1,15 +1,17 @@
 // ExpenseApp Service Worker
-// Version: 1.0.50 - CRITICAL: Add 'temporary' role to database
+// Version: 1.0.51 - FIX: Username generation for temp users
 // Date: October 15, 2025
 //
+// Changes from v1.0.50:
+// - Fixed username generation for custom participants
+// - Now uses first name instead of email prefix
+// - Example: "John Doe" → username: "john" (was: email prefix like "jdoe123")
+// - Password remains "changeme123" for all temp users
+//
 // Changes from v1.0.49:
-// - **CRITICAL FIX**: Added 'temporary' role to database CHECK constraint
-// - Root cause: Database only allowed: admin, accountant, coordinator, salesperson, developer, pending
-// - Custom participants failed with: "violates check constraint users_role_check"
-// - Created migration 002_add_temporary_role.sql
-// - Changed to "best effort" approach: event created even if some participants fail
-// - Participants processed individually with try/catch (don't fail entire event)
-// - Better logging: ✓ for success, ⚠️ for skipped participants
+// - Added 'temporary' role to database CHECK constraint
+// - Changed to "best effort" approach
+// - Better logging for participant creation
 //
 // Changes from v1.0.48:
 // - Event creation uses database transactions
@@ -69,8 +71,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.50';  // BUMPED VERSION for temporary role fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.50';
+const CACHE_NAME = 'expenseapp-v1.0.51';  // BUMPED VERSION for username fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.51';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -80,7 +82,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.50...');
+  console.log('[ServiceWorker] Installing v1.0.51...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -171,7 +173,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.50...');
+  console.log('[ServiceWorker] Activating v1.0.51...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -185,7 +187,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.50 activated and ready!');
+      console.log('[ServiceWorker] v1.0.51 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
