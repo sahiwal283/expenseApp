@@ -40,7 +40,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     { username: 'salesperson', password: 'sandbox123', role: 'Salesperson' },
     { username: 'accountant', password: 'sandbox123', role: 'Accountant' },
     { username: 'developer', password: 'sandbox123', role: 'Developer' },
-    { username: '(custom participants)', password: 'changeme123', role: 'Temporary Attendee' }
+    { username: 'temporary', password: 'changeme123', role: 'Temporary Attendee' }
   ];
 
   // Production accounts - credentials not displayed for security
