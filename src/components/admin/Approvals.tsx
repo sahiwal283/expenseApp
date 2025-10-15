@@ -172,10 +172,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     }
 
     try {
+      let updatedExpense = expense;
+      
       if (api.USE_SERVER) {
         // Empty string means "unassign" (set to NULL in database)
         // Backend will also clear zoho_expense_id if entity is changed
-        await api.assignEntity(expense.id, { zoho_entity: entity });
+        updatedExpense = await api.assignEntity(expense.id, { zoho_entity: entity });
       }
 
       // Remove from pushedExpenses set to allow re-push
@@ -188,6 +190,11 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       }
 
       await loadData(); // Refresh all data
+      
+      // Update viewingExpense if modal is open (use the returned updated expense)
+      if (viewingExpense && viewingExpense.id === expense.id) {
+        setViewingExpense(updatedExpense);
+      }
       
       if (expense.zohoExpenseId) {
         addToast('✅ Entity changed. You can now push to the new entity.', 'success');
@@ -458,13 +465,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           value={expense.zohoEntity || ''}
                           onChange={(e) => handleAssignEntity(expense, e.target.value)}
                           className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full ${
-                            expense.zohoExpenseId 
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700' 
-                              : expense.zohoEntity
-                              ? 'border-gray-300 bg-white text-gray-900'
+                            expense.zohoEntity 
+                              ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                               : 'border-gray-300 bg-white text-gray-900'
                           }`}
-                          title={expense.zohoExpenseId ? 'Already pushed - changing entity will allow re-push' : ''}
+                          disabled={!!expense.zohoEntity}
+                          title={expense.zohoEntity ? 'Entity assigned - use View Details to change' : ''}
                         >
                           <option value="">Unassigned</option>
                           {entityOptions.map((entity, index) => (
@@ -639,7 +645,22 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3">
                         <p className="text-xs font-medium text-gray-500 mb-1">Entity</p>
-                        <p className="text-sm text-gray-900">{viewingExpense.zohoEntity || 'Unassigned'}</p>
+                        <select
+                          value={viewingExpense.zohoEntity || ''}
+                          onChange={(e) => handleAssignEntity(viewingExpense, e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full bg-white"
+                        >
+                          <option value="">Unassigned</option>
+                          {entityOptions.map((entity, index) => (
+                            <option key={index} value={entity}>{entity}</option>
+                          ))}
+                        </select>
+                        {viewingExpense.zohoExpenseId && (
+                          <p className="text-xs text-amber-600 mt-1 flex items-center">
+                            <span className="mr-1">⚠️</span>
+                            Already pushed - changing entity will allow re-push
+                          </p>
+                        )}
                       </div>
                     </div>
 
