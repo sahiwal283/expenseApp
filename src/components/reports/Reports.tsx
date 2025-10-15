@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Download, Filter, Calendar, DollarSign, TrendingUp, Building2, CheckCircle, X, ArrowLeft } from 'lucide-react';
-import { User, TradeShow, Expense } from '../../App';
+import { User, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
 import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';
 import { AccountantDashboard } from '../accountant/AccountantDashboard';
 import { api } from '../../utils/api';
-import { parseLocalDate } from '../../utils/dateUtils';
+import { useReportsData } from './hooks/useReportsData';
+import { useReportsFilters } from './hooks/useReportsFilters';
+import { useReportsStats } from './hooks/useReportsStats';
 
 interface ReportsProps {
   user: User;
@@ -35,14 +37,30 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     return 'all';
   };
 
-  const [events, setEvents] = useState<TradeShow[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState(getInitialEvent());
-  const [selectedPeriod, setSelectedPeriod] = useState('all');
-  const [selectedEntity, setSelectedEntity] = useState('all');
-  const [reportType, setReportType] = useState<'overview' | 'detailed' | 'entity'>(getInitialEvent() !== 'all' ? 'detailed' : 'overview');
-  const [activeEntityOptions, setActiveEntityOptions] = useState<string[]>([]);
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  // Use custom hooks
+  const { expenses, events, entityOptions: activeEntityOptions, setExpenses } = useReportsData();
+  const {
+    selectedEvent,
+    setSelectedEvent,
+    selectedPeriod,
+    setSelectedPeriod,
+    selectedEntity,
+    setSelectedEntity,
+    reportType,
+    setReportType,
+    showFilterModal,
+    setShowFilterModal
+  } = useReportsFilters({
+    initialEvent: getInitialEvent(),
+    initialReportType: getInitialEvent() !== 'all' ? 'detailed' : 'overview'
+  });
+  const { filteredExpenses, reportStats, entityTotals } = useReportsStats({
+    expenses,
+    selectedEvent,
+    selectedPeriod,
+    selectedEntity,
+    entityOptions: activeEntityOptions
+  });
 
   const handleTradeShowClick = (eventId: string) => {
     setSelectedEvent(eventId);
@@ -57,31 +75,6 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     // Scroll to detailed report
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    (async () => {
-      if (api.USE_SERVER) {
-        const [ev, ex, settings] = await Promise.all([
-          api.getEvents(), 
-          api.getExpenses(),
-          api.getSettings()
-        ]);
-        setEvents(ev || []);
-        setExpenses(ex || []);
-        setActiveEntityOptions(settings?.entityOptions || []);
-      } else {
-        const storedEvents = localStorage.getItem('tradeshow_events');
-        const storedExpenses = localStorage.getItem('tradeshow_expenses');
-        const storedSettings = localStorage.getItem('app_settings');
-        if (storedEvents) setEvents(JSON.parse(storedEvents));
-        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
-        if (storedSettings) {
-          const settings = JSON.parse(storedSettings);
-          setActiveEntityOptions(settings.entityOptions || []);
-        }
-      }
-    })();
-  }, []);
 
   // Watch for hash changes to auto-select event
   useEffect(() => {
@@ -115,71 +108,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     handleUpdateExpense(updatedExpense);
   };
 
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
-      const eventMatch = selectedEvent === 'all' || expense.tradeShowId === selectedEvent;
-      const entityMatch = selectedEntity === 'all' || expense.zohoEntity === selectedEntity;
-      
-      let periodMatch = true;
-      if (selectedPeriod !== 'all') {
-        const expenseDate = parseLocalDate(expense.date);
-        const now = new Date();
-        
-        switch (selectedPeriod) {
-          case 'week':
-            periodMatch = (now.getTime() - expenseDate.getTime()) <= 7 * 24 * 60 * 60 * 1000;
-            break;
-          case 'month':
-            periodMatch = (now.getTime() - expenseDate.getTime()) <= 30 * 24 * 60 * 60 * 1000;
-            break;
-          case 'quarter':
-            periodMatch = (now.getTime() - expenseDate.getTime()) <= 90 * 24 * 60 * 60 * 1000;
-            break;
-        }
-      }
-      
-      return eventMatch && entityMatch && periodMatch;
-    });
-  }, [expenses, selectedEvent, selectedEntity, selectedPeriod]);
-
-  const reportStats = useMemo(() => {
-    const totalAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const approvedAmount = filteredExpenses
-      .filter(exp => exp.status === 'approved')
-      .reduce((sum, exp) => sum + exp.amount, 0);
-    const pendingAmount = filteredExpenses
-      .filter(exp => exp.status === 'pending')
-      .reduce((sum, exp) => sum + exp.amount, 0);
-    
-    const categoryBreakdown = filteredExpenses.reduce((acc, exp) => {
-      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return {
-      totalAmount,
-      approvedAmount,
-      pendingAmount,
-      expenseCount: filteredExpenses.length,
-      categoryBreakdown
-    };
-  }, [filteredExpenses]);
-
-  // Calculate entity totals (filtered, only active entities)
-  const entityTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
-    filteredExpenses.forEach(expense => {
-      // Only include expenses with entities that are in the active entity options
-      if (expense.zohoEntity && activeEntityOptions.includes(expense.zohoEntity)) {
-        totals[expense.zohoEntity] = (totals[expense.zohoEntity] || 0) + expense.amount;
-      }
-    });
-    return Object.entries(totals)
-      .sort((a, b) => b[1] - a[1]) // Sort by amount descending
-      .map(([entity, amount]) => ({ entity, amount }));
-  }, [filteredExpenses, activeEntityOptions]);
-
-  // Calculate trade show breakdown for a specific entity
+  // Calculate trade show breakdown for a specific entity (component-specific logic)
   const tradeShowBreakdown = useMemo(() => {
     if (selectedEntity === 'all') return [];
     

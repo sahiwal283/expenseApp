@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.29] - 2025-10-15
+
+### Added
+- **Frontend Refactor - Custom Hooks (Phase 5 continued)**:
+  - Created `useReportsData` hook for Reports data fetching (~65 lines)
+  - Created `useReportsFilters` hook for filter state management (~50 lines)
+  - Created `useReportsStats` hook for statistics calculations (~105 lines)
+  - Extracted reusable logic from Reports component
+
+### Changed
+- **Reports Component Refactoring**:
+  - Now uses custom hooks for data, filters, and stats
+  - Removed ~60 lines of code from main component
+  - Better separation of concerns (UI vs business logic)
+  - Consistent pattern across all major components
+  - Period filtering (week/month/quarter) now in hook
+  - Easier to maintain and test
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.29
+- Backend refactor: 100% complete ✅
+- Frontend refactor: Phase 5 ongoing (70% overall progress)
+- Custom hooks pattern: 4 major components refactored (Approvals, Expenses, Dashboard, Reports)
+
 ## [1.0.28] - 2025-10-15
 
 ### Added
