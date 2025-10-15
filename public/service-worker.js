@@ -1,16 +1,17 @@
 // ExpenseApp Service Worker
-// Version: 1.0.38 - FIX: Empty entity assignment causing update failures
+// Version: 1.0.39 - UX: Success notifications + prevent duplicate expense submissions
 // Date: October 15, 2025
 //
-// Changes from v1.0.37:
-// - CRITICAL FIX: Prevent assigning empty entity ("Unassigned" option)
-// - Backend rejects empty strings with "Zoho entity name is required"
-// - Now skip API call if user selects "Unassigned" from dropdown
-// - Affects both quick entity dropdown and edit modal
+// Changes from v1.0.38:
+// - Added success toast notifications when expenses are saved/updated
+// - Prevent duplicate expense submissions (disable button during save)
+// - Show loading spinner + "Saving..." text while processing
+// - Button becomes disabled + grayed out while saving
+// - Fixes issue where users spam-click and create 10+ duplicate expenses
 //
-// Changes from v1.0.36:
-// - BACKEND FIX: Removed non-existent 'registration_date' column
-// - FRONTEND: Removed all success toasts when assigning entity
+// Changes from v1.0.37:
+// - CRITICAL FIX: Prevent assigning empty entity
+// - Skip API call if user selects "Unassigned"
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -66,8 +67,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.38';  // BUMPED VERSION for empty entity fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.38';
+const CACHE_NAME = 'expenseapp-v1.0.39';  // BUMPED VERSION for save notifications + duplicate prevention
+const STATIC_CACHE = 'expenseapp-static-v1.0.39';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -77,7 +78,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.38...');
+  console.log('[ServiceWorker] Installing v1.0.39...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -168,7 +169,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.38...');
+  console.log('[ServiceWorker] Activating v1.0.39...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -182,7 +183,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.38 activated and ready!');
+      console.log('[ServiceWorker] v1.0.39 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2 } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput } from '../../utils/dateUtils';
@@ -9,8 +9,9 @@ interface ExpenseFormProps {
   expense?: Expense | null;
   events: TradeShow[];
   user: User;
-  onSave: (expense: Omit<Expense, 'id'>) => void;
+  onSave: (expense: Omit<Expense, 'id'>, file?: File) => void;
   onCancel: () => void;
+  isSaving?: boolean;
 }
 
 interface CardOption {
@@ -18,7 +19,7 @@ interface CardOption {
   lastFour: string;
 }
 
-export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user, onSave, onCancel }) => {
+export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user, onSave, onCancel, isSaving = false }) => {
   // Filter events to only show those within 1 month + 1 day of their end date
   // AND where the user is a participant (or admin/accountant/developer)
   const activeEvents = useMemo(() => {
@@ -514,10 +515,20 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             </button>
             <button
               type="submit"
-              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+              disabled={isSaving}
+              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save className="w-5 h-5" />
-              <span>{expense ? 'Update Expense' : 'Save Expense'}</span>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>{expense ? 'Update Expense' : 'Save Expense'}</span>
+                </>
+              )}
             </button>
           </div>
         </form>

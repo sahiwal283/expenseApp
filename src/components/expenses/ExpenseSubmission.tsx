@@ -11,6 +11,7 @@ import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
 import { ReceiptData } from '../../types/types';
+import { useToast, ToastContainer } from '../common/Toast';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -43,8 +44,20 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
   const [showPendingSync, setShowPendingSync] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Toast notifications
+  const { toasts, addToast, removeToast } = useToast();
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
+    // Prevent duplicate submissions
+    if (isSaving) {
+      console.log('[ExpenseSubmission] Already saving, ignoring duplicate submission');
+      return;
+    }
+
+    setIsSaving(true);
+
     try {
       console.log('[ExpenseSubmission] Saving expense...', { isEdit: !!editingExpense, hasFile: !!file });
       
@@ -64,6 +77,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             zoho_entity: expenseData.zohoEntity,
           }, file || undefined);
           console.log('[ExpenseSubmission] Expense updated successfully');
+          addToast('✅ Expense updated successfully!', 'success');
         } else {
           console.log('[ExpenseSubmission] Creating new expense');
           await api.createExpense({
@@ -78,6 +92,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             location: expenseData.location,
           }, file || pendingReceiptFile || undefined);
           console.log('[ExpenseSubmission] Expense created successfully');
+          addToast('✅ Expense saved successfully!', 'success');
         }
         setPendingReceiptFile(null);
         
@@ -95,6 +110,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           : [...expenses, newExpense];
         setExpenses(updatedExpenses);
         localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+        addToast(`✅ Expense ${editingExpense ? 'updated' : 'saved'} successfully!`, 'success');
       }
       
       // Close the form
@@ -103,7 +119,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       setEditingExpense(null);
     } catch (error) {
       console.error('[ExpenseSubmission] Error saving expense:', error);
-      alert('Failed to save expense. Please try again.');
+      addToast('❌ Failed to save expense. Please try again.', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -164,16 +182,20 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   if (showForm) {
     return (
-      <ExpenseForm
-        expense={editingExpense}
-        events={events}
-        user={user}
-        onSave={handleSaveExpense}
-        onCancel={() => {
-          setShowForm(false);
-          setEditingExpense(null);
-        }}
-      />
+      <>
+        <ExpenseForm
+          expense={editingExpense}
+          events={events}
+          user={user}
+          onSave={handleSaveExpense}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingExpense(null);
+          }}
+          isSaving={isSaving}
+        />
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </>
     );
   }
 
@@ -652,6 +674,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };
