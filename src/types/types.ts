@@ -51,6 +51,9 @@ export interface Expense {
     date: string;
     location: string;
   };
+  // Pre-fetched from backend JOINs (when available)
+  user_name?: string;
+  event_name?: string;
 }
 
 export interface AppSettings {

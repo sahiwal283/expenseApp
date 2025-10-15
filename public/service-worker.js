@@ -1,6 +1,12 @@
 // ExpenseApp Service Worker
-// Version: 1.0.31 - REFACTOR: Constants Consolidation (Phase 8)
+// Version: 1.0.32 - FIX: "Unknown User" bug in Approvals
 // Date: October 15, 2025
+//
+// Changes from v1.0.31:
+// - Fixed "Unknown User" bug in Approvals page
+// - Added user_name and event_name to Expense interface
+// - Backend was already returning these via JOINs, now using them
+// - Eliminated unnecessary user/event lookups in frontend
 //
 // Changes from v1.0.30:
 // - Consolidated all constants into appConstants.ts
@@ -47,8 +53,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.31';  // BUMPED VERSION for constants consolidation
-const STATIC_CACHE = 'expenseapp-static-v1.0.31';
+const CACHE_NAME = 'expenseapp-v1.0.32';  // BUMPED VERSION for user display fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.32';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -58,7 +64,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.31...');
+  console.log('[ServiceWorker] Installing v1.0.32...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -149,7 +155,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.31...');
+  console.log('[ServiceWorker] Activating v1.0.32...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -163,7 +169,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.31 activated and ready!');
+      console.log('[ServiceWorker] v1.0.32 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

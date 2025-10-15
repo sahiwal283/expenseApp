@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.32] - 2025-10-15
+
+### Fixed
+- **"Unknown User" Bug in Approvals**:
+  - Fixed issue where expenses showed "Unknown User" as submitter
+  - Root cause: Backend was returning `user_name` via SQL JOINs, but frontend wasn't using it
+  - Added `user_name` and `event_name` fields to Expense interface
+  - Updated Approvals component to use pre-fetched data
+  - Eliminated unnecessary user/event lookups in frontend
+
+### Changed
+- **Type Improvements**:
+  - Expense interface now includes optional `user_name` and `event_name` fields
+  - These fields are populated by backend when using JOIN queries
+  - Fallback to lookup if not present (for backwards compatibility)
+
+### Technical
+- Backend: v1.0.12 (no changes)
+- Frontend: v1.0.32
+- Improved data flow: Backend JOINs → Frontend direct use
+- Zero breaking changes
+
 ## [1.0.31] - 2025-10-15
 
 ### Added

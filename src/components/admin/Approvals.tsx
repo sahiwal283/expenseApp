@@ -328,8 +328,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                 </tr>
               ) : (
                 filteredExpenses.map((expense) => {
-                  const event = events.find(e => e.id === expense.tradeShowId);
-                  const expenseUser = users.find(u => u.id === expense.userId);
+                  // Use pre-fetched data from backend JOINs when available
+                  const eventName = expense.event_name || events.find(e => e.id === expense.tradeShowId)?.name || 'No Event';
+                  const userName = expense.user_name || users.find(u => u.id === expense.userId)?.name || 'Unknown User';
                   
                   return (
                     <tr key={expense.id} className="hover:bg-gray-50">
@@ -341,7 +342,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           </div>
                           <div className="flex items-center text-xs text-gray-500 mt-1">
                             <UserIcon className="w-3 h-3 mr-1" />
-                            {expenseUser?.name || 'Unknown User'}
+                            {userName}
                           </div>
                         </div>
                       </td>
@@ -349,7 +350,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <div>
                           <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
                           <div className="text-xs text-gray-500 mt-1">
-                            {event?.name || 'No Event'}
+                            {eventName}
                           </div>
                         </div>
                       </td>
@@ -569,7 +570,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-xs font-medium text-gray-500 mb-1">Submitted By</p>
                       <p className="text-sm text-gray-900">
-                        {users.find(u => u.id === viewingExpense.userId)?.name || 'Unknown User'}
+                        {viewingExpense.user_name || users.find(u => u.id === viewingExpense.userId)?.name || 'Unknown User'}
                       </p>
                     </div>
 
