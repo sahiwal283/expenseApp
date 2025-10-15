@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.40] - 2025-10-15
+
+### Fixed
+- **Allow Unassigning Entities**:
+  - User reported: selecting "Unassigned" didn't save
+  - Previous fix prevented API call for empty entity (to avoid errors)
+  - But this meant users couldn't unassign entities
+  - **Solution:** Backend now accepts empty values (means "unassign")
+  - Empty string → database NULL value
+  - Users can now change entity from "haute" → "Unassigned" and vice versa
+
+### Changed
+- **Backend Entity Validation (v1.0.16)**:
+  - Removed strict validation that rejected empty entities
+  - Empty string converted to `undefined` (NULL in database)
+  - `assignZohoEntity()` method updated
+  - Comment added: "Empty string is allowed to 'unassign' an entity"
+
+- **Frontend Entity Assignment (v1.0.40)**:
+  - Removed skip logic for empty entity values
+  - Always calls API, even when "Unassigned" selected
+  - Works in both quick dropdown and edit modal
+
+### Technical
+- Backend: v1.0.15 → v1.0.16
+- Frontend: v1.0.39 → v1.0.40
+- Modified: `backend/src/services/ExpenseService.ts`
+- Modified: `src/components/admin/Approvals.tsx` (2 functions)
+- Database: zoho_entity field now accepts NULL
+
+### Impact
+- ✅ Full bidirectional entity assignment/unassignment
+- ✅ Users can set entity back to "Unassigned"
+- ✅ No errors when selecting any option
+- ✅ Database properly stores NULL for unassigned
+
 ## [1.0.39] - 2025-10-15
 
 ### Added
