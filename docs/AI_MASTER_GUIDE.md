@@ -194,6 +194,69 @@ Please test:
 - Don't create temporary documentation files
 - Exception: CHANGELOG.md (keep separate per GitHub standards)
 
+**RULE 6.1: Update README.md and ARCHITECTURE.md after significant changes**
+
+When you make significant changes to the project, **ALWAYS update these core documentation files**:
+
+**When to Update:**
+- ✅ After adding new features (e.g., Role Management system)
+- ✅ After changing architecture (e.g., new API endpoints, database tables)
+- ✅ After fixing major bugs that affect documented behavior
+- ✅ After changing deployment procedures
+- ✅ After changing tech stack (new libraries, tools)
+- ✅ At end of major development sessions
+
+**What to Update:**
+
+**1. README.md**
+- Update version number in header
+- Add new features to "Key Features" section
+- Update tech stack if dependencies changed
+- Update API endpoints if new routes added
+- Update troubleshooting section with new known issues
+- Add "Recent Updates" section with version highlights
+
+**2. docs/ARCHITECTURE.md**
+- Update version number and "Last Updated" date
+- Update system architecture diagram if structure changed
+- Add new database tables/columns to schema section
+- Add new API endpoints to routes documentation
+- Update role permissions matrix if roles changed
+- Add new components to component architecture
+- Update data flow diagrams if workflow changed
+- Add new issues to "Known Issues & Solutions"
+
+**3. docs/AI_MASTER_GUIDE.md** (This File)
+- Add session summary to "Recent Sessions & Lessons Learned"
+- Document lessons learned and struggle points
+- Update CHANGELOG with version entries
+- Add tasks completed and remaining
+- Update key takeaways if you discovered something important
+
+**Example Pattern:**
+```bash
+# After implementing new feature and testing:
+git add README.md docs/ARCHITECTURE.md docs/AI_MASTER_GUIDE.md
+git commit -m "docs: Update README and ARCHITECTURE for v1.0.X feature"
+```
+
+**Why This Matters:**
+- Future AI assistants need accurate project documentation
+- New developers need to understand current architecture
+- Users need to know what features exist
+- GitHub README is the project's public face
+
+**❌ Bad Practice:**
+- Implementing features without updating docs
+- Leaving version numbers outdated
+- Creating separate "session summary" files instead of updating master guide
+
+**✅ Good Practice:**
+- Update all 3 docs at end of session
+- Keep version numbers in sync
+- Document lessons learned while fresh
+- Include code examples in lessons
+
 ### Response Format
 
 **RULE 7: For major refactors, use progress checklists**
