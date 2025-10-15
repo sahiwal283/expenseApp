@@ -152,7 +152,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                         if (task.type === 'pending_users' && page === 'settings') {
                           // Direct navigation to User Management tab
                           window.location.hash = 'users';
-                        } else if (task.type === 'unpushed_zoho' && page === 'reports') {
+                        } else if (task.type === 'unpushed_zoho' && page === 'approvals') {
                           // Direct navigation to specific event if only one event has unsynced expenses
                           if (task.eventIds && task.eventIds.length === 1) {
                             window.location.hash = `event=${task.eventIds[0]}`;

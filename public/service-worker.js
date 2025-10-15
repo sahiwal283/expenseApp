@@ -1,15 +1,15 @@
 // ExpenseApp Service Worker
-// Version: 1.0.58 - FIX: Dynamic Role Display in User Management
+// Version: 1.0.59 - FIX: Push to Zoho Dashboard Link
 // Date: October 15, 2025
+//
+// Changes from v1.0.58:
+// - Fixed: Dashboard "Push to Zoho" button now navigates to Approvals page (was Reports)
+// - Backend: Updated quickActions.ts link from /reports to /approvals
+// - Frontend: Updated QuickActions.tsx navigation logic
 //
 // Changes from v1.0.57:
 // - Fixed: Role labels now load dynamically from database
 // - Fixed: "developer" and "temporary" roles no longer show as "Pending Approval"
-// - getRoleLabel() now looks up role.label from roles array
-// - getRoleColor() now looks up role.color from roles array
-// - Added fallback colors for developer (indigo) and temporary (pink)
-// - Added fallback labels for all roles (backwards compatibility)
-// - If role not found in database, uses fallback then role name as-is
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -74,8 +74,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.58';  // BUMPED VERSION for dynamic role display fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.58';
+const CACHE_NAME = 'expenseapp-v1.0.59';  // BUMPED VERSION for dashboard link fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.59';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -85,7 +85,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.58...');
+  console.log('[ServiceWorker] Installing v1.0.59...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -176,7 +176,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.58...');
+  console.log('[ServiceWorker] Activating v1.0.59...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -190,7 +190,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.58 activated and ready!');
+      console.log('[ServiceWorker] v1.0.59 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

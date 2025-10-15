@@ -105,8 +105,8 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           title: `${unpushedCount} Expense${unpushedCount > 1 ? 's' : ''} Not Synced to Zoho`,
           description: `Push approved expenses to Zoho Books`,
           count: unpushedCount,
-          action: 'Push to Zoho', // Always "Push to Zoho" since we navigate smartly to the right event
-          link: '/reports',
+          action: 'Push to Zoho',
+          link: '/approvals', // Changed from /reports - Push to Zoho button is on Approvals page
           icon: 'Upload',
           eventIds: eventIds,
           primaryEventId: primaryEventId // Event with most unsynced expenses
