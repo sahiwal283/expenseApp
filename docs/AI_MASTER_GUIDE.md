@@ -19,6 +19,179 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 
 ---
 
+## 🤖 CRITICAL AI INSTRUCTIONS
+
+**READ THIS FIRST!** These are non-negotiable rules for ALL AI assistants working on this project.
+
+### Branch Management Strategy
+
+**RULE 1: Always use the `v1.0.10` branch for sandbox development**
+
+- **DO NOT** create new branches for features, refactors, or bug fixes unless explicitly instructed
+- ALL sandbox development happens on `v1.0.10` branch
+- Only create a new branch if:
+  1. User explicitly requests it, OR
+  2. Making a pull request to `main` for production deployment
+- If you accidentally create a new branch:
+  1. Immediately merge it back into `v1.0.10`
+  2. Delete the temporary branch
+  3. Continue work on `v1.0.10`
+
+**Example (CORRECT):**
+```bash
+git checkout v1.0.10
+# Make changes
+git add -A
+git commit -m "your message"
+git push origin v1.0.10
+```
+
+**Example (WRONG - Don't do this):**
+```bash
+git checkout -b feature/new-feature  # ❌ WRONG! Don't create new branches
+```
+
+### Version Number Management
+
+**RULE 2: ALWAYS increment version numbers for EVERY deployment**
+
+Version numbers are critical for cache busting and deployment verification. Increment even for small changes.
+
+**Files to Update (every time):**
+1. `package.json` → `"version": "1.0.X"`
+2. `backend/package.json` → `"version": "1.0.X"`
+3. `public/service-worker.js` → Update ALL version references:
+   - Header comment: `// Version: 1.0.X`
+   - `CACHE_NAME = 'expenseapp-v1.0.X'`
+   - `STATIC_CACHE = 'expenseapp-static-v1.0.X'`
+   - `console.log('[ServiceWorker] Installing v1.0.X...')` 
+   - `console.log('[ServiceWorker] Activating v1.0.X...')`
+   - `console.log('[ServiceWorker] v1.0.X activated and ready!')`
+
+**Version Incrementing Pattern:**
+- Bug fixes / small changes: Increment patch (1.0.24 → 1.0.25)
+- New features: Increment minor (1.0.25 → 1.1.0)
+- Breaking changes: Increment major (1.1.0 → 2.0.0)
+
+**Why This Matters:**
+- Browser caching will show old version if not incremented
+- NPMplus proxy caching requires version changes
+- User will see wrong version number (confusing)
+- Service worker won't update properly
+
+### Cache Busting Procedure
+
+**RULE 3: ALWAYS clear caches when deploying to sandbox**
+
+The sandbox environment has THREE layers of caching that must be cleared:
+
+1. **Browser Cache** (handled by version increment)
+2. **Service Worker Cache** (handled by version increment)
+3. **NPMplus Proxy Cache** (MUST manually restart)
+
+**Deployment Commands (REQUIRED):**
+```bash
+# 1. Build frontend
+rm -rf dist/
+npm run build
+
+# 2. Add unique build ID
+BUILD_ID=$(date +%Y%m%d_%H%M%S)
+echo "<!-- Build: ${BUILD_ID} -->" >> dist/index.html
+
+# 3. Deploy to sandbox
+tar -czf frontend-v1.0.X-${BUILD_ID}.tar.gz -C dist .
+scp frontend-v1.0.X-${BUILD_ID}.tar.gz root@192.168.1.190:/tmp/sandbox-deploy.tar.gz
+ssh root@192.168.1.190 "
+  pct push 203 /tmp/sandbox-deploy.tar.gz /tmp/sandbox-deploy.tar.gz && 
+  pct exec 203 -- bash -c 'cd /var/www/expenseapp && rm -rf * && tar -xzf /tmp/sandbox-deploy.tar.gz && systemctl restart nginx' &&
+  pct stop 104 &&  # ← THIS IS CRITICAL! Clears NPMplus cache
+  sleep 3 &&
+  pct start 104 &&  # ← Restart NPMplus
+  sleep 2
+"
+```
+
+**❌ Common Mistake:**
+Forgetting to restart NPMplus (LXC 104). This causes the old version to be cached at the proxy level even though files are updated.
+
+### Backend Log Checking
+
+**RULE 4: ALWAYS check backend logs after deployment (unless impossible)**
+
+After ANY backend deployment, verify it's running correctly:
+
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- bash -c 'systemctl status expenseapp-backend --no-pager | head -20 && echo && journalctl -u expenseapp-backend -n 30 --no-pager | tail -15'"
+```
+
+**Look for:**
+- ✅ `Active: active (running)` 
+- ✅ `Server running on port 3000`
+- ✅ No error messages in logs
+- ❌ Any stack traces
+- ❌ `Error:` or `ECONNREFUSED`
+
+### Testing Requirements
+
+**RULE 5: Tell the user SPECIFICALLY what to test after changes**
+
+Don't say "test the app" - be specific:
+
+**Good Example:**
+```
+Please test:
+1. Go to Expenses page
+2. Click "Add Expense" button
+3. Fill out form with test data
+4. Click Submit
+5. Verify expense appears in table
+6. Check browser console for errors
+```
+
+**Bad Example:**
+```
+Please test the changes ❌ (too vague)
+```
+
+### Documentation Standards
+
+**RULE 6: Update this master guide, not individual files**
+
+- Add new information to appropriate sections in THIS file
+- Don't create separate markdown files for session summaries
+- Don't create temporary documentation files
+- Exception: CHANGELOG.md (keep separate per GitHub standards)
+
+### Response Format
+
+**RULE 7: Each response should include a progress checklist**
+
+User specifically requested this format:
+
+```
+## 📋 REFACTOR/TASK PROGRESS
+
+### ✅ COMPLETED
+- [x] Item 1
+- [x] Item 2
+
+### 🔄 IN PROGRESS
+- [ ] Item 3 (current step)
+
+### 📅 UPCOMING
+- [ ] Item 4
+- [ ] Item 5
+
+### 🔧 THIS INCREMENT
+[What changed]
+
+### 🧪 TESTING REQUIRED
+[Specific test steps]
+```
+
+---
+
 ## 🏗️ PROJECT OVERVIEW
 
 ### Application Summary
