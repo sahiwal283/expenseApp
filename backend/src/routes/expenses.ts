@@ -544,6 +544,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: A
 
     // Check if entity has Zoho configuration
     if (!zohoMultiAccountService.isConfiguredForEntity(expense.zoho_entity)) {
+      console.log(`[Zoho:Push] Entity "${expense.zoho_entity}" is not configured for Zoho integration`);
       return res.status(400).json({ 
         error: `Entity "${expense.zoho_entity}" does not have Zoho Books integration configured`
       });

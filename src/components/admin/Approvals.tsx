@@ -131,8 +131,26 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       await loadData(); // Refresh data to update zohoExpenseId
     } catch (error: any) {
       console.error('Failed to push to Zoho:', error);
+      
+      // Check if this is an auth error (401/403) - should not happen, but handle gracefully
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        addToast('⚠️ Session expired. Please log in again.', 'warning');
+        // Don't force logout - let the existing auth interceptor handle it
+        return;
+      }
+      
       const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
-      addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
+      
+      // Check if this is a "not configured" error for this specific entity
+      if (errorMsg.includes('does not have Zoho Books integration configured')) {
+        addToast(
+          `🕐 Zoho Books integration for "${expense.zohoEntity}" is coming soon. Please try again in the future or add this expense manually.`,
+          'info'
+        );
+      } else {
+        // Other errors (real API failures, network issues, etc.)
+        addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
+      }
     } finally {
       setPushingExpenseId(null);
     }
