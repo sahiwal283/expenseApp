@@ -1484,6 +1484,405 @@ When working on this project:
 
 ## 🔥 RECENT SESSIONS & LESSONS LEARNED
 
+### Session: October 15, 2025 (v1.0.58 Production Deployment)
+
+**Objective:** Deploy v1.0.58 to production, troubleshoot and resolve critical access issues
+
+**Duration:** ~2 hours
+
+---
+
+#### 🚀 PRODUCTION DEPLOYMENT COMPLETED
+
+**Versions Deployed:**
+- Frontend: v1.0.58 (from v1.0.9) - **49 version jump!**
+- Backend: v1.0.23 (from v1.0.1)
+- Database: Migrated to `expense_app_production` with `roles` table
+
+**Features Deployed:**
+- ✅ Dynamic Role Management System
+- ✅ Developer permissions (full admin + Dev Dashboard)
+- ✅ Improved UX (collapsible sections, better fonts)
+- ✅ Role display fixes
+- ✅ All bug fixes from v1.0.9 to v1.0.58
+
+---
+
+#### 🚨 CRITICAL ISSUES ENCOUNTERED
+
+**ISSUE 1: Blank White Page in Production**
+
+**Symptoms:**
+- Site loaded but showed blank page
+- Console error: `Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of 'text/html'`
+- JavaScript files returning HTML instead of JavaScript
+- Manifest icons failing to load
+- DNS SERVFAIL for `expapp.duckdns.org`
+
+**Root Causes (Multiple):**
+
+**1. DuckDNS Not Resolving (Red Herring)**
+- Initially thought DNS was broken
+- `nslookup expapp.duckdns.org` returned `SERVFAIL`
+- **Actual Cause:** User's public IP may have changed OR DNS propagation delay
+- **Resolution:** Not the main issue - infrastructure was healthy
+
+**2. NPMplus Proxy Scheme Misconfiguration (ACTUAL CAUSE)**
+- **The Problem:** NPMplus proxy configured to forward with scheme `https`
+- **Why It Broke:** User changed scheme from `http` to `https` thinking it would fix MIME errors
+- **What Happened:**
+  ```
+  Internet → HTTPS (443) → NPMplus → **HTTPS** → Frontend Container Port 80
+                                        ↑ WRONG!
+  ```
+- Frontend container only accepts HTTP on port 80
+- NPMplus tried to send HTTPS → Connection failed → 502 Bad Gateway
+- NPMplus fallback served error HTML page
+- Browser requested JavaScript, got HTML → **MIME type mismatch**
+
+**The Correct Flow:**
+```
+Internet → HTTPS (443) → NPMplus [SSL Termination] → HTTP → Frontend Container Port 80
+```
+
+**3. Environment File Confusion**
+- Found `backend/env.production.READY` pointing to Container 203 (sandbox!)
+- Database name was `expense_app_sandbox` (wrong!)
+- Container mismatch would have caused issues
+
+---
+
+#### 🔧 FIXES APPLIED
+
+**Fix 1: Database Configuration**
+```bash
+# Renamed database for clarity
+ALTER DATABASE expense_app RENAME TO expense_app_production;
+
+# Created sahil/sahil database user
+CREATE USER sahil WITH PASSWORD 'sahil' CREATEDB;
+GRANT ALL PRIVILEGES ON DATABASE expense_app_production TO sahil;
+```
+
+**Fix 2: Environment Files**
+```bash
+# Renamed misnamed file
+mv env.production.READY env.sandbox.READY
+
+# Created correct production environment file
+backend/env.production:
+  - Container: 201 (backend)
+  - Database: expense_app_production
+  - Credentials: sahil/sahil
+  - URLs: https://expapp.duckdns.org
+```
+
+**Fix 3: NPMplus Proxy Configuration**
+```sql
+-- Changed forward scheme back to HTTP
+UPDATE proxy_host 
+SET forward_scheme = 'http' 
+WHERE id = 3;
+```
+
+**Fix 4: NPMplus Process Restart**
+```bash
+# Killed and restarted NPMplus to regenerate nginx configs
+pct exec 104 -- kill -HUP 1092
+# OR restart entire container
+pct stop 104 && sleep 3 && pct start 104
+```
+
+**Fix 5: Applied Database Migration**
+```bash
+# Applied roles table migration to production
+psql -U sahil -d expense_app_production -f 003_create_roles_table.sql
+```
+
+---
+
+#### 🎓 CRITICAL LESSONS LEARNED
+
+**LESSON 1: SSL Termination vs. End-to-End Encryption**
+
+**The Confusion:**
+- User saw `http` in NPMplus config and thought it was insecure
+- Changed to `https` thinking it would make site more secure
+
+**The Reality:**
+```
+PUBLIC INTERNET (HTTPS) → NPMplus [SSL TERMINATION] → INTERNAL NETWORK (HTTP)
+                           ↑ Encryption happens HERE
+```
+
+**Key Concept:** 
+- NPMplus handles SSL/TLS encryption (Certificate: expapp.duckdns.org)
+- Backend containers communicate via HTTP on private network
+- **This is standard reverse proxy architecture!**
+
+**Rule:** Never forward `https` from reverse proxy to backend unless backend explicitly supports HTTPS on that port.
+
+---
+
+**LESSON 2: MIME Type Errors = Proxy/Routing Problem**
+
+**Diagnostic Pattern:**
+```
+Console Error: "Expected JavaScript but got text/html"
+               ↓
+Question: Why is HTML being served instead of JS?
+               ↓
+Answer: Upstream service (proxy/nginx) returning error page
+               ↓
+Root Cause: Connection failure between proxy and backend
+```
+
+**Quick Diagnosis:**
+1. Test asset directly from backend container IP
+2. If works → proxy configuration issue
+3. If fails → backend nginx config issue
+
+---
+
+**LESSON 3: Infrastructure is a Stack - Diagnose Bottom-Up**
+
+**Correct Diagnostic Order:**
+1. ✅ Backend container healthy? (curl http://container-ip:port/api/health)
+2. ✅ Frontend container serving files? (curl http://container-ip/index.html)
+3. ✅ NPMplus proxy routing correctly? (curl -H "Host: domain" http://proxy-ip/)
+4. ✅ DNS resolving? (nslookup domain)
+5. ✅ SSL certificate valid? (curl -I https://domain)
+
+**Don't Jump to DNS First!** - Most issues are configuration, not DNS.
+
+---
+
+**LESSON 4: Environment File Naming Matters**
+
+**What Went Wrong:**
+- File named `env.production.READY` was actually sandbox configuration
+- AI from previous session created file but misconfigured it
+
+**Prevention:**
+- Use explicit naming: `env.production`, `env.sandbox`
+- Never use `.READY` suffix (confusing!)
+- Validate contents match filename before deployment
+
+---
+
+**LESSON 5: Production Database Schema Drift**
+
+**The Gap:**
+- Production was at v1.0.1 (database schema very old)
+- Sandbox was at v1.0.58 (with `roles` table)
+- **49 version gap!**
+
+**What Could Go Wrong:**
+- Missing tables → API errors
+- Missing columns → Database exceptions
+- Different constraints → Insert failures
+
+**Solution Applied:**
+- Applied all migrations in order
+- Tested migration on production before code deployment
+- Verified backward compatibility
+
+---
+
+**LESSON 6: NPMplus Process Must Reload After DB Changes**
+
+**The Surprise:**
+- Changed `forward_scheme` in SQLite database
+- Configuration didn't update!
+
+**Why:**
+- NPMplus caches nginx config in memory
+- Must reload Node.js process to regenerate configs
+
+**Commands That Work:**
+```bash
+# Option 1: Signal the process
+pct exec 104 -- kill -HUP <PID>
+
+# Option 2: Restart container (safer)
+pct stop 104 && sleep 3 && pct start 104
+```
+
+---
+
+**LESSON 7: 502 Bad Gateway = Backend Unreachable**
+
+**When You See 502:**
+1. Backend is down
+2. Backend is up but wrong port/protocol
+3. Firewall blocking
+4. **Wrong scheme (https vs http)** ← This was our issue
+
+**Quick Test:**
+```bash
+# From proxy container, can you reach backend?
+curl -I http://backend-ip:backend-port/
+```
+
+---
+
+#### 🔍 DIAGNOSTIC APPROACHES TAKEN
+
+**Approach 1: Check Infrastructure Health First**
+```bash
+# Container status
+pct list | grep -E '201|202|104'
+
+# Service status
+pct exec 201 -- systemctl status expenseapp-backend
+pct exec 202 -- systemctl status nginx
+pct exec 104 -- ps aux | grep nginx
+
+# Health checks
+curl http://192.168.1.201:3000/api/health
+curl http://192.168.1.139/index.html
+```
+
+**Approach 2: Test Direct Access (Bypass Proxy)**
+```bash
+# Can frontend serve files?
+curl http://192.168.1.139/assets/index-V6x2iYJg.js
+
+# Can NPMplus reach frontend? (with Host header)
+curl -H "Host: expapp.duckdns.org" http://192.168.1.160/
+```
+
+**Approach 3: Check Proxy Configuration**
+```bash
+# Read NPMplus database
+pct exec 104 -- sqlite3 /opt/npmplus/npmplus/database.sqlite \
+  "SELECT forward_scheme, forward_host, forward_port FROM proxy_host WHERE id = 3;"
+```
+
+**Approach 4: Verify DNS**
+```bash
+# Check DNS resolution
+nslookup expapp.duckdns.org
+dig expapp.duckdns.org
+
+# Get public IP
+curl ifconfig.me
+```
+
+**Approach 5: Check Logs**
+```bash
+# Backend logs
+pct exec 201 -- journalctl -u expenseapp-backend -n 50
+
+# Look for connection errors
+grep -i "error\|fail\|refused" logs.txt
+```
+
+---
+
+#### ✅ DEPLOYMENT CHECKLIST (WHAT WORKED)
+
+**Pre-Deployment:**
+- [x] Database backup created (`/tmp/expense_app_production_backup_*.sql`)
+- [x] Verified production database exists
+- [x] Created `sahil/sahil` database user
+- [x] Renamed database to `_production` suffix
+
+**Environment Configuration:**
+- [x] Fixed `env.production` file (correct container, database, credentials)
+- [x] Renamed misnamed `env.production.READY` to `env.sandbox.READY`
+- [x] Deployed environment file to `/etc/expenseapp/backend.env`
+- [x] Set permissions: `chmod 600`
+
+**Code Deployment:**
+- [x] Merged v1.0.10 branch to main (49 versions!)
+- [x] Built backend v1.0.23
+- [x] Deployed backend to container 201
+- [x] Applied `roles` table migration
+- [x] Restarted backend service
+- [x] Verified health check (version 1.0.23, database connected)
+
+**Frontend Deployment:**
+- [x] Created `.env.production` with `VITE_API_URL=https://expapp.duckdns.org/api`
+- [x] Built frontend v1.0.58 for production
+- [x] Deployed to container 202 (`/var/www/expenseapp/current`)
+- [x] Verified static assets present (icons, JS bundles)
+
+**Proxy Configuration:**
+- [x] Fixed NPMplus forward scheme (https → http)
+- [x] Restarted NPMplus (container 104)
+- [x] Verified proxy routing works
+- [x] Confirmed SSL certificate valid
+
+**Verification:**
+- [x] Backend health check returns 200
+- [x] Frontend HTML loads
+- [x] JavaScript bundle loads (no MIME errors)
+- [x] Icons accessible
+- [x] No 502 errors
+- [x] Zero errors in logs
+
+---
+
+#### ❌ WHAT DIDN'T WORK (Dead Ends)
+
+**Dead End 1: Trying to Fix DNS First**
+- Spent time investigating DuckDNS
+- User couldn't access DuckDNS account
+- **Reality:** DNS wasn't the problem, proxy was!
+
+**Dead End 2: Changing Proxy Scheme to HTTPS**
+- User thought `http` scheme was insecure
+- Changed to `https` in UI → Made problem worse!
+- **Lesson:** Understand architecture before making changes
+
+**Dead End 3: Searching for DuckDNS Auto-Updater**
+- Looked for cron jobs, services, containers
+- None found (no auto-updater configured)
+- **Reality:** Not relevant to the MIME error issue
+
+---
+
+#### 🎯 KEY TAKEAWAYS FOR FUTURE DEPLOYMENTS
+
+**1. Reverse Proxy Architecture:**
+```
+Internet (HTTPS) → Proxy [SSL Termination] → Backend (HTTP on private network)
+```
+This is correct! Don't change it!
+
+**2. MIME Type Error Diagnosis:**
+```
+"Expected JavaScript but got HTML" = Proxy returning error page = Connection failure
+```
+
+**3. NPMplus Configuration:**
+- `forward_scheme: http` for containers serving HTTP
+- `forward_scheme: https` ONLY if backend has SSL cert
+- Database changes require process reload
+
+**4. 502 Bad Gateway = Check scheme mismatch first**
+
+**5. Always Test Bottom-Up:**
+Backend → Frontend → Proxy → DNS → SSL
+
+**6. Production Database:**
+- Always suffix with `_production`
+- Create separate admin user (not postgres)
+- Backup before ANY changes
+
+**7. Environment Files:**
+- Clear naming: `env.production`, `env.sandbox`
+- Validate contents match deployment target
+- Never trust filenames alone
+
+**8. NPMplus Must Restart After Config Changes:**
+```bash
+pct stop 104 && sleep 3 && pct start 104
+```
+
+---
+
 ### Session: October 15, 2025 (v1.0.54 - v1.0.58)
 
 **Objective:** Implement dynamic role management system, improve UX, fix role display issues
