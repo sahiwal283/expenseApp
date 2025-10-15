@@ -78,8 +78,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
 // Create event
 router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
-  const client = await pool.connect(); // Get a client for transaction
-  
   try {
     const { name, venue, city, state, start_date, end_date, budget, participant_ids, participants } = req.body;
 
@@ -87,12 +85,8 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
       return res.status(400).json({ error: 'Required fields missing' });
     }
 
-    // Start transaction
-    await client.query('BEGIN');
-    console.log('[Events] Starting transaction for event creation');
-
-    // Insert event
-    const result = await client.query(
+    // Insert event (critical - must succeed)
+    const result = await query(
       `INSERT INTO events (name, venue, city, state, start_date, end_date, budget, coordinator_id) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
@@ -102,75 +96,75 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
     const event = result.rows[0];
     console.log(`[Events] Created event: ${event.id} - ${event.name}`);
 
-    // Handle participants (can be existing IDs or full participant objects)
+    // Handle participants - best effort (don't fail event if participant fails)
     if (participants && Array.isArray(participants)) {
       const bcrypt = require('bcrypt');
-      console.log(`[Events] Processing ${participants.length} participants`);
+      console.log(`[Events] Processing ${participants.length} participants (best effort)`);
       
       for (const participant of participants) {
-        let userId = participant.id;
-        
-        // Check if user exists
-        const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [participant.id]);
-        
-        // If user doesn't exist, create them
-        if (userCheck.rows.length === 0) {
-          console.log(`[Events] Creating new user for custom participant: ${participant.name} (${participant.email})`);
+        try {
+          let userId = participant.id;
           
-          // Generate a default password for custom participants
-          const defaultPassword = await bcrypt.hash('changeme123', 10);
+          // Check if user exists
+          const userCheck = await query('SELECT id FROM users WHERE id = $1', [participant.id]);
           
-          const newUserResult = await client.query(
-            'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-            [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
+          // If user doesn't exist, create them
+          if (userCheck.rows.length === 0) {
+            console.log(`[Events] Creating new user for custom participant: ${participant.name} (${participant.email})`);
+            
+            // Generate a default password for custom participants
+            const defaultPassword = await bcrypt.hash('changeme123', 10);
+            
+            try {
+              const newUserResult = await query(
+                'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
+              );
+              
+              userId = newUserResult.rows[0].id;
+              console.log(`[Events] ✓ Created user: ${userId}`);
+            } catch (userError: any) {
+              console.error(`[Events] ⚠️ Failed to create user ${participant.email}:`, userError.message);
+              // Skip this participant, continue with others
+              continue;
+            }
+          } else {
+            console.log(`[Events] ✓ User already exists: ${userId}`);
+          }
+          
+          // Add participant to event
+          await query(
+            'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [event.id, userId]
           );
-          
-          userId = newUserResult.rows[0].id;
-          console.log(`[Events] ✓ Created user: ${userId}`);
-        } else {
-          console.log(`[Events] ✓ User already exists: ${userId}`);
+          console.log(`[Events] ✓ Added participant ${userId} to event ${event.id}`);
+        } catch (participantError: any) {
+          console.error(`[Events] ⚠️ Failed to add participant ${participant.name}:`, participantError.message);
+          // Continue with next participant
         }
-        
-        // Add participant to event
-        await client.query(
-          'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2)',
-          [event.id, userId]
-        );
-        console.log(`[Events] ✓ Added participant ${userId} to event ${event.id}`);
       }
     } else if (participant_ids && Array.isArray(participant_ids)) {
       // Fallback: Handle old format (just IDs)
       console.log(`[Events] Processing ${participant_ids.length} participant IDs (legacy format)`);
       for (const userId of participant_ids) {
-        await client.query(
-          'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2)',
-          [event.id, userId]
-        );
-        console.log(`[Events] ✓ Added participant ${userId} to event ${event.id}`);
+        try {
+          await query(
+            'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [event.id, userId]
+          );
+          console.log(`[Events] ✓ Added participant ${userId} to event ${event.id}`);
+        } catch (participantError: any) {
+          console.error(`[Events] ⚠️ Failed to add participant ${userId}:`, participantError.message);
+          // Continue with next participant
+        }
       }
     }
 
-    // Commit transaction
-    await client.query('COMMIT');
-    console.log('[Events] Transaction committed successfully');
-
+    // Event created successfully (even if some participants failed)
     res.status(201).json(event);
   } catch (error) {
-    // Rollback transaction on error
-    await client.query('ROLLBACK');
-    console.error('[Events] Transaction rolled back due to error:', error);
-    
-    // Better error message based on error type
-    if ((error as any).code === '23505') { // Unique constraint violation
-      res.status(409).json({ error: 'A user with that email or username already exists' });
-    } else if ((error as any).code === '23503') { // Foreign key constraint violation
-      res.status(400).json({ error: 'Invalid participant ID provided' });
-    } else {
-      res.status(500).json({ error: 'Failed to create event. Please try again.' });
-    }
-  } finally {
-    // Release the client back to the pool
-    client.release();
+    console.error('[Events] Failed to create event:', error);
+    res.status(500).json({ error: 'Failed to create event. Please try again.' });
   }
 });
 
