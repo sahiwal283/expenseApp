@@ -1,16 +1,17 @@
 // ExpenseApp Service Worker
-// Version: 1.1.0 - CRITICAL FIX: Force Logout Bug
+// Version: 1.1.1 - FIX: Allow Entity Change After Zoho Push
 // Date: October 15, 2025
 //
-// Changes from v1.0.63:
-// - FIXED: Force logout on Push to Zoho (developer role now authorized)
-// - FIXED: API client no longer logs out on 403 (permission denied) errors
-// - FIXED: Auto-logout only triggers on auth endpoint 401s, not all API errors
-// - Added: Developer role to all Zoho endpoints (push, health checks)
-// - Improved: Smarter error handling - distinguishes auth vs permission errors
+// Changes from v1.1.0:
+// - FIXED: Can now change entity after pushing to Zoho (button reappears)
+// - Added: Warning when changing entity on already-pushed expense
+// - Added: Backend clears zoho_expense_id when entity changes
+// - Improved: Entity dropdown styled green when pushed (no longer disabled)
+// - UX: Success toast confirms "You can now push to the new entity"
 //
-// Changes from v1.0.62:
-// - Added: "Coming Soon" message for unconfigured Zoho entities
+// Changes from v1.0.63:
+// - FIXED: Force logout on Push to Zoho (developer role authorized)
+// - FIXED: API client smarter about auth vs permission errors
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -75,8 +76,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.0';  // BUMPED VERSION for force logout fix
-const STATIC_CACHE = 'expenseapp-static-v1.1.0';
+const CACHE_NAME = 'expenseapp-v1.1.1';  // BUMPED VERSION for entity change fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -86,7 +87,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.0...');
+  console.log('[ServiceWorker] Installing v1.1.1...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -177,7 +178,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.0...');
+  console.log('[ServiceWorker] Activating v1.1.1...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -191,7 +192,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.0 activated and ready!');
+      console.log('[ServiceWorker] v1.1.1 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

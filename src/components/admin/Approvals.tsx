@@ -157,13 +157,41 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   };
 
   const handleAssignEntity = async (expense: Expense, entity: string) => {
+    // Warn if changing entity on an already-pushed expense
+    if (expense.zohoExpenseId && expense.zohoEntity && expense.zohoEntity !== entity) {
+      const confirmed = window.confirm(
+        `⚠️ This expense has already been pushed to "${expense.zohoEntity}" Zoho Books.\n\n` +
+        `Changing the entity will allow you to push it to "${entity || 'Unassigned'}" instead, ` +
+        `but it will NOT remove it from "${expense.zohoEntity}" Zoho Books.\n\n` +
+        `Are you sure you want to change entities?`
+      );
+      
+      if (!confirmed) {
+        return; // User cancelled
+      }
+    }
+
     try {
       if (api.USE_SERVER) {
         // Empty string means "unassign" (set to NULL in database)
+        // Backend will also clear zoho_expense_id if entity is changed
         await api.assignEntity(expense.id, { zoho_entity: entity });
       }
 
+      // Remove from pushedExpenses set to allow re-push
+      if (expense.zohoEntity !== entity) {
+        setPushedExpenses(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(expense.id);
+          return newSet;
+        });
+      }
+
       await loadData(); // Refresh all data
+      
+      if (expense.zohoExpenseId) {
+        addToast('✅ Entity changed. You can now push to the new entity.', 'success');
+      }
     } catch (error) {
       console.error('Failed to assign entity:', error);
       addToast('❌ Failed to assign entity. Please try again.', 'error');
@@ -430,11 +458,13 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                           value={expense.zohoEntity || ''}
                           onChange={(e) => handleAssignEntity(expense, e.target.value)}
                           className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full ${
-                            expense.zohoEntity 
-                              ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
+                            expense.zohoExpenseId 
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700' 
+                              : expense.zohoEntity
+                              ? 'border-gray-300 bg-white text-gray-900'
                               : 'border-gray-300 bg-white text-gray-900'
                           }`}
-                          disabled={!!expense.zohoEntity}
+                          title={expense.zohoExpenseId ? 'Already pushed - changing entity will allow re-push' : ''}
                         >
                           <option value="">Unassigned</option>
                           {entityOptions.map((entity, index) => (

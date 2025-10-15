@@ -279,10 +279,25 @@ class ExpenseService {
       throw new AuthorizationError('Only admins and accountants can assign entities');
     }
 
+    // Get current expense to check if entity is changing
+    const currentExpense = await expenseRepository.findById(expenseId);
+    if (!currentExpense) {
+      throw new NotFoundError('Expense not found');
+    }
+
     // Allow empty string to mean "unassign" (set to NULL)
     const entityValue = zohoEntity && zohoEntity.trim().length > 0 ? zohoEntity : undefined;
 
-    return expenseRepository.update(expenseId, { zoho_entity: entityValue });
+    // If entity is changing and expense was already pushed to Zoho, clear zoho_expense_id
+    // This allows re-pushing to the new entity's Zoho Books account
+    const updates: Partial<Expense> = { zoho_entity: entityValue };
+    
+    if (currentExpense.zoho_entity !== entityValue && currentExpense.zoho_expense_id) {
+      console.log(`[Entity Change] Clearing zoho_expense_id for expense ${expenseId} (was pushed to ${currentExpense.zoho_entity}, now changing to ${entityValue || 'Unassigned'})`);
+      updates.zoho_expense_id = undefined; // Clear the Zoho expense ID to allow re-push
+    }
+
+    return expenseRepository.update(expenseId, updates);
   }
 
   /**
