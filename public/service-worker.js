@@ -1,13 +1,16 @@
 // ExpenseApp Service Worker
-// Version: 1.0.33 - FEATURE: Participant-based expense access control
+// Version: 1.0.34 - DEBUG: Participants dropdown debugging
 // Date: October 15, 2025
+//
+// Changes from v1.0.33:
+// - Added console logging to participants dropdown for debugging
+// - Reverted: Developer role can now submit to all events (like admin/accountant)
+// - Investigating empty participants dropdown issue
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
-// - Users can only submit expenses to events where they are participants
 // - Admin/accountant/developer can submit to any event
-// - Added filterEventsByParticipation utility function
-// - Backend validation ensures database-level security
+// - Regular users restricted to their events
 //
 // Changes from v1.0.31:
 // - Fixed "Unknown User" bug in Approvals page
@@ -58,8 +61,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.33';  // BUMPED VERSION for participant access control
-const STATIC_CACHE = 'expenseapp-static-v1.0.33';
+const CACHE_NAME = 'expenseapp-v1.0.34';  // BUMPED VERSION for debugging
+const STATIC_CACHE = 'expenseapp-static-v1.0.34';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -69,7 +72,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.33...');
+  console.log('[ServiceWorker] Installing v1.0.34...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -160,7 +163,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.33...');
+  console.log('[ServiceWorker] Activating v1.0.34...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -174,7 +177,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.33 activated and ready!');
+      console.log('[ServiceWorker] v1.0.34 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

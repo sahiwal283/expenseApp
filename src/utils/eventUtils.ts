@@ -77,7 +77,7 @@ export function getEventDropdownRemovalDate(event: TradeShow): string {
  * 
  * @param events - Array of events to filter
  * @param user - Current logged-in user
- * @returns Filtered array of events (only user's events or all for admins)
+ * @returns Filtered array of events (only user's events or all for admins/accountants/developers)
  */
 export function filterEventsByParticipation(events: TradeShow[], user: User): TradeShow[] {
   // Admin, accountant, and developer can see all events

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.34] - 2025-10-15
+
+### Changed
+- **Developer Role Access**: Reverted developer role to have unrestricted event access (like admin/accountant)
+  - Developers can now submit expenses to any event
+  - Updated frontend and backend validation
+
+### Added
+- **Debug Logging**: Added console logging to participants dropdown to diagnose empty dropdown issue
+  - Logs all users, current participants, and available users
+  - Helps identify why dropdown may be empty
+
+### Technical
+- Backend: v1.0.13 → v1.0.14
+- Frontend: v1.0.33 → v1.0.34
+- Debug mode active for participants dropdown
+
 ## [1.0.33] - 2025-10-15
 
 ### Added

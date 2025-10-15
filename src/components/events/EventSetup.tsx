@@ -504,13 +504,17 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                         className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select a user...</option>
-                        {allUsers
-                          .filter(u => !formData.participants.find(p => p.id === u.id))
-                          .map(user => (
+                        {(() => {
+                          const availableUsers = allUsers.filter(u => !formData.participants.find(p => p.id === u.id));
+                          console.log('[EventSetup] All users:', allUsers.length, allUsers.map(u => u.name));
+                          console.log('[EventSetup] Current participants:', formData.participants.length, formData.participants.map(p => p.name));
+                          console.log('[EventSetup] Available users for dropdown:', availableUsers.length, availableUsers.map(u => u.name));
+                          return availableUsers.map(user => (
                             <option key={user.id} value={user.id}>
                               {user.name} ({user.email})
                             </option>
-                          ))}
+                          ));
+                        })()}
                       </select>
                       <button
                         type="button"
