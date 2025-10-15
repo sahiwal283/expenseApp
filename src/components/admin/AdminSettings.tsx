@@ -3,6 +3,7 @@ import { Settings, Plus, Trash2, CreditCard, Building2, Users, Pencil, Check, X,
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
+import { RoleManagement } from './RoleManagement';
 
 interface AdminSettingsProps {
   user: User;
@@ -290,7 +291,16 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
       {/* Tab Content */}
       {activeTab === 'users' ? (
-        <UserManagement user={user} />
+        <div className="space-y-8">
+          {/* Role Management Section */}
+          <RoleManagement />
+          
+          {/* Divider */}
+          <div className="border-t border-gray-200"></div>
+          
+          {/* User Management Section */}
+          <UserManagement user={user} />
+        </div>
       ) : (
         <div className="space-y-6">
 

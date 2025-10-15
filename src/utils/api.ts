@@ -28,6 +28,12 @@ export const api = {
   updateUser: (id: string, payload: Record<string, any>) => apiClient.put(`/users/${id}`, payload),
   deleteUser: (id: string) => apiClient.delete(`/users/${id}`),
 
+  // Roles
+  getRoles: () => apiClient.get('/roles'),
+  createRole: (payload: Record<string, any>) => apiClient.post('/roles', payload),
+  updateRole: (id: string, payload: Record<string, any>) => apiClient.put(`/roles/${id}`, payload),
+  deleteRole: (id: string) => apiClient.delete(`/roles/${id}`),
+
   // Events
   getEvents: () => apiClient.get('/events'),
   createEvent: (payload: Record<string, any>) => apiClient.post('/events', payload),

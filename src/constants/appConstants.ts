@@ -5,7 +5,7 @@
  */
 
 // ========== APPLICATION INFO ==========
-export const APP_VERSION = '1.0.53';
+export const APP_VERSION = '1.0.54';
 export const APP_NAME = 'Trade Show Expense Management App';
 
 // ========== DEMO CREDENTIALS (Development Only) ==========

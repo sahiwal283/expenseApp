@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.54] - 2025-10-15 (Frontend v1.0.54 / Backend v1.0.22)
+
+### Added
+- **Dynamic Role Management System**:
+  - New Role Management section in Settings → User Management
+  - Admins can create custom roles dynamically (beyond system roles)
+  - View all existing roles in a grid layout with color badges
+  - Edit role properties: label, description, and badge color
+  - Delete custom roles (system roles are protected from deletion)
+  - 10 color options for role badges (purple, blue, green, orange, indigo, red, yellow, pink, teal, gray)
+  - System roles (admin, accountant, coordinator, salesperson, developer, temporary, pending) cannot be deleted
+  - Validation: Can't delete roles that are currently assigned to users
+  
+### Backend
+- **New Database Table: `roles`**:
+  - Migration `003_create_roles_table.sql` creates roles table
+  - Stores role metadata: name, label, description, color, is_system, is_active
+  - Automatically inserts all existing system roles
+  - Removes hardcoded CHECK constraint on users.role column
+  - Indexes added for performance (name, is_active, is_system)
+  - Automatic updated_at timestamp trigger
+
+- **New API Endpoints: `/api/roles`**:
+  - `GET /api/roles` - Fetch all active roles
+  - `POST /api/roles` - Create new role (admin only)
+  - `PUT /api/roles/:id` - Update role (admin only, limited for system roles)
+  - `DELETE /api/roles/:id` - Soft delete role (admin only, system roles protected)
+  - Role name validation (lowercase, underscores for spaces)
+  - Duplicate role name prevention
+  - User count check before deletion
+
+### Frontend
+- **New Component: `RoleManagement.tsx`**:
+  - Grid display of all roles with visual color badges
+  - Create/Edit modal with form validation
+  - Color picker with 10 preset options
+  - Real-time preview of role badge
+  - System role indicator and protection
+  - Error handling and user feedback
+  
+- **Updated Components**:
+  - `AdminSettings.tsx` - Integrated RoleManagement above UserManagement
+  - `api.ts` - Added role API functions (getRoles, createRole, updateRole, deleteRole)
+  - `server.ts` - Registered `/api/roles` route
+
+### Technical
+- Role names are automatically sanitized (lowercase, underscores)
+- Frontend validates required fields (name, label)
+- Backend checks admin permissions for all role operations
+- Soft delete pattern (is_active flag) instead of hard delete
+- Transaction safety for role operations
+- Error messages explain why operations fail
+
 ## [1.0.53] - 2025-10-15 (Frontend)
 
 ### Added

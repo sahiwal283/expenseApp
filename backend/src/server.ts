@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
+import roleRoutes from './routes/roles';
 import eventRoutes from './routes/events';
 import expenseRoutes from './routes/expenses';
 import settingsRoutes from './routes/settings';
@@ -38,6 +39,7 @@ app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/settings', settingsRoutes);
