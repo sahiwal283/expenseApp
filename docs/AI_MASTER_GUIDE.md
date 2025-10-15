@@ -1,6 +1,6 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.0.16  
-**Last Updated:** October 14, 2025  
+**Version:** 1.0.58  
+**Last Updated:** October 15, 2025  
 **Status:** Production & Sandbox Active
 
 ---
@@ -1419,7 +1419,234 @@ When working on this project:
 
 ---
 
+## 🔥 RECENT SESSIONS & LESSONS LEARNED
+
+### Session: October 15, 2025 (v1.0.54 - v1.0.58)
+
+**Objective:** Implement dynamic role management system, improve UX, fix role display issues
+
+**Duration:** Full day session
+
+---
+
+#### 📦 FEATURES IMPLEMENTED
+
+**1. Dynamic Role Management System (v1.0.54)**
+
+**What Was Built:**
+- New `roles` database table with complete CRUD operations
+- Role Management UI component in Settings → User Management
+- Create, edit, delete custom roles from the admin interface
+- 10 color options for role badges
+- System role protection
+- Real-time role validation
+
+**Technical Implementation:**
+- **Database Migration:** `003_create_roles_table.sql`
+- **Backend API:** `/api/roles` endpoints (GET/POST/PUT/DELETE)
+- **Frontend Component:** `RoleManagement.tsx` with grid display, modal forms, color picker
+
+**2. Developer Permissions (v1.0.56)**
+- Updated backend authorization: `users.ts` and `roles.ts` now check for both 'admin' and 'developer'
+- Developer role = Admin capabilities + Dev Dashboard
+
+**3. Dynamic Role Loading (v1.0.56)**
+- Role dropdowns in User Management now load from database
+- Replaced 3 hardcoded `<option>` lists with dynamic mapping
+- Filters out 'pending' role
+
+**4. UX Improvements (v1.0.55 & v1.0.57)**
+- Collapsible Role Management (collapsed by default)
+- Improved readability with larger fonts
+- More compact layout
+
+**5. Role Display Fix (v1.0.58)**
+- Fixed `getRoleLabel()` and `getRoleColor()` to use dynamic data
+- Developer/temporary roles no longer show as "Pending Approval"
+
+---
+
+#### 💡 LESSONS LEARNED
+
+**1. Hardcoded Data = Maintenance Nightmare**
+
+**Problem:** Role labels/colors hardcoded in multiple places → new roles didn't show correctly
+
+**Lesson:** Always load dynamic data from database. Single source of truth.
+
+**Fix Pattern:**
+```typescript
+// BAD: Hardcoded
+const labels = { 'admin': 'Administrator' };
+return labels[role] || 'Pending Approval';
+
+// GOOD: Dynamic
+const role = roles.find(r => r.name === roleName);
+return role ? role.label : fallback;
+```
+
+**2. Cache is a Three-Headed Beast**
+
+**The Three Layers:**
+1. Browser Cache → Hard refresh
+2. Service Worker Cache → Version increment
+3. NPMplus Proxy Cache → **Manual restart (LXC 104)**
+
+**Lesson:** ALL THREE must be cleared. #3 keeps getting forgotten!
+
+```bash
+# Critical deployment step:
+pct stop 104 && sleep 3 && pct start 104
+```
+
+**3. Developer vs. Admin: Capability Overlap**
+
+**User Expectation:** Developer = Admin + Dev Dashboard
+
+**Solution:** Updated `authorize()` checks to include 'developer' wherever 'admin' was checked
+
+**Lesson:** Role names imply hierarchy. Users expect "developer" to have admin-level access.
+
+**4. Database Migrations in Production Are Scary**
+
+**Challenges:**
+- Wrong credentials (tried `postgres`, should be `expense_sandbox`)
+- Multiple failed attempts
+
+**What Worked:**
+```bash
+PGPASSWORD=sandbox123 psql -h localhost -U expense_sandbox -d expense_app_sandbox -f migration.sql
+```
+
+**Lesson:** Always verify connection parameters BEFORE running migrations. Test with `SELECT version();` first.
+
+**5. Collapsible Sections = Cleaner UI**
+
+**Problem:** Role Management taking too much space
+
+**Solution:** Collapsible (collapsed by default)
+
+**Lesson:** For admin-only infrequent features, collapsible sections improve UX without removing functionality.
+
+**6. Font Size Matters**
+
+**The Trap:** Made things "compact" in v1.0.55, went too aggressive (text-[10px])
+
+**Lesson:** Compact ≠ Unreadable. Minimum font sizes:
+- Body text: `text-sm` (14px)
+- Metadata: `text-xs` (12px)
+- **Never** go below `text-xs` for user-facing content
+
+---
+
+#### 🚧 STRUGGLE POINTS
+
+**1. Database Migration Confusion (30 min lost)**
+- Tried wrong credentials multiple times
+- **Solution:** Always check `backend/.env` first!
+
+**2. Role Display Bug (20 min to diagnose)**
+- Data correct in DB, correct in API, wrong in UI
+- Found: `getRoleLabel()` hardcoded
+- **Lesson:** Look for transformation functions when data is correct upstream but wrong downstream
+
+**3. NPMplus Proxy Cache (Again!)**
+- Deployed v1.0.55, user saw v1.0.54
+- Forgot to restart LXC 104
+- **Lesson:** Add to automated deployment script or document more prominently
+
+---
+
+#### ✅ TASKS COMPLETED
+
+- [x] Implement dynamic role management system
+- [x] Create database migration for roles table
+- [x] Build Role Management UI component
+- [x] Add backend API routes for roles CRUD
+- [x] Update User Management to load roles dynamically
+- [x] Give developer role admin permissions
+- [x] Fix role display in User Management table
+- [x] Improve Role Management readability
+- [x] Make Role Management collapsible
+- [x] Move "Push to Zoho" button to Approvals page
+- [x] Clean up old project files (61 tar.gz files, old backup folders)
+- [x] Update temporary user credentials
+- [x] Update README.md (comprehensive rewrite)
+- [x] Update ARCHITECTURE.md (comprehensive rewrite)
+- [x] Update AI_MASTER_GUIDE.md (this section!)
+
+---
+
+#### 📝 TASKS REMAINING
+
+**High Priority:**
+- [ ] Fix temporary user creation (custom participants not being saved)
+  - Issue: When adding temporary users via "Add Participant" field on event page, user is not created
+  - Status: Deferred - not blocking other features
+
+**Medium Priority:**
+- [ ] Add comprehensive testing (unit tests, E2E tests)
+- [ ] Add role permission matrix to UI
+
+**Low Priority:**
+- [ ] Consider moving temporary user creation to dedicated flow
+- [ ] Add audit log for role changes
+
+---
+
+#### 🎯 KEY TAKEAWAYS FOR FUTURE AI SESSIONS
+
+1. **Always check `backend/.env` before database operations** → Saves 30+ minutes
+
+2. **Cache clearing = 3 steps:** Version increment + Deploy + **Restart NPMplus proxy**
+
+3. **When "it's not working":**
+   - ✓ Database correct?
+   - ✓ API correct?
+   - ✓ Transform functions (getters/formatters) hardcoded?
+   - ✓ User hard refreshed?
+
+4. **Dynamic data > hardcoded data** → Always. No exceptions.
+
+5. **Developer role should equal admin + extras** → User expectation
+
+6. **Collapsible sections for infrequent features** → Better UX
+
+7. **Readability > compactness** → Don't sacrifice usability
+
+8. **Test on actual screens** → Dev mode can hide issues
+
+---
+
 ## 📝 CHANGELOG
+
+### v1.0.58 (Oct 15, 2025)
+- **Fixed:** Role labels/colors now load dynamically from database
+- **Fixed:** Developer/temporary roles no longer show as "Pending Approval"
+- Updated `getRoleLabel()` and `getRoleColor()` to use roles array
+
+### v1.0.57 (Oct 15, 2025)
+- **Improved:** Larger, more readable font sizes in Role Management
+- All text increased (text-xs → text-sm)
+- Better padding and spacing
+
+### v1.0.56 (Oct 15, 2025) + Backend v1.0.23
+- **Added:** Developer role now has full admin capabilities
+- **Fixed:** Role dropdowns in User Management load all roles dynamically
+- **Backend:** authorize() checks updated for developer role in users.ts and roles.ts
+
+### v1.0.55 (Oct 15, 2025)
+- **Changed:** Moved Role Management below User Management
+- **Changed:** Made Role Management collapsible (collapsed by default)
+- **Changed:** More compact cards (4 columns on large screens)
+
+### v1.0.54 (Oct 15, 2025)
+- **MAJOR FEATURE:** Dynamic Role Management System
+- Create, edit, delete custom roles from UI
+- Database migration: `roles` table with CRUD operations
+- Backend API: `/api/roles` endpoints
+- System roles protected from deletion
+- 10 color options for role badges
 
 ### v1.0.16 (Oct 14, 2025)
 - Added developer role access to Settings page

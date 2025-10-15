@@ -1,163 +1,136 @@
 # Trade Show Expense Management App
 
-A professional web application for managing trade show events and expenses with role-based permissions, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
+A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
-**Current Version: 0.35.0 (Zoho Books Integration)**
+**Current Version: 1.0.58 (October 15, 2025)**
 
-📝 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history and release notes
+📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
+🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
+📚 See [docs/AI_MASTER_GUIDE.md](docs/AI_MASTER_GUIDE.md) for development guide
 
-## Quick Start - Frontend Testing
+---
 
-**Get started in 10 seconds:**
+## 🚀 Quick Start
 
-```bash
-# macOS/Linux
-./scripts/start-frontend.sh
+### Sandbox Environment (Development/Testing)
+**URL:** http://192.168.1.144  
+**Credentials:**
+- Admin: `admin` / `sandbox123`
+- Coordinator: `coordinator` / `sandbox123`
+- Salesperson: `salesperson` / `sandbox123`
+- Accountant: `accountant` / `sandbox123`
+- Developer: `developer` / `sandbox123`
+- Temporary: `temporary` / `changeme123`
 
-# Windows
-scripts\start-frontend.bat
-```
+### Production Environment
+**URL:** http://192.168.1.138  
+See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production credentials
 
-Then open http://localhost:5173 and login with:
-- Admin: `admin` / `admin`
-- Coordinator: `sarah` / `password`
-- Salesperson: `mike` / `password`
-- Accountant: `lisa` / `password`
+---
 
-📖 See [docs/FRONTEND_TESTING.md](docs/FRONTEND_TESTING.md) for comprehensive testing guide
-🔧 See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) if you encounter any issues
-⚙️ **Homebrew installed but not working?** Run `./scripts/setup-homebrew.sh` to fix PATH issues
-🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete system architecture and diagrams
+## ✨ Key Features
 
-**Note:** This pre-release focuses on frontend testing. Data is stored in browser localStorage. Backend integration coming in v1.0.0.
+### 🎭 Dynamic Role Management System (NEW in v1.0.54-56)
+- **Create custom roles** dynamically from the UI
+- **System roles** (admin, accountant, coordinator, salesperson, developer, temporary, pending) are protected
+- **Custom roles** can be added, edited, and deleted
+- **Role properties**: Label, description, color badge (10 color options)
+- **Database-driven**: All role data stored in `roles` table
+- **Developer permissions**: Developers have full admin capabilities PLUS exclusive Dev Dashboard access
 
-## Features
+### 🔐 Role-Based Access Control
+- **Admin**: Full system access + user/role management
+- **Developer**: All admin capabilities + Dev Dashboard (debugging tools, diagnostics)
+- **Accountant**: Approve expenses, manage reimbursements, Zoho Books integration, reports
+- **Event Coordinator**: Create/manage events, assign participants, view event expenses
+- **Salesperson**: Submit expenses for assigned events, upload receipts
+- **Temporary Attendee**: Limited event participation for custom attendees
 
-- **🔗 Zoho Books Integration** - Automatic expense sync with receipt attachments
-- Role-based access control (Admin, Coordinator, Salesperson, Accountant)
-- Event/Trade show management with participant tracking
-- Expense submission with receipt upload
-- OCR text extraction from receipts using Tesseract.js
-- Expense approval workflows
-- Zoho entity assignment and tracking
-- Reimbursement tracking and approval
-- Comprehensive reporting and analytics
-- RESTful API with JWT authentication
+### 📱 Progressive Web App (PWA)
+- **Offline-first architecture** with IndexedDB
+- **Sync queue** for offline expense submissions
+- **Service Worker** with cache versioning
+- **Network-first strategy** for API calls (fixes stale data)
+- **Background sync** when connection restored
 
-## 📚 Zoho Books Integration
+### 🔗 Zoho Books Integration
+- **Automatic expense sync** with receipt attachments
+- **Push to Zoho** button on Approvals page (post-entity-assignment)
+- **Multi-entity support** (Haute Brands, Alpha, Beta, Gamma, Delta)
+- **Duplicate prevention** via `zohoExpenseId` tracking
+- **OAuth 2.0 security** with automatic token refresh
+- **Smart navigation** (takes user to report with most unsynced items)
 
-### Overview
+### 📋 Expense Management
+- **Submit expenses** with receipt upload (JPEG, PNG, PDF)
+- **OCR text extraction** from receipts (Tesseract.js + Sharp image preprocessing)
+- **Approval workflows** (pending → approved → rejected)
+- **Entity assignment** (assign expenses to specific Zoho Books entities)
+- **Reimbursement tracking** (pending review → approved → paid)
+- **Receipt viewing** (full-size default with hide option)
+- **Duplicate prevention** (form submit disabled during save)
 
-Every expense submitted through the app is **automatically posted to Zoho Books** with its receipt attachment. This eliminates manual data entry and ensures your accounting system stays in sync with your expense tracking.
+### 📊 Reporting & Analytics
+- **Detailed reports** by event with real-time filters
+- **Push to Zoho** button for syncing expenses
+- **Entity-based filtering** (view expenses by Zoho entity)
+- **Export capabilities** (coming soon)
+- **Dashboard widgets** with dynamic data
 
-### Key Capabilities
+### 🎪 Event Management
+- **Create and manage trade show events**
+- **Participant tracking** with role assignments
+- **Budget management** (admin-only)
+- **Event timeline** (start/end dates)
+- **Location tracking**
+- **Custom temporary participants** (creates user with 'temporary' role)
 
-✅ **Automatic Submission** - Expenses sync to Zoho Books immediately upon submission  
-✅ **Receipt Attachments** - Uploaded receipts are automatically attached in Zoho Books  
-✅ **Duplicate Prevention** - Smart tracking prevents re-submission of the same expense  
-✅ **Error Handling** - Graceful fallback if Zoho Books is unavailable (expenses still saved locally)  
-✅ **Reimbursement Tracking** - Billable/reimbursable expenses flagged appropriately  
-✅ **Event/Project Mapping** - Trade shows mapped to Zoho Books projects  
-✅ **OAuth 2.0 Security** - Industry-standard authentication with automatic token refresh  
+### 🛠️ Developer Dashboard (Developer Role Only)
+- **System diagnostics** and debugging tools
+- **Environment information**
+- **Cache management**
+- **API health checks**
+- **Version tracking**
 
-### How It Works
+---
 
-```
-1. User submits expense with receipt → 
-2. Expense saved to local database → 
-3. OCR processes receipt → 
-4. Expense automatically posted to Zoho Books →
-5. Receipt attached to Zoho Books expense →
-6. Zoho expense ID stored for tracking →
-7. User sees confirmation (all happens in seconds!)
-```
-
-### Setup
-
-**Quick Setup:** Follow our comprehensive setup guide:
-- 📖 **[docs/ZOHO_BOOKS_SETUP.md](docs/ZOHO_BOOKS_SETUP.md)** - Complete step-by-step instructions
-
-**Environment Variables Required:**
-```bash
-ZOHO_CLIENT_ID=1000.YOUR_CLIENT_ID
-ZOHO_CLIENT_SECRET=your_client_secret
-ZOHO_REFRESH_TOKEN=1000.your_refresh_token
-ZOHO_ORGANIZATION_ID=12345678
-ZOHO_EXPENSE_ACCOUNT_NAME=Travel Expenses
-ZOHO_PAID_THROUGH_ACCOUNT=Petty Cash
-```
-
-**Health Check:**
-```bash
-GET /api/expenses/zoho/health
-```
-
-### Optional Integration
-
-The Zoho Books integration is **completely optional**:
-- ✅ If configured: Expenses sync automatically
-- ✅ If not configured: App works normally (local storage only)
-- ✅ No disruption: Integration failure won't block expense submission
-
-### Security
-
-🔒 **No credentials in code** - All secrets stored in environment variables  
-🔒 **Token auto-refresh** - Access tokens refresh automatically (no user action needed)  
-🔒 **Secure OAuth 2.0** - Industry-standard authentication flow  
-🔒 **Audit trail** - All Zoho API interactions logged for debugging  
-
-### Troubleshooting
-
-See the [Zoho Books Setup Guide](docs/ZOHO_BOOKS_SETUP.md#troubleshooting) for common issues and solutions.
-
-## Tech Stack
+## 🏗️ Tech Stack
 
 ### Frontend
-- React 18 with TypeScript
-- Tailwind CSS for styling
-- Vite for build tooling
-- Lucide React for icons
+- **React 18** with TypeScript
+- **Tailwind CSS** for styling
+- **Vite** for build tooling
+- **Lucide React** for icons
+- **Service Worker** for PWA functionality
+- **IndexedDB** for offline storage
 
 ### Backend
-- Node.js with Express
-- PostgreSQL database
-- TypeScript
-- JWT for authentication
-- Tesseract.js for OCR
-- Multer for file uploads
-- bcrypt for password hashing
+- **Node.js** with Express
+- **PostgreSQL** database
+- **TypeScript**
+- **JWT** for authentication
+- **Tesseract.js** for OCR
+- **Sharp** for image preprocessing
+- **Multer** for file uploads
+- **bcrypt** for password hashing
 
-## Prerequisites
+### Infrastructure
+- **Proxmox LXC Containers** (Debian 12)
+- **Nginx** reverse proxy
+- **NPMplus** proxy manager
+- **PM2** process manager
+- **PostgreSQL 15**
 
-Before you begin, ensure you have the following installed:
+---
+
+## 📦 Installation & Setup
+
+### Prerequisites
 - Node.js (v18 or higher)
-- PostgreSQL (v14 or higher)
+- PostgreSQL (v15 or higher)
 - npm or yarn
 
-## Frontend Testing (Current Release)
-
-This is a pre-release version focused on frontend testing. The backend will be integrated in v1.0.0.
-
-**What's Included:**
-- Complete React frontend with TypeScript
-- All UI components and layouts
-- Role-based navigation and views
-- Form validations
-- Data persistence via localStorage
-- Professional UI design
-
-**What's Coming:**
-- Full backend API (Node.js + Express)
-- PostgreSQL database
-- Real OCR processing
-- JWT authentication
-- File upload to server
-- Email notifications
-
-## Local Development Setup
-
-### 1. Clone the Repository
-
+### 1. Clone Repository
 ```bash
 git clone https://github.com/sahiwal283/expenseApp.git
 cd expenseApp
@@ -165,247 +138,246 @@ cd expenseApp
 
 ### 2. Database Setup
 
-Install and start PostgreSQL:
-
+**Create Database:**
 ```bash
-# macOS (using Homebrew)
-brew install postgresql@14
-brew services start postgresql@14
-
-# Ubuntu/Debian
-sudo apt-get install postgresql postgresql-contrib
-sudo systemctl start postgresql
+psql postgres
+CREATE DATABASE expense_app_sandbox;
+CREATE USER expense_sandbox WITH PASSWORD 'sandbox123';
+GRANT ALL PRIVILEGES ON DATABASE expense_app_sandbox TO expense_sandbox;
+\q
 ```
 
-Create the database:
-
+**Run Migrations:**
 ```bash
-# Connect to PostgreSQL
-psql postgres
-
-# Create database and user
-CREATE DATABASE expense_app;
-CREATE USER expense_user WITH PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE expense_app TO expense_user;
-\q
+cd backend
+npm install
+npm run migrate
+npm run seed
 ```
 
 ### 3. Backend Setup
 
-Navigate to the backend directory and install dependencies:
-
-   ```bash
-cd backend
-   npm install
-   ```
-
-Create environment configuration:
-
+**Environment Configuration:**
 ```bash
+cd backend
 cp env.example .env
 ```
 
-Edit `.env` file with your configuration:
-
+**Edit `.env`:**
 ```env
-# Server Configuration
-PORT=5000
+# Server
+PORT=3000
 NODE_ENV=development
 
-# Database Configuration
+# Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=expense_app
-DB_USER=expense_user
-DB_PASSWORD=your_secure_password
+DB_NAME=expense_app_sandbox
+DB_USER=expense_sandbox
+DB_PASSWORD=sandbox123
 
-# JWT Secret
-JWT_SECRET=your_random_secret_key_min_32_chars_long
+# JWT
+JWT_SECRET=your_random_secret_min_32_chars
 
-# File Upload
+# Uploads
 UPLOAD_DIR=uploads
 MAX_FILE_SIZE=5242880
+
+# Zoho Books (optional)
+ZOHO_CLIENT_ID=your_client_id
+ZOHO_CLIENT_SECRET=your_client_secret
+ZOHO_REFRESH_TOKEN=your_refresh_token
+ZOHO_ORGANIZATION_ID=your_org_id
 ```
 
-Run database migrations:
-
+**Start Backend:**
 ```bash
-npm run migrate
+npm run dev
+# Backend runs on http://localhost:3000
 ```
-
-Seed the database with demo data:
-
-```bash
-npm run seed
-```
-
-Demo users created:
-- `admin` / `password123` (Admin)
-- `sarah` / `password123` (Coordinator)
-- `mike` / `password123` (Salesperson)
-- `lisa` / `password123` (Accountant)
-
-Start the backend server:
-
-   ```bash
-   npm run dev
-   ```
-
-The backend API will be available at `http://localhost:5000`
 
 ### 4. Frontend Setup
-
-Open a new terminal and install dependencies:
 
 ```bash
 cd ..  # Return to project root
 npm install
-```
-
-Start the frontend development server:
-
-```bash
 npm run dev
+# Frontend runs on http://localhost:5173
 ```
 
-The frontend will be available at `http://localhost:5173`
+---
 
-## OCR Receipt Scanning Feature
+## 🗄️ Database Schema
 
-The application includes automatic OCR text extraction from uploaded receipts using Tesseract.js.
+### Core Tables
+- **users** - User accounts with roles
+- **roles** - Role definitions (labels, colors, permissions) *NEW*
+- **events** - Trade show events
+- **event_participants** - User-event relationships
+- **expenses** - Expense records with OCR data
+- **settings** - Application configuration
 
-### How it Works
+### Key Relationships
+- Users → Roles (many-to-one)
+- Events → Participants (many-to-many through event_participants)
+- Expenses → Users (many-to-one)
+- Expenses → Events (many-to-one)
 
-1. Users upload a receipt image (JPEG, PNG, or PDF) when submitting expenses
-2. The backend processes the image using Tesseract.js OCR
-3. Extracted text is stored in the database with the expense
-4. OCR text can be used for searching and verification
+---
 
-### Supported Formats
-- JPEG/JPG
-- PNG
-- PDF
-
-### File Size Limit
-- Maximum 5MB per file (configurable via MAX_FILE_SIZE)
-
-## Role-Based Permissions
-
-### Admin
-- Full system access
-- User management
-- All event and expense operations
-- System settings configuration
-
-### Coordinator
-- Create and manage events
-- View all expenses for their events
-- Assign participants to events
-
-### Salesperson
-- Submit expenses for assigned events
-- View their own expenses
-- Upload receipts
-
-### Accountant
-- View all expenses
-- Approve/reject expenses
-- Assign Zoho entities
-- Approve/reject reimbursements
-- Access financial reports
-
-## API Endpoints
+## 🔑 API Endpoints
 
 ### Authentication
-- POST /api/auth/login - User login
-- POST /api/auth/register - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
 
 ### Users
-- GET /api/users - Get all users
-- GET /api/users/:id - Get user by ID
-- POST /api/users - Create user (admin only)
-- PUT /api/users/:id - Update user (admin only)
-- DELETE /api/users/:id - Delete user (admin only)
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users` - Create user (admin/developer)
+- `PUT /api/users/:id` - Update user (admin/developer)
+- `DELETE /api/users/:id` - Delete user (admin/developer)
+
+### Roles *(NEW)*
+- `GET /api/roles` - Get all active roles
+- `POST /api/roles` - Create role (admin/developer)
+- `PUT /api/roles/:id` - Update role (admin/developer)
+- `DELETE /api/roles/:id` - Soft delete role (admin/developer)
 
 ### Events
-- GET /api/events - Get all events
-- GET /api/events/:id - Get event by ID
-- POST /api/events - Create event
-- PUT /api/events/:id - Update event
-- DELETE /api/events/:id - Delete event
+- `GET /api/events` - Get all events
+- `GET /api/events/:id` - Get event by ID
+- `POST /api/events` - Create event
+- `PUT /api/events/:id` - Update event
+- `DELETE /api/events/:id` - Delete event
 
 ### Expenses
-- GET /api/expenses - Get all expenses
-- GET /api/expenses/:id - Get expense by ID
-- POST /api/expenses - Create expense with receipt upload
-- PUT /api/expenses/:id - Update expense
-- PATCH /api/expenses/:id/review - Approve/reject expense
-- PATCH /api/expenses/:id/entity - Assign Zoho entity
-- PATCH /api/expenses/:id/reimbursement - Approve/reject reimbursement
-- DELETE /api/expenses/:id - Delete expense
+- `GET /api/expenses` - Get all expenses
+- `GET /api/expenses/:id` - Get expense by ID
+- `POST /api/expenses` - Create expense with receipt upload
+- `PUT /api/expenses/:id` - Update expense
+- `PATCH /api/expenses/:id/review` - Approve/reject expense
+- `PATCH /api/expenses/:id/entity` - Assign Zoho entity
+- `PATCH /api/expenses/:id/reimbursement` - Approve/reject reimbursement
+- `POST /api/expenses/:id/zoho` - Push expense to Zoho Books
+- `DELETE /api/expenses/:id` - Delete expense
 
 ### Settings
-- GET /api/settings - Get application settings
-- PUT /api/settings - Update settings (admin only)
+- `GET /api/settings` - Get application settings
+- `PUT /api/settings` - Update settings (admin)
 
-## Environment Variables
+---
 
-### Core Configuration
+## 🚀 Deployment
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| PORT | Server port | 5000 | Yes |
-| NODE_ENV | Environment | development | Yes |
-| DB_HOST | PostgreSQL host | localhost | Yes |
-| DB_PORT | PostgreSQL port | 5432 | Yes |
-| DB_NAME | Database name | expense_app | Yes |
-| DB_USER | Database user | postgres | Yes |
-| DB_PASSWORD | Database password | - | Yes |
-| JWT_SECRET | JWT secret key | - | Yes |
-| UPLOAD_DIR | Upload directory | uploads | Yes |
-| MAX_FILE_SIZE | Max file size (bytes) | 5242880 | Yes |
+### Sandbox Deployment (v1.0.10 branch)
 
-### Zoho Books Integration (Optional)
+**Frontend:**
+```bash
+# Build
+npm run build
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| ZOHO_CLIENT_ID | Zoho OAuth Client ID | Yes (if using Zoho) |
-| ZOHO_CLIENT_SECRET | Zoho OAuth Client Secret | Yes (if using Zoho) |
-| ZOHO_REFRESH_TOKEN | Zoho OAuth Refresh Token | Yes (if using Zoho) |
-| ZOHO_ORGANIZATION_ID | Zoho Books Organization ID | Yes (if using Zoho) |
-| ZOHO_EXPENSE_ACCOUNT_NAME | Expense account name in Chart of Accounts | Yes (if using Zoho) |
-| ZOHO_PAID_THROUGH_ACCOUNT | Bank/Cash account for expense payments | Yes (if using Zoho) |
-| ZOHO_API_BASE_URL | Zoho Books API base URL | https://www.zohoapis.com/books/v3 |
-| ZOHO_ACCOUNTS_BASE_URL | Zoho Accounts OAuth URL | https://accounts.zoho.com/oauth/v2 |
+# Add build ID
+BUILD_ID=$(date +%Y%m%d_%H%M%S)
+echo "<!-- Build: ${BUILD_ID} -->" >> dist/index.html
 
-**Note:** Zoho Books variables are optional. If not configured, the app will function normally without Zoho integration.
+# Deploy
+tar -czf frontend-v1.0.X-${BUILD_ID}.tar.gz -C dist .
+scp frontend-v1.0.X-*.tar.gz root@192.168.1.190:/tmp/frontend-v1.0.X.tar.gz
 
-## Troubleshooting
+# Extract and restart
+ssh root@192.168.1.190 "
+  pct push 203 /tmp/frontend-v1.0.X.tar.gz /tmp/frontend-v1.0.X.tar.gz &&
+  pct exec 203 -- bash -c 'cd /var/www/expenseapp && rm -rf * && tar -xzf /tmp/frontend-v1.0.X.tar.gz && systemctl restart nginx' &&
+  pct stop 104 && sleep 3 && pct start 104 && sleep 2
+"
+```
 
-### Database Connection Issues
-- Verify PostgreSQL is running: `pg_isready`
-- Check .env credentials
-- Ensure database exists: `psql -l | grep expense_app`
+**Backend:**
+```bash
+cd backend
+npm run build
+tar -czf backend-v1.0.X.tar.gz -C dist .
+scp backend-v1.0.X.tar.gz root@192.168.1.190:/tmp/backend-v1.0.X.tar.gz
 
-### OCR Not Working
-- Check file format is valid (JPEG, PNG, PDF)
-- Ensure Tesseract.js dependencies are installed
-- Check server logs for errors
+ssh root@192.168.1.190 "
+  pct push 203 /tmp/backend-v1.0.X.tar.gz /tmp/backend-v1.0.X.tar.gz &&
+  pct exec 203 -- bash -c 'cd /opt/expenseApp/backend && rm -rf dist && tar -xzf /tmp/backend-v1.0.X.tar.gz -C dist && systemctl restart expenseapp-backend'
+"
+```
 
-### Port Already in Use
-- Change PORT in backend .env
-- Change Vite port in vite.config.ts
+**⚠️ CRITICAL**: Always restart NPMplus proxy (LXC 104) after frontend deployment to clear cache!
 
-## Production Deployment
+---
 
-For production:
-1. Set NODE_ENV=production
-2. Use strong JWT_SECRET
-3. Configure production PostgreSQL
-4. Enable HTTPS/SSL
-5. Set up proper CORS policies
-6. Configure automated database backups
+## 🐛 Troubleshooting
 
-## License
+### Version Not Updating After Deployment
+**Cause:** Caching at browser, service worker, or NPMplus proxy level
 
-Proprietary software.
+**Solution:**
+1. Hard refresh browser (Cmd+Shift+R or Ctrl+Shift+F5)
+2. Verify service worker cache cleared (check console logs)
+3. Restart NPMplus proxy: `pct stop 104 && sleep 3 && pct start 104`
+
+### Roles Not Showing in Dropdown
+**Cause:** `roles` table migration not applied
+
+**Solution:**
+```bash
+ssh root@192.168.1.190
+pct exec 203
+PGPASSWORD=sandbox123 psql -h localhost -U expense_sandbox -d expense_app_sandbox -f /path/to/003_create_roles_table.sql
+```
+
+### Developer Cannot Delete Users
+**Cause:** Backend authorization checks missing 'developer' role
+
+**Solution:** Already fixed in backend v1.0.23
+
+### Backend Logs
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -n 50 --no-pager"
+```
+
+---
+
+## 📚 Documentation
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Complete version history
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and diagrams
+- **[docs/AI_MASTER_GUIDE.md](docs/AI_MASTER_GUIDE.md)** - Development guide for AI assistants
+- **[docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md)** - Production credentials
+- **[docs/ZOHO_BOOKS_SETUP.md](docs/ZOHO_BOOKS_SETUP.md)** - Zoho Books integration guide
+
+---
+
+## 📝 License
+
+Proprietary software. © 2025 Haute Brands. All rights reserved.
+
+---
+
+## 🔧 Recent Updates (v1.0.54 - v1.0.58)
+
+### v1.0.58 (October 15, 2025)
+- **Fixed**: Role labels now load dynamically from database
+- **Fixed**: Developer and temporary roles no longer show as "Pending Approval"
+
+### v1.0.57
+- **Improved**: Larger, more readable font sizes in Role Management
+
+### v1.0.56
+- **Added**: Developer role now has full admin capabilities
+- **Fixed**: Role dropdowns now load all roles dynamically from database
+
+### v1.0.55
+- **Changed**: Role Management moved below User Management
+- **Changed**: Made Role Management collapsible (collapsed by default)
+
+### v1.0.54
+- **Added**: Dynamic Role Management System
+- **Added**: Create, edit, delete custom roles from UI
+- **Added**: Database migration for `roles` table
+
+See [CHANGELOG.md](CHANGELOG.md) for complete history.
