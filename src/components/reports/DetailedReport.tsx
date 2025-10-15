@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, Calendar, MapPin, User, DollarSign, Upload, CheckCircle2, Loader2 } from 'lucide-react';
+import { FileText, Calendar, MapPin, User, DollarSign, Eye, X } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
-import { api } from '../../utils/api';
 import { useToast, ToastContainer } from '../common/Toast';
 
 interface DetailedReportProps {
@@ -18,34 +17,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   onReimbursementApproval 
 }) => {
   const { toasts, addToast, removeToast } = useToast();
-  const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
-  const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(
-    new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id))
-  );
-
-  const handlePushToZoho = async (expense: Expense) => {
-    if (!expense.zohoEntity) {
-      addToast('No entity assigned to this expense. Please assign an entity first.', 'warning');
-      return;
-    }
-
-    if (expense.zohoExpenseId || pushedExpenses.has(expense.id)) {
-      return; // Already pushed
-    }
-
-    setPushingExpenseId(expense.id);
-    try {
-      await api.pushToZoho(expense.id);
-      setPushedExpenses(prev => new Set(prev).add(expense.id));
-      addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
-    } catch (error: any) {
-      console.error('Failed to push to Zoho:', error);
-      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
-      addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
-    } finally {
-      setPushingExpenseId(null);
-    }
-  };
+  const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
+  const [showFullReceipt, setShowFullReceipt] = useState(true);
   const getCategoryBarColor = (category: string) => {
     const colors = {
       'Flights': 'bg-blue-500',
@@ -167,7 +140,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 Description
               </th>
               <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Zoho Push
+                Details
               </th>
             </tr>
           </thead>
@@ -244,31 +217,13 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center">
-                      {!expense.zohoEntity ? (
-                        <span className="text-xs text-gray-400 italic">No entity</span>
-                      ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
-                        <div className="flex items-center space-x-1 text-emerald-600">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span className="text-xs font-medium">Pushed</span>
-                        </div>
-                      ) : pushingExpenseId === expense.id ? (
-                        <button
-                          disabled
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md cursor-not-allowed"
-                        >
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Pushing...</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handlePushToZoho(expense)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
-                          title={`Push to ${expense.zohoEntity} Zoho Books`}
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Push to Zoho</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setViewingExpense(expense)}
+                        className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="View Details & Receipt"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                   {onReimbursementApproval && (
@@ -339,6 +294,169 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       </div>
     </div>
       </div>
+
+      {/* View Expense Details Modal */}
+      {viewingExpense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Expense Details</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {events.find(e => e.id === viewingExpense.tradeShowId)?.name || 'N/A'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setViewingExpense(null);
+                  setShowFullReceipt(true);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Expense Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Date</p>
+                    <p className="font-semibold text-gray-900">{formatLocalDate(viewingExpense.date)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Amount</p>
+                    <p className="font-semibold text-gray-900 text-xl">${viewingExpense.amount.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Category</p>
+                    <p className="font-semibold text-gray-900">{viewingExpense.category}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <User className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Merchant</p>
+                    <p className="font-semibold text-gray-900">{viewingExpense.merchant}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Card Used</p>
+                    <p className="font-semibold text-gray-900">{viewingExpense.cardUsed}</p>
+                  </div>
+                </div>
+
+                {viewingExpense.location && (
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Location</p>
+                      <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {viewingExpense.description && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-2">Description</p>
+                  <p className="text-gray-900">{viewingExpense.description}</p>
+                </div>
+              )}
+
+              {/* Status and Reimbursement */}
+              <div className="flex flex-wrap gap-3">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Status</p>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
+                    {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Reimbursement</p>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                    viewingExpense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {viewingExpense.reimbursementRequired ? 'Required' : 'Not Required'}
+                  </span>
+                </div>
+                {viewingExpense.zohoEntity && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Entity</p>
+                    <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+                      {viewingExpense.zohoEntity}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Receipt */}
+              {viewingExpense.receiptUrl && (
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Receipt</h3>
+                    <button
+                      onClick={() => setShowFullReceipt(!showFullReceipt)}
+                      className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>{showFullReceipt ? 'Hide' : 'View Full Size'}</span>
+                    </button>
+                  </div>
+                  {showFullReceipt && (
+                    <div className="bg-white rounded-lg p-4">
+                      <img
+                        src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
+                        alt="Receipt"
+                        className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 shadow-md"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
+              <button
+                onClick={() => {
+                  setViewingExpense(null);
+                  setShowFullReceipt(true);
+                }}
+                className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
