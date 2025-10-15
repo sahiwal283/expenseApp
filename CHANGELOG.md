@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.47] - 2025-10-15 (Frontend) / Backend 1.0.18
+
+### Added
+- **New "Temporary" Role for Custom Participants**:
+  - Custom event participants now created with "temporary" role (was "salesperson")
+  - Same permissions as salesperson (Dashboard + Events only)
+  - Role label: "Temporary Attendee"
+  - Added to sandbox login credentials page
+  - Username: derived from email, Password: "changeme123"
+
+### Fixed
+- **CRITICAL: Dev Dashboard Logout Issue**:
+  - **Root cause:** Backend only allowed `admin` role, not `developer`
+  - Route check was `if (req.user.role !== 'admin')` → 403 Forbidden
+  - 403 errors triggered unauthorized callback → forced logout
+  - **Solution:** Updated to `!== 'admin' && !== 'developer'`
+  - Developer role now has proper access to dev dashboard
+
+- **Login Redirect Loop**:
+  - **Root cause:** Logout while on dev dashboard preserved page state
+  - Next login tried to load dev dashboard → immediate logout
+  - Hard refresh was only way to recover
+  - **Solution:** Reset `currentPage` to 'dashboard' on logout
+  - Prevents redirect loops, always lands on dashboard after logout
+
+### Backend Changes (v1.0.18)
+- `routes/devDashboard.ts`:
+  - Updated access control to allow admin OR developer role
+  - Changed error message: "Admin or developer access required"
+- `routes/events.ts`:
+  - Custom participants created with 'temporary' role
+
+### Frontend Changes
+- `App.tsx`:
+  - Added 'temporary' to `UserRole` type
+  - Reset `currentPage` to 'dashboard' in `handleLogout()`
+  - Reset `currentPage` in session timeout callback
+- `layout/Sidebar.tsx`:
+  - Added 'temporary' role to Dashboard and Events items
+- `dashboard/Dashboard.tsx`:
+  - Added welcome message for temporary role
+- `auth/LoginForm.tsx`:
+  - Added temporary attendee to sandbox credentials
+- `events/EventSetup/hooks/useEventForm.ts`:
+  - Changed custom participant role to 'temporary'
+- `events/EventForm.tsx`:
+  - Changed custom participant role to 'temporary'
+
+### Impact
+- ✅ Clear role separation for temporary attendees
+- ✅ Dev dashboard accessible to developer role
+- ✅ No more forced logout on dev dashboard
+- ✅ No more redirect loops after logout
+- ✅ Custom participants have appropriate limited access
+
 ## [1.0.46] - 2025-10-15 (Frontend) / Backend 1.0.17
 
 ### Fixed
