@@ -143,10 +143,10 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
 });
 
 // Update event
-router.put('/:id', authorize('admin', 'coordinator'), async (req: AuthRequest, res) => {
+router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { name, venue, city, state, start_date, end_date, budget, status, participant_ids } = req.body;
+    const { name, venue, city, state, start_date, end_date, budget, status, participant_ids, participants } = req.body;
 
     const result = await query(
       `UPDATE events 
@@ -161,8 +161,38 @@ router.put('/:id', authorize('admin', 'coordinator'), async (req: AuthRequest, r
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Update participants if provided
-    if (participant_ids && Array.isArray(participant_ids)) {
+    // Update participants if provided (handle both full participant objects and IDs)
+    if (participants && Array.isArray(participants)) {
+      const bcrypt = require('bcrypt');
+      await query('DELETE FROM event_participants WHERE event_id = $1', [id]);
+      
+      for (const participant of participants) {
+        let userId = participant.id;
+        
+        // Check if user exists
+        const userCheck = await query('SELECT id FROM users WHERE id = $1', [participant.id]);
+        
+        // If user doesn't exist, create them
+        if (userCheck.rows.length === 0) {
+          console.log(`[Events] Creating new user for custom participant: ${participant.name} (${participant.email})`);
+          
+          const defaultPassword = await bcrypt.hash('changeme123', 10);
+          
+          const newUserResult = await query(
+            'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
+          );
+          
+          userId = newUserResult.rows[0].id;
+        }
+        
+        await query(
+          'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [id, userId]
+        );
+      }
+    } else if (participant_ids && Array.isArray(participant_ids)) {
+      // Fallback: Handle old format (just IDs)
       await query('DELETE FROM event_participants WHERE event_id = $1', [id]);
       for (const userId of participant_ids) {
         await query(

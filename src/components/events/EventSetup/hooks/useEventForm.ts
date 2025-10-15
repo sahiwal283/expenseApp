@@ -93,7 +93,7 @@ export function useEventForm(): UseEventFormReturn {
             start_date: eventData.startDate,
             end_date: eventData.endDate,
             budget: eventData.budget,
-            participant_ids: eventData.participants.map((p) => p.id), // Keep old format for updates
+            participants: eventData.participants, // Send full participant objects (includes custom participants)
             status: eventData.status || 'upcoming',
           });
         } else {
