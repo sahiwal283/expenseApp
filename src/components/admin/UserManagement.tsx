@@ -182,26 +182,42 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     return matchesSearch && matchesRole;
   });
 
-  const getRoleColor = (role: string) => {
-    const colors = {
+  // Get role color from dynamic roles data
+  const getRoleColor = (roleName: string) => {
+    const role = roles.find(r => r.name === roleName);
+    if (role && role.color) {
+      return role.color;
+    }
+    // Fallback colors for roles not yet in database
+    const fallbackColors = {
       'admin': 'bg-purple-100 text-purple-800',
       'coordinator': 'bg-blue-100 text-blue-800',
       'salesperson': 'bg-emerald-100 text-emerald-800',
       'accountant': 'bg-orange-100 text-orange-800',
-      'pending': 'bg-yellow-100 text-yellow-800'
+      'pending': 'bg-yellow-100 text-yellow-800',
+      'developer': 'bg-indigo-100 text-indigo-800',
+      'temporary': 'bg-pink-100 text-pink-800'
     };
-    return colors[role as keyof typeof colors] || 'bg-yellow-100 text-yellow-800';
+    return fallbackColors[roleName as keyof typeof fallbackColors] || 'bg-gray-100 text-gray-800';
   };
 
-  const getRoleLabel = (role: string) => {
-    const labels = {
+  // Get role label from dynamic roles data
+  const getRoleLabel = (roleName: string) => {
+    const role = roles.find(r => r.name === roleName);
+    if (role) {
+      return role.label;
+    }
+    // Fallback labels for roles not yet in database
+    const fallbackLabels = {
       'admin': 'Administrator',
       'coordinator': 'Show Coordinator',
       'salesperson': 'Sales Person',
       'accountant': 'Accountant',
-      'pending': 'Pending Approval'
+      'pending': 'Pending Approval',
+      'developer': 'Developer',
+      'temporary': 'Temporary Attendee'
     };
-    return labels[role as keyof typeof labels] || 'Pending Approval';
+    return fallbackLabels[roleName as keyof typeof fallbackLabels] || roleName;
   };
 
   return (
