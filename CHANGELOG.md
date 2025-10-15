@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.31] - 2025-10-15
+
+### Added
+- **Constants Consolidation (Phase 8)**:
+  - `APP_VERSION` and `APP_NAME` now in appConstants.ts
+  - `DEMO_CREDENTIALS` moved from types/constants.ts
+  - `ROLE_LABELS` for display names (Administrator, Show Coordinator, etc.)
+  - `ROLE_COLORS` for UI badges
+  - Expanded `STORAGE_KEYS` with all localStorage keys
+
+### Changed
+- **Single Source of Truth**:
+  - All constants now in `src/constants/appConstants.ts`
+  - Deleted duplicate `src/types/constants.ts` file
+  - Better organization with clear sections
+  - Consistent naming conventions
+
+### Removed
+- Deleted `src/types/constants.ts` (duplicate file)
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.31
+- Constants: Fully consolidated (no duplication)
+- Zero breaking changes - all functionality preserved
+
 ## [1.0.30] - 2025-10-15
 
 ### Added

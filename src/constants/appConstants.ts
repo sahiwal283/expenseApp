@@ -1,8 +1,20 @@
 /**
  * Application Constants
  * Centralized constants for the entire application
- * @version 0.8.0
+ * @version 1.0.0
  */
+
+// ========== APPLICATION INFO ==========
+export const APP_VERSION = '1.0.31';
+export const APP_NAME = 'Trade Show Expense Management App';
+
+// ========== DEMO CREDENTIALS (Development Only) ==========
+export const DEMO_CREDENTIALS: Record<string, string> = {
+  admin: 'admin',
+  sarah: 'password',
+  mike: 'password',
+  lisa: 'password'
+};
 
 // ========== USER ROLES ==========
 export const USER_ROLES = {
@@ -13,6 +25,24 @@ export const USER_ROLES = {
 } as const;
 
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
+
+// ========== USER ROLE LABELS ==========
+export const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrator',
+  coordinator: 'Show Coordinator',
+  salesperson: 'Sales Person',
+  accountant: 'Accountant',
+  developer: 'Developer'
+};
+
+// ========== USER ROLE COLORS ==========
+export const ROLE_COLORS: Record<string, string> = {
+  admin: 'bg-purple-100 text-purple-800',
+  coordinator: 'bg-blue-100 text-blue-800',
+  salesperson: 'bg-emerald-100 text-emerald-800',
+  accountant: 'bg-orange-100 text-orange-800',
+  developer: 'bg-indigo-100 text-indigo-800'
+};
 
 // ========== EXPENSE CATEGORIES ==========
 export const EXPENSE_CATEGORIES = [
@@ -159,8 +189,18 @@ export const DATE_FORMATS = {
 
 // ========== LOCAL STORAGE KEYS ==========
 export const STORAGE_KEYS = {
+  // Authentication
   AUTH_TOKEN: 'auth_token',
   USER_DATA: 'user_data',
+  
+  // Data storage
+  USERS: 'tradeshow_users',
+  EVENTS: 'tradeshow_events',
+  EXPENSES: 'tradeshow_expenses',
+  CURRENT_USER: 'tradeshow_current_user',
+  SETTINGS: 'app_settings',
+  
+  // UI preferences
   THEME: 'theme',
   SIDEBAR_STATE: 'sidebar_collapsed',
 } as const;

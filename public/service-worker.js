@@ -1,14 +1,14 @@
 // ExpenseApp Service Worker
-// Version: 1.0.30 - REFACTOR: Type Safety Improvements (Phase 7)
+// Version: 1.0.31 - REFACTOR: Constants Consolidation (Phase 8)
 // Date: October 15, 2025
 //
-// Changes from v1.0.29:
-// - Added comprehensive type definitions to types.ts
-// - Replaced 'any' with proper types in critical files
-// - ReceiptData, CardOption, ApiResponse, SyncQueueItem types added
-// - Updated apiClient.ts: 'any' → 'unknown' (safer type)
-// - Updated ReceiptUpload & ExpenseSubmission with proper types
-// - Better type safety across codebase
+// Changes from v1.0.30:
+// - Consolidated all constants into appConstants.ts
+// - Deleted duplicate types/constants.ts file
+// - Added APP_VERSION, APP_NAME, DEMO_CREDENTIALS
+// - Added ROLE_LABELS and ROLE_COLORS
+// - Expanded STORAGE_KEYS with all localStorage keys
+// - Single source of truth for all app constants
 // 
 // Changes from v1.0.23:
 // - Removed meaningless decorations from Dashboard stat cards
@@ -47,8 +47,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.30';  // BUMPED VERSION for type safety
-const STATIC_CACHE = 'expenseapp-static-v1.0.30';
+const CACHE_NAME = 'expenseapp-v1.0.31';  // BUMPED VERSION for constants consolidation
+const STATIC_CACHE = 'expenseapp-static-v1.0.31';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -58,7 +58,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.30...');
+  console.log('[ServiceWorker] Installing v1.0.31...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -149,7 +149,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.30...');
+  console.log('[ServiceWorker] Activating v1.0.31...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -163,7 +163,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.30 activated and ready!');
+      console.log('[ServiceWorker] v1.0.31 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
