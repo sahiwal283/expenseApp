@@ -7,6 +7,8 @@ import { createWorker } from 'tesseract.js';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
+import { expenseService } from '../services/ExpenseService';
+import { asyncHandler } from '../utils/errors';
 
 const router = Router();
 
@@ -304,75 +306,53 @@ router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
 });
 
 // Get all expenses
-router.get('/', async (req: AuthRequest, res) => {
-  try {
-    const { event_id, user_id, status } = req.query;
-    
-    let queryText = `
-      SELECT e.*, 
-             u.name as user_name, 
-             ev.name as event_name
-      FROM expenses e
-      LEFT JOIN users u ON e.user_id = u.id
-      LEFT JOIN events ev ON e.event_id = ev.id
-      WHERE 1=1
-    `;
-    const queryParams: any[] = [];
-    let paramCount = 1;
-
-    if (event_id) {
-      queryText += ` AND e.event_id = $${paramCount}`;
-      queryParams.push(event_id);
-      paramCount++;
-    }
-
-    if (user_id) {
-      queryText += ` AND e.user_id = $${paramCount}`;
-      queryParams.push(user_id);
-      paramCount++;
-    }
-
-    if (status) {
-      queryText += ` AND e.status = $${paramCount}`;
-      queryParams.push(status);
-      paramCount++;
-    }
-
-    queryText += ' ORDER BY e.submitted_at DESC';
-
-    const result = await query(queryText, queryParams);
-    res.json(result.rows.map(normalizeExpense));
-  } catch (error) {
-    console.error('Error fetching expenses:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/', asyncHandler(async (req: AuthRequest, res) => {
+  const { event_id, user_id, status } = req.query;
+  
+  // Build filters from query params
+  const filters: any = {};
+  if (event_id) filters.eventId = event_id as string;
+  if (user_id) filters.userId = user_id as string;
+  if (status) filters.status = status as string;
+  
+  // Get expenses using service layer
+  const expenses = await expenseService.getExpenses(filters);
+  
+  // TODO: Add user_name and event_name joins in repository layer
+  // For now, maintaining compatibility by doing joins here
+  const expensesWithDetails = await Promise.all(
+    expenses.map(async (expense) => {
+      const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
+      const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+      
+      return {
+        ...normalizeExpense(expense),
+        user_name: userResult.rows[0]?.name,
+        event_name: eventResult.rows[0]?.name
+      };
+    })
+  );
+  
+  res.json(expensesWithDetails);
+}));
 
 // Get expense by ID
-router.get('/:id', async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
-    const result = await query(
-      `SELECT e.*, 
-              u.name as user_name, 
-              ev.name as event_name
-       FROM expenses e
-       LEFT JOIN users u ON e.user_id = u.id
-       LEFT JOIN events ev ON e.event_id = ev.id
-       WHERE e.id = $1`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Expense not found' });
-    }
-
-    res.json(normalizeExpense(result.rows[0]));
-  } catch (error) {
-    console.error('Error fetching expense:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  
+  // Get expense using service (throws NotFoundError if not found)
+  const expense = await expenseService.getExpenseById(id);
+  
+  // Get user and event names for compatibility
+  const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
+  const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+  
+  res.json({
+    ...normalizeExpense(expense),
+    user_name: userResult.rows[0]?.name,
+    event_name: eventResult.rows[0]?.name
+  });
+}));
 
 // Create expense with optional receipt upload and PaddleOCR
 router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
