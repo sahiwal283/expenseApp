@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.48] - 2025-10-15 (Frontend) / Backend 1.0.19
+
+### Fixed
+- **CRITICAL: Developer Role Cannot Update Events**:
+  - **Root cause:** Backend PUT `/api/events/:id` only allowed `admin` and `coordinator` roles
+  - Developer could CREATE events but got 403 Forbidden when trying to UPDATE/EDIT
+  - **Solution:** Added `'developer'` to PUT route authorization
+  - Developer can now both create and update events
+
+- **Custom Participants Not Working for Event Updates**:
+  - **Root cause:** PUT route only handled `participant_ids` (array of IDs)
+  - When editing with custom participants, frontend sent full objects
+  - Backend tried to insert non-existent user IDs → foreign key constraint
+  - **Solution:** Updated PUT route to handle both `participants` and `participant_ids`
+  - Same logic as POST: check if user exists, create if needed
+  - Frontend sends full participant objects for both create AND update
+
+- **Dev Dashboard Showing Wrong Version**:
+  - Showed Frontend: 1.0.7 instead of 1.0.48
+  - **Root cause:** Backend trying to read frontend `package.json` from non-existent path
+  - Frontend package.json not deployed to server (only used at build time)
+  - **Solution:** Hardcoded frontend version in devDashboard.ts
+  - Now correctly displays 1.0.48 (matches actual deployed version)
+  - TODO: Make dynamic via environment variable
+
+### Backend Changes (v1.0.19)
+- `routes/events.ts`:
+  - Added `'developer'` to PUT route: `authorize('admin', 'coordinator', 'developer')`
+  - Added custom participant handling to UPDATE route (same as CREATE)
+  - Checks if participant user exists, creates with default password if needed
+  - Handles both `participants` (full objects) and `participant_ids` (legacy format)
+- `routes/devDashboard.ts`:
+  - Fixed version endpoint to show correct frontend version
+  - Removed attempt to read non-existent frontend package.json
+
+### Frontend Changes
+- `events/EventSetup/hooks/useEventForm.ts`:
+  - Changed UPDATE to send `participants` instead of `participant_ids`
+  - Consistent with CREATE endpoint
+  - Enables custom participants for event updates
+
+### Impact
+- ✅ Developer role can now edit events without 403 errors
+- ✅ Custom participants work for both creating and updating events
+- ✅ Dev dashboard displays accurate version information
+- ✅ Consistent permission model across all event operations
+
 ## [1.0.47] - 2025-10-15 (Frontend) / Backend 1.0.18
 
 ### Added
