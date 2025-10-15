@@ -32,17 +32,22 @@ export function useReportsStats({
       let periodMatch = true;
       if (selectedPeriod !== 'all') {
         const expenseDate = parseLocalDate(expense.date);
+        expenseDate.setHours(0, 0, 0, 0); // Normalize to start of day
+        
         const now = new Date();
+        now.setHours(0, 0, 0, 0); // Normalize to start of today
+        
+        const daysDifference = Math.floor((now.getTime() - expenseDate.getTime()) / (24 * 60 * 60 * 1000));
         
         switch (selectedPeriod) {
           case 'week':
-            periodMatch = (now.getTime() - expenseDate.getTime()) <= 7 * 24 * 60 * 60 * 1000;
+            periodMatch = daysDifference >= 0 && daysDifference <= 7;
             break;
           case 'month':
-            periodMatch = (now.getTime() - expenseDate.getTime()) <= 30 * 24 * 60 * 60 * 1000;
+            periodMatch = daysDifference >= 0 && daysDifference <= 30;
             break;
           case 'quarter':
-            periodMatch = (now.getTime() - expenseDate.getTime()) <= 90 * 24 * 60 * 60 * 1000;
+            periodMatch = daysDifference >= 0 && daysDifference <= 90;
             break;
         }
       }
