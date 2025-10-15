@@ -110,20 +110,6 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         await api.assignEntity(expense.id, { zoho_entity: entity });
       }
 
-      // Check if entity has Zoho Books integration
-      const isZohoEntity = zohoEnabledEntities.includes(entity.toLowerCase());
-      const isRealZoho = entity.toLowerCase() === 'haute';
-      
-      if (isZohoEntity) {
-        if (isRealZoho) {
-          addToast(`✅ Entity "${entity}" assigned! Go to Reports to push to Zoho Books.`, 'success');
-        } else {
-          addToast(`✅ Entity "${entity}" assigned! (Mock mode)`, 'info');
-        }
-      } else {
-        addToast(`✅ Entity "${entity}" assigned successfully`, 'success');
-      }
-
       await loadData(); // Refresh all data
     } catch (error) {
       console.error('Failed to assign entity:', error);
@@ -185,24 +171,6 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       
       await loadData(); // Refresh all data
       closeEditModal();
-
-      // Show toast notification if entity was changed
-      if (entityChanged && newEntity) {
-        const isZohoEntity = zohoEnabledEntities.includes(newEntity.toLowerCase());
-        const isRealZoho = newEntity.toLowerCase() === 'haute';
-        
-        if (isZohoEntity) {
-          if (isRealZoho) {
-            addToast(`✅ Changes saved! Entity "${newEntity}" assigned. Go to Reports to push to Zoho Books.`, 'success');
-          } else {
-            addToast(`✅ Changes saved! Entity "${newEntity}" assigned. (Mock mode)`, 'info');
-          }
-        } else {
-          addToast(`✅ Expense updated successfully`, 'success');
-        }
-      } else {
-        addToast(`✅ Expense updated successfully`, 'success');
-      }
     } catch (error) {
       console.error('Error updating expense:', error);
       addToast('❌ Failed to update expense. Please try again.', 'error');

@@ -11,7 +11,7 @@ router.use(authenticateToken);
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const result = await query(
-      'SELECT id, username, name, email, role, registration_date, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, username, name, email, role, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (error) {
@@ -25,7 +25,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const result = await query(
-      'SELECT id, username, name, email, role, registration_date, created_at FROM users WHERE id = $1',
+      'SELECT id, username, name, email, role, created_at FROM users WHERE id = $1',
       [id]
     );
 

@@ -1,15 +1,16 @@
 // ExpenseApp Service Worker
-// Version: 1.0.36 - DEBUG: Enhanced user fetch logging for empty dropdown
+// Version: 1.0.37 - CRITICAL FIX: Users API crash + removed unwanted toasts
 // Date: October 15, 2025
+//
+// Changes from v1.0.36:
+// - BACKEND FIX: Removed non-existent 'registration_date' column from users query
+// - This was causing 500 errors on /api/users endpoint (empty participants dropdown)
+// - FRONTEND: Removed all success toasts when assigning entity (user request)
+// - Only error toasts remain (user likes these)
 //
 // Changes from v1.0.35:
 // - Added comprehensive logging for user API fetch
-// - Investigating why users array is empty in participants dropdown
 // - Added logs before/after API call, during state update, and during render
-//
-// Changes from v1.0.34:
-// - Fixed misleading toast when assigning entity in Approvals
-// - New: "Go to Reports to push to Zoho Books" (correct workflow)
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -65,8 +66,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.36';  // BUMPED VERSION for enhanced debug logging
-const STATIC_CACHE = 'expenseapp-static-v1.0.36';
+const CACHE_NAME = 'expenseapp-v1.0.37';  // BUMPED VERSION for critical users API fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.37';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -76,7 +77,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.36...');
+  console.log('[ServiceWorker] Installing v1.0.37...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -167,7 +168,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.36...');
+  console.log('[ServiceWorker] Activating v1.0.37...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -181,7 +182,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.36 activated and ready!');
+      console.log('[ServiceWorker] v1.0.37 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
