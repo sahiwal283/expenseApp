@@ -1,14 +1,17 @@
 // ExpenseApp Service Worker
-// Version: 1.0.56 - FEATURE: Developer Permissions & Dynamic Roles
+// Version: 1.0.57 - UX: Improved Role Management Readability
 // Date: October 15, 2025
 //
-// Changes from v1.0.55:
-// - Developer role now has all admin capabilities (create/edit/delete users and roles)
-// - Fixed: Role dropdown in Edit User modal now loads all roles from database dynamically
-// - Fixed: Filter Role dropdown loads all roles dynamically
-// - Fixed: Activation modal loads all roles dynamically
-// - Backend: Updated authorize checks to include 'developer' alongside 'admin'
-// - Backend v1.0.23: users.ts and roles.ts now allow developer role
+// Changes from v1.0.56:
+// - Increased font sizes in Role Management for better readability
+// - Role label badges: text-xs → text-sm
+// - Description text: text-xs → text-sm
+// - Role name (mono): text-[10px] → text-xs
+// - "System" badge: text-[10px] → text-xs
+// - Button text: text-xs → text-sm
+// - Increased padding: p-3 → p-4, spacing improved
+// - Larger icon sizes: w-3 h-3 → w-3.5 h-3.5
+// - Verified: Developer role still has exclusive Dev Dashboard access
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -73,8 +76,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.56';  // BUMPED VERSION for developer permissions and dynamic roles
-const STATIC_CACHE = 'expenseapp-static-v1.0.56';
+const CACHE_NAME = 'expenseapp-v1.0.57';  // BUMPED VERSION for improved role management readability
+const STATIC_CACHE = 'expenseapp-static-v1.0.57';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -84,7 +87,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.56...');
+  console.log('[ServiceWorker] Installing v1.0.57...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -175,7 +178,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.56...');
+  console.log('[ServiceWorker] Activating v1.0.57...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -189,7 +192,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.56 activated and ready!');
+      console.log('[ServiceWorker] v1.0.57 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
