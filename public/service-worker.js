@@ -1,19 +1,20 @@
 // ExpenseApp Service Worker
-// Version: 1.0.48 - FIX: Event updates + dev dashboard version
+// Version: 1.0.49 - CRITICAL: Transaction fix + dynamic version
 // Date: October 15, 2025
 //
-// Changes from v1.0.47:
-// - **CRITICAL FIX**: Developer role can now UPDATE events (was only create)
-// - Backend PUT route only allowed admin/coordinator, now includes developer
-// - Custom participants now work for event UPDATES (not just creates)
-// - Fixed dev dashboard showing wrong version (1.0.7 → 1.0.48)
-// - Frontend sends full participant objects for updates too
-// - Prevents 403 Forbidden errors when developer edits events
+// Changes from v1.0.48:
+// - **CRITICAL FIX**: Event creation now uses database transactions
+// - If participant creation fails, event is NOT created (rollback)
+// - Was creating events WITHOUT participants when error occurred
+// - Better error messages: duplicate email, invalid participant, etc.
+// - Fixed version display to be dynamic (reads from backend package.json)
+// - No more hardcoded versions that get out of sync
+// - Added detailed transaction logging for debugging
 //
-// Changes from v1.0.46:
-// - Added "temporary" role for custom participants
-// - Fixed dev dashboard access for developer role
-// - Fixed redirect loop on logout
+// Changes from v1.0.47:
+// - Developer role can now UPDATE events
+// - Custom participants work for event updates
+// - Fixed 403 Forbidden errors
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -69,8 +70,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.48';  // BUMPED VERSION for event update fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.48';
+const CACHE_NAME = 'expenseapp-v1.0.49';  // BUMPED VERSION for transaction fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.49';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -80,7 +81,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.48...');
+  console.log('[ServiceWorker] Installing v1.0.49...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -171,7 +172,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.48...');
+  console.log('[ServiceWorker] Activating v1.0.49...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -185,7 +186,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.48 activated and ready!');
+      console.log('[ServiceWorker] v1.0.49 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

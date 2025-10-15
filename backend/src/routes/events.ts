@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../config/database';
+import { query, pool } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -78,6 +78,8 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
 // Create event
 router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
+  const client = await pool.connect(); // Get a client for transaction
+  
   try {
     const { name, venue, city, state, start_date, end_date, budget, participant_ids, participants } = req.body;
 
@@ -85,7 +87,12 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
       return res.status(400).json({ error: 'Required fields missing' });
     }
 
-    const result = await query(
+    // Start transaction
+    await client.query('BEGIN');
+    console.log('[Events] Starting transaction for event creation');
+
+    // Insert event
+    const result = await client.query(
       `INSERT INTO events (name, venue, city, state, start_date, end_date, budget, coordinator_id) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
@@ -93,16 +100,18 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
     );
 
     const event = result.rows[0];
+    console.log(`[Events] Created event: ${event.id} - ${event.name}`);
 
     // Handle participants (can be existing IDs or full participant objects)
     if (participants && Array.isArray(participants)) {
       const bcrypt = require('bcrypt');
+      console.log(`[Events] Processing ${participants.length} participants`);
       
       for (const participant of participants) {
         let userId = participant.id;
         
         // Check if user exists
-        const userCheck = await query('SELECT id FROM users WHERE id = $1', [participant.id]);
+        const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [participant.id]);
         
         // If user doesn't exist, create them
         if (userCheck.rows.length === 0) {
@@ -111,44 +120,73 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
           // Generate a default password for custom participants
           const defaultPassword = await bcrypt.hash('changeme123', 10);
           
-          const newUserResult = await query(
+          const newUserResult = await client.query(
             'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
             [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
           );
           
           userId = newUserResult.rows[0].id;
+          console.log(`[Events] ✓ Created user: ${userId}`);
+        } else {
+          console.log(`[Events] ✓ User already exists: ${userId}`);
         }
         
         // Add participant to event
-        await query(
+        await client.query(
           'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2)',
           [event.id, userId]
         );
+        console.log(`[Events] ✓ Added participant ${userId} to event ${event.id}`);
       }
     } else if (participant_ids && Array.isArray(participant_ids)) {
       // Fallback: Handle old format (just IDs)
+      console.log(`[Events] Processing ${participant_ids.length} participant IDs (legacy format)`);
       for (const userId of participant_ids) {
-        await query(
+        await client.query(
           'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2)',
           [event.id, userId]
         );
+        console.log(`[Events] ✓ Added participant ${userId} to event ${event.id}`);
       }
     }
 
+    // Commit transaction
+    await client.query('COMMIT');
+    console.log('[Events] Transaction committed successfully');
+
     res.status(201).json(event);
   } catch (error) {
-    console.error('Error creating event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    // Rollback transaction on error
+    await client.query('ROLLBACK');
+    console.error('[Events] Transaction rolled back due to error:', error);
+    
+    // Better error message based on error type
+    if ((error as any).code === '23505') { // Unique constraint violation
+      res.status(409).json({ error: 'A user with that email or username already exists' });
+    } else if ((error as any).code === '23503') { // Foreign key constraint violation
+      res.status(400).json({ error: 'Invalid participant ID provided' });
+    } else {
+      res.status(500).json({ error: 'Failed to create event. Please try again.' });
+    }
+  } finally {
+    // Release the client back to the pool
+    client.release();
   }
 });
 
 // Update event
 router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
+  const client = await pool.connect(); // Get a client for transaction
+  
   try {
     const { id } = req.params;
     const { name, venue, city, state, start_date, end_date, budget, status, participant_ids, participants } = req.body;
 
-    const result = await query(
+    // Start transaction
+    await client.query('BEGIN');
+    console.log(`[Events] Starting transaction for event update: ${id}`);
+
+    const result = await client.query(
       `UPDATE events 
        SET name = $1, venue = $2, city = $3, state = $4, start_date = $5, end_date = $6, 
            budget = $7, status = $8, updated_at = CURRENT_TIMESTAMP 
@@ -158,19 +196,22 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
     );
 
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Event not found' });
     }
 
     // Update participants if provided (handle both full participant objects and IDs)
     if (participants && Array.isArray(participants)) {
       const bcrypt = require('bcrypt');
-      await query('DELETE FROM event_participants WHERE event_id = $1', [id]);
+      await client.query('DELETE FROM event_participants WHERE event_id = $1', [id]);
+      console.log(`[Events] Deleted existing participants for event ${id}`);
+      console.log(`[Events] Processing ${participants.length} participants`);
       
       for (const participant of participants) {
         let userId = participant.id;
         
         // Check if user exists
-        const userCheck = await query('SELECT id FROM users WHERE id = $1', [participant.id]);
+        const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [participant.id]);
         
         // If user doesn't exist, create them
         if (userCheck.rows.length === 0) {
@@ -178,34 +219,57 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
           
           const defaultPassword = await bcrypt.hash('changeme123', 10);
           
-          const newUserResult = await query(
+          const newUserResult = await client.query(
             'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
             [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
           );
           
           userId = newUserResult.rows[0].id;
+          console.log(`[Events] ✓ Created user: ${userId}`);
+        } else {
+          console.log(`[Events] ✓ User already exists: ${userId}`);
         }
         
-        await query(
+        await client.query(
           'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
           [id, userId]
         );
+        console.log(`[Events] ✓ Added participant ${userId} to event ${id}`);
       }
     } else if (participant_ids && Array.isArray(participant_ids)) {
       // Fallback: Handle old format (just IDs)
-      await query('DELETE FROM event_participants WHERE event_id = $1', [id]);
+      await client.query('DELETE FROM event_participants WHERE event_id = $1', [id]);
+      console.log(`[Events] Processing ${participant_ids.length} participant IDs (legacy format)`);
       for (const userId of participant_ids) {
-        await query(
+        await client.query(
           'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
           [id, userId]
         );
+        console.log(`[Events] ✓ Added participant ${userId} to event ${id}`);
       }
     }
 
+    // Commit transaction
+    await client.query('COMMIT');
+    console.log('[Events] Transaction committed successfully');
+
     res.json(convertEventTypes(result.rows[0]));
   } catch (error) {
-    console.error('Error updating event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    // Rollback transaction on error
+    await client.query('ROLLBACK');
+    console.error('[Events] Transaction rolled back due to error:', error);
+    
+    // Better error message based on error type
+    if ((error as any).code === '23505') { // Unique constraint violation
+      res.status(409).json({ error: 'A user with that email or username already exists' });
+    } else if ((error as any).code === '23503') { // Foreign key constraint violation
+      res.status(400).json({ error: 'Invalid participant ID provided' });
+    } else {
+      res.status(500).json({ error: 'Failed to update event. Please try again.' });
+    }
+  } finally {
+    // Release the client back to the pool
+    client.release();
   }
 });
 

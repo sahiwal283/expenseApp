@@ -22,9 +22,9 @@ router.get('/version', async (req, res) => {
     // Get versions from package.json files
     const backendVersion = pkg.version;
     
-    // Frontend version should match backend version (we increment them together)
-    // The frontend package.json is not deployed to the server, so we use backend version
-    const frontendVersion = '1.0.48'; // TODO: Make this dynamic or read from env
+    // Frontend and backend versions are kept in sync
+    // We increment them together, so they should always match
+    const frontendVersion = backendVersion;
     
     // Get database info
     const dbResult = await pool.query('SELECT version()');
