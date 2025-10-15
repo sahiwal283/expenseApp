@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.25] - 2025-10-15
+
+### Added
+- **Backend Service Layer & Repository Pattern (Phase 1 & 2)**:
+  - Complete CRUD routes now use service layer
+  - `POST /api/expenses` - Create expense via `expenseService.createExpense()`
+  - `PUT /api/expenses/:id` - Update expense via `expenseService.updateExpense()`
+  - `PATCH /api/expenses/:id/review` - Approve/reject via `expenseService.updateExpenseStatus()`
+  - `DELETE /api/expenses/:id` - Delete expense via `expenseService.deleteExpense()`
+  - All routes use `asyncHandler` for clean error handling
+  - Authorization logic centralized in service layer
+
+### Changed
+- **Routes Simplified**:
+  - POST route: 80 lines → 52 lines (35% reduction)
+  - PUT route: 136 lines → 56 lines (59% reduction)
+  - PATCH review route: 27 lines → 17 lines (37% reduction)
+  - DELETE route: 35 lines → 25 lines (29% reduction)
+  - Overall: 278 lines → 150 lines (46% reduction in CRUD routes)
+- **Error Handling**:
+  - No more try/catch in routes (handled by `asyncHandler`)
+  - Consistent error responses via custom `AppError` classes
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.25
+- All CRUD operations now go through service layer
+- File operations (OCR, file deletion) remain in routes
+- Zero breaking changes - all functionality preserved
+
 ## [1.0.24] - 2025-10-14
 
 ### Removed
