@@ -22,6 +22,7 @@ export class SessionManager {
   private onWarning: (() => void) | null = null;
   private onLogout: (() => void) | null = null;
   private isWarningActive: boolean = false;
+  private hasLoggedOut: boolean = false; // Prevent duplicate logout notifications
 
   private constructor() {}
 
@@ -39,6 +40,8 @@ export class SessionManager {
     console.log('[SessionManager] Initializing with 15-minute inactivity timeout');
     this.onWarning = onWarning;
     this.onLogout = onLogout;
+    this.hasLoggedOut = false; // Reset logout flag
+    this.lastActivity = Date.now(); // Reset activity timestamp
     this.setupActivityListeners();
     this.resetTimer();
     this.startTokenRefresh();
@@ -125,7 +128,14 @@ export class SessionManager {
    * Perform logout
    */
   private logout(): void {
+    // Prevent duplicate logout notifications
+    if (this.hasLoggedOut) {
+      console.log('[SessionManager] Logout already triggered, skipping duplicate');
+      return;
+    }
+
     console.log('[SessionManager] Inactivity timeout reached, logging out user');
+    this.hasLoggedOut = true;
     this.cleanup();
     
     if (this.onLogout) {

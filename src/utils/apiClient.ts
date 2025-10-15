@@ -6,6 +6,7 @@
 
 import { AppError, parseApiError } from './errorHandler';
 import { API_CONFIG, STORAGE_KEYS } from '../constants/appConstants';
+import { sessionManager } from './sessionManager';
 
 // ========== Types ==========
 export interface ApiResponse<T = unknown> {
@@ -172,6 +173,14 @@ class ApiClient {
     path: string,
     config: RequestConfig = {}
   ): Promise<T> {
+    // Notify session manager of API activity (resets inactivity timer)
+    try {
+      sessionManager.notifyApiCall();
+    } catch (error) {
+      // Silently fail - don't break API calls if session manager isn't initialized
+      console.debug('[API] Session manager notification skipped');
+    }
+
     try {
       const url = this.buildURL(path, config.params);
       const headers = this.buildHeaders(config);

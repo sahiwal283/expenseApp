@@ -84,7 +84,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(0); // Will be set by sessionManager
   const notifications = useNotifications();
 
   // Register API unauthorized callback to auto-logout on token expiration
@@ -216,13 +216,14 @@ function App() {
   };
 
   const handleStayLoggedIn = () => {
-    console.log('[App] User chose to stay logged in');
-    sessionManager.dismissWarning();
+    console.log('[App] User chose to stay logged in, resetting timer');
+    sessionManager.dismissWarning(); // Reset timer
     setShowInactivityWarning(false);
   };
 
   const handleDismissWarning = () => {
-    console.log('[App] User dismissed warning');
+    console.log('[App] User dismissed warning, resetting timer');
+    sessionManager.dismissWarning(); // Reset timer when dismissing
     setShowInactivityWarning(false);
   };
 

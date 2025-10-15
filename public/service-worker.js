@@ -1,17 +1,18 @@
 // ExpenseApp Service Worker
-// Version: 1.0.41 - REFACTOR: EventSetup component (custom hooks pattern)
+// Version: 1.0.42 - FIX: Session timeout UX improvements
 // Date: October 15, 2025
 //
-// Changes from v1.0.40:
-// - Refactored EventSetup component (-158 lines, -22%)
-// - Created useEventData hook for data fetching
-// - Created useEventForm hook for form management
-// - Improved maintainability and testability
-// - Completed comprehensive codebase refactor (100%)
+// Changes from v1.0.41:
+// - Fixed timer showing actual remaining time (not hardcoded 15 min)
+// - Prevented duplicate logout notifications (5 → 1)
+// - Dismissing warning now resets timer properly
+// - API calls now reset inactivity timer
+// - Users won't be logged out during form submissions
+// - Improved overall session timeout UX
 //
-// Changes from v1.0.39:
-// - BACKEND: Allow empty entity values (means "unassign" / set to NULL)
-// - FRONTEND: Removed skip logic for entity assignment
+// Changes from v1.0.40:
+// - Refactored EventSetup component with custom hooks
+// - Completed comprehensive codebase refactor (100%)
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -67,8 +68,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.41';  // BUMPED VERSION for EventSetup refactor
-const STATIC_CACHE = 'expenseapp-static-v1.0.41';
+const CACHE_NAME = 'expenseapp-v1.0.42';  // BUMPED VERSION for session timeout UX fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.42';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -78,7 +79,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.41...');
+  console.log('[ServiceWorker] Installing v1.0.42...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -169,7 +170,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.41...');
+  console.log('[ServiceWorker] Activating v1.0.42...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -183,7 +184,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.41 activated and ready!');
+      console.log('[ServiceWorker] v1.0.42 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
