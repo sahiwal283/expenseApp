@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.45] - 2025-10-15
+
+### Fixed
+- **Event Creation UX Issues**:
+  - Form didn't close after saving - user stuck on create page
+  - Multiple clicks on "Create Event" created duplicate events
+  - End date could be set before start date (no validation)
+
+### Added
+- **Duplicate Prevention for Event Creation**:
+  - Button disabled while saving
+  - Shows "Saving..." with spinner
+  - Prevents spam clicks from creating multiple events
+  - Same UX pattern as expense creation
+
+- **Date Validation**:
+  - End date must be >= start date
+  - Browser-level validation (min attribute)
+  - Visual error message if invalid date range
+  - User-friendly red text warning
+
+- **Better Error Handling**:
+  - Try/catch wrapper around save operation
+  - Alert shown if save fails
+  - Form only closes on successful save
+  - Proper cleanup with finally block
+
+### Technical
+- `EventSetup.tsx`:
+  - Added `isSaving` state
+  - Import `Loader2` icon
+  - handleSubmit with duplicate prevention
+  - Date field validation
+  - Loading state on submit button
+
+### Impact
+- ✅ No more duplicate events
+- ✅ Invalid date ranges prevented
+- ✅ Clear visual feedback
+- ✅ Better user experience
+
 ## [1.0.44] - 2025-10-15
 
 ### Fixed
