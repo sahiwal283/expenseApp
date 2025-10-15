@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, 
   Filter, 
@@ -17,33 +17,30 @@ import {
   MapPin,
   FileText
 } from 'lucide-react';
-import { User, Expense } from '../../App';
+import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
-import { useApprovals } from './Approvals/hooks/useApprovals';
-import { useApprovalFilters } from './Approvals/hooks/useApprovalFilters';
 
 interface ApprovalsProps {
   user: User;
 }
 
 export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
-  // Use custom hooks for data fetching and filtering
-  const { events, expenses, users, cardOptions, entityOptions, loading, reload: loadData } = useApprovals();
-  const {
-    searchTerm, setSearchTerm,
-    filterCategory, setFilterCategory,
-    filterUser, setFilterUser,
-    filterEvent, setFilterEvent,
-    filterStatus, setFilterStatus,
-    filterReimbursement, setFilterReimbursement,
-    filterEntity, setFilterEntity,
-    filteredExpenses,
-    hasActiveFilters,
-    clearAllFilters
-  } = useApprovalFilters(expenses);
+  const [events, setEvents] = useState<TradeShow[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [cardOptions, setCardOptions] = useState<string[]>([]);
+  const [entityOptions, setEntityOptions] = useState<string[]>([]);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
+  const [filterEvent, setFilterEvent] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterReimbursement, setFilterReimbursement] = useState('all');
+  const [filterEntity, setFilterEntity] = useState('all');
 
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -63,6 +60,89 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
   // Zoho-enabled entities (entities that have Zoho Books accounts configured)
   const zohoEnabledEntities = ['haute', 'alpha', 'beta', 'gamma', 'delta'];
+
+  // Load data
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    if (api.USE_SERVER) {
+      // Fetch data independently so one failure doesn't clear everything
+      console.log('[Approvals] Loading data...');
+      
+      // Fetch expenses (critical)
+      try {
+        const ex = await api.getExpenses();
+        console.log('[Approvals] Loaded expenses:', ex?.length || 0);
+        setExpenses(ex || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading expenses:', error);
+        setExpenses([]);
+      }
+
+      // Fetch events (important but non-critical)
+      try {
+        const ev = await api.getEvents();
+        console.log('[Approvals] Loaded events:', ev?.length || 0);
+        setEvents(ev || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading events:', error);
+        setEvents([]);
+      }
+
+      // Fetch users (non-critical)
+      try {
+        const us = await api.getUsers();
+        console.log('[Approvals] Loaded users:', us?.length || 0);
+        setUsers(us || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading users (non-critical):', error);
+        setUsers([]);
+      }
+
+      // Fetch settings (non-critical)
+      try {
+        const st = await api.getSettings();
+        setCardOptions(st?.cardOptions || []);
+        console.log('[Approvals] Entity options from API:', st?.entityOptions);
+        setEntityOptions(st?.entityOptions || []);
+      } catch (error) {
+        console.error('[Approvals] Error loading settings:', error);
+        setCardOptions([]);
+        setEntityOptions([]);
+      }
+    }
+  };
+
+  // Filter and sort expenses (pending items at top)
+  const filteredExpenses = useMemo(() => {
+    const filtered = expenses.filter(expense => {
+      const matchesSearch = expense.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           expense.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = filterCategory === 'all' || expense.category === filterCategory;
+      const matchesUser = filterUser === 'all' || expense.userId === filterUser;
+      const matchesEvent = filterEvent === 'all' || expense.tradeShowId === filterEvent;
+      const matchesStatus = filterStatus === 'all' || expense.status === filterStatus;
+      const matchesReimbursement = filterReimbursement === 'all' || 
+        (filterReimbursement === 'required' && expense.reimbursementRequired) ||
+        (filterReimbursement === 'not-required' && !expense.reimbursementRequired);
+      const matchesEntity = filterEntity === 'all' || 
+        (filterEntity === 'unassigned' && !expense.zohoEntity) ||
+        expense.zohoEntity === filterEntity;
+      
+      return matchesSearch && matchesCategory && matchesUser && matchesEvent && 
+             matchesStatus && matchesReimbursement && matchesEntity;
+    });
+
+    // Sort: pending expenses at the top, then approved/rejected
+    return filtered.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      // If both have the same status, sort by date (newest first)
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }, [expenses, searchTerm, filterCategory, filterUser, filterEvent, filterStatus, filterReimbursement, filterEntity]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -166,7 +246,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
       if (api.USE_SERVER) {
         // Update status if changed
-        if (editStatus !== editingExpense.status && (editStatus === 'approved' || editStatus === 'rejected')) {
+        if (editStatus !== editingExpense.status) {
           await api.reviewExpense(editingExpense.id, { status: editStatus });
         }
         
