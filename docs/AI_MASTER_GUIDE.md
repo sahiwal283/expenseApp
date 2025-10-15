@@ -25,31 +25,52 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 
 ### Branch Management Strategy
 
-**RULE 1: Always use the `v1.0.10` branch for sandbox development**
+**RULE 1: Create a new version branch for each sandbox development cycle**
 
-- **DO NOT** create new branches for features, refactors, or bug fixes unless explicitly instructed
-- ALL sandbox development happens on `v1.0.10` branch
-- Only create a new branch if:
-  1. User explicitly requests it, OR
-  2. Making a pull request to `main` for production deployment
-- If you accidentally create a new branch:
-  1. Immediately merge it back into `v1.0.10`
-  2. Delete the temporary branch
-  3. Continue work on `v1.0.10`
+**How It Works:**
+1. Check what version is currently in production (`main` branch)
+2. Create a NEW branch with the next version number
+3. ALL sandbox changes go on that version branch
+4. When ready for production, merge that branch back to `main`
 
-**Example (CORRECT):**
+**Example Workflow:**
+
+Let's say production (`main`) is at **v1.0.53**:
+
 ```bash
-git checkout v1.0.10
-# Make changes
+# 1. Create new version branch for sandbox work
+git checkout main
+git pull origin main
+git checkout -b v1.0.54  # or v1.1.0 for new features
+
+# 2. Make all your sandbox changes on this branch
 git add -A
-git commit -m "your message"
-git push origin v1.0.10
+git commit -m "Add new feature"
+git push origin v1.0.54
+
+# 3. Continue working on v1.0.54 until ready for production
+# ... more commits ...
+
+# 4. When ready, merge to main for production deployment
+git checkout main
+git merge v1.0.54
+git push origin main
 ```
 
-**Example (WRONG - Don't do this):**
-```bash
-git checkout -b feature/new-feature  # ❌ WRONG! Don't create new branches
-```
+**Version Branch Naming:**
+- Bug fixes / small changes: Increment patch (v1.0.53 → v1.0.54)
+- New features: Increment minor (v1.0.53 → v1.1.0)
+- Breaking changes: Increment major (v1.0.53 → v2.0.0)
+
+**Current Branch:**
+- The current sandbox branch is `v1.0.10` (as of October 2025)
+- Continue using this branch until it's merged to main
+- After merge, create a new version branch for the next development cycle
+
+**Important:**
+- DO NOT work directly on `main` branch (production only)
+- Each development cycle gets its own version branch
+- Branch name should match the version being developed
 
 ### Version Number Management
 
@@ -81,9 +102,11 @@ Version numbers are critical for cache busting and deployment verification. Incr
 
 ### Cache Busting Procedure
 
-**RULE 3: ALWAYS clear caches when deploying to sandbox**
+**RULE 3: ALWAYS clear caches when deploying (sandbox AND production)**
 
-The sandbox environment has THREE layers of caching that must be cleared:
+**CRITICAL:** Caching issues affect both sandbox AND production environments!
+
+Both environments have THREE layers of caching that must be cleared:
 
 1. **Browser Cache** (handled by version increment)
 2. **Service Worker Cache** (handled by version increment)
@@ -113,7 +136,12 @@ ssh root@192.168.1.190 "
 ```
 
 **❌ Common Mistake:**
-Forgetting to restart NPMplus (LXC 104). This causes the old version to be cached at the proxy level even though files are updated.
+Forgetting to restart NPMplus proxy. This causes the old version to be cached at the proxy level even though files are updated.
+
+**For Sandbox:** Restart LXC 104 (NPMplus proxy)  
+**For Production:** Restart NPMplus proxy on production server
+
+This issue has affected both sandbox AND production deployments!
 
 ### Backend Log Checking
 
@@ -134,7 +162,11 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c 'systemctl status expenseapp-bac
 
 ### Testing Requirements
 
-**RULE 5: Tell the user SPECIFICALLY what to test after changes**
+**RULE 5: For major refactors, provide specific testing steps**
+
+**Note:** This rule is primarily for large refactoring projects. For regular bug fixes and features, general testing guidance is sufficient.
+
+**For Major Refactors Only:**
 
 Don't say "test the app" - be specific:
 
@@ -149,10 +181,9 @@ Please test:
 6. Check browser console for errors
 ```
 
-**Bad Example:**
-```
-Please test the changes ❌ (too vague)
-```
+**For Regular Changes:**
+- General testing guidance is fine
+- User knows their app and what to test
 
 ### Documentation Standards
 
@@ -165,9 +196,13 @@ Please test the changes ❌ (too vague)
 
 ### Response Format
 
-**RULE 7: Each response should include a progress checklist**
+**RULE 7: For major refactors, use progress checklists**
 
-User specifically requested this format:
+**Note:** This format is specifically for large refactoring projects, not regular development work.
+
+**For Major Refactors Only:**
+
+User requested detailed progress tracking with this format:
 
 ```
 ## 📋 REFACTOR/TASK PROGRESS
@@ -189,6 +224,10 @@ User specifically requested this format:
 ### 🧪 TESTING REQUIRED
 [Specific test steps]
 ```
+
+**For Regular Changes:**
+- Standard response format is fine
+- Include summary of changes and what to test
 
 ---
 
