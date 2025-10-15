@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.27] - 2025-10-15
+
+### Added
+- **Frontend Refactor - Custom Hooks (Phase 5 continued)**:
+  - Created `useExpenses` hook for ExpenseSubmission data fetching (~50 lines)
+  - Created `useExpenseFilters` hook for filter state management (~75 lines)
+  - Created `usePendingSync` hook for offline queue monitoring (~30 lines)
+  - Extracted reusable logic from ExpenseSubmission component
+
+### Changed
+- **ExpenseSubmission Component Refactoring**:
+  - Now uses custom hooks for data, filters, and sync count
+  - Removed ~90 lines of code from main component
+  - Better separation of concerns (UI vs business logic)
+  - Consistent pattern with Approvals component
+  - Easier to maintain and test
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.27
+- Backend refactor: 100% complete ✅
+- Frontend refactor: Phase 5 ongoing (50% overall progress)
+- Custom hooks pattern established for major components
+
 ## [1.0.26] - 2025-10-15
 
 ### Added

@@ -1,47 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, Calendar, DollarSign, CreditCard, User as UserIcon, Clock } from 'lucide-react';
-import { User, Expense } from '../../App';
+import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { PendingActions } from '../common/PendingActions';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
-import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
-import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
-import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
+import { offlineDb } from '../../utils/offlineDb';
 
 interface ExpenseSubmissionProps {
   user: User;
 }
 
 export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) => {
-  // Use custom hooks
-  const { expenses, events, reload: reloadData } = useExpenses();
-  const { pendingCount } = usePendingSync();
-  const {
-    dateFilter, setDateFilter,
-    eventFilter, setEventFilter,
-    categoryFilter, setCategoryFilter,
-    merchantFilter, setMerchantFilter,
-    cardFilter, setCardFilter,
-    statusFilter, setStatusFilter,
-    reimbursementFilter, setReimbursementFilter,
-    filteredExpenses,
-    hasActiveFilters,
-    uniqueCategories,
-    uniqueCards,
-    clearAllFilters
-  } = useExpenseFilters(expenses);
-
-  // UI state
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [events, setEvents] = useState<TradeShow[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showReceiptUpload, setShowReceiptUpload] = useState(false);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
-  const [showFullReceipt, setShowFullReceipt] = useState(true);
+  const [showFullReceipt, setShowFullReceipt] = useState(true); // Default to showing full receipt
   const [showPendingSync, setShowPendingSync] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Column-level filters
+  const [dateFilter, setDateFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [merchantFilter, setMerchantFilter] = useState('');
+  const [cardFilter, setCardFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [reimbursementFilter, setReimbursementFilter] = useState('all');
+
+  useEffect(() => {
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const [ev, ex] = await Promise.all([
+            api.getEvents(),
+            api.getExpenses(),
+          ]);
+          setEvents(ev || []);
+          setExpenses(ex || []);
+        } catch {
+          setEvents([]);
+          setExpenses([]);
+        }
+      } else {
+        const storedExpenses = localStorage.getItem('tradeshow_expenses');
+        const storedEvents = localStorage.getItem('tradeshow_events');
+        if (storedExpenses) setExpenses(JSON.parse(storedExpenses));
+        if (storedEvents) setEvents(JSON.parse(storedEvents));
+      }
+    })();
+  }, []);
+
+  // Load pending sync count
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const queue = await offlineDb.syncQueue.toArray();
+        const pending = queue.filter(item => item.status === 'pending' || item.status === 'failed');
+        setPendingCount(pending.length);
+      } catch (error) {
+        console.error('Failed to load pending count:', error);
+      }
+    };
+
+    loadPendingCount();
+    // Refresh count every 5 seconds
+    const interval = setInterval(loadPendingCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
     try {
@@ -81,8 +113,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         setPendingReceiptFile(null);
         
         console.log('[ExpenseSubmission] Refreshing expense list...');
-        await reloadData();
-        console.log('[ExpenseSubmission] Expense list refreshed');
+        const refreshed = await api.getExpenses();
+        setExpenses(refreshed || []);
+        console.log('[ExpenseSubmission] Expense list refreshed:', refreshed?.length || 0, 'expenses');
       } else {
         const newExpense: Expense = {
           ...expenseData,
@@ -116,11 +149,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     if (api.USE_SERVER) {
       await api.deleteExpense(expenseId);
       setPendingReceiptFile(null);
-      await reloadData();
+      const refreshed = await api.getExpenses();
+      setExpenses(refreshed || []);
     } else {
       const updatedExpenses = expenses.filter(expense => expense.id !== expenseId);
+      setExpenses(updatedExpenses);
       localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
-      await reloadData();
     }
   };
 
@@ -148,18 +182,59 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setShowReceiptUpload(false);
   };
 
-  // Apply user permission filter and sorting to hook's filtered results
-  const finalFilteredExpenses = filteredExpenses
-    .filter(expense => {
-      // User permission filter (component-specific)
-      return user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || expense.userId === user.id;
-    })
-    .sort((a, b) => {
-      // Sort: pending expenses at the top, then by date
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
+  const clearAllFilters = () => {
+    setDateFilter('');
+    setEventFilter('all');
+    setCategoryFilter('all');
+    setMerchantFilter('');
+    setCardFilter('all');
+    setStatusFilter('all');
+    setReimbursementFilter('all');
+  };
+
+  // Get unique values for dropdowns
+  const uniqueCategories = Array.from(new Set(expenses.map(e => e.category))).sort();
+  const uniqueCards = Array.from(new Set(expenses.map(e => e.cardUsed).filter(Boolean))).sort();
+
+  // Filter and sort expenses (pending items at top)
+  const filteredExpenses = expenses.filter(expense => {
+    // Date filter
+    if (dateFilter && !expense.date.includes(dateFilter)) return false;
+    
+    // Event filter
+    if (eventFilter !== 'all' && expense.tradeShowId !== eventFilter) return false;
+    
+    // Category filter
+    if (categoryFilter !== 'all' && expense.category !== categoryFilter) return false;
+    
+    // Merchant filter
+    if (merchantFilter && !expense.merchant.toLowerCase().includes(merchantFilter.toLowerCase())) return false;
+    
+    // Card filter
+    if (cardFilter !== 'all' && expense.cardUsed !== cardFilter) return false;
+    
+    // Status filter
+    if (statusFilter !== 'all' && expense.status !== statusFilter) return false;
+    
+    // Reimbursement filter
+    if (reimbursementFilter === 'required' && !expense.reimbursementRequired) return false;
+    if (reimbursementFilter === 'not-required' && expense.reimbursementRequired) return false;
+    
+    // User permission filter
+    const matchesUser = user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || expense.userId === user.id;
+    
+    return matchesUser;
+  }).sort((a, b) => {
+    // Sort: pending expenses at the top, then approved/rejected
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    // If both have the same status, sort by date (newest first)
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
+
+  const hasActiveFilters = dateFilter || eventFilter !== 'all' || categoryFilter !== 'all' || 
+                          merchantFilter || cardFilter !== 'all' || statusFilter !== 'all' || reimbursementFilter !== 'all';
 
   if (showForm) {
     return (
@@ -224,7 +299,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       </div>
 
       {/* Expenses Table */}
-      {finalFilteredExpenses.length === 0 ? (
+      {filteredExpenses.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Expenses Found</h3>
@@ -362,7 +437,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {finalFilteredExpenses.map((expense) => {
+                {filteredExpenses.map((expense) => {
                   const event = events.find(e => e.id === expense.tradeShowId);
                   
                   return (

@@ -1,13 +1,13 @@
 // ExpenseApp Service Worker
-// Version: 1.0.26 - REFACTOR: Frontend Custom Hooks (Phase 5)
+// Version: 1.0.27 - REFACTOR: Frontend Custom Hooks (Phase 5 continued)
 // Date: October 15, 2025
 //
-// Changes from v1.0.25:
-// - Frontend refactor started: custom hooks pattern
-// - Created useApprovals hook (data fetching)
-// - Created useApprovalFilters hook (filter management)
-// - Refactored Approvals.tsx (~120 lines removed)
-// - Backend refactor complete (service + repository + query optimization)
+// Changes from v1.0.26:
+// - Created useExpenses hook (data fetching for ExpenseSubmission)
+// - Created useExpenseFilters hook (filter management)
+// - Created usePendingSync hook (offline queue count)
+// - Refactored ExpenseSubmission.tsx (~90 lines removed)
+// - Both Approvals and ExpenseSubmission now use custom hooks
 // 
 // Changes from v1.0.23:
 // - Removed meaningless decorations from Dashboard stat cards
@@ -46,8 +46,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.26';  // BUMPED VERSION for frontend refactor
-const STATIC_CACHE = 'expenseapp-static-v1.0.26';
+const CACHE_NAME = 'expenseapp-v1.0.27';  // BUMPED VERSION for frontend refactor
+const STATIC_CACHE = 'expenseapp-static-v1.0.27';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -57,7 +57,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.26...');
+  console.log('[ServiceWorker] Installing v1.0.27...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -148,7 +148,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.26...');
+  console.log('[ServiceWorker] Activating v1.0.27...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -162,7 +162,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.26 activated and ready!');
+      console.log('[ServiceWorker] v1.0.27 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
