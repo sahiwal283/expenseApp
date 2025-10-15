@@ -106,13 +106,8 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
   const handleAssignEntity = async (expense: Expense, entity: string) => {
     try {
-      // Skip if entity is empty (user selected "Unassigned")
-      if (!entity || entity.trim().length === 0) {
-        console.log('[Approvals] Skipping entity assignment - empty value selected');
-        return;
-      }
-
       if (api.USE_SERVER) {
+        // Empty string means "unassign" (set to NULL in database)
         await api.assignEntity(expense.id, { zoho_entity: entity });
       }
 
@@ -167,8 +162,8 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           await api.setExpenseReimbursement(editingExpense.id, { reimbursement_status: editReimbursementStatus });
         }
         
-        // Update entity if changed (only if entity is not empty/unassigned)
-        if (editEntity !== editingExpense.zohoEntity && editEntity.trim().length > 0) {
+        // Update entity if changed (empty string means "unassign")
+        if (editEntity !== editingExpense.zohoEntity) {
           await api.assignEntity(editingExpense.id, { zoho_entity: editEntity });
           entityChanged = true;
           newEntity = editEntity;

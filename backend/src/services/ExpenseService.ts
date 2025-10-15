@@ -267,6 +267,7 @@ class ExpenseService {
 
   /**
    * Assign Zoho entity to expense (admin/accountant only)
+   * Note: Empty string is allowed to "unassign" an entity (set to NULL)
    */
   async assignZohoEntity(
     expenseId: string,
@@ -278,12 +279,10 @@ class ExpenseService {
       throw new AuthorizationError('Only admins and accountants can assign entities');
     }
 
-    // Validate entity is provided
-    if (!zohoEntity || zohoEntity.trim().length === 0) {
-      throw new ValidationError('Zoho entity name is required');
-    }
+    // Allow empty string to mean "unassign" (set to NULL)
+    const entityValue = zohoEntity && zohoEntity.trim().length > 0 ? zohoEntity : undefined;
 
-    return expenseRepository.update(expenseId, { zoho_entity: zohoEntity });
+    return expenseRepository.update(expenseId, { zoho_entity: entityValue });
   }
 
   /**
