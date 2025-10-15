@@ -42,6 +42,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
               {user.role === 'accountant' && 'Review expenses and manage entity mappings'}
               {user.role === 'admin' && 'Oversee all operations and manage users'}
               {user.role === 'developer' && 'Full system access with dev tools'}
+              {user.role === 'temporary' && 'View trade show information and dashboard'}
             </p>
           </div>
           <div className="hidden md:block">

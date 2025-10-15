@@ -22,7 +22,7 @@ import { offlineDb } from './utils/offlineDb';
 import { clearEncryptionData } from './utils/encryption';
 import { apiClient } from './utils/apiClient';
 
-export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'pending';
+export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'temporary' | 'pending';
 
 export interface User {
   id: string;
@@ -120,6 +120,7 @@ function App() {
         () => {
           console.log('[App] Session expired, logging out user');
           setShowInactivityWarning(false);
+          setCurrentPage('dashboard'); // Reset to dashboard to avoid redirect loops
           logout();
         }
       );
@@ -210,6 +211,9 @@ function App() {
     } catch (error) {
       console.error('[App] Error clearing local data:', error);
     }
+    
+    // Reset to dashboard to avoid redirect loops on next login
+    setCurrentPage('dashboard');
     
     // Call original logout
     logout();

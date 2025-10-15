@@ -7,11 +7,11 @@ import * as path from 'path';
 
 const router = express.Router();
 
-// All routes require authentication and admin role
+// All routes require authentication and admin or developer role
 router.use(authenticateToken);
 router.use((req: any, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
+  if (req.user.role !== 'admin' && req.user.role !== 'developer') {
+    return res.status(403).json({ error: 'Admin or developer access required' });
   }
   next();
 });

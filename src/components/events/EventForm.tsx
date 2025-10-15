@@ -37,7 +37,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
         name: newParticipantName,
         username: newParticipantEmail.split('@')[0].toLowerCase(),
         email: newParticipantEmail,
-        role: 'salesperson'
+        role: 'temporary' // Custom participants are temporary attendees
       };
       
       setFormData({

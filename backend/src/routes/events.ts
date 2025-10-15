@@ -113,7 +113,7 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
           
           const newUserResult = await query(
             'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-            [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'salesperson']
+            [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
           );
           
           userId = newUserResult.rows[0].id;

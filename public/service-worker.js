@@ -1,19 +1,20 @@
 // ExpenseApp Service Worker
-// Version: 1.0.46 - CRITICAL: Session logout fix + custom participants
+// Version: 1.0.47 - NEW: Temporary role + Dev Dashboard access fix
 // Date: October 15, 2025
 //
-// Changes from v1.0.45:
-// - **CRITICAL**: Fixed 6x duplicate logout notifications
-// - Root cause: useAuth logout() not memoized → session manager re-init on every render
-// - Solution: useCallback on login/logout functions
-// - Fixed custom participants not being saved
-// - Backend now creates users for custom participants (password: "changeme123")
-// - Frontend sends full participant objects, not just IDs
-// - Dev Dashboard no longer causes forced logout
+// Changes from v1.0.46:
+// - Added "temporary" role for custom event participants
+// - Temporary role has same permissions as salesperson (Dashboard + Events only)
+// - Custom participants now created with "temporary" role (was "salesperson")
+// - Added to sandbox login page with password "changeme123"
+// - **CRITICAL FIX**: Dev Dashboard now accessible by developer role
+// - Backend was checking role !== 'admin', now checks !== 'admin' && !== 'developer'
+// - Fixed redirect loop on logout (resets to dashboard page)
+// - Prevents login issues when last page was dev dashboard
 //
-// Changes from v1.0.44:
-// - Duplicate prevention for event creation
-// - Date validation (end >= start)
+// Changes from v1.0.45:
+// - Fixed 6x duplicate logout notifications
+// - Fixed custom participants not being saved
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -69,8 +70,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.46';  // BUMPED VERSION for session fix + custom participants
-const STATIC_CACHE = 'expenseapp-static-v1.0.46';
+const CACHE_NAME = 'expenseapp-v1.0.47';  // BUMPED VERSION for temporary role + dev dashboard fix
+const STATIC_CACHE = 'expenseapp-static-v1.0.47';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -80,7 +81,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.46...');
+  console.log('[ServiceWorker] Installing v1.0.47...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -171,7 +172,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.46...');
+  console.log('[ServiceWorker] Activating v1.0.47...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -185,7 +186,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.46 activated and ready!');
+      console.log('[ServiceWorker] v1.0.47 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
