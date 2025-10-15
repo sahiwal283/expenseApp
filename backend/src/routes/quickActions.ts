@@ -16,8 +16,8 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 
     const tasks: any[] = [];
 
-    // ADMIN TASKS
-    if (userRole === 'admin') {
+    // ADMIN & DEVELOPER TASKS
+    if (userRole === 'admin' || userRole === 'developer') {
       // 1. Users pending role assignment
       const pendingUsersResult = await query(
         `SELECT id, username, name, email, registration_date 
