@@ -3,7 +3,9 @@
  * 
  * Features:
  * - 15-minute inactivity timeout
- * - Activity tracking (mouse, keyboard, navigation, API calls)
+ * - Activity tracking (mouse, keyboard, form input, navigation, API calls)
+ * - Modern event listeners (keydown/keyup instead of deprecated keypress)
+ * - Form field activity tracking (input, change events)
  * - Warning popup 5 minutes before logout
  * - Token refresh during activity
  * - Auto-logout and redirect on timeout
@@ -23,6 +25,7 @@ export class SessionManager {
   private onLogout: (() => void) | null = null;
   private isWarningActive: boolean = false;
   private hasLoggedOut: boolean = false; // Prevent duplicate logout notifications
+  private boundHandleActivity: (() => void) | null = null; // Store bound function reference
 
   private constructor() {}
 
@@ -38,6 +41,10 @@ export class SessionManager {
    */
   public init(onWarning: () => void, onLogout: () => void): void {
     console.log('[SessionManager] Initializing with 15-minute inactivity timeout');
+    
+    // Cleanup any existing timers/listeners first (safety check)
+    this.cleanup();
+    
     this.onWarning = onWarning;
     this.onLogout = onLogout;
     this.hasLoggedOut = false; // Reset logout flag
@@ -51,23 +58,30 @@ export class SessionManager {
    * Setup event listeners for user activity
    */
   private setupActivityListeners(): void {
+    // Create bound reference ONCE and store it
+    this.boundHandleActivity = this.handleActivity.bind(this);
+
     const events = [
       'mousedown',
       'mousemove',
-      'keypress',
+      'keydown',      // Modern replacement for keypress
+      'keyup',        // Catch key releases too
+      'input',        // Catch input field changes
+      'change',       // Catch form field changes
       'scroll',
       'touchstart',
+      'touchmove',
       'click',
     ];
 
     events.forEach(event => {
-      document.addEventListener(event, this.handleActivity.bind(this), true);
+      document.addEventListener(event, this.boundHandleActivity!, true);
     });
 
     // Track navigation/routing changes
-    window.addEventListener('popstate', this.handleActivity.bind(this));
+    window.addEventListener('popstate', this.boundHandleActivity!);
     
-    console.log('[SessionManager] Activity listeners registered');
+    console.log('[SessionManager] Activity listeners registered (modern events)');
   }
 
   /**
@@ -226,20 +240,30 @@ export class SessionManager {
       this.refreshTimer = null;
     }
 
-    const events = [
-      'mousedown',
-      'mousemove',
-      'keypress',
-      'scroll',
-      'touchstart',
-      'click',
-    ];
+    // Remove listeners using the SAME bound reference
+    if (this.boundHandleActivity) {
+      const events = [
+        'mousedown',
+        'mousemove',
+        'keydown',
+        'keyup',
+        'input',
+        'change',
+        'scroll',
+        'touchstart',
+        'touchmove',
+        'click',
+      ];
 
-    events.forEach(event => {
-      document.removeEventListener(event, this.handleActivity.bind(this), true);
-    });
+      events.forEach(event => {
+        document.removeEventListener(event, this.boundHandleActivity!, true);
+      });
 
-    window.removeEventListener('popstate', this.handleActivity.bind(this));
+      window.removeEventListener('popstate', this.boundHandleActivity!);
+      this.boundHandleActivity = null;
+      
+      console.log('[SessionManager] Activity listeners removed successfully');
+    }
   }
 
   /**
