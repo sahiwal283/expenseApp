@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.39] - 2025-10-15
+
+### Added
+- **Success Toast Notifications**:
+  - Green toast appears when expense is saved: "✅ Expense saved successfully!"
+  - Shows "✅ Expense updated successfully!" for edits
+  - Provides immediate visual feedback to users
+  - Complements existing error notifications
+
+- **Duplicate Submission Prevention**:
+  - Save button becomes disabled during processing
+  - Shows loading spinner + "Saving..." text
+  - Prevents spam-clicking the save button
+  - Early return if already saving
+  - Fixes issue where users created 10+ duplicate expenses
+
+### Changed
+- **Save Button UX Improvements**:
+  - Button shows Loader2 spinner icon while saving
+  - Text changes from "Save Expense" → "Saving..."
+  - Button grayed out + cursor changes to not-allowed
+  - Clear visual indication that process is underway
+
+### Technical
+- Backend: v1.0.15 (no changes)
+- Frontend: v1.0.38 → v1.0.39
+- Added `isSaving` state in ExpenseSubmission component
+- Pass `isSaving` prop to ExpenseForm
+- Added ToastContainer for notifications
+- Imported Loader2 from lucide-react for spinner
+
+### Fixed
+- Users no longer accidentally create duplicate expenses
+- Clear feedback when expense operation completes
+- Professional loading state during save operation
+
 ## [1.0.38] - 2025-10-15
 
 ### Fixed
