@@ -28,6 +28,11 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface ExpenseWithDetails extends Expense {
+  user_name?: string;
+  event_name?: string;
+}
+
 export class ExpenseRepository extends BaseRepository<Expense> {
   protected tableName = 'expenses';
 
@@ -213,6 +218,101 @@ export class ExpenseRepository extends BaseRepository<Expense> {
       params
     );
     
+    return result.rows;
+  }
+
+  /**
+   * Find all expenses with user and event names (optimized with JOINs)
+   */
+  async findAllWithDetails(): Promise<ExpenseWithDetails[]> {
+    const result = await this.executeQuery<ExpenseWithDetails>(
+      `SELECT 
+        e.*,
+        u.name as user_name,
+        ev.name as event_name
+       FROM ${this.tableName} e
+       LEFT JOIN users u ON e.user_id = u.id
+       LEFT JOIN events ev ON e.event_id = ev.id
+       ORDER BY e.date DESC, e.created_at DESC`
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Find expense by ID with user and event names (optimized with JOINs)
+   */
+  async findByIdWithDetails(id: string): Promise<ExpenseWithDetails | null> {
+    const result = await this.executeQuery<ExpenseWithDetails>(
+      `SELECT 
+        e.*,
+        u.name as user_name,
+        ev.name as event_name
+       FROM ${this.tableName} e
+       LEFT JOIN users u ON e.user_id = u.id
+       LEFT JOIN events ev ON e.event_id = ev.id
+       WHERE e.id = $1`,
+      [id]
+    );
+
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Find expenses with filters and details (optimized with JOINs)
+   */
+  async findWithFiltersAndDetails(filters: {
+    userId?: string;
+    eventId?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    entity?: string;
+  }): Promise<ExpenseWithDetails[]> {
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (filters.userId) {
+      conditions.push(`e.user_id = $${paramIndex++}`);
+      params.push(filters.userId);
+    }
+    if (filters.eventId) {
+      conditions.push(`e.event_id = $${paramIndex++}`);
+      params.push(filters.eventId);
+    }
+    if (filters.status) {
+      conditions.push(`e.status = $${paramIndex++}`);
+      params.push(filters.status);
+    }
+    if (filters.startDate) {
+      conditions.push(`e.date >= $${paramIndex++}`);
+      params.push(filters.startDate);
+    }
+    if (filters.endDate) {
+      conditions.push(`e.date <= $${paramIndex++}`);
+      params.push(filters.endDate);
+    }
+    if (filters.entity) {
+      conditions.push(`e.zoho_entity = $${paramIndex++}`);
+      params.push(filters.entity);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const result = await this.executeQuery<ExpenseWithDetails>(
+      `SELECT 
+        e.*,
+        u.name as user_name,
+        ev.name as event_name
+       FROM ${this.tableName} e
+       LEFT JOIN users u ON e.user_id = u.id
+       LEFT JOIN events ev ON e.event_id = ev.id
+       ${whereClause}
+       ORDER BY e.date DESC, e.created_at DESC`,
+      params
+    );
+
     return result.rows;
   }
 }

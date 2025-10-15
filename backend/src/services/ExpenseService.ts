@@ -4,7 +4,7 @@
  * Business logic for expense management.
  */
 
-import { expenseRepository, Expense } from '../database/repositories/ExpenseRepository';
+import { expenseRepository, Expense, ExpenseWithDetails } from '../database/repositories/ExpenseRepository';
 import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors';
 
 class ExpenseService {
@@ -26,10 +26,38 @@ class ExpenseService {
   }
 
   /**
+   * Get all expenses with user/event details (optimized with JOINs)
+   */
+  async getExpensesWithDetails(filters?: {
+    userId?: string;
+    eventId?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    entity?: string;
+  }): Promise<ExpenseWithDetails[]> {
+    if (filters && Object.keys(filters).length > 0) {
+      return expenseRepository.findWithFiltersAndDetails(filters);
+    }
+    return expenseRepository.findAllWithDetails();
+  }
+
+  /**
    * Get expense by ID
    */
   async getExpenseById(id: string): Promise<Expense> {
     const expense = await expenseRepository.findById(id);
+    if (!expense) {
+      throw new NotFoundError('Expense', id);
+    }
+    return expense;
+  }
+
+  /**
+   * Get expense by ID with user/event details (optimized with JOINs)
+   */
+  async getExpenseByIdWithDetails(id: string): Promise<ExpenseWithDetails> {
+    const expense = await expenseRepository.findByIdWithDetails(id);
     if (!expense) {
       throw new NotFoundError('Expense', id);
     }
@@ -235,6 +263,49 @@ class ExpenseService {
     ]);
 
     return { pending, approved, rejected };
+  }
+
+  /**
+   * Assign Zoho entity to expense (admin/accountant only)
+   */
+  async assignZohoEntity(
+    expenseId: string,
+    zohoEntity: string,
+    userRole: string
+  ): Promise<Expense> {
+    // Authorization check
+    if (userRole !== 'admin' && userRole !== 'accountant' && userRole !== 'developer') {
+      throw new AuthorizationError('Only admins and accountants can assign entities');
+    }
+
+    // Validate entity is provided
+    if (!zohoEntity || zohoEntity.trim().length === 0) {
+      throw new ValidationError('Zoho entity name is required');
+    }
+
+    return expenseRepository.update(expenseId, { zoho_entity: zohoEntity });
+  }
+
+  /**
+   * Update reimbursement status (admin/accountant only)
+   */
+  async updateReimbursementStatus(
+    expenseId: string,
+    status: 'pending review' | 'approved' | 'rejected' | 'paid',
+    userRole: string
+  ): Promise<Expense> {
+    // Authorization check
+    if (userRole !== 'admin' && userRole !== 'accountant' && userRole !== 'developer') {
+      throw new AuthorizationError('Only admins and accountants can update reimbursement status');
+    }
+
+    // Validate status
+    const validStatuses = ['pending review', 'approved', 'rejected', 'paid'];
+    if (!validStatuses.includes(status)) {
+      throw new ValidationError(`Invalid reimbursement status: "${status}". Must be one of: ${validStatuses.join(', ')}`);
+    }
+
+    return expenseRepository.update(expenseId, { reimbursement_status: status });
   }
 }
 

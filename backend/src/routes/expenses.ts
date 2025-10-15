@@ -315,42 +315,30 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
   if (user_id) filters.userId = user_id as string;
   if (status) filters.status = status as string;
   
-  // Get expenses using service layer
-  const expenses = await expenseService.getExpenses(filters);
+  // Get expenses with user/event details (optimized with JOINs - no N+1 queries!)
+  const expenses = await expenseService.getExpensesWithDetails(filters);
   
-  // TODO: Add user_name and event_name joins in repository layer
-  // For now, maintaining compatibility by doing joins here
-  const expensesWithDetails = await Promise.all(
-    expenses.map(async (expense) => {
-      const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
-      const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
-      
-      return {
-        ...normalizeExpense(expense),
-        user_name: userResult.rows[0]?.name,
-        event_name: eventResult.rows[0]?.name
-      };
-    })
-  );
+  // Normalize and return
+  const normalizedExpenses = expenses.map((expense: any) => ({
+    ...normalizeExpense(expense),
+    user_name: expense.user_name,
+    event_name: expense.event_name
+  }));
   
-  res.json(expensesWithDetails);
+  res.json(normalizedExpenses);
 }));
 
 // Get expense by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params;
   
-  // Get expense using service (throws NotFoundError if not found)
-  const expense = await expenseService.getExpenseById(id);
-  
-  // Get user and event names for compatibility
-  const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
-  const eventResult = await query('SELECT name FROM events WHERE id = $1', [expense.event_id]);
+  // Get expense with user/event details (optimized with JOINs - no extra queries!)
+  const expense = await expenseService.getExpenseByIdWithDetails(id);
   
   res.json({
     ...normalizeExpense(expense),
-    user_name: userResult.rows[0]?.name,
-    event_name: eventResult.rows[0]?.name
+    user_name: expense.user_name,
+    event_name: expense.event_name
   });
 }));
 
@@ -486,32 +474,17 @@ router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), async
 }));
 
 // Assign Zoho entity (accountant only) - NO AUTO-PUSH
-router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
-    const { zoho_entity } = req.body;
+router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const { zoho_entity } = req.body;
 
-    const result = await query(
-      `UPDATE expenses 
-       SET zoho_entity = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [zoho_entity, id]
-    );
+  // Assign entity using service layer
+  const expense = await expenseService.assignZohoEntity(id, zoho_entity, req.user!.role);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Expense not found' });
-    }
+  console.log(`[Entity Assignment] Entity "${zoho_entity}" assigned to expense ${id} (manual push required)`);
 
-    const expense = result.rows[0];
-    console.log(`[Entity Assignment] Entity "${zoho_entity}" assigned to expense ${id} (manual push required)`);
-
-    res.json(normalizeExpense(expense));
-  } catch (error) {
-    console.error('Error assigning entity:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(normalizeExpense(expense));
+}));
 
 // Manual push to Zoho Books (accountant/admin only)
 router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
@@ -618,41 +591,22 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: A
 });
 
 // Reimbursement approval (accountant only)
-router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
-    const { reimbursement_status } = req.body;
+router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const { reimbursement_status } = req.body;
 
-    console.log(`[REIMBURSEMENT] Received request to update expense ${id} to status: "${reimbursement_status}" (type: ${typeof reimbursement_status})`);
-    console.log(`[REIMBURSEMENT] Full request body:`, JSON.stringify(req.body));
+  console.log(`[REIMBURSEMENT] Updating expense ${id} to status: "${reimbursement_status}"`);
 
-    if (!['pending review', 'approved', 'rejected', 'paid'].includes(reimbursement_status)) {
-      console.error(`[REIMBURSEMENT] Invalid status rejected: "${reimbursement_status}"`);
-      return res.status(400).json({ error: `Invalid reimbursement status: "${reimbursement_status}"` });
-    }
+  // Update reimbursement status using service layer
+  const expense = await expenseService.updateReimbursementStatus(
+    id,
+    reimbursement_status,
+    req.user!.role
+  );
 
-    console.log(`[REIMBURSEMENT] Validation passed, executing database update...`);
-
-    const result = await query(
-      `UPDATE expenses 
-       SET reimbursement_status = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [reimbursement_status, id]
-    );
-
-    if (result.rows.length === 0) {
-      console.error(`[REIMBURSEMENT] Expense ${id} not found in database`);
-      return res.status(404).json({ error: 'Expense not found' });
-    }
-
-    console.log(`[REIMBURSEMENT] Successfully updated expense ${id} to status "${reimbursement_status}"`);
-    res.json(normalizeExpense(result.rows[0]));
-  } catch (error) {
-    console.error('[REIMBURSEMENT] Error updating reimbursement:', error);
-    res.status(500).json({ error: 'Internal server error', details: String(error) });
-  }
-});
+  console.log(`[REIMBURSEMENT] Successfully updated expense ${id} to status "${reimbursement_status}"`);
+  res.json(normalizeExpense(expense));
+}));
 
 // Delete expense
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
