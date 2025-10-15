@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Save, X, Plus, Trash2 } from 'lucide-react';
 import { TradeShow, User } from '../../App';
+import { generateUUID } from '../../utils/uuid';
 
 interface EventFormProps {
   event?: TradeShow | null;
@@ -32,7 +33,7 @@ export const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel })
   const addParticipant = () => {
     if (newParticipantName && newParticipantEmail && !formData.participants.find(p => p.email === newParticipantEmail)) {
       const newParticipant: User = {
-        id: Date.now().toString(),
+        id: generateUUID(), // Generate proper UUID for database
         name: newParticipantName,
         username: newParticipantEmail.split('@')[0].toLowerCase(),
         email: newParticipantEmail,

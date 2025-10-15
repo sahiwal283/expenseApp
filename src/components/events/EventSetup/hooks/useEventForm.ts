@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { TradeShow, User } from '../../../../App';
 import { api } from '../../../../utils/api';
 import { formatForDateInput } from '../../../../utils/dateUtils';
+import { generateUUID } from '../../../../utils/uuid';
 
 interface EventFormData {
   name: string;
@@ -148,7 +149,7 @@ export function useEventForm(): UseEventFormReturn {
   const addCustomParticipant = () => {
     if (newParticipantName && newParticipantEmail && !formData.participants.find(p => p.email === newParticipantEmail)) {
       const newParticipant: User = {
-        id: Date.now().toString(),
+        id: generateUUID(), // Generate proper UUID for database
         name: newParticipantName,
         username: newParticipantEmail.split('@')[0].toLowerCase(),
         email: newParticipantEmail,
