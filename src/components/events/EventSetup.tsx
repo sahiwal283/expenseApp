@@ -56,9 +56,15 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           console.log('[EventSetup] Fetching users from API...');
           const users = await api.getUsers();
           console.log('[EventSetup] Received users:', users?.length || 0, 'users');
+          console.log('[EventSetup] User details:', users);
+          if (!users || users.length === 0) {
+            console.warn('[EventSetup] ⚠️ NO USERS RETURNED FROM API!');
+          }
           setAllUsers(users || []);
+          console.log('[EventSetup] allUsers state updated with', users?.length || 0, 'users');
         } catch (error: any) {
-          console.error('[EventSetup] Error fetching users (non-critical):', error);
+          console.error('[EventSetup] ❌ ERROR fetching users:', error);
+          console.error('[EventSetup] Error details:', error.message, error.response?.status, error.response?.data);
           // Don't show error to user, just log it
           setAllUsers([]);
         }
@@ -505,10 +511,18 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                       >
                         <option value="">Select a user...</option>
                         {(() => {
+                          console.log('[EventSetup] 🔍 RENDERING DROPDOWN - allUsers:', allUsers.length, 'users');
+                          console.log('[EventSetup] 🔍 allUsers array:', allUsers);
+                          
+                          if (allUsers.length === 0) {
+                            console.error('[EventSetup] ⚠️ allUsers is EMPTY when rendering dropdown!');
+                          }
+                          
                           const availableUsers = allUsers.filter(u => !formData.participants.find(p => p.id === u.id));
                           console.log('[EventSetup] All users:', allUsers.length, allUsers.map(u => u.name));
                           console.log('[EventSetup] Current participants:', formData.participants.length, formData.participants.map(p => p.name));
                           console.log('[EventSetup] Available users for dropdown:', availableUsers.length, availableUsers.map(u => u.name));
+                          
                           return availableUsers.map(user => (
                             <option key={user.id} value={user.id}>
                               {user.name} ({user.email})

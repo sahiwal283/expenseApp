@@ -1,15 +1,15 @@
 // ExpenseApp Service Worker
-// Version: 1.0.35 - FIX: Misleading entity assignment toast message
+// Version: 1.0.36 - DEBUG: Enhanced user fetch logging for empty dropdown
 // Date: October 15, 2025
+//
+// Changes from v1.0.35:
+// - Added comprehensive logging for user API fetch
+// - Investigating why users array is empty in participants dropdown
+// - Added logs before/after API call, during state update, and during render
 //
 // Changes from v1.0.34:
 // - Fixed misleading toast when assigning entity in Approvals
-// - Old: "Expense is being pushed to Zoho Books..." (auto-push removed months ago)
 // - New: "Go to Reports to push to Zoho Books" (correct workflow)
-//
-// Changes from v1.0.33:
-// - Added console logging to participants dropdown for debugging
-// - Reverted: Developer role can now submit to all events
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -65,8 +65,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.35';  // BUMPED VERSION for toast message fix
-const STATIC_CACHE = 'expenseapp-static-v1.0.35';
+const CACHE_NAME = 'expenseapp-v1.0.36';  // BUMPED VERSION for enhanced debug logging
+const STATIC_CACHE = 'expenseapp-static-v1.0.36';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -76,7 +76,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.35...');
+  console.log('[ServiceWorker] Installing v1.0.36...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -167,7 +167,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.35...');
+  console.log('[ServiceWorker] Activating v1.0.36...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -181,7 +181,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.35 activated and ready!');
+      console.log('[ServiceWorker] v1.0.36 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
