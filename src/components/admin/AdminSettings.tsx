@@ -32,27 +32,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     );
   }
 
-  // Check URL hash for initial tab (e.g., #users)
-  const initialTab = window.location.hash === '#users' ? 'users' : 'system';
-  const [activeTab, setActiveTab] = useState<'system' | 'users'>(initialTab);
-  
-  // Listen for hash changes to switch tabs dynamically
-  useEffect(() => {
-    const handleHashChange = () => {
-      if (window.location.hash === '#users') {
-        setActiveTab('users');
-      }
-    };
-    
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange);
-    
-    // Cleanup listener on unmount
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
-  
+  // State initialization - default to system
+  const [activeTab, setActiveTab] = useState<'system' | 'users'>('system');
   const [settings, setSettings] = useState<AppSettings>({
     cardOptions: [
       { name: 'Haute Intl USD Debit', lastFour: '0000' },
@@ -93,6 +74,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editCardName, setEditCardName] = useState('');
   const [editCardLastFour, setEditCardLastFour] = useState('');
+
+  // Check hash on mount and set initial tab
+  useEffect(() => {
+    if (window.location.hash === '#users') {
+      setActiveTab('users');
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
