@@ -53,23 +53,15 @@ export function useApprovals() {
         setUsers([]);
       }
 
-      // Fetch card options (non-critical)
+      // Fetch settings (card and entity options)
       try {
-        const cards = await api.getCardOptions();
-        console.log('[Approvals] Loaded card options:', cards?.length || 0);
-        setCardOptions(cards || []);
+        const st = await api.getSettings();
+        setCardOptions(st?.cardOptions || []);
+        console.log('[Approvals] Entity options from API:', st?.entityOptions);
+        setEntityOptions(st?.entityOptions || []);
       } catch (error) {
-        console.error('[Approvals] Error loading card options (non-critical):', error);
+        console.error('[Approvals] Error loading settings:', error);
         setCardOptions([]);
-      }
-
-      // Fetch entity options (non-critical)
-      try {
-        const entities = await api.getEntityOptions();
-        console.log('[Approvals] Loaded entity options:', entities?.length || 0);
-        setEntityOptions(entities || []);
-      } catch (error) {
-        console.error('[Approvals] Error loading entity options (non-critical):', error);
         setEntityOptions([]);
       }
     } else {
