@@ -97,6 +97,16 @@ export function useEventForm(): UseEventFormReturn {
             status: eventData.status || 'upcoming',
           });
         } else {
+          console.log('[useEventForm] About to create event with participants:', eventData.participants);
+          console.log('[useEventForm] Participants details:', eventData.participants.map(p => ({
+            id: p.id,
+            name: p.name,
+            username: p.username,
+            email: p.email,
+            role: p.role,
+            roleType: typeof p.role
+          })));
+          
           await api.createEvent({
             name: eventData.name,
             venue: eventData.venue,

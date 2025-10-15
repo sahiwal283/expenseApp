@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.53] - 2025-10-15 (Frontend)
+
+### Added
+- **Push to Zoho Button on Approvals Page**:
+  - Moved "Push to Zoho" functionality from Reports page to Approvals page
+  - New "Zoho" column added after "Entity" column in the approvals table
+  - Button only appears when expense has an entity assigned
+  - Shows "No entity" if entity not assigned yet
+  - Shows "Pushed" checkmark with success icon for synced expenses
+  - Shows "Pushing..." with spinner while API call is in progress
+  - Improved workflow: Assign entity → Approve → Push to Zoho (all in one place)
+  
+### Changed
+- **Improved Approval UX**:
+  - Approvals page is now the central hub for expense processing
+  - No need to switch to Reports page to push expenses to Zoho Books
+  - Entity assignment and Zoho sync happen in the same workflow
+  - More intuitive: approve the expense, then push it immediately
+
+### Technical
+- Added `handlePushToZoho` function to Approvals component
+- Added `pushingExpenseId` and `pushedExpenses` state management
+- Added Upload, Loader2, CheckCircle2 icons to Approvals imports
+- Table now has 9 columns (was 8): added "Zoho" column
+- Backend API endpoint `api.pushToZoho(expense.id)` called from Approvals
+
 ## [1.0.50] - 2025-10-15 (Frontend) / Backend 1.0.21
 
 ### Fixed

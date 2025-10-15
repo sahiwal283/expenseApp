@@ -116,9 +116,12 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
             const defaultPassword = await bcrypt.hash('changeme123', 10);
             
             try {
+              const roleToUse = participant.role || 'temporary';
+              console.log(`[Events] DEBUG - Inserting user with role: "${roleToUse}" (type: ${typeof roleToUse}), participant.role: "${participant.role}"`);
+              
               const newUserResult = await query(
                 'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'temporary']
+                [participant.id, participant.username, defaultPassword, participant.name, participant.email, roleToUse]
               );
               
               userId = newUserResult.rows[0].id;

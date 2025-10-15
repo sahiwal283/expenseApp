@@ -15,7 +15,10 @@ import {
   Eye,
   Receipt,
   MapPin,
-  FileText
+  FileText,
+  Upload,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
@@ -61,6 +64,12 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
 
+  // Zoho push state
+  const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
+  const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(
+    new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id))
+  );
+
   // Zoho-enabled entities (entities that have Zoho Books accounts configured)
   const zohoEnabledEntities = ['haute', 'alpha', 'beta', 'gamma', 'delta'];
 
@@ -101,6 +110,31 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     } catch (error) {
       console.error('Error rejecting expense:', error);
       alert('Failed to reject expense. Please try again.');
+    }
+  };
+
+  const handlePushToZoho = async (expense: Expense) => {
+    if (!expense.zohoEntity) {
+      addToast('No entity assigned to this expense. Please assign an entity first.', 'warning');
+      return;
+    }
+
+    if (expense.zohoExpenseId || pushedExpenses.has(expense.id)) {
+      return; // Already pushed
+    }
+
+    setPushingExpenseId(expense.id);
+    try {
+      await api.pushToZoho(expense.id);
+      setPushedExpenses(prev => new Set(prev).add(expense.id));
+      addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
+      await loadData(); // Refresh data to update zohoExpenseId
+    } catch (error: any) {
+      console.error('Failed to push to Zoho:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+      addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
+    } finally {
+      setPushingExpenseId(null);
     }
   };
 
@@ -283,6 +317,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                 <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Entity
                 </th>
+                <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Zoho
+                </th>
                 <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -291,7 +328,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredExpenses.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     No expenses found matching your filters
                   </td>
                 </tr>
@@ -386,6 +423,35 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                             <option key={index} value={entity}>{entity}</option>
                           ))}
                         </select>
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <div className="flex justify-center">
+                          {!expense.zohoEntity ? (
+                            <span className="text-xs text-gray-400 italic">No entity</span>
+                          ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
+                            <div className="flex items-center space-x-1 text-emerald-600">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span className="text-xs font-medium">Pushed</span>
+                            </div>
+                          ) : pushingExpenseId === expense.id ? (
+                            <button
+                              disabled
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md cursor-not-allowed"
+                            >
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Pushing...</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handlePushToZoho(expense)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                              title={`Push to ${expense.zohoEntity} Zoho Books`}
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Push to Zoho</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
