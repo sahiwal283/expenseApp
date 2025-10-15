@@ -72,9 +72,9 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     
-    // Only admins can create roles
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only administrators can create roles' });
+    // Only admins and developers can create roles
+    if (user.role !== 'admin' && user.role !== 'developer') {
+      return res.status(403).json({ error: 'Only administrators and developers can create roles' });
     }
     
     const { name, label, description, color } = req.body;
@@ -123,9 +123,9 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user;
     const { id } = req.params;
     
-    // Only admins can update roles
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only administrators can update roles' });
+    // Only admins and developers can update roles
+    if (user.role !== 'admin' && user.role !== 'developer') {
+      return res.status(403).json({ error: 'Only administrators and developers can update roles' });
     }
     
     const { label, description, color } = req.body;
@@ -173,9 +173,9 @@ router.delete('/:id', authenticateToken, async (req: Request, res: Response) => 
     const user = (req as any).user;
     const { id } = req.params;
     
-    // Only admins can delete roles
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'Only administrators can delete roles' });
+    // Only admins and developers can delete roles
+    if (user.role !== 'admin' && user.role !== 'developer') {
+      return res.status(403).json({ error: 'Only administrators and developers can delete roles' });
     }
     
     // Check if role exists and is a system role

@@ -9,6 +9,7 @@ interface UserManagementProps {
 
 export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUser }) => {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<any[]>([]); // Load roles from database
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,12 +28,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     role: 'salesperson' as UserRole
   });
 
+  // Load users and roles
   useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
         try {
           const data = await api.getUsers();
           setUsers(data || []);
+          
+          // Load roles from database
+          const rolesData = await api.getRoles();
+          // Filter out 'pending' role from dropdowns (it's for new registrations only)
+          setRoles((rolesData || []).filter((r: any) => r.name !== 'pending'));
         } catch {
           setUsers([]);
         }
@@ -233,10 +240,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Roles</option>
-            <option value="admin">Administrator</option>
-            <option value="coordinator">Show Coordinator</option>
-            <option value="salesperson">Sales Person</option>
-            <option value="accountant">Accountant</option>
+            {roles.map(role => (
+              <option key={role.id} value={role.name}>{role.label}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -394,10 +400,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                 onChange={(e) => setSelectedRole(e.target.value as UserRole)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="salesperson">Salesperson</option>
-                <option value="coordinator">Event Coordinator</option>
-                <option value="accountant">Accountant</option>
-                <option value="admin">Administrator</option>
+                {roles.map(role => (
+                  <option key={role.id} value={role.name}>{role.label}</option>
+                ))}
               </select>
               <p className="mt-2 text-xs text-gray-500">
                 This will activate the user and allow them to log in with their chosen credentials.
@@ -579,10 +584,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="admin">Administrator</option>
-                  <option value="accountant">Accountant</option>
-                  <option value="coordinator">Show Coordinator</option>
-                  <option value="salesperson">Sales Person</option>
+                  {roles.map(role => (
+                    <option key={role.id} value={role.name}>{role.label}</option>
+                  ))}
                 </select>
               </div>
 

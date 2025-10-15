@@ -40,8 +40,8 @@ router.get('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// Create user (admin only)
-router.post('/', authorize('admin'), async (req: AuthRequest, res) => {
+// Create user (admin and developer)
+router.post('/', authorize('admin', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { username, password, name, email, role } = req.body;
 
@@ -66,8 +66,8 @@ router.post('/', authorize('admin'), async (req: AuthRequest, res) => {
   }
 });
 
-// Update user
-router.put('/:id', authorize('admin'), async (req: AuthRequest, res) => {
+// Update user (admin and developer)
+router.put('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const { name, email, role, password } = req.body;
@@ -99,8 +99,8 @@ router.put('/:id', authorize('admin'), async (req: AuthRequest, res) => {
   }
 });
 
-// Delete user
-router.delete('/:id', authorize('admin'), async (req: AuthRequest, res) => {
+// Delete user (admin and developer)
+router.delete('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
