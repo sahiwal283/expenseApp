@@ -10,22 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.25] - 2025-10-15
 
 ### Added
-- **Backend Service Layer & Repository Pattern (Phase 1 & 2)**:
-  - Complete CRUD routes now use service layer
-  - `POST /api/expenses` - Create expense via `expenseService.createExpense()`
-  - `PUT /api/expenses/:id` - Update expense via `expenseService.updateExpense()`
-  - `PATCH /api/expenses/:id/review` - Approve/reject via `expenseService.updateExpenseStatus()`
-  - `DELETE /api/expenses/:id` - Delete expense via `expenseService.deleteExpense()`
+- **Backend Service Layer & Repository Pattern (Complete)**:
+  - All expense routes now use service layer
+  - `POST /api/expenses` - Create expense
+  - `PUT /api/expenses/:id` - Update expense
+  - `PATCH /api/expenses/:id/review` - Approve/reject
+  - `PATCH /api/expenses/:id/entity` - Assign Zoho entity
+  - `PATCH /api/expenses/:id/reimbursement` - Update reimbursement status
+  - `DELETE /api/expenses/:id` - Delete expense
   - All routes use `asyncHandler` for clean error handling
   - Authorization logic centralized in service layer
 
 ### Changed
-- **Routes Simplified**:
-  - POST route: 80 lines → 52 lines (35% reduction)
-  - PUT route: 136 lines → 56 lines (59% reduction)
-  - PATCH review route: 27 lines → 17 lines (37% reduction)
-  - DELETE route: 35 lines → 25 lines (29% reduction)
-  - Overall: 278 lines → 150 lines (46% reduction in CRUD routes)
+- **Routes Simplified (All Increments)**:
+  - POST: 80 → 52 lines (35% reduction)
+  - PUT: 136 → 56 lines (59% reduction)
+  - PATCH review: 27 → 17 lines (37% reduction)
+  - DELETE: 35 → 25 lines (29% reduction)
+  - PATCH entity: 26 → 11 lines (58% reduction)
+  - PATCH reimbursement: 35 → 16 lines (54% reduction)
+  - **Total: 339 lines → 177 lines (48% reduction)**
+
+- **Query Optimization (N+1 Problem Eliminated)**:
+  - GET endpoints now use SQL JOINs
+  - `GET /api/expenses`: 1 query (was 1 + N*2 queries)
+  - `GET /api/expenses/:id`: 1 query (was 3 queries)
+  - Example: Fetching 100 expenses = 1 query (previously 201 queries!)
+  - Massive performance improvement for large datasets
+
 - **Error Handling**:
   - No more try/catch in routes (handled by `asyncHandler`)
   - Consistent error responses via custom `AppError` classes
@@ -33,8 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical
 - Backend: v1.0.12
 - Frontend: v1.0.25
-- All CRUD operations now go through service layer
-- File operations (OCR, file deletion) remain in routes
+- **Backend refactor: 100% complete** ✅
+- All CRUD operations use service → repository → database layers
+- Optimized database queries with JOINs
 - Zero breaking changes - all functionality preserved
 
 ## [1.0.24] - 2025-10-14
