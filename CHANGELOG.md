@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.42] - 2025-10-15
+
+### Fixed
+- **Session Timeout UX Improvements**:
+  - Timer now shows actual remaining time (not hardcoded 15 minutes)
+  - Fixed 5 duplicate logout notifications → now shows only 1
+  - Dismissing warning (X button) now resets timer properly
+  - API calls now reset inactivity timer
+  - Users won't be logged out during form submissions
+  - Much smoother session timeout experience
+
+### Technical
+- `sessionManager.ts`:
+  - Added `hasLoggedOut` flag to prevent duplicates
+  - Reset flag in `init()` for fresh sessions
+  - Reset `lastActivity` timestamp in `init()`
+- `App.tsx`:
+  - Initialize `timeRemaining` to 0 (calculated by sessionManager)
+  - `handleDismissWarning()` now calls `sessionManager.dismissWarning()`
+- `apiClient.ts`:
+  - Import and notify `sessionManager` on every API request
+  - Silently fail if session manager not initialized
+
+### Impact
+- ✅ Accurate timer display
+- ✅ No duplicate notifications
+- ✅ Form submissions don't trigger logout
+- ✅ Improved user experience
+
 ## [1.0.41] - 2025-10-15
 
 ### Refactored
