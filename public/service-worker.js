@@ -1,14 +1,15 @@
 // ExpenseApp Service Worker
-// Version: 1.0.60 - FIX: Reports Table View Details
+// Version: 1.0.61 - FIX: Direct Navigation to User Management
 // Date: October 15, 2025
 //
-// Changes from v1.0.59:
-// - Removed: "Push to Zoho" column from Reports page detailed expense table
-// - Added: "View Details" eye icon to view expense details and receipt in modal
-// - UX: Cleaner reports table, consistent with Expenses page design
+// Changes from v1.0.60:
+// - Fixed: "Go to User Management" button now directly opens User Management tab
+// - Navigation timing: Page navigates first, then hash is set after 100ms delay
+// - Ensures Settings page properly responds to #users hash
 //
-// Changes from v1.0.58:
-// - Fixed: Dashboard "Push to Zoho" button now navigates to Approvals page
+// Changes from v1.0.59:
+// - Removed: "Push to Zoho" column from Reports page
+// - Added: "View Details" eye icon to view expense details
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -73,8 +74,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.60';  // BUMPED VERSION for reports view details
-const STATIC_CACHE = 'expenseapp-static-v1.0.60';
+const CACHE_NAME = 'expenseapp-v1.0.61';  // BUMPED VERSION for user management navigation
+const STATIC_CACHE = 'expenseapp-static-v1.0.61';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -84,7 +85,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.60...');
+  console.log('[ServiceWorker] Installing v1.0.61...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -175,7 +176,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.60...');
+  console.log('[ServiceWorker] Activating v1.0.61...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -189,7 +190,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.60 activated and ready!');
+      console.log('[ServiceWorker] v1.0.61 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

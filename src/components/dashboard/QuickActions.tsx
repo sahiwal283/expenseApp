@@ -148,25 +148,28 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                         // Extract page name from link
                         let page = task.link.replace('/', '');
                         
-                        // Handle specific task types with deep linking
-                        if (task.type === 'pending_users' && page === 'settings') {
-                          // Direct navigation to User Management tab
-                          window.location.hash = 'users';
-                        } else if (task.type === 'unpushed_zoho' && page === 'approvals') {
-                          // Direct navigation to specific event if only one event has unsynced expenses
-                          if (task.eventIds && task.eventIds.length === 1) {
-                            window.location.hash = `event=${task.eventIds[0]}`;
-                          } else if (task.primaryEventId) {
-                            // Navigate to event with most unsynced expenses
-                            window.location.hash = `event=${task.primaryEventId}`;
+                        // Navigate to page first
+                        onNavigate(page);
+                        
+                        // Then set hash after a brief delay to ensure page has loaded
+                        setTimeout(() => {
+                          if (task.type === 'pending_users' && page === 'settings') {
+                            // Direct navigation to User Management tab
+                            window.location.hash = 'users';
+                          } else if (task.type === 'unpushed_zoho' && page === 'approvals') {
+                            // Direct navigation to specific event if only one event has unsynced expenses
+                            if (task.eventIds && task.eventIds.length === 1) {
+                              window.location.hash = `event=${task.eventIds[0]}`;
+                            } else if (task.primaryEventId) {
+                              // Navigate to event with most unsynced expenses
+                              window.location.hash = `event=${task.primaryEventId}`;
+                            } else {
+                              window.location.hash = '';
+                            }
                           } else {
                             window.location.hash = '';
                           }
-                        } else {
-                          window.location.hash = '';
-                        }
-                        
-                        onNavigate(page);
+                        }, 100);
                       }}
                       className={`inline-flex items-center text-sm font-medium transition-colors ${
                         task.priority === 'high' 
