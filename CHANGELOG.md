@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.28] - 2025-10-15
+
+### Added
+- **Frontend Refactor - Custom Hooks (Phase 5 continued)**:
+  - Created `useDashboardData` hook for Dashboard data fetching (~80 lines)
+  - Created `useDashboardStats` hook for statistics calculations (~65 lines)
+  - Extracted reusable logic from Dashboard component
+
+### Changed
+- **Dashboard Component Refactoring**:
+  - Now uses custom hooks for data and stats
+  - Removed ~85 lines of code from main component
+  - Better separation of concerns (UI vs business logic)
+  - Consistent pattern across all major components
+  - Easier to maintain and test
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.28
+- Backend refactor: 100% complete ✅
+- Frontend refactor: Phase 5 ongoing (60% overall progress)
+- Custom hooks pattern: 3 major components refactored (Approvals, Expenses, Dashboard)
+
 ## [1.0.27] - 2025-10-15
 
 ### Added

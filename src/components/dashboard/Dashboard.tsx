@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React from 'react';
 import { DollarSign, Calendar, Users, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { User, TradeShow, Expense } from '../../App';
-import { api } from '../../utils/api';
+import { User } from '../../App';
 import { StatsCard } from './StatsCard';
 import { RecentExpenses } from './RecentExpenses';
 import { UpcomingEvents } from './UpcomingEvents';
 import { BudgetOverview } from './BudgetOverview';
 import { QuickActions } from './QuickActions';
 import { InstallPWA } from '../common/InstallPWA';
-import { parseLocalDate } from '../../utils/dateUtils';
+import { useDashboardData } from './hooks/useDashboardData';
+import { useDashboardStats } from './hooks/useDashboardStats';
 
 interface DashboardProps {
   user: User;
@@ -16,94 +16,9 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
-  const [events, setEvents] = useState<TradeShow[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (api.USE_SERVER) {
-        console.log('[Dashboard] Loading data...');
-        
-        // Fetch expenses (critical for dashboard stats)
-        try {
-          const ex = await api.getExpenses();
-          if (mounted) {
-            console.log('[Dashboard] Loaded expenses:', ex?.length || 0);
-            setExpenses(ex || []);
-          }
-        } catch (error) {
-          console.error('[Dashboard] Error loading expenses:', error);
-          if (mounted) setExpenses([]);
-        }
-
-        // Fetch events (critical for dashboard)
-        try {
-          const ev = await api.getEvents();
-          if (mounted) {
-            console.log('[Dashboard] Loaded events:', ev?.length || 0);
-            setEvents(ev || []);
-          }
-        } catch (error) {
-          console.error('[Dashboard] Error loading events:', error);
-          if (mounted) setEvents([]);
-        }
-
-        // Fetch users (non-critical)
-        try {
-          const us = await api.getUsers();
-          if (mounted) {
-            console.log('[Dashboard] Loaded users:', us?.length || 0);
-            setUsers(us || []);
-          }
-        } catch (error) {
-          console.error('[Dashboard] Error loading users (non-critical):', error);
-          if (mounted) setUsers([]);
-        }
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  const stats = useMemo(() => {
-    // Filter data based on user role
-    const isAdminOrAccountant = user.role === 'admin' || user.role === 'developer' || user.role === 'accountant';
-    
-    // For non-admin/accountant users, only show their own expenses
-    const userExpenses = isAdminOrAccountant 
-      ? expenses 
-      : expenses.filter(e => e.userId === user.id);
-    
-    // For non-admin/coordinator users, only show events they're assigned to
-    const userEvents = (user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator')
-      ? events
-      : events.filter(event => event.participants.some(p => p.id === user.id));
-    
-    const totalExpenses = userExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-    const pendingExpenses = userExpenses.filter(e => e.status === 'pending').length;
-    
-    // Calculate active events based on end date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const activeEvents = userEvents.filter(event => {
-      const endDate = parseLocalDate(event.endDate);
-      return endDate >= today;
-    }).length;
-
-    return {
-      totalExpenses,
-      pendingExpenses,
-      upcomingEvents: activeEvents,
-      activeEvents,
-      totalEvents: userEvents.length,
-      averageExpense: userExpenses.length > 0 ? totalExpenses / userExpenses.length : 0,
-      teamMembers: users.length,
-      userExpenses, // Pass filtered expenses
-      userEvents    // Pass filtered events
-    };
-  }, [events, expenses, users, user.id, user.role]);
+  // Use custom hooks
+  const { expenses, events, users } = useDashboardData();
+  const stats = useDashboardStats({ expenses, events, users, currentUser: user });
 
   const getGreeting = () => {
     const hour = new Date().getHours();
