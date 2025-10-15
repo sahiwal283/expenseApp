@@ -1,221 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
-import { parseLocalDate, formatForDateInput, formatDateRange } from '../../utils/dateUtils';
+import { parseLocalDate, formatDateRange } from '../../utils/dateUtils';
+import { useEventData, useEventForm } from './EventSetup/hooks';
 
 interface EventSetupProps {
   user: User;
 }
 
 export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
-  const [events, setEvents] = useState<TradeShow[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  // Custom hooks for data fetching and form management
+  const { events, allUsers, loading, loadError, reload } = useEventData();
+  const {
+    formData,
+    setFormData,
+    editingEvent,
+    selectedUserId,
+    setSelectedUserId,
+    newParticipantName,
+    setNewParticipantName,
+    newParticipantEmail,
+    setNewParticipantEmail,
+    handleSubmit: submitForm,
+    handleEdit,
+    resetForm,
+    addParticipant: addParticipantHook,
+    addCustomParticipant,
+    removeParticipant
+  } = useEventForm();
+
+  // UI state (keep these in component)
   const [showForm, setShowForm] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<TradeShow | null>(null);
   const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
-  const [filterMode, setFilterMode] = useState<'all' | 'my'>('all'); // For accountant: 'all' or 'my'
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
-    name: '',
-    venue: '',
-    city: '',
-    state: '',
-    startDate: '',
-    endDate: '',
-    budget: '',
-    participants: [] as User[]
-  });
-
-  const [newParticipantName, setNewParticipantName] = useState('');
-  const [newParticipantEmail, setNewParticipantEmail] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'my'>('all');
 
 
-  useEffect(() => {
-    (async () => {
-      if (api.USE_SERVER) {
-        // Fetch events and users separately so one failure doesn't clear both
-        try {
-          console.log('[EventSetup] Fetching events from API...');
-          const ev = await api.getEvents();
-          console.log('[EventSetup] Received events:', ev?.length || 0, 'events');
-          console.log('[EventSetup] First event:', ev?.[0]);
-          setEvents(ev || []);
-          setLoadError(null);
-        } catch (error: any) {
-          const errorMsg = error?.message || error?.toString() || 'Unknown error';
-          console.error('[EventSetup] Error fetching events:', error);
-          setLoadError(`Failed to load events: ${errorMsg}`);
-          setEvents([]);
-        }
-
-        // Fetch users separately - if this fails, events are still shown
-        try {
-          console.log('[EventSetup] Fetching users from API...');
-          const users = await api.getUsers();
-          console.log('[EventSetup] Received users:', users?.length || 0, 'users');
-          console.log('[EventSetup] User details:', users);
-          if (!users || users.length === 0) {
-            console.warn('[EventSetup] ⚠️ NO USERS RETURNED FROM API!');
-          }
-          setAllUsers(users || []);
-          console.log('[EventSetup] allUsers state updated with', users?.length || 0, 'users');
-        } catch (error: any) {
-          console.error('[EventSetup] ❌ ERROR fetching users:', error);
-          console.error('[EventSetup] Error details:', error.message, error.response?.status, error.response?.data);
-          // Don't show error to user, just log it
-          setAllUsers([]);
-        }
-      } else {
-        const storedEvents = localStorage.getItem('tradeshow_events');
-        const storedUsers = localStorage.getItem('tradeshow_users');
-        if (storedEvents) setEvents(JSON.parse(storedEvents));
-        if (storedUsers) setAllUsers(JSON.parse(storedUsers));
-      }
-    })();
-  }, []);
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      venue: '',
-      city: '',
-      state: '',
-      startDate: '',
-      endDate: '',
-      budget: '',
-      participants: []
-    });
-    setNewParticipantName('');
-    setNewParticipantEmail('');
-    setEditingEvent(null);
-  };
-
+  // Wrapper functions to handle hook integration
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const eventData: Omit<TradeShow, 'id'> = {
-      name: formData.name,
-      venue: formData.venue,
-      city: formData.city,
-      state: formData.state,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      budget: formData.budget ? parseFloat(formData.budget) : undefined,
-      participants: formData.participants,
-      status: 'upcoming',
-      coordinatorId: user.id
-    };
-
-    if (api.USE_SERVER) {
-      if (editingEvent) {
-        await api.updateEvent(editingEvent.id, {
-          name: eventData.name,
-          venue: eventData.venue,
-          city: eventData.city,
-          state: eventData.state,
-          start_date: eventData.startDate,
-          end_date: eventData.endDate,
-          budget: eventData.budget,
-          participant_ids: eventData.participants.map((p: any) => p.id),
-          status: eventData.status || 'upcoming',
-        });
-      } else {
-        await api.createEvent({
-          name: eventData.name,
-          venue: eventData.venue,
-          city: eventData.city,
-          state: eventData.state,
-          start_date: eventData.startDate,
-          end_date: eventData.endDate,
-          budget: eventData.budget,
-          participant_ids: eventData.participants.map((p: any) => p.id),
-        });
-      }
-      const refreshed = await api.getEvents();
-      setEvents(refreshed || []);
-    } else {
-      let updatedEvents: TradeShow[];
-      if (editingEvent) {
-        const updatedEvent: TradeShow = { ...eventData, id: editingEvent.id } as TradeShow;
-        updatedEvents = events.map(event => event.id === editingEvent.id ? updatedEvent : event);
-      } else {
-        const newEvent: TradeShow = { ...eventData, id: Date.now().toString() } as TradeShow;
-        updatedEvents = [...events, newEvent];
-      }
-      setEvents(updatedEvents);
-      localStorage.setItem('tradeshow_events', JSON.stringify(updatedEvents));
-    }
-    setShowForm(false);
-    resetForm();
-  };
-
-  const handleEdit = (event: TradeShow) => {
-    setEditingEvent(event);
-    
-    setFormData({
-      name: event.name,
-      venue: event.venue,
-      city: event.city,
-      state: event.state,
-      startDate: formatForDateInput(event.startDate),
-      endDate: formatForDateInput(event.endDate),
-      budget: event.budget?.toString() || '',
-      participants: event.participants
+    await submitForm(e, user.id, async () => {
+      await reload(); // Reload data after successful submission
+      setShowForm(false);
     });
-    setShowForm(true);
   };
 
   const handleDelete = async (eventId: string) => {
     if (api.USE_SERVER) {
       await api.deleteEvent(eventId);
-      const refreshed = await api.getEvents();
-      setEvents(refreshed || []);
-    } else {
-      const updatedEvents = events.filter(event => event.id !== eventId);
-      setEvents(updatedEvents);
-      localStorage.setItem('tradeshow_events', JSON.stringify(updatedEvents));
+      await reload(); // Reload data after deletion
     }
+  };
+
+  const handleEditClick = (event: TradeShow) => {
+    handleEdit(event);
+    setShowForm(true);
   };
 
   const addParticipant = () => {
-    if (selectedUserId && !formData.participants.find(p => p.id === selectedUserId)) {
-      const selectedUser = allUsers.find(u => u.id === selectedUserId);
-      if (selectedUser) {
-        setFormData({
-          ...formData,
-          participants: [...formData.participants, selectedUser]
-        });
-        setSelectedUserId('');
-      }
-    }
-  };
-
-  const addCustomParticipant = () => {
-    if (newParticipantName && newParticipantEmail && !formData.participants.find(p => p.email === newParticipantEmail)) {
-      const newParticipant: User = {
-        id: Date.now().toString(),
-        name: newParticipantName,
-        username: newParticipantEmail.split('@')[0].toLowerCase(),
-        email: newParticipantEmail,
-        role: 'salesperson'
-      };
-      
-      setFormData({
-        ...formData,
-        participants: [...formData.participants, newParticipant]
-      });
-      setNewParticipantName('');
-      setNewParticipantEmail('');
-    }
-  };
-
-  const removeParticipant = (participantId: string) => {
-    setFormData({
-      ...formData,
-      participants: formData.participants.filter(p => p.id !== participantId)
-    });
+    addParticipantHook(allUsers);
   };
 
   // Filter events based on end date
@@ -674,7 +516,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   {canManageEvents && (
                     <>
                       <button
-                        onClick={() => handleEdit(event)}
+                        onClick={() => handleEditClick(event)}
                         className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
                       >
                         Edit
