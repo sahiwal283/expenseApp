@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.50] - 2025-10-15 (Frontend) / Backend 1.0.21
+
+### Fixed
+- **CRITICAL: Custom Event Participants Not Saving (Database Constraint Violation)**:
+  - **Root cause:** Database CHECK constraint didn't include `'temporary'` role
+  - Database only allowed: admin, accountant, coordinator, salesperson, developer, pending
+  - Application code was trying to INSERT users with `role = 'temporary'`
+  - PostgreSQL rejected with: "violates check constraint users_role_check"
+  - **What I forgot:** In v1.0.47, added 'temporary' to frontend/backend code but not database schema
+  - **Solution:** Created migration `002_add_temporary_role.sql` to add 'temporary' to constraint
+  - Migration deployed and run successfully on sandbox
+
+- **Event Creation Strategy Changed to "Best Effort"**:
+  - **Old behavior:** Transaction (all-or-nothing) - if any participant failed, entire event rolled back
+  - **User feedback:** "I don't mind that it created the event, but I don't like the error"
+  - **New behavior:** Event always created, participants processed individually
+  - If one participant fails, skip it and continue with others
+  - Better logging: ✓ for success, ⚠️ for failures
+  - `ON CONFLICT DO NOTHING` prevents duplicate participant errors
+
+### Added
+- **Database Migration** `002_add_temporary_role.sql`:
+  - Drops old `users_role_check` constraint
+  - Adds new constraint including 'temporary' role
+  - Now allows: admin, accountant, coordinator, salesperson, developer, pending, **temporary**
+
+### Backend Changes (v1.0.21)
+- `database/migrations/002_add_temporary_role.sql` (NEW):
+  - Adds 'temporary' to allowed roles in CHECK constraint
+- `routes/events.ts`:
+  - Removed transaction wrapper for participant handling
+  - Each participant now processed in try/catch block
+  - Event creation never fails due to participant errors
+  - Added `ON CONFLICT DO NOTHING` for duplicate participants
+  - Enhanced logging for debugging
+
+### Impact
+- ✅ Custom participants now save successfully
+- ✅ Database accepts 'temporary' role
+- ✅ Events created even if some participants fail
+- ✅ No more "Failed to save event" errors for temp users
+- ✅ Better user experience (no blocking errors)
+- ✅ Clear logging for troubleshooting
+
 ## [1.0.49] - 2025-10-15 (Frontend) / Backend 1.0.20
 
 ### Fixed
