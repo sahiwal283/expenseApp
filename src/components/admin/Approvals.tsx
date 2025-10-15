@@ -116,9 +116,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       
       if (isZohoEntity) {
         if (isRealZoho) {
-          addToast(`✅ Entity assigned! Expense is being pushed to Haute Brands Zoho Books...`, 'success');
+          addToast(`✅ Entity "${entity}" assigned! Go to Reports to push to Zoho Books.`, 'success');
         } else {
-          addToast(`✅ Entity assigned to ${entity}! (Mock mode - simulated Zoho sync)`, 'info');
+          addToast(`✅ Entity "${entity}" assigned! (Mock mode)`, 'info');
         }
       } else {
         addToast(`✅ Entity "${entity}" assigned successfully`, 'success');
@@ -193,9 +193,9 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         
         if (isZohoEntity) {
           if (isRealZoho) {
-            addToast(`✅ Changes saved! Expense is being pushed to Haute Brands Zoho Books...`, 'success');
+            addToast(`✅ Changes saved! Entity "${newEntity}" assigned. Go to Reports to push to Zoho Books.`, 'success');
           } else {
-            addToast(`✅ Changes saved! Entity ${newEntity} (Mock mode - simulated Zoho sync)`, 'info');
+            addToast(`✅ Changes saved! Entity "${newEntity}" assigned. (Mock mode)`, 'info');
           }
         } else {
           addToast(`✅ Expense updated successfully`, 'success');

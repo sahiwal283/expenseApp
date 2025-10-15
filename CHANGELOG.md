@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.35] - 2025-10-15
+
+### Fixed
+- **Misleading Toast Message in Approvals**:
+  - When assigning entity, toast said "Expense is being pushed to Zoho Books..."
+  - This workflow was removed months ago - expenses are now manually pushed from Reports page
+  - Updated message to: "Go to Reports to push to Zoho Books" (correct workflow)
+  - Affects both quick entity assignment and edit modal entity assignment
+
+### Changed
+- **Toast Messages**:
+  - Real Zoho entities: "Entity assigned! Go to Reports to push to Zoho Books."
+  - Mock entities: "Entity assigned! (Mock mode)"
+  - Non-Zoho entities: "Entity assigned successfully" (unchanged)
+
+### Technical
+- Backend: v1.0.14 (no changes)
+- Frontend: v1.0.34 → v1.0.35
+- Improved UX clarity about manual push workflow
+
 ## [1.0.34] - 2025-10-15
 
 ### Changed
