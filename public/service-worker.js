@@ -1,15 +1,14 @@
 // ExpenseApp Service Worker
-// Version: 1.0.54 - FEATURE: Dynamic Role Management
+// Version: 1.0.55 - UX: Collapsible Role Management
 // Date: October 15, 2025
 //
-// Changes from v1.0.53:
-// - Added role management system in Settings → User Management
-// - Admins can now create custom roles dynamically
-// - View all existing roles (system + custom)
-// - Edit role properties (label, description, color)
-// - Delete custom roles (system roles protected)
-// - Database migration adds 'roles' table
-// - Backend API: GET/POST/PUT/DELETE /api/roles
+// Changes from v1.0.54:
+// - Moved Role Management below User Management
+// - Made Role Management collapsible (collapsed by default)
+// - More compact role cards (4 columns on large screens)
+// - Smaller spacing and tighter layout
+// - Chevron up/down indicator for collapse state
+// - Add Role button only shows when expanded
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -74,8 +73,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.54';  // BUMPED VERSION for role management
-const STATIC_CACHE = 'expenseapp-static-v1.0.54';
+const CACHE_NAME = 'expenseapp-v1.0.55';  // BUMPED VERSION for collapsible role management
+const STATIC_CACHE = 'expenseapp-static-v1.0.55';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -85,7 +84,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.54...');
+  console.log('[ServiceWorker] Installing v1.0.55...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -176,7 +175,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.54...');
+  console.log('[ServiceWorker] Activating v1.0.55...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -190,7 +189,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.54 activated and ready!');
+      console.log('[ServiceWorker] v1.0.55 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

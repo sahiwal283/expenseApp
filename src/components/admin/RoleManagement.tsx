@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Plus, Edit2, Trash2, X, AlertTriangle, Check } from 'lucide-react';
+import { Shield, Plus, Edit2, Trash2, X, AlertTriangle, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '../../utils/api';
 
 interface Role {
@@ -18,6 +18,7 @@ export const RoleManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false); // Collapsed by default
   const [formData, setFormData] = useState({
     name: '',
     label: '',
@@ -124,70 +125,90 @@ export const RoleManagement: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Role Management</h2>
-          <p className="text-sm text-gray-600 mt-1">Manage user roles and permissions</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Role</span>
-        </button>
-      </div>
-
-      {/* Roles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {roles.map(role => (
-          <div
-            key={role.id}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-gray-400" />
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${role.color}`}>
-                  {role.label}
-                </span>
-              </div>
-              {role.is_system && (
-                <span className="text-xs text-blue-600 font-medium">System</span>
-              )}
-            </div>
-
-            <p className="text-sm text-gray-600 mb-3 min-h-[40px]">
-              {role.description || 'No description'}
-            </p>
-
-            <div className="text-xs text-gray-500 mb-3">
-              Role name: <span className="font-mono">{role.name}</span>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handleEditRole(role)}
-                className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                <span>Edit</span>
-              </button>
-              {!role.is_system && (
-                <button
-                  onClick={() => handleDeleteRole(role)}
-                  className="flex-1 flex items-center justify-center space-x-1 px-3 py-1.5 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete</span>
-                </button>
-              )}
-            </div>
+    <div className="bg-white rounded-lg border border-gray-200">
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center space-x-3">
+          <Shield className="w-5 h-5 text-gray-400" />
+          <div className="text-left">
+            <h3 className="text-base font-semibold text-gray-900">Role Management</h3>
+            <p className="text-xs text-gray-500">Manage user roles and permissions ({roles.length} roles)</p>
           </div>
-        ))}
-      </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          {isExpanded && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowForm(true);
+              }}
+              className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Role</span>
+            </button>
+          )}
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
+        </div>
+      </button>
+
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 border-t border-gray-200">
+          {/* Roles Grid - More Compact */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
+            {roles.map(role => (
+              <div
+                key={role.id}
+                className="bg-gray-50 rounded-lg border border-gray-200 p-3 hover:border-blue-300 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${role.color}`}>
+                    {role.label}
+                  </span>
+                  {role.is_system && (
+                    <span className="text-[10px] text-blue-600 font-medium">System</span>
+                  )}
+                </div>
+
+                <p className="text-xs text-gray-600 mb-2 line-clamp-2 min-h-[32px]">
+                  {role.description || 'No description'}
+                </p>
+
+                <div className="text-[10px] text-gray-500 mb-2 font-mono">
+                  {role.name}
+                </div>
+
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => handleEditRole(role)}
+                    className="flex-1 flex items-center justify-center space-x-1 px-2 py-1 text-xs text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
+                  {!role.is_system && (
+                    <button
+                      onClick={() => handleDeleteRole(role)}
+                      className="flex-1 flex items-center justify-center space-x-1 px-2 py-1 text-xs text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Delete</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Form Modal */}
       {showForm && (

@@ -292,14 +292,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       {/* Tab Content */}
       {activeTab === 'users' ? (
         <div className="space-y-8">
-          {/* Role Management Section */}
-          <RoleManagement />
+          {/* User Management Section */}
+          <UserManagement user={user} />
           
           {/* Divider */}
           <div className="border-t border-gray-200"></div>
           
-          {/* User Management Section */}
-          <UserManagement user={user} />
+          {/* Role Management Section (Collapsible) */}
+          <RoleManagement />
         </div>
       ) : (
         <div className="space-y-6">
