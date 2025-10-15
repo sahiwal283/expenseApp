@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.26] - 2025-10-15
+
+### Added
+- **Frontend Refactor - Custom Hooks Pattern (Phase 5)**:
+  - Created `useApprovals` hook for data fetching logic (~100 lines)
+  - Created `useApprovalFilters` hook for filter management (~110 lines)
+  - Extracted reusable logic from Approvals component
+
+### Changed
+- **Approvals Component Refactoring**:
+  - Now uses custom hooks for data and filtering
+  - Removed ~120 lines of code from main component
+  - Cleaner separation of concerns (UI vs logic)
+  - Easier to test and maintain
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.26
+- Backend refactor: 100% complete ✅
+- Frontend refactor: Phase 5 started (40% overall progress)
+
 ## [1.0.25] - 2025-10-15
 
 ### Added
