@@ -8,7 +8,7 @@ import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
 import { expenseService } from '../services/ExpenseService';
-import { asyncHandler } from '../utils/errors';
+import { asyncHandler, ValidationError } from '../utils/errors';
 
 const router = Router();
 
@@ -354,251 +354,136 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   });
 }));
 
-// Create expense with optional receipt upload and PaddleOCR
-router.post('/', upload.single('receipt'), async (req: AuthRequest, res) => {
-  try {
-    const {
-      event_id,
-      category,
-      merchant,
-      amount,
-      date,
-      description,
-      card_used,
-      reimbursement_required,
-      location,
-      zoho_entity
-    } = req.body;
+// Create expense with optional receipt upload and OCR
+router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res) => {
+  const {
+    event_id,
+    category,
+    merchant,
+    amount,
+    date,
+    description,
+    card_used,
+    reimbursement_required,
+    location,
+    zoho_entity
+  } = req.body;
 
-    if (!event_id || !category || !merchant || !amount || !date) {
-      return res.status(400).json({ error: 'Required fields missing' });
-    }
+  let receiptUrl: string | undefined = undefined;
 
-    let receiptUrl = null;
-    let ocrText = null;
-    let ocrConfidence = null;
-    let extractedData = null;
-
-    // Process uploaded receipt with PaddleOCR
-    if (req.file) {
-      receiptUrl = `/uploads/${req.file.filename}`;
-      
-      // Perform OCR using PaddleOCR service
+  // Process uploaded receipt with OCR
+  if (req.file) {
+    receiptUrl = `/uploads/${req.file.filename}`;
+    
+    // Perform OCR
+    try {
       const ocrResult = await processOCR(req.file.path);
-      ocrText = ocrResult.text;
-      ocrConfidence = ocrResult.confidence;
-      extractedData = ocrResult.structured;
-      
-      console.log(`Receipt OCR completed with ${(ocrConfidence * 100).toFixed(2)}% confidence`);
+      console.log(`Receipt OCR completed with ${(ocrResult.confidence * 100).toFixed(2)}% confidence`);
+      // OCR data stored in receipt metadata (future enhancement)
+    } catch (ocrError) {
+      console.error('OCR processing failed:', ocrError);
+      // Continue expense creation even if OCR fails
     }
-
-    // zoho_entity is optional - expenses start as unassigned and are assigned by accountants
-    // Push to Zoho button will only appear after entity is assigned
-    const result = await query(
-      `INSERT INTO expenses (
-        event_id, user_id, category, merchant, amount, date, description, 
-        card_used, reimbursement_required, receipt_url, ocr_text, location, extracted_data, zoho_entity
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
-      RETURNING *`,
-      [
-        event_id,
-        req.user?.id,
-        category,
-        merchant,
-        amount,
-        date,
-        description,
-        card_used,
-        reimbursement_required === 'true' || reimbursement_required === true,
-        receiptUrl,
-        ocrText,
-        location,
-        extractedData ? JSON.stringify(extractedData) : null,
-        zoho_entity || null
-      ]
-    );
-
-    const expense = result.rows[0];
-
-    // ========== ZOHO BOOKS INTEGRATION ==========
-    // Note: Expenses are NOT submitted to Zoho Books at creation time.
-    // They are submitted manually via the "Push to Zoho" button in the Reports page.
-    // Entity assignment is done by accountants/admins in the Approvals page.
-    const entityStatus = expense.zoho_entity ? `assigned to ${expense.zoho_entity}` : 'unassigned';
-    console.log(`[Zoho] Expense created (${entityStatus}). Entity can be assigned in Approvals page.`);
-
-    res.status(201).json(normalizeExpense(expense));
-  } catch (error) {
-    console.error('Error creating expense:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  // Create expense using service layer
+  const expense = await expenseService.createExpense(req.user!.id, {
+    eventId: event_id,
+    date,
+    merchant,
+    amount: parseFloat(amount),
+    category,
+    description,
+    location,
+    cardUsed: card_used,
+    receiptUrl,
+    reimbursementRequired: reimbursement_required === 'true' || reimbursement_required === true,
+    zohoEntity: zoho_entity || undefined
+  });
+
+  // Log entity assignment status
+  const entityStatus = expense.zoho_entity ? `assigned to ${expense.zoho_entity}` : 'unassigned';
+  console.log(`[Zoho] Expense created (${entityStatus}). Entity can be assigned in Approvals page.`);
+
+  res.status(201).json(normalizeExpense(expense));
+}));
 
 // Update expense
-router.put('/:id', upload.single('receipt'), async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      event_id,
-      category,
-      merchant,
-      amount,
-      date,
-      description,
-      card_used,
-      reimbursement_required,
-      location,
-      zoho_entity
-    } = req.body;
+router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const {
+    event_id,
+    category,
+    merchant,
+    amount,
+    date,
+    description,
+    card_used,
+    reimbursement_required,
+    location,
+    zoho_entity
+  } = req.body;
 
-    // Validate required fields
-    if (!event_id || !category || !merchant || !amount || !date || !card_used) {
-      console.error('Update validation failed:', { event_id, category, merchant, amount, date, card_used });
-      return res.status(400).json({ 
-        error: 'Required fields missing', 
-        missing: {
-          event_id: !event_id,
-          category: !category,
-          merchant: !merchant,
-          amount: !amount,
-          date: !date,
-          card_used: !card_used
-        }
-      });
-    }
+  let receiptUrl = undefined;
 
-    let receiptUrl = null;
-    let ocrText = null;
-    let ocrConfidence = null;
-    let extractedData = null;
+  // Process uploaded receipt with OCR if provided
+  if (req.file) {
+    receiptUrl = `/uploads/${req.file.filename}`;
     
-    // Process uploaded receipt if provided
-    if (req.file) {
-      receiptUrl = `/uploads/${req.file.filename}`;
-      
-      // Perform OCR on the new receipt
-      try {
-        const ocrResult = await processOCR(req.file.path);
-        ocrText = ocrResult.text;
-        ocrConfidence = ocrResult.confidence;
-        extractedData = ocrResult.structured;
-        console.log(`Receipt OCR completed with ${(ocrConfidence * 100).toFixed(2)}% confidence`);
-      } catch (ocrError) {
-        console.error('OCR processing failed during update:', ocrError);
-        // Continue with update even if OCR fails
-      }
+    // Perform OCR
+    try {
+      const ocrResult = await processOCR(req.file.path);
+      console.log(`Receipt OCR completed with ${(ocrResult.confidence * 100).toFixed(2)}% confidence`);
+    } catch (ocrError) {
+      console.error('OCR processing failed during update:', ocrError);
+      // Continue with update even if OCR fails
     }
-
-    // Build dynamic query based on whether receipt is uploaded
-    // Admin, accountant, and developer can edit any expense, others only their own
-    const canEditAny = ['admin', 'accountant', 'developer'].includes(req.user?.role || '');
-    
-    let updateQuery: string;
-    let queryParams: any[];
-    
-    if (receiptUrl) {
-      // Update with new receipt and OCR data
-      if (canEditAny) {
-        updateQuery = `UPDATE expenses 
-         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
-             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-             receipt_url = $11, ocr_text = $12, extracted_data = $13, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $14
-         RETURNING *`;
-        queryParams = [
-          event_id, category, merchant, amount, date, description, 
-          card_used, reimbursement_required, location, zoho_entity,
-          receiptUrl, ocrText, extractedData ? JSON.stringify(extractedData) : null,
-          id
-        ];
-      } else {
-        updateQuery = `UPDATE expenses 
-         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
-             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-             receipt_url = $11, ocr_text = $12, extracted_data = $13, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $14 AND user_id = $15
-         RETURNING *`;
-        queryParams = [
-          event_id, category, merchant, amount, date, description, 
-          card_used, reimbursement_required, location, zoho_entity,
-          receiptUrl, ocrText, extractedData ? JSON.stringify(extractedData) : null,
-          id, req.user?.id
-        ];
-      }
-    } else {
-      // Update without changing receipt
-      if (canEditAny) {
-        updateQuery = `UPDATE expenses 
-         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
-             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $11
-         RETURNING *`;
-        queryParams = [
-          event_id, category, merchant, amount, date, description, 
-          card_used, reimbursement_required, location, zoho_entity, 
-          id
-        ];
-      } else {
-        updateQuery = `UPDATE expenses 
-         SET event_id = $1, category = $2, merchant = $3, amount = $4, date = $5, description = $6,
-             card_used = $7, reimbursement_required = $8, location = $9, zoho_entity = $10,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $11 AND user_id = $12
-         RETURNING *`;
-        queryParams = [
-          event_id, category, merchant, amount, date, description, 
-          card_used, reimbursement_required, location, zoho_entity, 
-          id, req.user?.id
-        ];
-      }
-    }
-
-    console.log(`Updating expense ${id} with:`, { event_id, category, merchant, card_used, hasReceipt: !!receiptUrl });
-    
-    const result = await query(updateQuery, queryParams);
-
-    if (result.rows.length === 0) {
-      console.error(`Update failed: Expense ${id} not found or unauthorized for user ${req.user?.id}`);
-      return res.status(404).json({ error: 'Expense not found or unauthorized' });
-    }
-
-    console.log(`Successfully updated expense ${id}`);
-    res.json(normalizeExpense(result.rows[0]));
-  } catch (error) {
-    console.error('Error updating expense:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  // Update expense using service layer (handles authorization)
+  const expense = await expenseService.updateExpense(
+    id,
+    req.user!.id,
+    req.user!.role,
+    {
+      eventId: event_id,
+      date,
+      merchant,
+      amount: amount ? parseFloat(amount) : undefined,
+      category,
+      description,
+      location,
+      cardUsed: card_used,
+      receiptUrl,
+      reimbursementRequired: reimbursement_required !== undefined 
+        ? (reimbursement_required === 'true' || reimbursement_required === true)
+        : undefined,
+      zohoEntity: zoho_entity
+    }
+  );
+
+  console.log(`Successfully updated expense ${id}`);
+  res.json(normalizeExpense(expense));
+}));
 
 // Approve/Reject expense (accountant/admin only)
-router.patch('/:id/review', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
-    const { status, comments } = req.body;
+router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
 
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-
-    const result = await query(
-      `UPDATE expenses 
-       SET status = $1, comments = $2, reviewed_by = $3, reviewed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4
-       RETURNING *`,
-      [status, comments, req.user?.id, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Expense not found' });
-    }
-
-    res.json(normalizeExpense(result.rows[0]));
-  } catch (error) {
-    console.error('Error reviewing expense:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!['approved', 'rejected'].includes(status)) {
+    throw new ValidationError('Invalid status. Must be "approved" or "rejected"');
   }
-});
+
+  // Update status using service layer
+  const expense = await expenseService.updateExpenseStatus(
+    id,
+    status,
+    req.user!.role
+  );
+
+  res.json(normalizeExpense(expense));
+}));
 
 // Assign Zoho entity (accountant only) - NO AUTO-PUSH
 router.patch('/:id/entity', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
@@ -770,41 +655,31 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant'), async (req:
 });
 
 // Delete expense
-router.delete('/:id', async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
+router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
 
-    // Allow admins to delete any expense, users can only delete their own
-    let queryText = 'DELETE FROM expenses WHERE id = $1';
-    const queryParams = [id];
+  // Get expense first to check receipt file
+  const expense = await expenseService.getExpenseById(id);
 
-    if (req.user?.role !== 'admin') {
-      queryText += ' AND user_id = $2';
-      queryParams.push(req.user?.id as string);
-    }
+  // Delete expense using service layer (handles authorization)
+  await expenseService.deleteExpense(id, req.user!.id, req.user!.role);
 
-    queryText += ' RETURNING receipt_url';
-
-    const result = await query(queryText, queryParams);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Expense not found or unauthorized' });
-    }
-
-    // Delete receipt file if exists
-    if (result.rows[0].receipt_url) {
-      const filePath = path.join(process.cwd(), result.rows[0].receipt_url);
-      if (fs.existsSync(filePath)) {
+  // Delete receipt file if exists
+  if (expense.receipt_url) {
+    const filePath = path.join(process.cwd(), expense.receipt_url);
+    if (fs.existsSync(filePath)) {
+      try {
         fs.unlinkSync(filePath);
+        console.log(`Deleted receipt file: ${filePath}`);
+      } catch (fileError) {
+        console.error(`Failed to delete receipt file: ${filePath}`, fileError);
+        // Don't fail the request if file deletion fails
       }
     }
-
-    res.json({ message: 'Expense deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting expense:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  res.json({ message: 'Expense deleted successfully' });
+}));
 
 // ========== ZOHO BOOKS MULTI-ACCOUNT HEALTH CHECK ==========
 // GET /zoho/health - Check Zoho Books integration status for all accounts
