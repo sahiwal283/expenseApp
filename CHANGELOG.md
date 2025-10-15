@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.37] - 2025-10-15
+
+### Fixed
+- **CRITICAL: Users API Backend Crash**:
+  - Backend was querying non-existent `registration_date` column
+  - Caused 500 errors on `/api/users` endpoint
+  - Fixed by removing `registration_date` from SQL SELECT queries
+  - Affected routes: GET `/api/users` and GET `/api/users/:id`
+  - **Impact:** 
+    - ✅ Participants dropdown now populates correctly
+    - ✅ Expense updates no longer fail
+    - ✅ All user-related API calls work properly
+
+### Changed
+- **Removed Success Toast Notifications**:
+  - No longer shows green notification when assigning entity
+  - User requested removal (workflow is self-explanatory)
+  - Error notifications remain (user likes these for failures)
+  - Improves UX by reducing notification noise
+
+### Technical
+- Backend: v1.0.14 → v1.0.15 (critical SQL fix)
+- Frontend: v1.0.36 → v1.0.37 (removed toasts)
+- Fixed: `backend/src/routes/users.ts` (lines 14, 28)
+- Modified: `src/components/admin/Approvals.tsx` (removed success toasts)
+
 ## [1.0.35] - 2025-10-15
 
 ### Fixed
