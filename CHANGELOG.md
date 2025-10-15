@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.56] - 2025-10-15 (Frontend v1.0.56 / Backend v1.0.23)
+
+### Added
+- **Developer Role Now Has Full Admin Capabilities**:
+  - Developers can now create, edit, and delete users
+  - Developers can now create, edit, and delete roles
+  - Developer role has access to all admin features PLUS Dev Dashboard
+  - Maintains separation: admins don't see Dev Dashboard
+
+### Fixed
+- **Role Dropdown Now Loads Dynamically from Database**:
+  - Edit User modal: All roles from database now appear (was hardcoded to 4)
+  - Filter Role dropdown: All active roles load dynamically
+  - Activation modal: All roles load dynamically
+  - Automatically filters out 'pending' role (used only for new registrations)
+  - No more missing roles in dropdowns!
+
+### Backend (v1.0.23)
+- **Updated Authorization Middleware**:
+  - `users.ts`: POST, PUT, DELETE routes now accept both 'admin' and 'developer' roles
+  - `roles.ts`: POST, PUT, DELETE routes now accept both 'admin' and 'developer' roles
+  - Better error messages: "Only administrators and developers can..."
+
+### Frontend (v1.0.56)
+- **UserManagement Component**:
+  - Added `roles` state to store dynamic role list
+  - Calls `api.getRoles()` on component mount
+  - Replaced 3 hardcoded role `<option>` lists with dynamic mapping
+  - Filters out 'pending' role from admin-facing dropdowns
+
+### Technical
+- Backend checks now use `user.role !== 'admin' && user.role !== 'developer'`
+- Frontend maps roles: `roles.map(role => <option key={role.id} value={role.name}>{role.label}</option>)`
+- No breaking changes to existing functionality
+
+## [1.0.55] - 2025-10-15 (Frontend v1.0.55 / Backend v1.0.22)
+
+### Changed
+- **Role Management UX Improvements**:
+  - Moved Role Management section below User Management
+  - Made Role Management collapsible (collapsed by default)
+  - Chevron up/down indicator for collapse state
+  - "Add Role" button only appears when expanded
+
+### Design
+- **More Compact Role Cards**:
+  - Grid now shows 4 columns on large screens (was 3)
+  - Padding reduced: `p-3` instead of `p-4`
+  - Smaller font sizes: `text-xs`, `text-[10px]` for better density
+  - Line-clamp for descriptions (max 2 lines)
+  - Tighter spacing throughout
+  - Border hover effects instead of shadows
+
 ## [1.0.54] - 2025-10-15 (Frontend v1.0.54 / Backend v1.0.22)
 
 ### Added
