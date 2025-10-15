@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.46] - 2025-10-15 (Frontend) / Backend 1.0.17
+
+### Fixed
+- **CRITICAL: Session Manager Multiple Logout Notifications**:
+  - 6 duplicate "Session Expired" notifications on timeout
+  - Dev Dashboard causing forced logout
+  - **Root cause:** `useAuth` hook's `logout` function not memoized
+  - Every render created new function reference
+  - `App.tsx` useEffect dependency on `logout` triggered session manager re-init
+  - Each init added NEW event listeners without removing old ones
+  - Multiple login/logout cycles stacked timers (2x, 3x, 4x...)
+  - **Solution:** Wrapped `login` and `logout` with `useCallback`
+  - Stable function references prevent unnecessary useEffect re-runs
+  - Session manager now initializes once per actual login
+  - Event listeners properly cleaned up on logout
+
+- **Custom Participants Not Saving**:
+  - Custom participants (like "test" user) not appearing after event creation
+  - **Root cause:** Frontend generated UUID but only sent IDs to backend
+  - Backend tried to insert non-existent user_id into event_participants table
+  - Foreign key constraint failed, returned generic 500 error
+  - **Solution:** Backend now accepts full participant objects
+  - Checks if user exists in database
+  - Creates user with default password "changeme123" if doesn't exist
+  - Then adds to event_participants table
+
+### Backend Changes (v1.0.17)
+- `routes/events.ts`:
+  - Accept `participants` array with full user objects (not just IDs)
+  - Check if participant exists before insert
+  - Auto-create users for custom participants (bcrypt password)
+  - Added 'developer' role to event creation authorization
+  - Fallback to old `participant_ids` format for compatibility
+
+### Frontend Changes
+- `hooks/useAuth.ts`:
+  - Import `useCallback` from React
+  - Wrap `login` and `logout` with `useCallback` for stable refs
+  - Added `TokenManager.removeToken()` call on logout
+- `components/events/EventSetup/hooks/useEventForm.ts`:
+  - Changed `participant_ids` → `participants` for create
+  - Send full participant objects to backend
+  - Kept old format for updates (compatibility)
+
+### Impact
+- ✅ No more duplicate logout notifications
+- ✅ Dev Dashboard navigation works correctly
+- ✅ Session timer stable across all interactions
+- ✅ Custom participants saved successfully
+- ✅ Auto-user creation for event participants
+
+### Notes
+- Custom participants created with username derived from email
+- Default password: "changeme123"
+- Role: "salesperson" (can be overridden in payload)
+- These users can then log in and change their password
+
 ## [1.0.45] - 2025-10-15
 
 ### Fixed
