@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X, Loader2 } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate, formatDateRange } from '../../utils/dateUtils';
@@ -34,14 +34,25 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
   const [filterMode, setFilterMode] = useState<'all' | 'my'>('all');
+  const [isSaving, setIsSaving] = useState(false);
 
 
   // Wrapper functions to handle hook integration
   const handleSubmit = async (e: React.FormEvent) => {
-    await submitForm(e, user.id, async () => {
-      await reload(); // Reload data after successful submission
-      setShowForm(false);
-    });
+    if (isSaving) return; // Prevent duplicate submissions
+    
+    setIsSaving(true);
+    try {
+      await submitForm(e, user.id, async () => {
+        await reload(); // Reload data after successful submission
+        setShowForm(false);
+      });
+    } catch (error) {
+      console.error('[EventSetup] Error saving event:', error);
+      alert('Failed to save event. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (eventId: string) => {
@@ -313,9 +324,13 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                     type="date"
                     required
                     value={formData.endDate}
+                    min={formData.startDate} // End date must be >= start date
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                  {formData.startDate && formData.endDate && formData.endDate < formData.startDate && (
+                    <p className="mt-1 text-sm text-red-600">End date cannot be before start date</p>
+                  )}
                 </div>
               </div>
               
@@ -465,9 +480,17 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingEvent ? 'Update Event' : 'Create Event'}
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>{editingEvent ? 'Update Event' : 'Create Event'}</span>
+                  )}
                 </button>
               </div>
             </form>
