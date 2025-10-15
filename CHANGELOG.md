@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.33] - 2025-10-15
+
+### Added
+- **Participant-Based Access Control**:
+  - Users can only submit expenses to events where they are listed as participants
+  - Admin, accountant, and developer roles can submit to any event
+  - New `filterEventsByParticipation()` utility function in `eventUtils.ts`
+  - Backend validation prevents non-participants from creating/updating expenses
+
+### Security
+- **Database-Level Validation**:
+  - Added participant check in expense creation endpoint
+  - Added participant check in expense update endpoint (when changing event)
+  - Validation queries `event_participants` table
+  - Protection against API manipulation attempts
+
+### Changed
+- **ExpenseForm Component**:
+  - Now receives `user` prop
+  - Filters events by both time (active) and participation
+  - Only shows relevant events in dropdown
+
+### Fixed
+- Users no longer see events they're not attending in expense dropdown
+- Prevents accidental expense submission to wrong events
+
+### Technical
+- Backend: v1.0.12 → v1.0.13
+- Frontend: v1.0.32 → v1.0.33
+- Security: Participant validation at both UI and API levels
+- Zero breaking changes
+
 ## [1.0.32] - 2025-10-15
 
 ### Fixed

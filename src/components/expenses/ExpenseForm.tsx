@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle } from 'lucide-react';
-import { Expense, TradeShow } from '../../App';
+import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput } from '../../utils/dateUtils';
-import { filterActiveEvents } from '../../utils/eventUtils';
+import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
   events: TradeShow[];
+  user: User;
   onSave: (expense: Omit<Expense, 'id'>) => void;
   onCancel: () => void;
 }
@@ -17,9 +18,13 @@ interface CardOption {
   lastFour: string;
 }
 
-export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, onSave, onCancel }) => {
+export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user, onSave, onCancel }) => {
   // Filter events to only show those within 1 month + 1 day of their end date
-  const activeEvents = useMemo(() => filterActiveEvents(events), [events]);
+  // AND where the user is a participant (or admin/accountant/developer)
+  const activeEvents = useMemo(() => {
+    const timeFiltered = filterActiveEvents(events);
+    return filterEventsByParticipation(timeFiltered, user);
+  }, [events, user]);
   
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [entityOptions, setEntityOptions] = useState<string[]>([]);

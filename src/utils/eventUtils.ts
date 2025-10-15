@@ -1,11 +1,11 @@
 /**
  * Event Utility Functions
- * 
+ *
  * Functions for filtering and managing events, including
  * automatic removal of old events from dropdowns.
  */
 
-import { TradeShow } from '../App';
+import { TradeShow, User } from '../App';
 
 /**
  * Filters out events that are more than 1 month + 1 day past their end date.
@@ -67,3 +67,27 @@ export function getEventDropdownRemovalDate(event: TradeShow): string {
   });
 }
 
+/**
+ * Filters events to only show those where the user is a participant.
+ * 
+ * Admin, accountant, and developer roles can see all events regardless of participation.
+ * Regular users (coordinator, salesperson) can only see events where they are listed as participants.
+ * 
+ * This ensures users can only submit expenses to events they're actually attending.
+ * 
+ * @param events - Array of events to filter
+ * @param user - Current logged-in user
+ * @returns Filtered array of events (only user's events or all for admins)
+ */
+export function filterEventsByParticipation(events: TradeShow[], user: User): TradeShow[] {
+  // Admin, accountant, and developer can see all events
+  if (user.role === 'admin' || user.role === 'accountant' || user.role === 'developer') {
+    return events;
+  }
+  
+  // Regular users can only see events where they are participants
+  return events.filter(event => {
+    // Check if user is in the participants list
+    return event.participants.some(participant => participant.id === user.id);
+  });
+}

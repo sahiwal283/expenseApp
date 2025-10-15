@@ -167,6 +167,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       <ExpenseForm
         expense={editingExpense}
         events={events}
+        user={user}
         onSave={handleSaveExpense}
         onCancel={() => {
           setShowForm(false);

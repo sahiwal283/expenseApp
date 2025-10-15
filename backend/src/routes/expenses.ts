@@ -359,6 +359,18 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
 
   let receiptUrl: string | undefined = undefined;
 
+  // Validate that user is a participant of the event (unless admin/accountant/developer)
+  if (req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer') {
+    const participantCheck = await query(
+      `SELECT 1 FROM event_participants WHERE event_id = $1 AND user_id = $2`,
+      [event_id, req.user!.id]
+    );
+    
+    if (participantCheck.rows.length === 0) {
+      throw new ValidationError('You can only submit expenses to events where you are a participant');
+    }
+  }
+
   // Process uploaded receipt with OCR
   if (req.file) {
     receiptUrl = `/uploads/${req.file.filename}`;
@@ -413,6 +425,18 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
   } = req.body;
 
   let receiptUrl = undefined;
+
+  // Validate that user is a participant if changing event (unless admin/accountant/developer)
+  if (event_id && req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer') {
+    const participantCheck = await query(
+      `SELECT 1 FROM event_participants WHERE event_id = $1 AND user_id = $2`,
+      [event_id, req.user!.id]
+    );
+    
+    if (participantCheck.rows.length === 0) {
+      throw new ValidationError('You can only assign expenses to events where you are a participant');
+    }
+  }
 
   // Process uploaded receipt with OCR if provided
   if (req.file) {
