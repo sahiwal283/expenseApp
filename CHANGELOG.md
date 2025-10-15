@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.30] - 2025-10-15
+
+### Added
+- **Type Safety Improvements (Phase 7)**:
+  - New types in `types.ts`: `ReceiptData`, `CardOption`, `ApiResponse`, `PaginatedResponse`
+  - Sync types: `SyncQueueItem` with status tracking
+  - Statistics types: `DashboardStats`, `ReportStats`, `EntityTotal`
+  - Form handler types: `FormSubmitHandler`, `FormChangeHandler`
+  - Error types: `AppError` interface with code and status
+
+### Changed
+- **API Client Type Safety**:
+  - Replaced `any` with `unknown` in generic types (safer)
+  - Updated method signatures: `get<T>`, `post<T>`, `put<T>`, `patch<T>`
+  - Error catches now use `unknown` with `instanceof` checks
+  - Better type inference for responses
+
+- **Component Type Improvements**:
+  - ReceiptUpload: `receiptData: any` → `receiptData: ReceiptData`
+  - ExpenseSubmission: `handleReceiptProcessed` now properly typed
+  - Better type safety in receipt processing flow
+
+### Technical
+- Backend: v1.0.12
+- Frontend: v1.0.30
+- Type safety: Significantly improved (replaced ~15 `any` types)
+- Zero breaking changes - all functionality preserved
+
 ## [1.0.29] - 2025-10-15
 
 ### Added

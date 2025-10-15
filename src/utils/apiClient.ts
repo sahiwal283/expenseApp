@@ -8,7 +8,7 @@ import { AppError, parseApiError } from './errorHandler';
 import { API_CONFIG, STORAGE_KEYS } from '../constants/appConstants';
 
 // ========== Types ==========
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   status: number;
   headers: Headers;
@@ -18,7 +18,7 @@ export interface ApiError {
   message: string;
   status?: number;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export interface RequestConfig extends RequestInit {
@@ -123,10 +123,10 @@ class ApiClient {
 
       clearTimeout(timeoutId);
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
       
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new AppError('Request timeout', 'TIMEOUT', 408);
       }
       
@@ -141,7 +141,7 @@ class ApiClient {
     const contentType = response.headers.get('content-type') || '';
     const isJSON = contentType.includes('application/json');
 
-    let data: any;
+    let data: unknown;
     try {
       data = isJSON ? await response.json() : await response.text();
     } catch (error) {
@@ -183,9 +183,9 @@ class ApiClient {
 
       const result = await this.handleResponse<T>(response);
       return result.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle token expiration and unauthorized access
-      if (error.statusCode === 401 || error.statusCode === 403) {
+      if (error instanceof AppError && (error.statusCode === 401 || error.statusCode === 403)) {
         console.error('[API] Unauthorized access detected, logging out user');
         TokenManager.removeToken();
         
@@ -200,11 +200,11 @@ class ApiClient {
   }
 
   // ========== Convenience Methods ==========
-  get<T = any>(path: string, config?: RequestConfig): Promise<T> {
+  get<T = unknown>(path: string, config?: RequestConfig): Promise<T> {
     return this.request<T>(path, { ...config, method: 'GET' });
   }
 
-  post<T = any>(path: string, data?: any, config?: RequestConfig): Promise<T> {
+  post<T = unknown>(path: string, data?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>(path, {
       ...config,
       method: 'POST',
@@ -212,7 +212,7 @@ class ApiClient {
     });
   }
 
-  put<T = any>(path: string, data?: any, config?: RequestConfig): Promise<T> {
+  put<T = unknown>(path: string, data?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>(path, {
       ...config,
       method: 'PUT',
@@ -220,7 +220,7 @@ class ApiClient {
     });
   }
 
-  patch<T = any>(path: string, data?: any, config?: RequestConfig): Promise<T> {
+  patch<T = unknown>(path: string, data?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>(path, {
       ...config,
       method: 'PATCH',
@@ -267,9 +267,9 @@ class ApiClient {
 
       const result = await this.handleResponse<T>(response);
       return result.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle token expiration and unauthorized access
-      if (error.statusCode === 401 || error.statusCode === 403) {
+      if (error instanceof AppError && (error.statusCode === 401 || error.statusCode === 403)) {
         console.error('[API] Unauthorized access detected in upload, logging out user');
         TokenManager.removeToken();
         

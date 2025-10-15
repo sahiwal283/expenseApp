@@ -10,6 +10,7 @@ import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '.
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
+import { ReceiptData } from '../../types/types';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -124,7 +125,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleReceiptProcessed = (receiptData: any, file: File) => {
+  const handleReceiptProcessed = (receiptData: ReceiptData, file: File) => {
     const newExpense: Omit<Expense, 'id'> = {
       userId: user.id,
       tradeShowId: '',

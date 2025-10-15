@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle } from 'lucide-react';
 import { api } from '../../utils/api';
+import { ReceiptData } from '../../types/types';
 
 interface ReceiptUploadProps {
-  onReceiptProcessed: (data: any, file: File) => void;
+  onReceiptProcessed: (data: ReceiptData, file: File) => void;
   onCancel: () => void;
 }
 
@@ -12,7 +13,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [processing, setProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [ocrResults, setOcrResults] = useState<any>(null);
+  const [ocrResults, setOcrResults] = useState<ReceiptData | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

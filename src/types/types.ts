@@ -58,6 +58,92 @@ export interface AppSettings {
   entityOptions: string[];
 }
 
+// Receipt and OCR types
+export interface ReceiptData {
+  total?: number;
+  category?: string;
+  merchant?: string;
+  date?: string;
+  location?: string;
+  rawText?: string;
+}
+
+export interface CardOption {
+  name: string;
+  lastFour: string;
+}
+
+// API Response types
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+}
+
+// Sync Queue types
+export interface SyncQueueItem {
+  id: string;
+  type: 'expense' | 'event' | 'settings';
+  action: 'create' | 'update' | 'delete';
+  data: unknown;
+  timestamp: number;
+  status: 'pending' | 'syncing' | 'success' | 'failed';
+  retryCount: number;
+  error?: string;
+}
+
+// Form Handler types
+export type FormSubmitHandler<T = void> = (data: T) => void | Promise<void>;
+export type FormChangeHandler<T extends HTMLElement = HTMLInputElement> = (
+  event: React.ChangeEvent<T>
+) => void;
+
+// Error types
+export interface AppError extends Error {
+  code?: string;
+  statusCode?: number;
+  details?: unknown;
+}
+
+// Filter types
+export type FilterValue = string | number | boolean | null;
+export type SortDirection = 'asc' | 'desc';
+
+export interface FilterState {
+  [key: string]: FilterValue;
+}
+
+// Statistics types
+export interface DashboardStats {
+  totalExpenses: number;
+  pendingExpenses: number;
+  upcomingEvents: number;
+  activeEvents: number;
+  totalEvents: number;
+  averageExpense: number;
+  teamMembers: number;
+}
+
+export interface ReportStats {
+  totalAmount: number;
+  approvedAmount: number;
+  pendingAmount: number;
+  expenseCount: number;
+  categoryBreakdown: Record<string, number>;
+}
+
+export interface EntityTotal {
+  entity: string;
+  amount: number;
+}
+
 // Constants
 export const EXPENSE_CATEGORIES = ['Flights', 'Hotels', 'Meals', 'Supplies', 'Transportation', 'Other'] as const;
 export const EXPENSE_STATUSES = ['pending', 'approved', 'rejected'] as const;
