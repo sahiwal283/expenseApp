@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.43] - 2025-10-15
+
+### Fixed
+- **CRITICAL: Session Manager Event Listener Cleanup**:
+  - **Root cause:** Event listeners never removed due to `bind(this)` creating new function references
+  - **Consequence:** Multiple login/logout cycles stacked timers (2x, 3x, 4x...)
+  - **Result:** Old timers fired early, causing premature logout
+  - **Solution:** Store bound function reference once, use same reference for add/remove
+  - Event listeners now properly removed on cleanup
+  - No more duplicate timers stacking up
+  - No more premature logouts
+
+### Changed
+- **Modern Event Listeners**:
+  - Replaced deprecated `keypress` with `keydown` + `keyup`
+  - Added `input` and `change` events for form field tracking
+  - Added `touchmove` for better mobile support
+  - Form typing now properly resets inactivity timer
+
+### Technical
+- `sessionManager.ts`:
+  - Added `boundHandleActivity` property
+  - Create bound reference once in `setupActivityListeners()`
+  - Use same reference in `cleanup()` for removal
+  - Call `cleanup()` in `init()` as safety check
+  - Console log confirmation when listeners removed
+
+### Impact
+- ✅ Timers no longer stack on multiple login cycles
+- ✅ Users won't be logged out prematurely
+- ✅ Form interactions properly tracked
+- ✅ Memory leaks prevented
+- ✅ Session timeout works correctly
+
 ## [1.0.42] - 2025-10-15
 
 ### Fixed
