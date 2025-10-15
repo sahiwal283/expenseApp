@@ -77,9 +77,9 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // Create event
-router.post('/', authorize('admin', 'coordinator'), async (req: AuthRequest, res) => {
+router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
   try {
-    const { name, venue, city, state, start_date, end_date, budget, participant_ids } = req.body;
+    const { name, venue, city, state, start_date, end_date, budget, participant_ids, participants } = req.body;
 
     if (!name || !venue || !city || !state || !start_date || !end_date) {
       return res.status(400).json({ error: 'Required fields missing' });
@@ -94,8 +94,39 @@ router.post('/', authorize('admin', 'coordinator'), async (req: AuthRequest, res
 
     const event = result.rows[0];
 
-    // Add participants if provided
-    if (participant_ids && Array.isArray(participant_ids)) {
+    // Handle participants (can be existing IDs or full participant objects)
+    if (participants && Array.isArray(participants)) {
+      const bcrypt = require('bcrypt');
+      
+      for (const participant of participants) {
+        let userId = participant.id;
+        
+        // Check if user exists
+        const userCheck = await query('SELECT id FROM users WHERE id = $1', [participant.id]);
+        
+        // If user doesn't exist, create them
+        if (userCheck.rows.length === 0) {
+          console.log(`[Events] Creating new user for custom participant: ${participant.name} (${participant.email})`);
+          
+          // Generate a default password for custom participants
+          const defaultPassword = await bcrypt.hash('changeme123', 10);
+          
+          const newUserResult = await query(
+            'INSERT INTO users (id, username, password, name, email, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [participant.id, participant.username, defaultPassword, participant.name, participant.email, participant.role || 'salesperson']
+          );
+          
+          userId = newUserResult.rows[0].id;
+        }
+        
+        // Add participant to event
+        await query(
+          'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2)',
+          [event.id, userId]
+        );
+      }
+    } else if (participant_ids && Array.isArray(participant_ids)) {
+      // Fallback: Handle old format (just IDs)
       for (const userId of participant_ids) {
         await query(
           'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2)',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from '../App';
 import { api, TokenManager } from '../utils/api';
 
@@ -19,7 +19,7 @@ export const useAuth = () => {
     }
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
       if (api.USE_SERVER) {
         const data = await api.login(username, password);
@@ -44,12 +44,13 @@ export const useAuth = () => {
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('tradeshow_current_user');
-  };
+    TokenManager.removeToken(); // Also clear JWT token
+  }, []);
 
   return { user, login, logout };
 };

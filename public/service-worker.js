@@ -1,18 +1,19 @@
 // ExpenseApp Service Worker
-// Version: 1.0.45 - UX: Event creation improvements (duplicate prevention + date validation)
+// Version: 1.0.46 - CRITICAL: Session logout fix + custom participants
 // Date: October 15, 2025
 //
-// Changes from v1.0.44:
-// - Added duplicate prevention to event creation (like expenses)
-// - Button disabled while saving, shows "Saving..." with spinner
-// - Prevents multiple clicks from creating duplicate events
-// - Added date validation: end date cannot be before start date
-// - Visual error message if invalid date range selected
-// - Better error handling with user feedback
+// Changes from v1.0.45:
+// - **CRITICAL**: Fixed 6x duplicate logout notifications
+// - Root cause: useAuth logout() not memoized → session manager re-init on every render
+// - Solution: useCallback on login/logout functions
+// - Fixed custom participants not being saved
+// - Backend now creates users for custom participants (password: "changeme123")
+// - Frontend sends full participant objects, not just IDs
+// - Dev Dashboard no longer causes forced logout
 //
-// Changes from v1.0.43:
-// - Fixed custom participant UUID generation
-// - Event creation no longer fails with database errors
+// Changes from v1.0.44:
+// - Duplicate prevention for event creation
+// - Date validation (end >= start)
 //
 // Changes from v1.0.32:
 // - Implemented participant-based access control for expense submission
@@ -68,8 +69,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.0.45';  // BUMPED VERSION for event UX improvements
-const STATIC_CACHE = 'expenseapp-static-v1.0.45';
+const CACHE_NAME = 'expenseapp-v1.0.46';  // BUMPED VERSION for session fix + custom participants
+const STATIC_CACHE = 'expenseapp-static-v1.0.46';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -79,7 +80,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.0.45...');
+  console.log('[ServiceWorker] Installing v1.0.46...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -170,7 +171,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.0.45...');
+  console.log('[ServiceWorker] Activating v1.0.46...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -184,7 +185,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.0.45 activated and ready!');
+      console.log('[ServiceWorker] v1.0.46 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
