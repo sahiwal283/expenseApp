@@ -511,7 +511,7 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
 }));
 
 // Manual push to Zoho Books (accountant/admin only)
-router.post('/:id/push-to-zoho', authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
@@ -662,7 +662,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // ========== ZOHO BOOKS MULTI-ACCOUNT HEALTH CHECK ==========
 // GET /zoho/health - Check Zoho Books integration status for all accounts
-router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
     const healthStatus = await zohoMultiAccountService.getHealthStatus();
     const statusArray = Array.from(healthStatus.entries()).map(([entity, status]) => ({
@@ -693,7 +693,7 @@ router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant'), 
 });
 
 // GET /zoho/health/:entity - Check health for specific entity
-router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accountant'), async (req: AuthRequest, res) => {
+router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { entity } = req.params;
     const health = await zohoMultiAccountService.getHealthForEntity(entity);

@@ -193,14 +193,20 @@ class ApiClient {
       const result = await this.handleResponse<T>(response);
       return result.data;
     } catch (error: unknown) {
-      // Handle token expiration and unauthorized access
-      if (error instanceof AppError && (error.statusCode === 401 || error.statusCode === 403)) {
-        console.error('[API] Unauthorized access detected, logging out user');
-        TokenManager.removeToken();
-        
-        // Trigger logout callback if set
-        if (this.onUnauthorized) {
-          this.onUnauthorized();
+      // Handle token expiration - ONLY on auth endpoints
+      // Don't force logout on 403 (permission denied) or non-auth 401s
+      if (error instanceof AppError && error.statusCode === 401) {
+        // Only auto-logout if this is an authentication error (not permission or other API errors)
+        if (path.includes('/auth/') || path.includes('/users/me')) {
+          console.error('[API] Authentication failed, logging out user');
+          TokenManager.removeToken();
+          
+          // Trigger logout callback if set
+          if (this.onUnauthorized) {
+            this.onUnauthorized();
+          }
+        } else {
+          console.warn('[API] 401 error on non-auth endpoint, not forcing logout:', path);
         }
       }
 
@@ -277,14 +283,19 @@ class ApiClient {
       const result = await this.handleResponse<T>(response);
       return result.data;
     } catch (error: unknown) {
-      // Handle token expiration and unauthorized access
-      if (error instanceof AppError && (error.statusCode === 401 || error.statusCode === 403)) {
-        console.error('[API] Unauthorized access detected in upload, logging out user');
-        TokenManager.removeToken();
-        
-        // Trigger logout callback if set
-        if (this.onUnauthorized) {
-          this.onUnauthorized();
+      // Handle token expiration - ONLY on auth endpoints
+      if (error instanceof AppError && error.statusCode === 401) {
+        // Only auto-logout if this is an authentication error
+        if (path.includes('/auth/') || path.includes('/users/me')) {
+          console.error('[API] Authentication failed in upload, logging out user');
+          TokenManager.removeToken();
+          
+          // Trigger logout callback if set
+          if (this.onUnauthorized) {
+            this.onUnauthorized();
+          }
+        } else {
+          console.warn('[API] 401 error on upload to non-auth endpoint, not forcing logout:', path);
         }
       }
 
