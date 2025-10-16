@@ -47,6 +47,43 @@ If you see different credentials between sandbox and production, **this is inten
 
 ---
 
+## 🚨 CRITICAL: PRODUCTION DEPLOYMENT PROTECTION
+
+**🛑 NEVER DEPLOY TO PRODUCTION WITHOUT EXPLICIT USER CONFIRMATION!**
+
+### Container Mapping (MEMORIZE THIS!)
+- **Container 201** = **PRODUCTION** (Live users, real financial data)
+- **Container 203** = **SANDBOX** (Testing environment)
+
+### Deployment Rules (NEVER BREAK THESE!)
+
+1. **DEFAULT TO SANDBOX**: Unless explicitly told "deploy to production", ALWAYS deploy to Container 203
+2. **ASK FOR CONFIRMATION**: If there's ANY ambiguity about which environment, ASK before deploying
+3. **WORKING CONTEXT**: If the user says "we're working in sandbox" or creates a branch, stay in sandbox for the ENTIRE session
+4. **EXPLICIT ONLY**: Production deployments require explicit phrases like:
+   - "deploy to production"
+   - "push to production" 
+   - "deploy to container 201"
+5. **REVERT IMMEDIATELY**: If you accidentally deploy to production, immediately revert to the last stable version
+
+### Why This Matters
+
+❌ **Deploying untested code to production can:**
+- Break the app for real users
+- Corrupt financial data
+- Cause reimbursement errors
+- Require emergency rollbacks
+
+✅ **The correct workflow is:**
+1. Develop & test in sandbox (Container 203)
+2. User verifies everything works
+3. User explicitly requests production deployment
+4. Then and ONLY then deploy to production (Container 201)
+
+**If you make a production deployment mistake, the user will have to remind you. Don't make them do this.**
+
+---
+
 ## 🤖 CRITICAL AI INSTRUCTIONS
 
 **READ THIS FIRST!** These are non-negotiable rules for ALL AI assistants working on this project.
