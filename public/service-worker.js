@@ -1,6 +1,11 @@
 // ExpenseApp Service Worker
-// Version: 1.4.3 - PATCH: Reimbursement status display improvements
+// Version: 1.4.5 - PATCH: Category colors restored
 // Date: October 16, 2025
+//
+// Changes from v1.4.4:
+// - IMPROVED: Added colors to all expense categories
+// - Categories now show with distinct colored badges
+// - Color mapping: Meals=orange, Supplies/Booth=purple, Flight=blue, Hotel=emerald, etc.
 //
 // Changes from v1.4.2:
 // - IMPROVED: Renamed reimbursement status "Required (approved)" → "Approved (pending payment)"
@@ -103,8 +108,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.4.3';  // BUMPED VERSION for reimbursement status display improvements
-const STATIC_CACHE = 'expenseapp-static-v1.4.3';
+const CACHE_NAME = 'expenseapp-v1.4.5';  // BUMPED VERSION for category color improvements
+const STATIC_CACHE = 'expenseapp-static-v1.4.5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -205,7 +210,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.4.3...');
+  console.log('[ServiceWorker] Activating v1.4.5...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(

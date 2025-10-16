@@ -157,6 +157,7 @@ export const STATUS_COLORS = {
 } as const;
 
 export const CATEGORY_COLORS = {
+  // Legacy categories (kept for backward compatibility)
   Flights: { bg: 'bg-blue-100', text: 'text-blue-800' },
   Hotels: { bg: 'bg-emerald-100', text: 'text-emerald-800' },
   Meals: { bg: 'bg-orange-100', text: 'text-orange-800' },
@@ -164,6 +165,19 @@ export const CATEGORY_COLORS = {
   Transportation: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
   'Marketing Materials': { bg: 'bg-pink-100', text: 'text-pink-800' },
   Shipping: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+  
+  // Current categories
+  'Booth / Marketing / Tools': { bg: 'bg-purple-100', text: 'text-purple-800' },
+  'Travel - Flight': { bg: 'bg-blue-100', text: 'text-blue-800' },
+  'Accommodation - Hotel': { bg: 'bg-emerald-100', text: 'text-emerald-800' },
+  'Transportation - Uber / Lyft / Others': { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+  'Parking Fees': { bg: 'bg-cyan-100', text: 'text-cyan-800' },
+  'Rental - Car / U-haul': { bg: 'bg-teal-100', text: 'text-teal-800' },
+  'Meal and Entertainment': { bg: 'bg-orange-100', text: 'text-orange-800' },
+  'Gas / Fuel': { bg: 'bg-amber-100', text: 'text-amber-800' },
+  'Show Allowances - Per Diem': { bg: 'bg-lime-100', text: 'text-lime-800' },
+  'Model': { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800' },
+  'Shipping Charges': { bg: 'bg-indigo-100', text: 'text-indigo-800' },
   Other: { bg: 'bg-gray-100', text: 'text-gray-800' },
 } as const;
 
