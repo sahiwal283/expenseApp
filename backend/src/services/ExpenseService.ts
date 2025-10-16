@@ -301,8 +301,8 @@ class ExpenseService {
     }
 
     // AUTOMATIC APPROVAL LOGIC
-    // If assigning an entity (and expense is pending), automatically approve
-    if (entityValue && currentExpense.status === 'pending') {
+    // If assigning an entity (and expense is pending or needs further review), automatically approve
+    if (entityValue && (currentExpense.status === 'pending' || currentExpense.status === 'needs further review')) {
       updates.status = 'approved';
       console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to entity assignment`);
     }
@@ -347,10 +347,10 @@ class ExpenseService {
     const updates: Partial<Expense> = { reimbursement_status: status };
 
     // AUTOMATIC APPROVAL LOGIC
-    // If changing from "pending review" to "approved" or "rejected" (and expense is pending), auto-approve
-    const isInitialReview = currentExpense.reimbursement_status === 'pending review' && 
+    // If changing from "pending review" (or NULL) to "approved" or "rejected" (and expense is pending or needs further review), auto-approve
+    const isInitialReview = (!currentExpense.reimbursement_status || currentExpense.reimbursement_status === 'pending review') && 
                            (status === 'approved' || status === 'rejected');
-    if (isInitialReview && currentExpense.status === 'pending') {
+    if (isInitialReview && (currentExpense.status === 'pending' || currentExpense.status === 'needs further review')) {
       updates.status = 'approved';
       console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to reimbursement status change`);
     }
