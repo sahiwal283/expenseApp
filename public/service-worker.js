@@ -1,18 +1,23 @@
 // ExpenseApp Service Worker
-// Version: 1.1.8 - FIX: Admin User Protection
+// Version: 1.1.9 - CRITICAL HOTFIX: Missing useEffect Import
 // Date: October 16, 2025
 //
-// Changes from v1.1.7:
-// - FIXED: Only "admin" user is now permanent/undeletable (not "sahil")
-// - Frontend: Delete button disabled for "admin" user with tooltip
-// - Frontend: Added check in handleDeleteUser to prevent admin deletion
-// - Backend: Added username check before DELETE query
-// - Backend: Returns 403 error if attempting to delete "admin" user
-// - Proper tooltip: "Cannot delete system admin" vs "Cannot delete yourself"
+// Changes from v1.1.8:
+// - CRITICAL FIX: Added missing useEffect import to Approvals.tsx
+// - BUG: v1.1.7 added useEffect hook but forgot to import it from React
+// - RESULT: Approvals page completely broken with ReferenceError
+// - IMPACT: Production-breaking bug, approvals page would not load
 //
-// Security Fix:
-// - Frontend and backend both enforce admin user protection
-// - Cannot bypass frontend check via API calls
+// Root Cause:
+// - In v1.1.7, added useEffect to sync pushedExpenses Set with expenses data
+// - Forgot to add useEffect to React imports (line 1)
+// - Build succeeded but runtime error: "ReferenceError: useEffect is not defined"
+//
+// Fix:
+// - Changed: import React, { useState, useMemo } from 'react';
+// - To: import React, { useState, useMemo, useEffect } from 'react';
+//
+// Lesson: Always verify imports when adding new React hooks!
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -77,8 +82,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.8';  // BUMPED VERSION for admin user protection
-const STATIC_CACHE = 'expenseapp-static-v1.1.8';
+const CACHE_NAME = 'expenseapp-v1.1.9';  // BUMPED VERSION for critical useEffect hotfix
+const STATIC_CACHE = 'expenseapp-static-v1.1.9';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -88,7 +93,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.8...');
+  console.log('[ServiceWorker] Installing v1.1.9...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -179,7 +184,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.8...');
+  console.log('[ServiceWorker] Activating v1.1.9...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -193,7 +198,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.8 activated and ready!');
+      console.log('[ServiceWorker] v1.1.9 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
