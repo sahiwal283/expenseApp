@@ -2779,6 +2779,256 @@ PGPASSWORD=sandbox123 psql -h localhost -U expense_sandbox -d expense_app_sandbo
 
 ---
 
+## 📝 SESSION SUMMARIES
+
+This section documents complete AI work sessions, providing context and continuity for future AI assistants.
+
+---
+
+### Session: October 16, 2025 - Sandbox Development (v1.1.11 → v1.4.10 / v1.5.0)
+
+**Duration:** Full day session  
+**Branch:** `v1.2.0` (Sandbox)  
+**Status:** ✅ All features deployed and working  
+**Final Versions:** Frontend v1.4.10, Backend v1.5.0
+
+#### 📋 Work Completed
+
+**Phase 1: Critical Bug Fixes (v1.1.12 - v1.1.14)**
+
+1. **Timezone Bug Fix (v1.1.12)**
+   - **Issue:** Expense submitted at 9:35 PM CST on 10/15 showed as 10/16
+   - **Root Cause:** `new Date().toISOString().split('T')[0]` returns UTC date
+   - **Fix:** Created `getTodayLocalDateString()` using local date components
+   - **Files:** `dateUtils.ts`, `ExpenseForm.tsx`, `ReceiptUpload.tsx`, `ExpenseSubmission.tsx`, `Reports.tsx`, `appConstants.ts`
+   - **Deployed:** Straight to production (user requested)
+
+2. **Offline Notification Spam Fix (v1.1.13)**
+   - **Issue:** Multiple "Working Offline" notifications stacking, not dismissing even when online
+   - **Root Cause:** 
+     - No notification ID tracking → duplicates
+     - Network detection too aggressive → false offline status
+     - Listener fired immediately on page load → premature notifications
+   - **Fix:**
+     - Track `offlineNotificationId` and `degradedNotificationId` in `App.tsx`
+     - Explicitly remove notifications when state changes
+     - Made network detection less aggressive (10s timeout, treat backend errors as online)
+     - Added `notifyImmediately` flag to `addListener()` (defaults to false)
+   - **Files:** `App.tsx`, `networkDetection.ts`, `SyncStatusBar.tsx`
+
+3. **Session Timeout Warning Fix (v1.1.14)**
+   - **Issue:** App logged users out without showing 5-minute warning modal
+   - **Root Cause:** 
+     - Token refresh using wrong API URL
+     - API client not coordinating with session manager
+   - **Fix:**
+     - Use `VITE_API_URL` for token refresh endpoint
+     - Modified `apiClient.setUnauthorizedCallback()` to defer to session manager during warning window
+   - **Files:** `sessionManager.ts`, `App.tsx`
+
+**Phase 2: Major Feature - Unified Expenses & Approvals (v1.2.1 → v1.3.3)**
+
+4. **Branching Strategy Correction**
+   - **Issue:** AI created new branch for each change (wrong workflow)
+   - **User Correction:** "One branch per session, multiple commits, just version number"
+   - **Fix:** 
+     - Renamed `v1.2.0-dev-dashboard-fixes` → `v1.2.0`
+     - Cherry-picked changes from incorrect `v1.3.0` branch
+     - Updated `AI_MASTER_GUIDE.md` with correct branching strategy
+   - **Version bump:** `1.1.14` → `1.2.1` (minor bump for major feature)
+
+5. **Unified Expenses & Approvals Page (v1.2.1)**
+   - **Objective:** Merge Approvals tab into Expenses page
+   - **Implementation:**
+     - Added `ApprovalCards` component (pending approval, reimbursements, unassigned entities metrics)
+     - Conditional rendering based on `hasApprovalPermission` (admin/accountant/developer)
+     - Added columns: User, Entity dropdown, Zoho push button
+     - Enhanced `useExpenses` hook to fetch users/entity options for approvers
+     - Removed Approvals from sidebar navigation
+     - All approval workflows now integrated into main Expenses page
+   - **User Experience:**
+     - Regular users: See only their own expenses (unchanged)
+     - Accountants/Admins: See approval cards + all expenses + action buttons
+   - **Files:** `ExpenseSubmission.tsx`, `ApprovalCards.tsx`, `useExpenses.ts`, `Sidebar.tsx`, `App.tsx`
+
+6. **Zoho Integration Missing in Sandbox**
+   - **Issue:** Haute Brands not showing as configured in sandbox
+   - **Root Cause:** Missing multi-entity config variables in sandbox `.env`
+   - **Fix:** Added `ZOHO_HAUTE_ENABLED=true`, `ZOHO_HAUTE_MOCK=false`, `ZOHO_HAUTE_ENTITY_NAME=Haute Brands`
+
+7. **Zoho Credentials Discrepancy Investigation**
+   - **Finding:** Sandbox and production have DIFFERENT credentials (by design!)
+   - **Reason:** Data isolation - sandbox writes to "Meals" account, production to "Trade Shows"
+   - **Action:** Created `credentials/SANDBOX_CREDENTIALS.md`, documented in master guide
+
+8. **Entity Dropdown Fix (v1.3.1)**
+   - **Issue:** Assigned entities not showing in dropdown, not graying out
+   - **Root Cause:** Database had old entity names, `value` prop not set on `<select>`
+   - **Fix:**
+     - Updated `app_settings.entityOptions` in database: `["Haute Brands", "Boomin"]`
+     - Added `value={expense.zohoEntity || ''}` and `disabled={!!expense.zohoEntity}`
+     - Visual indication with gray background when disabled
+     - Fallback logic if entity not in options array
+
+9. **Editable Detail Modal Fields (v1.3.2)**
+   - **Added:** 
+     - Reimbursement status dropdown (for approvers)
+     - Entity dropdown (for approvers)  
+     - Status shown as read-only badge with "(auto-updates)" hint
+   - **Backend:** Added `/expenses/:id/status` endpoint
+   - **Confirmations:** Added for entity changes on already-pushed expenses
+
+10. **Mark as Paid Button (v1.3.3)**
+    - **Feature:** Dollar sign ($) button appears after expense approved
+    - **Function:** Changes reimbursement status to 'paid'
+    - **UX:** Confirmation dialog with expense details
+    - **Implementation:** `handleMarkAsPaid()` function, conditional rendering based on `reimbursementStatus === 'approved'`
+
+**Phase 3: Automated Approval Workflow Redesign (v1.4.0 → v1.4.9)**
+
+11. **Remove Manual Approval Buttons (v1.4.0)**
+    - **Removed:** Checkmark/X buttons for approve/reject
+    - **Added:** New status "needs further review" (orange badge)
+    - **Auto-Approval Logic:**
+      - Expense → "approved" when reimbursement approved/rejected
+      - Expense → "approved" when entity assigned
+    - **Regression Logic:**
+      - Expense → "needs further review" when reimbursement regresses
+      - Expense → "needs further review" when entity unassigned
+    - **Files:** `ExpenseService.ts`, `schema.sql`, `expenses.ts` (routes), `ExpenseSubmission.tsx`
+
+12. **Auto-Approval from "Needs Further Review" (v1.4.1)**
+    - **Enhancement:** Auto-approve works from both 'pending' AND 'needs further review' status
+    - **Migration:** Created SQL migration to fix old expenses stuck in "needs further review"
+    - **Database:** `fix_needs_further_review_status.sql`
+
+13. **Table Responsiveness (v1.4.5)**
+    - **Issue:** Table unreadable with sidebar open
+    - **Fix:** Reduced padding, added `min-w-max`, `whitespace-nowrap`, minimum widths
+
+14. **Reimbursement Status Display (v1.4.5)**
+    - **Feature:** Renamed "Approved" → "Approved (pending payment)"
+    - **Implementation:** Created `formatReimbursementStatus()` helper
+    - **Files:** `appConstants.ts`, `ExpenseSubmission.tsx`
+
+15. **Category Colors Restored (v1.4.5)**
+    - **Issue:** Categories lost their colors
+    - **Fix:** Expanded `CATEGORY_COLORS` with all current categories
+    - **Result:** Meals=orange, Supplies=purple, Flight=blue, Hotel=emerald, etc.
+
+16. **Inline Filters Made Subtle (v1.4.6 → v1.4.8)**
+    - **Evolution:**
+      - v1.4.6: Removed background, transparent borders, smaller text
+      - v1.4.7: Added delete button confirmation
+      - v1.4.8: Made even more compact and tucked away
+      - v1.4.9: Made collapsible (hidden by default with toggle button)
+    - **Final State:** Filters hidden, accessible via Filter icon button in Actions column
+
+17. **Delete Button Fixes (v1.4.7)**
+    - **Issue:** Delete icon disappearing on some expenses
+    - **Fix:** Show delete button for `expense.userId === user.id` OR `hasApprovalPermission`
+    - **Added:** Confirmation dialog with full expense details
+
+**Phase 4: Auto-Status Logic Reliability & Chart Colors (v1.5.0 / v1.4.10)**
+
+18. **Auto-Status Logic Reliability Fix (v1.5.0) - CRITICAL**
+    - **Issue:** Auto-approval not working reliably (regression worked, forward progress didn't)
+    - **Root Cause:** 
+      - TypeScript compilation cache
+      - **CRITICAL:** Deploying to `/opt/expenseapp/` instead of `/opt/expenseApp/backend/`
+    - **Fix:**
+      - Simplified logic: 6+ conditions → 3 clear rules
+      - Fixed deployment path (capital 'A')
+      - Added comprehensive logging
+    - **Time Wasted:** ~1 hour on wrong deployment path
+    - **See:** "Critical Debugging Sessions" section for full details
+
+19. **Chart Category Colors (v1.4.10)**
+    - **Issue:** Chart colors didn't match expense table categories
+    - **Fix:** Use `CATEGORY_COLORS` constant instead of hardcoded values
+    - **Files:** `ExpenseChart.tsx`, `DetailedReport.tsx`
+
+#### 🎯 Key Metrics
+
+- **Versions Released:** 18 versions (v1.1.12 → v1.4.10/v1.5.0)
+- **Major Features:** 3 (timezone fix, unified expenses, automated approval redesign)
+- **Bug Fixes:** 15+
+- **Files Modified:** 30+
+- **Commits:** 20+
+- **Deployments:** 25+ (multiple redeployments for debugging)
+
+#### 📊 Version Progression
+
+**Frontend:**
+- v1.1.11 → v1.1.12 (timezone) → v1.1.13 (offline) → v1.1.14 (session timeout)
+- v1.1.14 → v1.2.1 (unified expenses) → v1.3.1 (entity dropdown) → v1.3.2 (editable modal) → v1.3.3 (mark as paid)
+- v1.3.3 → v1.4.0 (auto workflow) → v1.4.1 → v1.4.3 → v1.4.5 → v1.4.6 → v1.4.7 → v1.4.8 → v1.4.9 → v1.4.10
+
+**Backend:**
+- v1.1.5 → v1.2.1 → v1.3.1 → v1.3.2 → v1.4.0 → v1.4.1 → v1.4.2 → v1.4.4 → v1.4.5 → v1.4.6 → v1.5.0
+
+#### 🐛 Issues Encountered
+
+1. **Branching Misunderstanding** - Created new branch per change instead of per session
+2. **Deployment Path Mismatch** - Lost 1 hour deploying to wrong directory (case sensitivity!)
+3. **TypeScript Cache** - Built code didn't match source, required clean rebuild
+4. **Network Detection Too Aggressive** - False offline notifications
+5. **Database Data Outdated** - Entity options had old values
+
+#### ✅ Lessons Learned
+
+1. **Deployment Verification is CRITICAL**
+   - Always check service config path FIRST
+   - Verify file timestamps after deployment
+   - Case sensitivity matters: `/opt/expenseApp/` ≠ `/opt/expenseapp/`
+
+2. **Branching Strategy**
+   - ONE branch per development session
+   - Multiple commits to same branch
+   - Branch name = just version number (e.g., `v1.2.0`)
+
+3. **Complexity is the Enemy**
+   - Simple logic (3 rules) > complex conditionals (6+ conditions)
+   - Easy to understand = easy to debug = reliable
+
+4. **Always Ask for Browser Console**
+   - Shows network errors
+   - Reveals frontend vs backend issues
+   - Saves time vs guessing
+
+5. **Documentation is Essential**
+   - Document deployment paths
+   - Document environment differences
+   - Document intentional design decisions (like separate Zoho credentials)
+
+#### 🎓 For Future AI Sessions
+
+**When Starting Work:**
+- [ ] Read AI_MASTER_GUIDE.md thoroughly
+- [ ] Check which branch user wants to work on
+- [ ] Verify deployment target (sandbox = 203, production = 201)
+- [ ] Check service configuration paths before deploying
+
+**During Development:**
+- [ ] One branch per session, multiple commits
+- [ ] Keep logic simple and documented
+- [ ] Add comprehensive logging for debugging
+- [ ] Test after each deployment (don't assume it worked)
+
+**When Debugging:**
+- [ ] Ask for browser console first
+- [ ] Verify deployment path matches service config
+- [ ] Check file timestamps to confirm new code
+- [ ] Clear TypeScript cache if builds don't match
+
+**Before Finishing:**
+- [ ] Update CHANGELOG.md
+- [ ] Update AI_MASTER_GUIDE.md with new lessons
+- [ ] Commit and push to GitHub
+- [ ] Document any deployment issues encountered
+
+---
+
 ## 🐛 CRITICAL DEBUGGING SESSIONS
 
 This section documents major debugging sessions, what went wrong, how it was fixed, and lessons learned for future AI assistants.
