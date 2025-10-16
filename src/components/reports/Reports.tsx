@@ -8,6 +8,7 @@ import { AccountantDashboard } from '../accountant/AccountantDashboard';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
+import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { useReportsStats } from './hooks/useReportsStats';
 
 interface ReportsProps {
@@ -146,7 +147,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `expense-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `expense-report-${getTodayLocalDateString()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

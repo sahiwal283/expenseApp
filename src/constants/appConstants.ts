@@ -344,7 +344,11 @@ export const formatDate = (date: string | Date, format: keyof typeof DATE_FORMAT
     case 'DISPLAY':
       return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     case 'INPUT':
-      return d.toISOString().split('T')[0];
+      // Use local date components instead of UTC to avoid timezone shifts
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     case 'TIMESTAMP':
       return d.toISOString().replace('T', ' ').split('.')[0];
     default:

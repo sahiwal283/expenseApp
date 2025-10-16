@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2 } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
-import { formatForDateInput } from '../../utils/dateUtils';
+import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
 import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 
 interface ExpenseFormProps {
@@ -49,7 +49,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
     amount: expense?.amount || 0,
     category: expense?.category || '',
     merchant: expense?.merchant || '',
-    date: expense?.date ? formatForDateInput(expense.date) : new Date().toISOString().split('T')[0],
+    date: expense?.date ? formatForDateInput(expense.date) : getTodayLocalDateString(),
     description: expense?.description || '',
     cardUsed: expense?.cardUsed || '',
     reimbursementRequired: expense?.reimbursementRequired || false,
@@ -114,7 +114,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
         amount: ocrData.amount || 0,
         category: ocrData.category || '',
         merchant: ocrData.merchant || '',
-        date: ocrData.date || new Date().toISOString().split('T')[0],
+        date: ocrData.date || getTodayLocalDateString(),
         description: ocrData.description || '',
         cardUsed: ocrData.cardUsed || '',
         reimbursementRequired: ocrData.reimbursementRequired || false,

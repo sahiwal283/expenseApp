@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle } from 'lucide-react';
 import { api } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
+import { getTodayLocalDateString } from '../../utils/dateUtils';
 
 interface ReceiptUploadProps {
   onReceiptProcessed: (data: ReceiptData, file: File) => void;
@@ -77,7 +78,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
         file: file,
         total: result.amount || 0,
         merchant: result.merchant || 'Unknown Merchant',
-        date: result.date || new Date().toISOString().split('T')[0],
+        date: result.date || getTodayLocalDateString(),
         location: result.location || 'Unknown Location',
         category: result.category || 'Other',
         ocrText: result.text || '',

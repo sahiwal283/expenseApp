@@ -1,24 +1,24 @@
 // ExpenseApp Service Worker
-// Version: 1.1.11 - DEBUG: Entity Change Event Tracking
+// Version: 1.1.12 - FIX: Timezone Bug in Expense Date Submission
 // Date: October 16, 2025
 //
-// Changes from v1.1.11:
-// - DEBUG: Added onChange logging to modal entity dropdown
-// - ISSUE: Warning dialog not appearing when changing entity
-// - ISSUE: onChange event may not be firing at all
-// - Console missing "[Approvals] Entity change check" log
+// Changes from v1.1.12:
+// - FIXED: Timezone bug causing dates to be off by one day
+// - Issue: User submitting expense at 9:35 PM CST on 10/15 showed as 10/16
+// - Root cause: Using new Date().toISOString() returns UTC time, not local
+// - Solution: Created getTodayLocalDateString() utility function
+// - Fixed in: ExpenseForm, ReceiptUpload, ExpenseSubmission, Reports, appConstants
 //
-// Debug Logging Added to Modal Dropdown:
-// - Log when dropdown value changes (before handleAssignEntity)
-// - Log: from entity, to entity, expense ID
-// - This will confirm if onChange is even firing
+// Technical Details:
+// - Added getTodayLocalDateString() to dateUtils.ts
+// - Uses getFullYear(), getMonth(), getDate() instead of toISOString()
+// - Ensures date reflects user's local timezone, not UTC
+// - Also fixed formatDate() in appConstants.ts for 'INPUT' format
 //
-// Expected Console Output:
-// [Approvals] Modal entity dropdown changed! { from: "Haute Brands", to: "Boomin Brands", expenseId: "..." }
-// [Approvals] Entity change check: { ... }
-//
-// If first log appears but second doesn't = handleAssignEntity issue
-// If neither log appears = onChange not firing (different bug)
+// Impact:
+// - All new expense submissions now use correct local date
+// - Report exports use correct date in filename
+// - OCR receipt processing defaults to correct date
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -83,8 +83,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.11';  // BUMPED VERSION for onChange debug
-const STATIC_CACHE = 'expenseapp-static-v1.1.11';
+const CACHE_NAME = 'expenseapp-v1.1.12';  // BUMPED VERSION for timezone fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.12';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -94,7 +94,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.11...');
+  console.log('[ServiceWorker] Installing v1.1.12...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -185,7 +185,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.11...');
+  console.log('[ServiceWorker] Activating v1.1.12...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -199,7 +199,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.11 activated and ready!');
+      console.log('[ServiceWorker] v1.1.12 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

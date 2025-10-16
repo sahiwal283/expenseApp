@@ -151,3 +151,24 @@ export function getDaysUntilLabel(days: number): string {
   return `${Math.abs(days)} days ago`;
 }
 
+/**
+ * Get today's date in YYYY-MM-DD format using LOCAL timezone (not UTC)
+ * 
+ * This prevents the timezone bug where using `new Date().toISOString()`
+ * returns the date in UTC, which can be a different day than the user's local date.
+ * 
+ * @returns Today's date in YYYY-MM-DD format
+ * 
+ * @example
+ * // If it's 9:35 PM on Oct 15 in CST (UTC-5):
+ * new Date().toISOString().split('T')[0] // ❌ "2025-10-16" (wrong - UTC time)
+ * getTodayLocalDateString() // ✅ "2025-10-15" (correct - local time)
+ */
+export function getTodayLocalDateString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+

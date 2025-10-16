@@ -5,7 +5,7 @@ import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { PendingActions } from '../common/PendingActions';
 import { api } from '../../utils/api';
-import { formatLocalDate } from '../../utils/dateUtils';
+import { formatLocalDate, getTodayLocalDateString } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
@@ -150,7 +150,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       amount: receiptData.total || 0,
       category: receiptData.category || 'Other',
       merchant: receiptData.merchant || '',
-      date: receiptData.date || new Date().toISOString().split('T')[0],
+      date: receiptData.date || getTodayLocalDateString(),
       description: receiptData.description || '',
       status: 'pending',
       location: receiptData.location || '',
