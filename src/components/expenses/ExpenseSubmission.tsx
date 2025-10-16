@@ -55,6 +55,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [showFullReceipt, setShowFullReceipt] = useState(true);
   const [showPendingSync, setShowPendingSync] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Approval-specific state (only used when hasApprovalPermission is true)
   const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
@@ -484,29 +485,43 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-center text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Zoho</th>
                     </>
                   )}
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Actions</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">
+                    <div className="flex items-center justify-end space-x-2">
+                      <span>Actions</span>
+                      <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`p-1 rounded transition-colors ${
+                          showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                        }`}
+                        title={showFilters ? 'Hide Filters' : 'Show Filters'}
+                      >
+                        <Filter className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </th>
                 </tr>
-                {/* Compact Inline Filters Row */}
+                {/* Compact Inline Filters Row - Collapsible */}
+                {showFilters && (
                 <tr className="border-t border-gray-100">
                   {/* Date Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <input
                       type="date"
                       value={dateFilter}
                       onChange={(e) => setDateFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                     />
                   </th>
                   {/* User Filter Placeholder (Approval Users) */}
                   {hasApprovalPermission && (
-                    <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
+                    <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
                   )}
                   {/* Event Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <select
                       value={eventFilter}
                       onChange={(e) => setEventFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                     >
                       <option value="all">All Events</option>
                       {events.map(event => (
@@ -515,11 +530,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Category Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                     >
                       <option value="all">All</option>
                       {uniqueCategories.map(cat => (
@@ -528,23 +543,23 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Merchant Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <input
                       type="text"
                       value={merchantFilter}
                       onChange={(e) => setMerchantFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 placeholder-gray-300 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                       placeholder="Search..."
                     />
                   </th>
                   {/* Amount - No Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
                   {/* Card Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <select
                       value={cardFilter}
                       onChange={(e) => setCardFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                     >
                       <option value="all">All</option>
                       {uniqueCards.map(card => (
@@ -553,11 +568,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Status Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
@@ -566,11 +581,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Reimbursement Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
                     <select
                       value={reimbursementFilter}
                       onChange={(e) => setReimbursementFilter(e.target.value)}
-                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
                     >
                       <option value="all">All</option>
                       <option value="required">Required</option>
@@ -580,13 +595,14 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   {/* Entity and Zoho Filter Placeholders (Approval Users) */}
                   {hasApprovalPermission && (
                     <>
-                      <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
-                      <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
                     </>
                   )}
                   {/* Actions - No filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
                 </tr>
+                )}
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {finalFilteredExpenses.map((expense) => {
