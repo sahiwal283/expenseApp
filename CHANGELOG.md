@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.3.2] - 2025-10-16 (Frontend v1.3.2 / Backend v1.3.1)
+## [1.3.2] - 2025-10-16 (Frontend v1.3.2 / Backend v1.3.2)
 **Branch: v1.2.0 (Sandbox Only)**
 
 ### Added
+- **Backend**: New endpoint `PATCH /expenses/:id/status` to update status (pending/approved/rejected)
 - **Editable Status/Reimbursement/Entity in Expense Detail Modal**:
   - Approval users (admin, accountant, developer) can now edit Status, Reimbursement, and Entity directly from the detail modal
   - **Status Dropdown**: Pending / Approved / Rejected
@@ -24,9 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database Configuration**: Updated sandbox `entityOptions` to `["Haute Brands", "Boomin"]` (previously had placeholder values)
 
 ### Fixed
+- **HOTFIX**: Detail modal edits now save correctly
+  - Fixed API method calls to use correct payload formats
+  - Status changes (including to 'pending') now work properly
+  - Reimbursement and Entity updates save correctly
 - Removed debug console.logs from `useExpenses` hook
 
 ### Technical Details
+- **Backend**: Added `PATCH /expenses/:id/status` endpoint (accepts pending/approved/rejected)
+- **Backend**: Kept legacy `/review` endpoint for backwards compatibility
+- **Frontend**: Added `api.updateExpenseStatus()` method for new endpoint
+- **Frontend**: Fixed detail modal to pass payload objects instead of raw values
 - Modified `ExpenseSubmission.tsx` detail modal (lines 854-982)
 - Conditional rendering: dropdowns for approval users, badges for regular users
 - Inline async handlers for immediate save on dropdown change
