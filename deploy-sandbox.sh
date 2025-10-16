@@ -53,9 +53,17 @@ if [ "$DEPLOY_BACKEND" = true ]; then
     VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*: "\(.*\)".*/\1/')
     echo "Version: $VERSION"
     
-    # Package
+    # Package (include Python scripts from src/ - needed for PaddleOCR)
     PACKAGE_NAME="backend-v${VERSION}-$(date +%Y%m%d_%H%M%S).tar.gz"
-    tar -czf "$PACKAGE_NAME" dist/ package.json package-lock.json requirements.txt
+    echo "Packaging: dist/, package files, and Python OCR scripts..."
+    tar -czf "$PACKAGE_NAME" \
+        --exclude='*.ts' \
+        --exclude='*.js.map' \
+        dist/ \
+        package.json \
+        package-lock.json \
+        requirements.txt \
+        src/services/ocr/
     echo "✓ Packaged: $PACKAGE_NAME"
     
     # Upload
