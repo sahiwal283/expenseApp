@@ -70,9 +70,21 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
   // Update pushedExpenses set when expenses data changes
   useEffect(() => {
+    console.log('[Approvals] useEffect triggered - expenses count:', expenses.length);
+    if (expenses.length > 0) {
+      console.log('[Approvals] First expense sample:', {
+        id: expenses[0].id,
+        zohoEntity: expenses[0].zohoEntity,
+        zohoExpenseId: expenses[0].zohoExpenseId,
+        hasZohoExpenseId: !!expenses[0].zohoExpenseId
+      });
+    }
     const pushed = new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id));
     setPushedExpenses(pushed);
     console.log('[Approvals] Updated pushedExpenses set:', pushed.size, 'expenses');
+    if (pushed.size > 0) {
+      console.log('[Approvals] Pushed expense IDs:', Array.from(pushed));
+    }
   }, [expenses]);
 
   // Zoho-enabled entities (entities that have Zoho Books accounts configured)

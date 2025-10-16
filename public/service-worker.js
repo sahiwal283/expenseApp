@@ -1,23 +1,22 @@
 // ExpenseApp Service Worker
-// Version: 1.1.9 - CRITICAL HOTFIX: Missing useEffect Import
+// Version: 1.1.10 - DEBUG: Entity Warning & Button State
 // Date: October 16, 2025
 //
-// Changes from v1.1.8:
-// - CRITICAL FIX: Added missing useEffect import to Approvals.tsx
-// - BUG: v1.1.7 added useEffect hook but forgot to import it from React
-// - RESULT: Approvals page completely broken with ReferenceError
-// - IMPACT: Production-breaking bug, approvals page would not load
+// Changes from v1.1.9:
+// - DEBUG: Added comprehensive logging to pushedExpenses useEffect
+// - ISSUE: Warning dialog not appearing when changing entity on pushed expenses
+// - ISSUE: Button state incorrect (not showing "Pushed" checkmark)
+// - Console shows: "Updated pushedExpenses set: 0 expenses" even with 2 expenses loaded
 //
-// Root Cause:
-// - In v1.1.7, added useEffect to sync pushedExpenses Set with expenses data
-// - Forgot to add useEffect to React imports (line 1)
-// - Build succeeded but runtime error: "ReferenceError: useEffect is not defined"
+// Debug Logging Added:
+// - Log expenses count when useEffect triggers
+// - Log first expense sample with zohoEntity, zohoExpenseId, hasZohoExpenseId
+// - Log pushed expense IDs when Set is populated
 //
-// Fix:
-// - Changed: import React, { useState, useMemo } from 'react';
-// - To: import React, { useState, useMemo, useEffect } from 'react';
-//
-// Lesson: Always verify imports when adding new React hooks!
+// Investigating:
+// - Possible field name mismatch (zohoExpenseId vs zoho_expense_id)
+// - Possible timing issue with data loading
+// - Possible state update issue
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -82,8 +81,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.9';  // BUMPED VERSION for critical useEffect hotfix
-const STATIC_CACHE = 'expenseapp-static-v1.1.9';
+const CACHE_NAME = 'expenseapp-v1.1.10';  // BUMPED VERSION for debug logging
+const STATIC_CACHE = 'expenseapp-static-v1.1.10';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -93,7 +92,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.9...');
+  console.log('[ServiceWorker] Installing v1.1.10...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -184,7 +183,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.9...');
+  console.log('[ServiceWorker] Activating v1.1.10...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -198,7 +197,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.9 activated and ready!');
+      console.log('[ServiceWorker] v1.1.10 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
