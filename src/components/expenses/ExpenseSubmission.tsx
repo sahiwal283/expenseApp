@@ -1021,6 +1021,27 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     )
                   )}
                 </div>
+
+                {/* Zoho Push Status */}
+                {hasApprovalPermission && viewingExpense.zohoEntity && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Zoho Status</p>
+                    {viewingExpense.zohoExpenseId ? (
+                      <div className="flex items-center space-x-2">
+                        <span className="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800">
+                          Pushed
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ID: {viewingExpense.zohoExpenseId}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        Not Pushed
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Receipt Section */}

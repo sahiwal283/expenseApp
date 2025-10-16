@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.4.10 - PATCH: Category colors in charts match expense table
+// Version: 1.4.11 - PATCH: Added Zoho push status to expense detail modal
 // Date: October 16, 2025
 //
 // Changes from v1.4.4:
