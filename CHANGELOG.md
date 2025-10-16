@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-10-16 (Frontend v1.4.0 / Backend v1.4.0)
+**Branch: v1.2.0 (Sandbox Only)**
+
+### 🚨 MAJOR: Automated Approval Workflow Redesign
+
+**Objective**: Eliminated manual expense approval steps in favor of automatic status transitions based on related field changes, streamlining the approval workflow and reducing manual intervention.
+
+### Removed
+- **Manual Approval Buttons**: Removed checkmark (✓) and X buttons for approving/rejecting expenses from table view
+- **Manual Status Dropdown**: Removed editable status dropdown from expense detail modal
+- **Legacy Approval Handlers**: Removed `handleApproveExpense()` and `handleRejectExpense()` functions
+
+### Added
+- **New Status**: "Needs Further Review" (orange badge)
+  - Indicates regression in expense workflow requiring attention
+  - Automatically set when fields regress after initial approval
+- **Automatic Approval Logic**:
+  - **Trigger 1**: Expense status changes from "pending" to "approved" when reimbursement status changes from "pending review" to "approved" or "rejected"
+  - **Trigger 2**: Expense status changes from "pending" to "approved" when an entity is assigned
+- **Regression Detection Logic**:
+  - **Trigger 1**: Status set to "needs further review" when reimbursement goes from "approved" to "rejected"
+  - **Trigger 2**: Status set to "needs further review" when reimbursement goes from "paid" to "approved" or "rejected"
+  - **Trigger 3**: Status set to "needs further review" when entity is unassigned (set to null) after being assigned
+
+### Changed
+- **Backend Service Layer**:
+  - Updated `updateReimbursementStatus()` to auto-approve expenses on initial review
+  - Updated `assignZohoEntity()` to auto-approve expenses when entity assigned
+  - Updated `updateExpenseStatus()` to accept new "needs further review" status
+  - Added comprehensive logging for all automatic status transitions
+- **Database Schema**: Updated expense status CHECK constraint to include 'needs further review'
+- **Frontend UI**:
+  - Expense status now displayed as read-only badge with "(auto-updates)" hint for approval users
+  - Removed all manual approval action buttons from expense table
+  - Status transitions happen automatically in background when related fields change
+- **API**: Updated `/expenses/:id/status` endpoint to accept "needs further review" status
+
+### Status Transition Rules
+
+#### Automatic Approval (pending → approved):
+1. **Reimbursement Review**: When reimbursement status changes from "pending review" to either "approved" OR "rejected"
+2. **Entity Assignment**: When an entity (Haute Brands, Boomin, etc.) is assigned to a pending expense
+
+#### Regression Detection (any → needs further review):
+1. **Reimbursement Regression**: approved → rejected
+2. **Payment Regression**: paid → approved OR paid → rejected  
+3. **Entity Unassignment**: Any entity → null/unassigned
+
+### Color Scheme
+- **Pending**: Yellow (bg-yellow-100, text-yellow-800)
+- **Approved**: Green (bg-emerald-100, text-emerald-800)
+- **Rejected**: Red (bg-red-100, text-red-800)
+- **Needs Further Review**: Orange (bg-orange-100, text-orange-800) ← NEW
+
+### Technical Details
+- Modified `backend/src/services/expenseService.ts`:
+  - `updateReimbursementStatus()`: Added auto-approval and regression logic (lines 320-372)
+  - `assignZohoEntity()`: Added auto-approval and regression logic (lines 269-318)
+  - `updateExpenseStatus()`: Updated to support new status (lines 198-213)
+- Modified `backend/src/routes/expenses.ts`:
+  - Updated `/expenses/:id/status` endpoint validation (line 492)
+- Modified `backend/src/database/schema.sql`:
+  - Updated status CHECK constraint (line 56)
+- Modified `src/constants/appConstants.ts`:
+  - Added NEEDS_FURTHER_REVIEW constant (line 66)
+  - Added color scheme for new status (lines 152-156)
+- Modified `src/components/expenses/ExpenseSubmission.tsx`:
+  - Removed approval handlers and buttons (lines 192-195, 732-733)
+  - Changed status to read-only display with auto-update hint (lines 862-877)
+- Modified `src/utils/api.ts`:
+  - Updated `updateExpenseStatus()` type signature (line 62)
+
+### Migration Notes
+- Database migration required to update CHECK constraint
+- Existing "pending" and "approved" expenses unaffected
+- No data migration needed - constraint is additive
+
+### Benefits
+- **Reduced Manual Work**: Accountants no longer manually approve every expense
+- **Faster Processing**: Expenses auto-approve upon reimbursement review or entity assignment
+- **Better Tracking**: "Needs further review" status highlights problematic expenses
+- **Consistent Logic**: Status transitions follow clear, documented rules
+- **Audit Trail**: All automatic transitions logged in backend
+
+### Documentation
+- Status transition rules documented in CHANGELOG and AI_MASTER_GUIDE.md
+- Backend service methods include comprehensive inline documentation
+- Frontend comments indicate automatic behavior
+
 ## [1.3.3] - 2025-10-16 (Frontend v1.3.3 / Backend v1.3.2)
 **Branch: v1.2.0 (Sandbox Only)**
 

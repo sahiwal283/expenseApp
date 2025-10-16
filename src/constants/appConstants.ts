@@ -63,6 +63,7 @@ export const EXPENSE_STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  NEEDS_FURTHER_REVIEW: 'needs further review',
 } as const;
 
 export type ExpenseStatus = typeof EXPENSE_STATUS[keyof typeof EXPENSE_STATUS];
@@ -147,6 +148,11 @@ export const STATUS_COLORS = {
     bg: 'bg-red-100',
     text: 'text-red-800',
     border: 'border-red-300',
+  },
+  [EXPENSE_STATUS.NEEDS_FURTHER_REVIEW]: {
+    bg: 'bg-orange-100',
+    text: 'text-orange-800',
+    border: 'border-orange-300',
   },
 } as const;
 

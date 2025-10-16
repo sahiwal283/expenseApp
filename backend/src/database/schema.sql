@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   receipt_url VARCHAR(500),
   ocr_text TEXT,
   extracted_data JSONB,
-  status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'needs further review')),
   zoho_entity VARCHAR(255),
   zoho_expense_id VARCHAR(255),
   location VARCHAR(255),

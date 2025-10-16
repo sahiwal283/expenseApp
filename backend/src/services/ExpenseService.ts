@@ -196,16 +196,17 @@ class ExpenseService {
   }
 
   /**
-   * Approve or reject expense (admin/accountant only)
+   * Update expense status (admin/accountant only)
+   * Supports: pending, approved, rejected, needs further review
    */
   async updateExpenseStatus(
     expenseId: string,
-    status: 'approved' | 'rejected',
+    status: 'pending' | 'approved' | 'rejected' | 'needs further review',
     userRole: string
   ): Promise<Expense> {
     // Authorization check
     if (userRole !== 'admin' && userRole !== 'accountant' && userRole !== 'developer') {
-      throw new AuthorizationError('Only admins and accountants can approve/reject expenses');
+      throw new AuthorizationError('Only admins and accountants can update expense status');
     }
 
     return expenseRepository.updateStatus(expenseId, status);
@@ -268,6 +269,8 @@ class ExpenseService {
   /**
    * Assign Zoho entity to expense (admin/accountant only)
    * Note: Empty string is allowed to "unassign" an entity (set to NULL)
+   * AUTOMATIC APPROVAL: Automatically approves expense when entity is assigned (from pending)
+   * REGRESSION: Sets to "needs further review" if entity is unassigned after being assigned
    */
   async assignZohoEntity(
     expenseId: string,
@@ -297,11 +300,27 @@ class ExpenseService {
       updates.zoho_expense_id = undefined; // Clear the Zoho expense ID to allow re-push
     }
 
+    // AUTOMATIC APPROVAL LOGIC
+    // If assigning an entity (and expense is pending), automatically approve
+    if (entityValue && currentExpense.status === 'pending') {
+      updates.status = 'approved';
+      console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to entity assignment`);
+    }
+    
+    // REGRESSION LOGIC
+    // If unassigning entity (setting to null/undefined), set to "needs further review"
+    if (!entityValue && currentExpense.zoho_entity) {
+      updates.status = 'needs further review';
+      console.log(`[Regression] Expense ${expenseId} set to "needs further review" due to entity unassignment`);
+    }
+
     return expenseRepository.update(expenseId, updates);
   }
 
   /**
    * Update reimbursement status (admin/accountant only)
+   * AUTOMATIC APPROVAL: Automatically approves expense when reimbursement is approved/rejected (from pending review)
+   * REGRESSION: Sets to "needs further review" if reimbursement regresses (approved->rejected or paid->approved/rejected)
    */
   async updateReimbursementStatus(
     expenseId: string,
@@ -319,7 +338,37 @@ class ExpenseService {
       throw new ValidationError(`Invalid reimbursement status: "${status}". Must be one of: ${validStatuses.join(', ')}`);
     }
 
-    return expenseRepository.update(expenseId, { reimbursement_status: status });
+    // Get current expense to check for status transitions
+    const currentExpense = await expenseRepository.findById(expenseId);
+    if (!currentExpense) {
+      throw new NotFoundError('Expense not found');
+    }
+
+    const updates: Partial<Expense> = { reimbursement_status: status };
+
+    // AUTOMATIC APPROVAL LOGIC
+    // If changing from "pending review" to "approved" or "rejected" (and expense is pending), auto-approve
+    const isInitialReview = currentExpense.reimbursement_status === 'pending review' && 
+                           (status === 'approved' || status === 'rejected');
+    if (isInitialReview && currentExpense.status === 'pending') {
+      updates.status = 'approved';
+      console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to reimbursement status change`);
+    }
+
+    // REGRESSION LOGIC
+    // If reimbursement goes from "approved" to "rejected", set expense to "needs further review"
+    const isReimbursementRegression = currentExpense.reimbursement_status === 'approved' && status === 'rejected';
+    
+    // If reimbursement goes from "paid" to "approved" or "rejected", set expense to "needs further review"
+    const isPaidRegression = currentExpense.reimbursement_status === 'paid' && 
+                            (status === 'approved' || status === 'rejected');
+    
+    if (isReimbursementRegression || isPaidRegression) {
+      updates.status = 'needs further review';
+      console.log(`[Regression] Expense ${expenseId} set to "needs further review" due to reimbursement regression`);
+    }
+
+    return expenseRepository.update(expenseId, updates);
   }
 }
 

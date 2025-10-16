@@ -189,33 +189,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setShowReceiptUpload(false);
   };
 
-  // === APPROVAL HANDLERS (Only used when hasApprovalPermission is true) ===
-
-  const handleApproveExpense = async (expense: Expense) => {
-    try {
-      if (api.USE_SERVER) {
-        await api.reviewExpense(expense.id, { status: 'approved' });
-        addToast('✅ Expense approved!', 'success');
-      }
-      await reloadData();
-    } catch (error) {
-      console.error('Error approving expense:', error);
-      addToast('❌ Failed to approve expense. Please try again.', 'error');
-    }
-  };
-
-  const handleRejectExpense = async (expense: Expense) => {
-    try {
-      if (api.USE_SERVER) {
-        await api.reviewExpense(expense.id, { status: 'rejected' });
-        addToast('✅ Expense rejected.', 'success');
-      }
-      await reloadData();
-    } catch (error) {
-      console.error('Error rejecting expense:', error);
-      addToast('❌ Failed to reject expense. Please try again.', 'error');
-    }
-  };
+  // === REIMBURSEMENT HANDLERS (Only used when hasApprovalPermission is true) ===
+  // NOTE: Manual expense approval removed - status now auto-updates based on:
+  //       1. Reimbursement status changes (pending review → approved/rejected)
+  //       2. Entity assignment
 
   const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
     // Confirmation before changing reimbursement status
@@ -752,25 +729,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       {/* Actions */}
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          {/* Approval Actions (Approval Users Only, Pending Expenses Only) */}
-                          {hasApprovalPermission && expense.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleApproveExpense(expense)}
-                                className="p-1.5 sm:p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                title="Approve Expense"
-                              >
-                                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleRejectExpense(expense)}
-                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Reject Expense"
-                              >
-                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </button>
-                            </>
-                          )}
+                          {/* Manual approval removed - expenses auto-approve via reimbursement/entity assignment */}
                           {/* View Details (All Users) */}
                           <button
                             onClick={() => setViewingExpense(expense)}
@@ -900,35 +859,21 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
               {/* Status Badges / Editable Fields */}
               <div className="flex flex-wrap gap-6">
-                {/* Status */}
+                {/* Status - Read-only (auto-updates based on reimbursement/entity) */}
                 <div>
                   <p className="text-sm text-gray-500 mb-2">Status</p>
-                  {hasApprovalPermission ? (
-                    <select
-                      value={viewingExpense.status}
-                      onChange={async (e) => {
-                        const newStatus = e.target.value as 'pending' | 'approved' | 'rejected';
-                        try {
-                          await api.updateExpenseStatus(viewingExpense.id, { status: newStatus });
-                          await reloadData();
-                          setViewingExpense({...viewingExpense, status: newStatus});
-                          addToast(`✅ Status updated to ${newStatus}`, 'success');
-                        } catch (error) {
-                          console.error('[ExpenseSubmission] Error updating status:', error);
-                          addToast('❌ Failed to update status', 'error');
-                        }
-                      }}
-                      className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                  ) : (
+                  <div className="flex items-center space-x-2">
                     <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
-                      {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
+                      {viewingExpense.status === 'needs further review' 
+                        ? 'Needs Further Review' 
+                        : viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
                     </span>
-                  )}
+                    {hasApprovalPermission && (
+                      <span className="text-xs text-gray-400 italic">
+                        (auto-updates)
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Reimbursement Status */}

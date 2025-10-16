@@ -484,13 +484,13 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
   res.json(normalizeExpense(expense));
 }));
 
-// Update expense status (pending/approved/rejected) - NEW endpoint for detail modal
+// Update expense status (pending/approved/rejected/needs further review) - NEW endpoint for detail modal
 router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!['pending', 'approved', 'rejected'].includes(status)) {
-    throw new ValidationError('Invalid status. Must be "pending", "approved", or "rejected"');
+  if (!['pending', 'approved', 'rejected', 'needs further review'].includes(status)) {
+    throw new ValidationError('Invalid status. Must be "pending", "approved", "rejected", or "needs further review"');
   }
 
   // Update status using service layer
