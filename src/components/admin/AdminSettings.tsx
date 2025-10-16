@@ -316,6 +316,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       ) : (
         <div className="space-y-6">
 
+      {/* Auto-save Note */}
+      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> Changes to these settings are automatically saved to the database and will be immediately reflected in all expense forms and dropdowns throughout the application.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
         {/* Card Options Management */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
@@ -323,8 +330,11 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
               <CreditCard className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Card Options</h3>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Card Options</h3>
+                <span className="text-xs text-gray-500">{settings.cardOptions?.length || 0} configured</span>
+              </div>
               <p className="text-gray-600">Manage available payment card options</p>
             </div>
           </div>
@@ -440,8 +450,11 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Entity Options</h3>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Entity Options</h3>
+                <span className="text-xs text-gray-500">{settings.entityOptions?.length || 0} configured</span>
+              </div>
               <p className="text-gray-600">Manage Zoho entity assignments</p>
             </div>
           </div>
@@ -489,8 +502,11 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Tag className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Expense Categories</h3>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Expense Categories</h3>
+                <span className="text-xs text-gray-500">{settings.categoryOptions?.length || 0} configured</span>
+              </div>
               <p className="text-gray-600">Manage expense category options</p>
             </div>
           </div>
@@ -530,35 +546,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Settings Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <Settings className="w-6 h-6 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Settings Summary</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Card Options</h4>
-            <p className="text-sm text-gray-600">{settings.cardOptions?.length || 0} options configured</p>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Entity Options</h4>
-            <p className="text-sm text-gray-600">{settings.entityOptions?.length || 0} entities configured</p>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Category Options</h4>
-            <p className="text-sm text-gray-600">{settings.categoryOptions?.length || 0} categories configured</p>
-          </div>
-        </div>
-
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Changes to these settings are automatically saved to the database and will be immediately reflected in all expense forms and dropdowns throughout the application.
-          </p>
         </div>
       </div>
         </div>
