@@ -159,11 +159,15 @@ export class NetworkMonitor {
 
       // Try to reach backend health endpoint
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout (increased from 5)
 
       const response = await fetch(this.HEALTH_CHECK_URL, {
         method: 'GET',
         cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         signal: controller.signal
       });
 
@@ -175,7 +179,7 @@ export class NetworkMonitor {
         const connectionInfo = this.getConnectionInfo();
         
         // Determine if connection is degraded based on RTT
-        const status: NetworkStatus = rtt > 2000 ? 'degraded' : 'online';
+        const status: NetworkStatus = rtt > 3000 ? 'degraded' : 'online';
 
         this.updateState({
           status,
@@ -187,24 +191,37 @@ export class NetworkMonitor {
 
         console.log(`[NetworkMonitor] Connectivity check: ${status} (RTT: ${rtt}ms)`);
       } else {
-        // Backend returned error, but we have internet
+        // Backend returned error, but we have internet connection
+        // Consider this as online with degraded status
+        console.warn('[NetworkMonitor] Backend returned error:', response.status, '- treating as degraded connection');
         this.updateState({
-          status: 'degraded',
+          status: 'online', // Changed from 'degraded' - backend errors shouldn't show offline warnings
           isOnline: true,
           rtt,
           lastChecked: Date.now()
         });
-        console.warn('[NetworkMonitor] Backend returned error:', response.status);
       }
     } catch (error: any) {
-      // Network error - we're offline
-      console.error('[NetworkMonitor] Connectivity check failed:', error.message);
+      // Network error - but only mark offline if browser also says offline
+      const actuallyOffline = !navigator.onLine;
       
-      this.updateState({
-        status: 'offline',
-        isOnline: false,
-        lastChecked: Date.now()
-      });
+      if (actuallyOffline) {
+        console.error('[NetworkMonitor] Connectivity check failed - confirmed offline:', error.message);
+        this.updateState({
+          status: 'offline',
+          isOnline: false,
+          lastChecked: Date.now()
+        });
+      } else {
+        // Browser says online but fetch failed - could be CORS, backend down, or timeout
+        // Don't show offline notification for this case
+        console.warn('[NetworkMonitor] Health check failed but browser reports online - likely backend/CORS issue:', error.message);
+        this.updateState({
+          status: 'online', // Treat as online to avoid false offline notifications
+          isOnline: true,
+          lastChecked: Date.now()
+        });
+      }
     }
   }
 
@@ -252,11 +269,14 @@ export class NetworkMonitor {
   /**
    * Register a listener for network state changes
    */
-  public addListener(callback: NetworkChangeCallback): () => void {
+  public addListener(callback: NetworkChangeCallback, notifyImmediately: boolean = false): () => void {
     this.listeners.add(callback);
     
-    // Immediately notify with current state
-    callback(this.state);
+    // Optionally notify with current state immediately
+    // Set to false to prevent false offline notifications on page load
+    if (notifyImmediately) {
+      callback(this.state);
+    }
 
     // Return unsubscribe function
     return () => {

@@ -28,12 +28,14 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
   const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Listen for network changes
+    // Listen for network changes (notify immediately to display current state)
     const unsubscribeNetwork = networkMonitor.addListener((state) => {
       setNetworkState(state);
-      // Show bar immediately on network change
-      setIsVisible(true);
-    });
+      // Show bar only if there's actual activity (not just initial state)
+      if (!state.isOnline || state.status === 'degraded') {
+        setIsVisible(true);
+      }
+    }, true); // Notify immediately to get current state
 
     // Listen for sync events
     const unsubscribeSync = syncManager.addEventListener((event) => {

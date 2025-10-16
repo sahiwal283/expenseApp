@@ -1,24 +1,29 @@
 // ExpenseApp Service Worker
-// Version: 1.1.12 - FIX: Timezone Bug in Expense Date Submission
+// Version: 1.1.13 - FIX: Spam "Working Offline" Notifications
 // Date: October 16, 2025
 //
-// Changes from v1.1.12:
-// - FIXED: Timezone bug causing dates to be off by one day
-// - Issue: User submitting expense at 9:35 PM CST on 10/15 showed as 10/16
-// - Root cause: Using new Date().toISOString() returns UTC time, not local
-// - Solution: Created getTodayLocalDateString() utility function
-// - Fixed in: ExpenseForm, ReceiptUpload, ExpenseSubmission, Reports, appConstants
+// Changes from v1.1.13:
+// - FIXED: Multiple "Working Offline" notifications stacking up
+// - FIXED: Notifications appearing even when online
+// - FIXED: Notifications not dismissing when clicking X
+// - Issue: Users connected to internet seeing repeated offline warnings
 //
-// Technical Details:
-// - Added getTodayLocalDateString() to dateUtils.ts
-// - Uses getFullYear(), getMonth(), getDate() instead of toISOString()
-// - Ensures date reflects user's local timezone, not UTC
-// - Also fixed formatDate() in appConstants.ts for 'INPUT' format
+// Root Causes:
+// 1. Network listener created new notification on every state change
+// 2. No duplicate prevention - each check created new notification
+// 3. No cleanup when back online - old notifications persisted
+// 4. Immediate callback on addListener triggered false positives
+// 5. Health check too aggressive (5s timeout, marking offline on any error)
 //
-// Impact:
-// - All new expense submissions now use correct local date
-// - Report exports use correct date in filename
-// - OCR receipt processing defaults to correct date
+// Solutions Applied:
+// - Track notification IDs to prevent duplicates (App.tsx)
+// - Auto-dismiss offline notification when back online
+// - Only show one offline/degraded notification at a time
+// - Don't notify immediately on listener registration (prevent false positives)
+// - Increased health check timeout: 5s → 10s
+// - Only mark offline if BOTH browser API and health check confirm offline
+// - Backend errors/CORS issues no longer trigger offline notifications
+// - Treat as online if browser reports online even if health check fails
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -83,8 +88,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.12';  // BUMPED VERSION for timezone fix
-const STATIC_CACHE = 'expenseapp-static-v1.1.12';
+const CACHE_NAME = 'expenseapp-v1.1.13';  // BUMPED VERSION for offline notification fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.13';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -94,7 +99,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.12...');
+  console.log('[ServiceWorker] Installing v1.1.13...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -185,7 +190,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.12...');
+  console.log('[ServiceWorker] Activating v1.1.13...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -199,7 +204,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.12 activated and ready!');
+      console.log('[ServiceWorker] v1.1.13 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

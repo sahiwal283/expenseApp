@@ -167,14 +167,47 @@ function App() {
         }
       });
 
+      // Track notification IDs to prevent duplicates
+      let offlineNotificationId: string | null = null;
+      let degradedNotificationId: string | null = null;
+
       // Listen for network status changes
       const unsubscribeNetwork = networkMonitor.addListener((state) => {
         console.log('[App] Network status:', state.status);
         
         if (!state.isOnline) {
-          notifications.showOffline();
-        } else if (state.status === 'degraded') {
-          notifications.showWarning('Slow Connection', 'Your connection is slow. Sync may take longer.');
+          // Show offline notification only if not already showing
+          if (!offlineNotificationId) {
+            offlineNotificationId = notifications.showOffline();
+            console.log('[App] Offline notification shown:', offlineNotificationId);
+          }
+          // Clear degraded notification if switching from degraded to offline
+          if (degradedNotificationId) {
+            notifications.removeNotification(degradedNotificationId);
+            degradedNotificationId = null;
+          }
+        } else {
+          // Back online - dismiss offline notification
+          if (offlineNotificationId) {
+            console.log('[App] Dismissing offline notification:', offlineNotificationId);
+            notifications.removeNotification(offlineNotificationId);
+            offlineNotificationId = null;
+          }
+          
+          // Show degraded notification if connection is slow
+          if (state.status === 'degraded') {
+            if (!degradedNotificationId) {
+              degradedNotificationId = notifications.showWarning('Slow Connection', 'Your connection is slow. Sync may take longer.', 5000);
+              console.log('[App] Degraded notification shown:', degradedNotificationId);
+            }
+          } else {
+            // Connection improved - dismiss degraded notification
+            if (degradedNotificationId) {
+              console.log('[App] Dismissing degraded notification:', degradedNotificationId);
+              notifications.removeNotification(degradedNotificationId);
+              degradedNotificationId = null;
+            }
+          }
         }
       });
 
