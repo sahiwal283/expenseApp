@@ -453,9 +453,9 @@ class ZohoAccountHandler {
         };
         const startFormatted = formatDate(expenseData.eventStartDate);
         const endFormatted = formatDate(expenseData.eventEndDate);
-        eventInfo = `Event: ${expenseData.eventName}: ${startFormatted} - ${endFormatted}`;
+        eventInfo = `${expenseData.eventName} (${startFormatted} - ${endFormatted})`;
       } else {
-        eventInfo = `Event: ${expenseData.eventName}`;
+        eventInfo = `${expenseData.eventName}`;
       }
     }
 
