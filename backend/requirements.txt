@@ -1,0 +1,10 @@
+# Python requirements for enhanced OCR
+# Install with: pip3 install -r requirements.txt
+
+paddleocr>=2.7.0
+paddlepaddle>=2.5.0  # CPU version
+# paddlepaddle-gpu>=2.5.0  # Uncomment for GPU support
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
