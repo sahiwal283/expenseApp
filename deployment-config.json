@@ -1,0 +1,70 @@
+{
+  "environments": {
+    "sandbox": {
+      "container": 203,
+      "ip": "192.168.1.144",
+      "backend": {
+        "path": "/opt/expenseApp/backend",
+        "note": "⚠️ CRITICAL: Capital 'A' in expenseApp!",
+        "service": "expenseapp-backend"
+      },
+      "frontend": {
+        "path": "/var/www/expenseapp/current",
+        "note": "lowercase 'a' in expenseapp",
+        "proxy": "192.168.1.160"
+      },
+      "database": {
+        "container": 209,
+        "host": "192.168.1.148"
+      }
+    },
+    "production": {
+      "container": 201,
+      "ip": "192.168.1.129",
+      "backend": {
+        "path": "/opt/expenseApp/backend",
+        "note": "⚠️ CRITICAL: Capital 'A' in expenseApp!",
+        "service": "expenseapp-backend"
+      },
+      "frontend": {
+        "path": "/var/www/expenseapp/current",
+        "note": "lowercase 'a' in expenseapp",
+        "proxy": "192.168.1.160"
+      },
+      "database": {
+        "container": 208,
+        "host": "192.168.1.147"
+      }
+    }
+  },
+  "common_mistakes": [
+    {
+      "mistake": "Deploying to /opt/expenseapp/ (lowercase)",
+      "correct": "/opt/expenseApp/ (capital A)",
+      "impact": "404 errors on all new routes"
+    },
+    {
+      "mistake": "Deploying frontend to /var/www/expenseapp/",
+      "correct": "/var/www/expenseapp/current/",
+      "impact": "404 errors due to Nginx config"
+    },
+    {
+      "mistake": "Forgetting to bump version in service-worker.js",
+      "correct": "Update CACHE_NAME and version comment",
+      "impact": "Cached old frontend, users don't see updates"
+    }
+  ],
+  "deployment_checklist": [
+    "✓ On correct branch (v1.x.x)",
+    "✓ Version bumped in backend/package.json",
+    "✓ Version bumped in package.json",
+    "✓ Version bumped in public/service-worker.js",
+    "✓ Build succeeds locally",
+    "✓ Deploy to correct path (/opt/expenseApp/backend)",
+    "✓ Restart service (systemctl restart expenseapp-backend)",
+    "✓ Verify version (/api/health endpoint)",
+    "✓ Test critical routes",
+    "✓ Check frontend cache bust (NPMplus restart if needed)"
+  ]
+}
+

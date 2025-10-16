@@ -90,6 +90,44 @@ If you see different credentials between sandbox and production, **this is inten
 
 **LESSON:** Schema constraints and code must stay in sync!
 
+### 🔥 CRITICAL: Backend Deployment Path Case Sensitivity
+
+**⚠️ THE MOST COMMON RECURRING MISTAKE!**
+
+**Backend must deploy to `/opt/expenseApp/backend/` (CAPITAL 'A' in expenseApp!)**
+
+**Common Pitfall:** Deploying to `/opt/expenseapp/` (lowercase 'a') causes:
+- ✗ 404 errors on ALL new routes
+- ✗ "Cannot find module" errors
+- ✗ node_modules not found
+- ✗ Service runs but can't load new files
+
+**Why This Happens:**
+- The systemd service `ExecStart` points to `/opt/expenseApp/backend/dist/server.js`
+- If you deploy to `/opt/expenseapp/`, the service can't find the files
+- Linux is case-sensitive: `expenseApp` ≠ `expenseapp`
+
+**Correct Deployment Path:**
+```bash
+# CORRECT (capital A) ✓
+/opt/expenseApp/backend/
+
+# WRONG (lowercase a) ✗
+/opt/expenseapp/backend/
+```
+
+**How to Prevent This:**
+1. Use the deployment helper script: `./deploy-sandbox.sh`
+2. Check `deployment-config.json` for correct paths
+3. Verify service path: `systemctl cat expenseapp-backend | grep ExecStart`
+4. **NEVER manually type the path** - copy from config file
+
+**Applies to BOTH:**
+- Container 203 (Sandbox)
+- Container 201 (Production)
+
+**If routes return 404, CHECK THIS FIRST!**
+
 ### ⚠️ CRITICAL: Frontend Deployment Directory
 
 **Container 202 (Production Frontend) requires files in `/var/www/expenseapp/current/`**
