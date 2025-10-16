@@ -1,7 +1,12 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
 **Version:** 1.4.10 (Frontend) / 1.5.0 (Backend)
 **Last Updated:** October 16, 2025  
-**Status:** Production & Sandbox Active
+**Status:** ✅ Production & Sandbox Active
+
+**Production Deployment:** October 16, 2025
+- **Backend:** v1.5.0 (Container 201)
+- **Frontend:** v1.4.10 (Container 202)
+- **Git Tags:** `v1.5.0-backend`, `v1.4.10-frontend`
 
 ---
 
@@ -117,6 +122,13 @@ tar -xzf frontend-deploy.tar.gz -C /var/www/expenseapp/current --strip-component
    - "push to production" 
    - "deploy to container 201"
 5. **REVERT IMMEDIATELY**: If you accidentally deploy to production, immediately revert to the last stable version
+6. **ALWAYS TAG RELEASES**: After successful production deployment, create version tags:
+   ```bash
+   git tag -a "v1.X.X-backend" -m "Backend v1.X.X - Description"
+   git tag -a "v1.X.X-frontend" -m "Frontend v1.X.X - Description"
+   git push origin --tags
+   ```
+7. **UPDATE MASTER GUIDE**: Update version numbers and production status in AI_MASTER_GUIDE.md header
 
 ### Why This Matters
 
