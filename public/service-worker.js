@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.6.1 - PATCH: Deploy complete continuous learning system with fixed routes
+// Version: 1.7.0 - MINOR: OCR v2 frontend integration (PaddleOCR + Ollama LLM)
 // Date: October 16, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.6.1';  // BUMPED VERSION for deployment with all routes
+const CACHE_NAME = 'expenseapp-v1.7.0';  // BUMPED VERSION for OCR v2 frontend integration
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

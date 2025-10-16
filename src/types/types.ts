@@ -69,6 +69,17 @@ export interface ReceiptData {
   date?: string;
   location?: string;
   rawText?: string;
+  confidence?: number;
+  ocrText?: string;
+  receiptFile?: File;
+  file?: File;
+  ocrV2Data?: {
+    inference?: any;
+    categories?: Array<{ category: string; confidence: number; keywordsMatched?: string[] }>;
+    needsReview?: boolean;
+    reviewReasons?: string[];
+    ocrProvider?: string;
+  };
 }
 
 export interface CardOption {

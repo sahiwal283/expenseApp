@@ -55,11 +55,11 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     setProcessing(true);
     
     try {
-      // Call backend OCR API
+      // Call NEW OCR v2 API (PaddleOCR + Ollama LLM)
       const formData = new FormData();
       formData.append('receipt', file);
       
-      const response = await fetch(`${api.API_BASE || '/api'}/expenses/ocr`, {
+      const response = await fetch(`${api.API_BASE || '/api'}/api/ocr/v2/process`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
@@ -68,28 +68,41 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OCR v2 failed:', errorText);
         throw new Error('OCR processing failed');
       }
 
       const result = await response.json();
       
-      // Transform backend response to match expected format
+      console.log('[OCR v2] Response:', result);
+      
+      // Transform OCR v2 response to match expected format
+      const inference = result.inference || {};
       const ocrData = {
         file: file,
-        total: result.amount || 0,
-        merchant: result.merchant || 'Unknown Merchant',
-        date: result.date || getTodayLocalDateString(),
-        location: result.location || 'Unknown Location',
-        category: result.category || 'Other',
-        ocrText: result.text || '',
-        confidence: result.confidence || 0,
-        receiptFile: file
+        total: inference.amount?.value || 0,
+        merchant: inference.merchant?.value || 'Unknown Merchant',
+        date: inference.date?.value || getTodayLocalDateString(),
+        location: inference.location?.value || 'Unknown Location',
+        category: inference.category?.value || result.categories?.[0]?.category || 'Other',
+        ocrText: result.ocr?.text || '',
+        confidence: result.overallConfidence || result.ocr?.confidence || 0,
+        receiptFile: file,
+        // Store enhanced OCR v2 data for corrections
+        ocrV2Data: {
+          inference,
+          categories: result.categories || [],
+          needsReview: result.needsReview,
+          reviewReasons: result.reviewReasons || [],
+          ocrProvider: result.ocr?.provider
+        }
       };
 
       setOcrResults(ocrData);
     } catch (error) {
-      console.error('OCR Error:', error);
-      alert('Failed to process receipt. Please try again or enter manually.');
+      console.error('OCR v2 Error:', error);
+      alert('Failed to process receipt with OCR v2. Please try again or enter manually.');
     } finally {
       setProcessing(false);
     }
@@ -163,15 +176,15 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 <div className="flex items-center space-x-3">
                   <Camera className="w-8 h-8 text-blue-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Smart Scanning</h4>
-                    <p className="text-sm text-gray-600">Tesseract OCR powered</p>
+                    <h4 className="font-medium text-gray-900">Advanced OCR</h4>
+                    <p className="text-sm text-gray-600">PaddleOCR + AI powered</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <FileImage className="w-8 h-8 text-emerald-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Image Enhancement</h4>
-                    <p className="text-sm text-gray-600">Auto-processed for clarity</p>
+                    <h4 className="font-medium text-gray-900">Smart Categories</h4>
+                    <p className="text-sm text-gray-600">AI-suggested with confidence</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -225,38 +238,117 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-6 h-6 text-emerald-600" />
                     <h3 className="text-lg font-semibold text-gray-900">Extracted Data</h3>
-                    <span className="bg-emerald-100 text-emerald-800 px-2 py-1 text-xs font-medium rounded-full">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      ocrResults.confidence >= 0.7 ? 'bg-emerald-100 text-emerald-800' :
+                      ocrResults.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
                       {Math.round(ocrResults.confidence * 100)}% confidence
                     </span>
+                    {ocrResults.ocrV2Data?.ocrProvider && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium rounded-full">
+                        {ocrResults.ocrV2Data.ocrProvider}
+                      </span>
+                    )}
                   </div>
-                  {ocrResults.confidence < 0.5 && (
+                  {ocrResults.ocrV2Data?.needsReview && (
                     <div className="flex items-center text-orange-600 text-sm">
                       <AlertCircle className="w-4 h-4 mr-1" />
-                      Please verify extracted data
+                      Review recommended
                     </div>
                   )}
                 </div>
 
+                {/* Category Suggestions */}
+                {ocrResults.ocrV2Data?.categories && ocrResults.ocrV2Data.categories.length > 0 && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      AI-Suggested Categories
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {ocrResults.ocrV2Data.categories.slice(0, 3).map((cat: any, idx: number) => (
+                        <div 
+                          key={idx}
+                          className={`px-3 py-1.5 rounded-lg border-2 ${
+                            idx === 0 
+                              ? 'bg-blue-50 border-blue-300 text-blue-900' 
+                              : 'bg-white border-gray-200 text-gray-700'
+                          }`}
+                        >
+                          <span className="font-medium">{cat.category}</span>
+                          <span className="ml-2 text-xs opacity-75">
+                            {Math.round(cat.confidence * 100)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Merchant</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Merchant
+                        {ocrResults.ocrV2Data?.inference?.merchant && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.merchant.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.merchant.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.merchant.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
                       <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.merchant}</div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Total Amount
+                        {ocrResults.ocrV2Data?.inference?.amount && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.amount.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.amount.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.amount.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
                       <div className="bg-white px-3 py-2 rounded-lg border font-semibold text-emerald-600">
-                        ${ocrResults.total.toFixed(2)}
+                        ${typeof ocrResults.total === 'number' ? ocrResults.total.toFixed(2) : ocrResults.total}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date
+                        {ocrResults.ocrV2Data?.inference?.date && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.date.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.date.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.date.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
                       <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.date}</div>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category (Top Suggestion)
+                        {ocrResults.ocrV2Data?.inference?.category && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.category.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.category.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.category.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
                       <div className="bg-white px-3 py-2 rounded-lg border">
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 text-sm font-medium rounded-full">
                           {ocrResults.category}
@@ -264,11 +356,39 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Location
+                        {ocrResults.ocrV2Data?.inference?.location && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.location.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.location.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.location.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
                       <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.location}</div>
                     </div>
                   </div>
                 </div>
+
+                {/* Review Reasons */}
+                {ocrResults.ocrV2Data?.reviewReasons && ocrResults.ocrV2Data.reviewReasons.length > 0 && (
+                  <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-orange-900">Please Review:</p>
+                        <ul className="text-sm text-orange-700 mt-1 space-y-1">
+                          {ocrResults.ocrV2Data.reviewReasons.map((reason: string, idx: number) => (
+                            <li key={idx}>• {reason}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
