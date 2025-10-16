@@ -115,14 +115,21 @@ export class OCRService {
       if (this.llmProvider) {
         const lowConfidenceFields = this.findLowConfidenceFields(inference);
         if (lowConfidenceFields.length > 0) {
-          console.log(`[OCRService] Enhancing low-confidence fields with LLM: ${lowConfidenceFields.join(', ')}`);
+          console.log(`[OCRService] Enhancing ${lowConfidenceFields.length} low-confidence fields with LLM: ${lowConfidenceFields.join(', ')}`);
           try {
             const llmEnhancements = await this.llmProvider.extractFields(ocrResult.text, lowConfidenceFields);
-            // Merge LLM enhancements (would update inference here)
-            console.log('[OCRService] LLM enhancements applied');
+            
+            // Merge LLM enhancements into inference
+            this.mergeLLMEnhancements(inference, llmEnhancements, lowConfidenceFields);
+            
+            const enhancedCount = Object.keys(llmEnhancements).length;
+            console.log(`[OCRService] LLM enhancements applied: ${enhancedCount} field(s) improved`);
           } catch (error: any) {
             console.warn('[OCRService] LLM enhancement failed:', error.message);
+            // Continue with rule-based inference even if LLM fails
           }
+        } else {
+          console.log('[OCRService] All fields have high confidence, skipping LLM');
         }
       }
       
@@ -181,6 +188,36 @@ export class OCRService {
     if (inference.category.confidence < threshold) lowConfidence.push('category');
     
     return lowConfidence;
+  }
+  
+  /**
+   * Merge LLM enhancements into existing field inference
+   * Only replaces fields that have higher confidence from LLM
+   */
+  private mergeLLMEnhancements(
+    inference: FieldInference, 
+    llmEnhancements: Partial<FieldInference>,
+    requestedFields: string[]
+  ): void {
+    for (const field of requestedFields) {
+      const llmField = (llmEnhancements as any)[field];
+      
+      if (llmField && llmField.value !== null && llmField.value !== undefined) {
+        const existingField = (inference as any)[field];
+        
+        // Replace if LLM confidence is higher OR if existing field is null
+        if (!existingField.value || llmField.confidence > existingField.confidence) {
+          console.log(`[OCRService] Replacing ${field}: "${existingField.value}" (${existingField.confidence.toFixed(2)}) → "${llmField.value}" (${llmField.confidence.toFixed(2)})`);
+          (inference as any)[field] = {
+            ...llmField,
+            source: 'llm',
+            alternatives: existingField.value ? [existingField] : undefined
+          };
+        } else {
+          console.log(`[OCRService] Keeping rule-based ${field} (higher confidence)`);
+        }
+      }
+    }
   }
   
   /**
@@ -252,6 +289,14 @@ export class OCRService {
   }
 }
 
-// Export singleton instance
-export const ocrService = new OCRService();
+// Export singleton instance with Ollama LLM enabled
+export const ocrService = new OCRService({
+  primaryProvider: 'paddleocr',
+  fallbackProvider: 'tesseract',
+  inferenceEngine: 'rule-based',
+  llmProvider: 'ollama', // Enable Ollama for low-confidence field enhancement
+  confidenceThreshold: 0.6,
+  enableUserCorrections: true,
+  logOCRResults: true
+});
 
