@@ -3552,6 +3552,425 @@ After every deployment, verify:
 
 ---
 
+## 🔬 Critical Debugging Sessions & Lessons Learned
+
+This section documents comprehensive debugging sessions, production issues, and critical lessons learned from real deployments. **Read this carefully before making similar changes!**
+
+### Session: October 16, 2025 - Production Bug Fixes & Major Features
+
+**Context:** Post-production deployment from v1.1.11 to v1.5.1 (both frontend and backend)
+
+**Duration:** Full day session (multiple deployments)
+
+**Result:** ✅ 13 production releases, 5 critical bugs fixed, 1 major feature deployed
+
+---
+
+#### 📊 Session Timeline
+
+1. **v1.1.12** - Fixed timezone bug
+2. **v1.1.13** - Fixed offline notification spam
+3. **v1.1.14** - Fixed session timeout warning
+4. **v1.2.1 → v1.3.1** - Unified expenses/approvals page
+5. **v1.3.2** - Editable detail modal
+6. **v1.3.3** - Mark as Paid button
+7. **v1.4.0** - Automated approval workflow
+8. **v1.4.1** - Auto-status bug fix #1
+9. **v1.4.2-v1.4.4** - Auto-status iterations
+10. **v1.5.0** - Simplified auto-status logic
+11. **v1.4.10** - Chart color fix
+12. **v1.4.11** - Zoho status in modal
+13. **v1.4.12** - Settings UI cleanup
+14. **v1.4.13/v1.5.1** - Pending tasks navigation fix
+
+---
+
+#### 🐛 Bug #1: Timezone Issue (v1.1.12)
+
+**Reported By:** User - "Expense submitted at 9:35 PM CST on 10/15/25 is showing as 10/16"
+
+**Root Cause:**  
+```typescript
+// BAD - Returns UTC date which can be next day
+new Date().toISOString().split('T')[0]
+```
+
+**Investigation:**
+- User in CST timezone (UTC-5)
+- 9:35 PM CST = 2:35 AM UTC (next day)
+- All date inputs used `toISOString()` which returned UTC date
+
+**Solution:**
+```typescript
+// GOOD - Returns local date
+export function getTodayLocalDateString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+```
+
+**Files Changed:**
+- `src/utils/dateUtils.ts` - Added new helper
+- `src/components/expenses/ExpenseForm.tsx` - Use helper for default date
+- `src/components/expenses/ReceiptUpload.tsx` - Use helper for OCR fallback
+- `src/components/expenses/ExpenseSubmission.tsx` - Use helper for receipt upload
+- `src/components/reports/Reports.tsx` - Use helper for filename
+- `src/constants/appConstants.ts` - Updated formatDate 'INPUT' mode
+
+**Lesson Learned:** Always use local time components for user-facing dates, never rely on `toISOString()` for date inputs.
+
+---
+
+#### 🐛 Bug #2: Offline Notification Spam (v1.1.13)
+
+**Reported By:** User - "Working Offline notifications repeat multiple times, do not dismiss, and generate new ones even when connected"
+
+**Root Cause:**
+1. `networkMonitor.addListener()` called with `notifyImmediately: true` → instant false positive
+2. No notification ID tracking → multiple notifications stacked
+3. Aggressive health check timeout (5s) → false offline detections
+4. Backend errors treated as offline → false positives
+
+**Investigation:**
+- Traced through `App.tsx` → `networkMonitor.addListener()`
+- Found immediate callback triggered before actual network check
+- Discovered multiple listeners creating duplicate notifications
+- Health check failing on CORS/backend errors
+
+**Solution:**
+```typescript
+// 1. Track notification IDs
+let offlineNotificationId: string | null = null;
+let degradedNotificationId: string | null = null;
+
+// 2. Add notifyImmediately flag (default false)
+networkMonitor.addListener((state) => {
+  if (!state.isOnline) {
+    if (!offlineNotificationId) {
+      offlineNotificationId = notifications.showOffline();
+    }
+  } else {
+    if (offlineNotificationId) {
+      notifications.removeNotification(offlineNotificationId);
+      offlineNotificationId = null;
+    }
+  }
+}, false); // Don't notify immediately!
+
+// 3. Increase timeout, improve logic
+const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s instead of 5s
+
+// 4. Treat backend errors as "online" (not offline)
+if (navigator.onLine && backendError) {
+  return 'online'; // Backend issue, not network issue
+}
+```
+
+**Files Changed:**
+- `src/App.tsx` - Notification ID tracking
+- `src/utils/networkDetection.ts` - Less aggressive detection
+- `src/components/common/SyncStatusBar.tsx` - Use `notifyImmediately: true` only here
+
+**Lesson Learned:** 
+- Network detection is complex - be conservative with "offline" determination
+- Always track notification IDs to prevent duplicates
+- Backend errors ≠ offline (CORS, 500 errors can happen while online)
+
+---
+
+#### 🐛 Bug #3: Session Timeout Warning Not Appearing (v1.1.14)
+
+**Reported By:** User - "Application logs out due to session timeout without displaying the warning modal"
+
+**Root Cause:**
+```typescript
+// BAD - Wrong base URL
+const refreshUrl = `/api/auth/refresh`; // Missing VITE_API_URL
+```
+
+**Investigation:**
+- Token refresh was failing silently
+- Warning modal depends on successful token refresh
+- API client's unauthorized callback triggered immediate logout
+- Session manager never got chance to show warning
+
+**Solution:**
+```typescript
+// 1. Fix token refresh URL
+const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+const refreshUrl = `${apiBaseUrl}/auth/refresh`;
+
+// 2. Coordinate API client with session manager
+apiClient.setUnauthorizedCallback(() => {
+  const timeRemaining = sessionManager.getTimeRemaining();
+  if (timeRemaining > 0 && timeRemaining <= 300) {
+    return; // Let session manager handle warning
+  }
+  // Only force logout if unexpected
+  notifications.showWarning('Session Expired', 'Please log in again.', 3000);
+  setTimeout(() => { handleLogout(); }, 500);
+});
+```
+
+**Files Changed:**
+- `src/utils/sessionManager.ts` - Fixed refresh URL
+- `src/App.tsx` - Coordinated callback logic
+
+**Lesson Learned:** 
+- Always use environment variables for API base URLs
+- Coordinate between multiple systems that handle auth (API client, session manager)
+- Test token refresh in production environment (different URLs)
+
+---
+
+#### 🐛 Bug #4: Auto-Status Logic Not Reliable (v1.5.0)
+
+**Reported By:** User - "Approving a reimbursement doesn't auto-update status from 'needs further review' to 'approved'"
+
+**Root Cause:** Complex nested conditionals made logic unreliable
+```typescript
+// BAD - Too complex, easy to miss edge cases
+if (isInitialReview && (currentStatus === 'pending' || currentStatus === 'needs further review')) {
+  updates.status = 'approved';
+} else if (isCorrectiveApproval && currentStatus === 'needs further review') {
+  updates.status = 'approved';
+} else if (isReimbursementRegression || isPaidRegression) {
+  updates.status = 'needs further review';
+}
+// What about other combinations?
+```
+
+**Investigation:**
+- Tested multiple scenarios: pending → approved, rejected → approved, paid → rejected
+- Found that "corrective approval" logic wasn't covering all cases
+- Realized nested boolean checks were hard to reason about
+
+**Solution:** Simplified to 3 clear rules (checked in order)
+```typescript
+// GOOD - Simple, prioritized, exhaustive
+// Rule 1: Check for regressions (highest priority)
+const isRegression = 
+  (oldReimbursement === 'approved' && newReimbursement === 'rejected') ||
+  (oldReimbursement === 'paid' && newReimbursement === 'approved') ||
+  (oldReimbursement === 'paid' && newReimbursement === 'rejected');
+
+if (isRegression) {
+  updates.status = 'needs further review';
+}
+// Rule 2: Auto-approve any reimbursement decision
+else if ((newReimbursement === 'approved' || newReimbursement === 'rejected' || newReimbursement === 'paid') && 
+         (currentStatus === 'pending' || currentStatus === 'needs further review')) {
+  updates.status = 'approved';
+}
+// Rule 3: No change
+else {
+  // No status change needed
+}
+```
+
+**Files Changed:**
+- `backend/src/services/ExpenseService.ts` - Completely rewrote `updateReimbursementStatus()` and `assignZohoEntity()`
+- Added comprehensive logging for all transitions
+
+**Lesson Learned:**
+- **Simplicity > Cleverness** - 3 clear rules beat 6+ nested conditions
+- **Priority order matters** - Check regressions first, then approvals
+- **Exhaustive is better** - Cover ALL cases explicitly, no implicit fallthrough
+- **Log everything** - Make debugging status transitions trivial
+
+---
+
+#### 🐛 Bug #5: Pending Tasks Navigation (v1.4.13/v1.5.1)
+
+**Reported By:** User - "Push to Zoho link takes me to old approvals page which no longer exists"
+
+**Root Cause:** Approvals page was removed in v1.3.0, but dashboard links weren't updated
+```typescript
+// Backend still returning old link
+link: '/approvals'
+```
+
+**Investigation:**
+- Checked `QuickActions.tsx` → old sessionStorage logic for 'openApprovalsEvent'
+- Checked `backend/src/routes/quickActions.ts` → 3 tasks returning `/approvals`
+- Confirmed approvals page removed in v1.3.0 (merged into expenses)
+
+**Solution:**
+```typescript
+// Update all links to /expenses
+{
+  action: 'Push to Zoho',
+  link: '/expenses', // v1.3.0+: Push to Zoho now on unified Expenses page
+}
+```
+
+**Files Changed:**
+- `src/components/dashboard/QuickActions.tsx` - Removed obsolete logic
+- `backend/src/routes/quickActions.ts` - Updated 3 task links
+
+**Lesson Learned:**
+- **When merging/removing pages, grep for all references!**
+- Check: navigation, API responses, sessionStorage keys, URL hash handling
+- Update backend API responses, not just frontend code
+
+---
+
+#### 🚨 Critical Issue: Database Schema Constraints
+
+**Discovered During:** v1.5.0 deployment
+
+**Problem:** Deployed code that used `'needs further review'` status, but database CHECK constraint didn't allow it
+```sql
+-- OLD constraint
+CHECK (status IN ('pending', 'approved', 'rejected'))
+
+-- NEW status used in code
+status = 'needs further review'
+
+-- Result: 500 errors on updates
+```
+
+**Error Message:** `"new row violates check constraint"`
+
+**Fix:**
+```sql
+-- Update constraint BEFORE deploying code
+ALTER TABLE expenses DROP CONSTRAINT IF EXISTS expenses_status_check;
+ALTER TABLE expenses ADD CONSTRAINT expenses_status_check 
+  CHECK (status IN ('pending', 'approved', 'rejected', 'needs further review'));
+```
+
+**Deployment Order:**
+1. ✅ Update `schema.sql` with new constraint
+2. ✅ Create migration file
+3. ✅ Run migration in production
+4. ✅ **THEN** deploy backend code
+
+**Lesson Learned:**
+- ⚠️ **ALWAYS update database schema constraints BEFORE deploying code that uses new values!**
+- Create migration files for constraint changes
+- Test in sandbox first
+- Verify constraint with `\d+ table_name` in psql
+
+---
+
+#### 🚨 Critical Issue: Frontend Deployment Directory
+
+**Discovered During:** v1.4.10 deployment
+
+**Problem:** Frontend deployed to `/var/www/expenseapp/` but Nginx configured for `/var/www/expenseapp/current/`
+
+**Result:** 404 Not Found errors
+
+**Investigation:**
+```bash
+# Nginx config
+root /var/www/expenseapp/current;
+
+# Files deployed to
+/var/www/expenseapp/index.html  # Wrong!
+
+# Should be
+/var/www/expenseapp/current/index.html  # Correct!
+```
+
+**Fix:**
+```bash
+# Create current/ directory
+mkdir -p /var/www/expenseapp/current
+
+# Deploy to correct location
+tar -xzf frontend-deploy.tar.gz -C /var/www/expenseapp/current --strip-components=1
+```
+
+**Lesson Learned:**
+- ⚠️ **Always verify Nginx root path BEFORE deploying frontend!**
+- Check `nginx.conf` for correct directory structure
+- Test deployment in sandbox first
+- Add to deployment checklist
+
+---
+
+#### 💡 What Worked Well
+
+1. **Incremental Deployments** - Small, frequent releases made debugging easier
+2. **Version Tagging** - Git tags helped track exactly what was in production
+3. **Comprehensive Logging** - Status transition logs made debugging trivial
+4. **Sandbox Testing** - Caught deployment path issues before production
+5. **User Feedback** - Quick bug reports enabled fast fixes
+6. **Documentation** - CHANGELOG and master guide kept history clear
+7. **Semantic Versioning** - Patch/minor/major versions communicated change scope
+
+#### 🚧 What Didn't Work / Stuck Points
+
+1. **Complex Conditionals** - Nested if/else for auto-status was unreliable
+2. **Backend chown Error** - `chown: invalid user: 'node:node'` (ignored, doesn't affect functionality)
+3. **Branch Strategy Confusion** - Initially created new branch per change (wrong!)
+4. **Deployment Paths** - Backend vs frontend deployment directories were inconsistent
+5. **Schema Constraints** - Forgot to update BEFORE deploying code
+
+#### 📚 Key Lessons for Future AI Agents
+
+1. **Database Schema First**
+   - Update constraints BEFORE code
+   - Create migration files
+   - Test in sandbox
+   - Verify with `\d+ table_name`
+
+2. **Deployment Paths**
+   - Frontend: `/var/www/expenseapp/current/`
+   - Backend: `/opt/expenseApp/backend/` (capital A!)
+   - Check Nginx config first
+
+3. **Version Tags**
+   - ALWAYS create tags after production deployment
+   - Format: `v1.X.X-frontend`, `v1.X.X-backend`
+   - Update master guide header
+
+4. **Branching Strategy**
+   - ONE branch per development session
+   - Name: just version number (e.g., `v1.2.0`)
+   - Many commits on same branch
+   - Merge to main when session complete
+
+5. **Auto-Status Logic**
+   - Keep it simple (3 rules max)
+   - Check regressions first
+   - Log every transition
+   - Be exhaustive, not clever
+
+6. **Network Detection**
+   - Be conservative with "offline" determination
+   - Backend errors ≠ offline
+   - Track notification IDs
+   - Increase timeouts
+
+7. **Separate Credentials**
+   - Sandbox and production Zoho credentials are INTENTIONALLY different
+   - Don't try to "fix" this!
+   - Data isolation is the goal
+
+---
+
+#### 📝 Session Metrics
+
+- **Time:** ~8 hours
+- **Deployments:** 14 (13 successful, 1 path issue fixed)
+- **Bug Fixes:** 5 critical issues resolved
+- **Feature Releases:** 1 major (unified expenses/approvals)
+- **Code Changes:** ~2,000 lines modified
+- **Git Commits:** 25
+- **Git Tags:** 14
+- **Files Touched:** 30+
+- **Documentation:** 4 files updated (README, CHANGELOG, master guide, credentials)
+
+**Final Status:** ✅ Production stable, all critical bugs fixed, major feature deployed successfully
+
+---
+
 **END OF MASTER GUIDE**
 
 For updates to this document, add new sections under appropriate headings and update the "Last Updated" date at the top.
