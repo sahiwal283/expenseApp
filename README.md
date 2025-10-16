@@ -29,6 +29,39 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 
 ---
 
+## 🚧 In Development (v1.6.0 - OCR Upgrade)
+
+**Branch:** `v1.6.0` (Sandbox Only)  
+**Status:** 🟡 Backend Complete, Frontend Pending
+
+### 🔬 Advanced OCR with AI-Ready Architecture
+
+Major upgrade to receipt OCR system with:
+- **PaddleOCR Integration**: Higher accuracy OCR engine replacing Tesseract
+- **Field Inference Engine**: Automatic extraction of merchant, amount, date, card, category
+- **Confidence Scores**: Per-field confidence for quality assessment
+- **User Correction Tracking**: Learn from user edits for continuous improvement
+- **LLM-Ready Framework**: Interfaces for OpenAI/Claude integration (not yet implemented)
+- **Enhanced API**: New `/api/ocr/v2/*` endpoints with structured data output
+
+**Documentation:**
+- [OCR System README](backend/src/services/ocr/README.md) - Technical architecture & API docs
+- [OCR Upgrade Status](OCR_UPGRADE_STATUS.md) - Deployment guide & testing procedures
+
+**What's Complete:**
+- ✅ PaddleOCR provider with preprocessing
+- ✅ Rule-based inference engine
+- ✅ Category detection (12 categories with keywords)
+- ✅ User correction database & APIs
+- ✅ Comprehensive documentation (600+ lines)
+
+**Next Steps:**
+- ⏳ Frontend integration (confidence indicators, category suggestions)
+- ⏳ Benchmarking suite (50+ test receipts)
+- ⏳ Sandbox deployment & testing
+
+---
+
 ## 🆕 Recent Updates (v1.1.0 - v1.5.1)
 
 **October 16, 2025 - Major Feature Release & Production Deployment**
