@@ -654,7 +654,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                                   </button>
                                 </div>
                               )}
-                              {expense.reimbursementStatus === 'approved' && expense.status === 'approved' && (
+                              {expense.reimbursementStatus === 'approved' && (
                                 <div className="flex items-center space-x-1 mt-1">
                                   <button
                                     onClick={() => handleMarkAsPaid(expense)}
