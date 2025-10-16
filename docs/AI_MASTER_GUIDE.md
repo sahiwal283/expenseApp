@@ -55,6 +55,58 @@ If you see different credentials between sandbox and production, **this is inten
 - **Container 201** = **PRODUCTION** (Live users, real financial data)
 - **Container 203** = **SANDBOX** (Testing environment)
 
+### ⚠️ CRITICAL: Database Schema Updates
+
+**ALWAYS update database schema constraints when deploying code that uses new values!**
+
+**Common Pitfall:** Deploying code that uses new enum values (like new status types) WITHOUT updating the database CHECK constraints will cause runtime errors like:
+- `"new row violates check constraint"`
+- `"Failed to update entity"`
+- 500 errors on update operations
+
+**Required Steps for Schema Changes:**
+
+1. **Update schema.sql** - Add new values to CHECK constraints
+2. **Create migration file** - For existing constraint updates:
+   ```sql
+   ALTER TABLE table_name DROP CONSTRAINT IF EXISTS constraint_name;
+   ALTER TABLE table_name ADD CONSTRAINT constraint_name 
+     CHECK (column_name IN ('value1', 'value2', 'NEW_VALUE'));
+   ```
+3. **Test in sandbox FIRST**
+4. **Run migration in production BEFORE deploying code**
+5. **Verify constraint** - Check that new values are allowed
+
+**Example from v1.5.0 deployment:**
+- Code added `'needs further review'` status
+- Forgot to update `expenses_status_check` constraint
+- Result: Entity updates failed with 500 errors
+- Fix: Run ALTER TABLE to update constraint
+
+**LESSON:** Schema constraints and code must stay in sync!
+
+### ⚠️ CRITICAL: Frontend Deployment Directory
+
+**Container 202 (Production Frontend) requires files in `/var/www/expenseapp/current/`**
+
+**Common Pitfall:** Deploying frontend files to `/var/www/expenseapp/` root directory instead of the `current/` subdirectory will cause 404 errors.
+
+**Correct Deployment:**
+```bash
+# Deploy to current/ subdirectory
+tar -xzf frontend-deploy.tar.gz -C /var/www/expenseapp/current --strip-components=1
+```
+
+**Why:** Nginx configuration points to `/var/www/expenseapp/current` as the root directory.
+
+**Example from v1.4.10 deployment:**
+- Files deployed to `/var/www/expenseapp/` (wrong)
+- Nginx configured for `/var/www/expenseapp/current` (correct path)
+- Result: 404 Not Found errors
+- Fix: Create `current/` directory and move all files there
+
+**LESSON:** Always verify Nginx root path BEFORE deploying frontend!
+
 ### Deployment Rules (NEVER BREAK THESE!)
 
 1. **DEFAULT TO SANDBOX**: Unless explicitly told "deploy to production", ALWAYS deploy to Container 203
