@@ -4,6 +4,7 @@ import { authenticateToken } from '../middleware/auth';
 import pkg from '../../package.json';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 const router = express.Router();
 
@@ -19,22 +20,33 @@ router.use((req: any, res, next) => {
 // GET /api/dev-dashboard/version
 router.get('/version', async (req, res) => {
   try {
-    // Get versions from package.json files
+    // Get backend version from backend package.json
     const backendVersion = pkg.version;
     
-    // Frontend and backend versions are kept in sync
-    // We increment them together, so they should always match
-    const frontendVersion = backendVersion;
+    // Get frontend version from root package.json
+    let frontendVersion = backendVersion; // fallback
+    try {
+      const frontendPkgPath = path.join(__dirname, '../../../package.json');
+      if (fs.existsSync(frontendPkgPath)) {
+        const frontendPkg = JSON.parse(fs.readFileSync(frontendPkgPath, 'utf-8'));
+        frontendVersion = frontendPkg.version;
+      }
+    } catch (err) {
+      console.warn('Could not read frontend package.json:', err);
+    }
     
     // Get database info
     const dbResult = await pool.query('SELECT version()');
     const dbVersion = dbResult.rows[0].version;
     
-    // Get uptime
+    // Get database uptime
     const uptimeResult = await pool.query(`
       SELECT EXTRACT(EPOCH FROM (NOW() - pg_postmaster_start_time())) as uptime
     `);
-    const uptime = Math.floor(uptimeResult.rows[0].uptime);
+    const dbUptime = Math.floor(uptimeResult.rows[0].uptime);
+    
+    // Get process uptime (backend server uptime)
+    const processUptime = Math.floor(process.uptime());
     
     res.json({
       frontend: {
@@ -45,7 +57,8 @@ router.get('/version', async (req, res) => {
         nodeVersion: process.version
       },
       database: dbVersion.match(/\d+\.\d+/)?.[0] || 'PostgreSQL',
-      uptime: uptime,
+      uptime: processUptime, // Backend process uptime
+      dbUptime: dbUptime, // Database uptime
       environment: process.env.NODE_ENV || 'development'
     });
   } catch (error) {
@@ -192,32 +205,98 @@ router.get('/metrics', async (req, res) => {
       ORDER BY expense_count DESC
     `);
     
+    // System metrics
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
+    const usedMemory = totalMemory - freeMemory;
+    const memoryUsagePercent = (usedMemory / totalMemory) * 100;
+    const loadAverage = os.loadavg();
+    const cpuCores = os.cpus().length;
+    
     // Database stats
     const dbSizeResult = await pool.query(`
-      SELECT pg_size_pretty(pg_database_size(current_database())) as size
+      SELECT 
+        pg_database_size(current_database()) as size_bytes,
+        pg_size_pretty(pg_database_size(current_database())) as size_pretty
     `);
     
     const connectionResult = await pool.query(`
       SELECT count(*) as count FROM pg_stat_activity WHERE datname = current_database()
     `);
     
+    // Get table sizes
+    const tableSizesResult = await pool.query(`
+      SELECT 
+        schemaname,
+        tablename,
+        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size,
+        pg_total_relation_size(schemaname||'.'||tablename) as size_bytes
+      FROM pg_tables
+      WHERE schemaname = 'public'
+      ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+      LIMIT 10
+    `);
+    
+    // Get historical metrics (if metrics table exists)
+    let historicalMetrics = [];
+    try {
+      const historicalResult = await pool.query(`
+        SELECT 
+          'memory_usage' as metric_type,
+          AVG(${memoryUsagePercent}) as avg_value,
+          MAX(${memoryUsagePercent}) as max_value,
+          MIN(${memoryUsagePercent}) as min_value,
+          '%' as metric_unit,
+          1 as sample_count
+        UNION ALL
+        SELECT 
+          'cpu_load' as metric_type,
+          ${loadAverage[0]} as avg_value,
+          ${loadAverage[0]} as max_value,
+          ${loadAverage[0]} as min_value,
+          '' as metric_unit,
+          1 as sample_count
+        UNION ALL
+        SELECT 
+          'db_connections' as metric_type,
+          ${parseInt(connectionResult.rows[0].count)} as avg_value,
+          ${parseInt(connectionResult.rows[0].count)} as max_value,
+          ${parseInt(connectionResult.rows[0].count)} as min_value,
+          'connections' as metric_unit,
+          1 as sample_count
+      `);
+      historicalMetrics = historicalResult.rows;
+    } catch (err) {
+      console.warn('Could not fetch historical metrics:', err);
+    }
+    
     res.json({
       system: {
         memory: {
-          usagePercent: 0, // Placeholder - would need OS-level access
-          usedGB: 0,
-          totalGB: 0
+          usagePercent: memoryUsagePercent,
+          usedGB: parseFloat((usedMemory / 1024 / 1024 / 1024).toFixed(2)),
+          totalGB: parseFloat((totalMemory / 1024 / 1024 / 1024).toFixed(2)),
+          freeGB: parseFloat((freeMemory / 1024 / 1024 / 1024).toFixed(2))
         },
         cpu: {
-          loadAverage: [0, 0, 0], // Placeholder
-          cores: 4 // Placeholder
-        }
+          loadAverage: loadAverage,
+          cores: cpuCores,
+          model: os.cpus()[0]?.model || 'Unknown',
+          speed: os.cpus()[0]?.speed || 0
+        },
+        platform: os.platform(),
+        arch: os.arch(),
+        hostname: os.hostname(),
+        uptime: os.uptime()
       },
       database: {
-        size: dbSizeResult.rows[0].size,
+        databaseSize: parseInt(dbSizeResult.rows[0].size_bytes),
+        databaseSizePretty: dbSizeResult.rows[0].size_pretty,
         activeConnections: parseInt(connectionResult.rows[0].count),
-        totalConnections: 100 // Default PostgreSQL max
+        totalConnections: 100, // Default PostgreSQL max_connections
+        tableSizes: tableSizesResult.rows
       },
+      historical: historicalMetrics,
       expenses: {
         trends: expenseTrendsResult.rows,
         categoryBreakdown: categoryResult.rows
@@ -238,55 +317,114 @@ router.get('/audit-logs', async (req, res) => {
   try {
     const { limit = 50, action, search } = req.query;
     
-    // Build query
-    let query = `
-      SELECT 
-        e.id,
-        e.created_at as timestamp,
-        u.username as user,
-        u.role as user_role,
-        'expense' as resource_type,
-        e.status as action,
-        e.merchant as resource,
-        e.amount as details
-      FROM expenses e
-      JOIN users u ON e.user_id = u.id
-      WHERE 1=1
-    `;
+    // Check if audit_log table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'audit_log'
+      )
+    `);
     
-    const params: any[] = [];
+    const hasAuditTable = tableCheck.rows[0].exists;
     
-    if (action && action !== 'all') {
-      params.push(action);
-      query += ` AND e.status = $${params.length}`;
+    if (hasAuditTable) {
+      // Query actual audit log table
+      let query = `
+        SELECT 
+          id,
+          user_id,
+          user_name,
+          user_email,
+          user_role,
+          action,
+          entity_type,
+          entity_id,
+          status,
+          ip_address,
+          user_agent,
+          request_method,
+          request_path,
+          changes,
+          error_message,
+          created_at
+        FROM audit_log
+        WHERE 1=1
+      `;
+      
+      const params: any[] = [];
+      
+      if (action && action !== 'all') {
+        params.push(action);
+        query += ` AND action = $${params.length}`;
+      }
+      
+      if (search) {
+        params.push(`%${search}%`);
+        query += ` AND (user_name ILIKE $${params.length} OR action ILIKE $${params.length} OR entity_type ILIKE $${params.length})`;
+      }
+      
+      params.push(parseInt(limit as string));
+      query += ` ORDER BY created_at DESC LIMIT $${params.length}`;
+      
+      const result = await pool.query(query, params);
+      
+      res.json({
+        logs: result.rows,
+        total: result.rowCount
+      });
+    } else {
+      // Fallback: simulate audit logs from expense activity (for backward compatibility)
+      let query = `
+        SELECT 
+          e.id,
+          e.created_at,
+          u.username as user_name,
+          u.email as user_email,
+          u.role as user_role,
+          CASE 
+            WHEN e.status = 'pending' THEN 'expense_created'
+            WHEN e.status = 'approved' THEN 'expense_approved'
+            WHEN e.status = 'rejected' THEN 'expense_rejected'
+            ELSE 'expense_updated'
+          END as action,
+          'expense' as entity_type,
+          e.id as entity_id,
+          'success' as status,
+          NULL as ip_address
+        FROM expenses e
+        JOIN users u ON e.user_id = u.id
+        WHERE 1=1
+      `;
+      
+      const params: any[] = [];
+      
+      if (action && action !== 'all') {
+        params.push(action);
+        query += ` AND CASE 
+          WHEN e.status = 'pending' THEN 'expense_created'
+          WHEN e.status = 'approved' THEN 'expense_approved'
+          WHEN e.status = 'rejected' THEN 'expense_rejected'
+          ELSE 'expense_updated'
+        END = $${params.length}`;
+      }
+      
+      if (search) {
+        params.push(`%${search}%`);
+        query += ` AND (e.merchant ILIKE $${params.length} OR u.username ILIKE $${params.length})`;
+      }
+      
+      params.push(parseInt(limit as string));
+      query += ` ORDER BY e.created_at DESC LIMIT $${params.length}`;
+      
+      const result = await pool.query(query, params);
+      
+      res.json({
+        logs: result.rows,
+        total: result.rowCount,
+        notice: 'Using simulated audit logs. Run migration 004_create_audit_log.sql for full audit logging.'
+      });
     }
-    
-    if (search) {
-      params.push(`%${search}%`);
-      query += ` AND (e.merchant ILIKE $${params.length} OR u.username ILIKE $${params.length})`;
-    }
-    
-    params.push(parseInt(limit as string));
-    query += ` ORDER BY e.created_at DESC LIMIT $${params.length}`;
-    
-    const result = await pool.query(query, params);
-    
-    // Format logs with proper date formatting
-    const formattedLogs = result.rows.map(log => ({
-      ...log,
-      created_at: new Date(log.timestamp).toISOString(), // Frontend expects created_at
-      timestamp: new Date(log.timestamp).toISOString(),
-      user_name: log.user, // Frontend expects user_name
-      entity_type: log.resource_type,
-      status: 'success', // Add status field
-      ip_address: 'N/A',
-      details: typeof log.details === 'number' ? `$${parseFloat(log.details).toFixed(2)}` : log.details
-    }));
-    
-    res.json({
-      logs: formattedLogs,
-      total: result.rowCount
-    });
   } catch (error) {
     console.error('Audit logs endpoint error:', error);
     res.status(500).json({ error: 'Failed to fetch audit logs' });
@@ -306,24 +444,33 @@ router.get('/sessions', async (req, res) => {
         MAX(e.created_at) as last_active,
         COUNT(e.id) as activity_count
       FROM users u
-      LEFT JOIN expenses e ON u.id = e.user_id AND e.created_at > NOW() - INTERVAL '24 hours'
+      LEFT JOIN expenses e ON u.id = e.user_id AND e.created_at > NOW() - INTERVAL '7 days'
       GROUP BY u.id, u.username, u.role, u.email
       ORDER BY last_active DESC NULLS LAST
     `);
     
-    const sessions = result.rows.map(row => ({
-      id: row.id,
-      user_name: row.username,
-      user_email: row.email || 'N/A',
-      user_role: row.role,
-      last_activity: row.last_active ? new Date(row.last_active).toISOString() : new Date(0).toISOString(), // Use epoch for "never"
-      expires_at: new Date(Date.now() + 86400000).toISOString(), // 24 hours from now
-      ip_address: 'N/A',
-      status: row.last_active && new Date(row.last_active) > new Date(Date.now() - 3600000) 
-        ? 'active' 
-        : 'idle',
-      activity_count: parseInt(row.activity_count)
-    }));
+    const sessions = result.rows.map(row => {
+      // Calculate realistic expiration (24 hours from last activity)
+      const lastActivity = row.last_active ? new Date(row.last_active) : null;
+      const expiresAt = lastActivity 
+        ? new Date(lastActivity.getTime() + 86400000) // 24 hours from last activity
+        : new Date(Date.now() + 86400000); // Default to 24 hours from now
+      
+      return {
+        id: row.id,
+        user_name: row.username,
+        user_email: row.email || 'N/A',
+        user_role: row.role,
+        last_activity: lastActivity ? lastActivity.toISOString() : null, // null instead of epoch
+        expires_at: expiresAt.toISOString(),
+        ip_address: 'N/A',
+        status: lastActivity && lastActivity > new Date(Date.now() - 3600000) 
+          ? 'active' 
+          : (lastActivity ? 'idle' : 'inactive'),
+        activity_count: parseInt(row.activity_count),
+        has_activity: lastActivity !== null
+      };
+    });
     
     res.json({ sessions });
   } catch (error) {

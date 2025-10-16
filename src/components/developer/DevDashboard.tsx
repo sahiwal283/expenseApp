@@ -497,6 +497,8 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                   <option value="login_success">Login Success</option>
                   <option value="login_failed">Login Failed</option>
                   <option value="expense_created">Expense Created</option>
+                  <option value="expense_approved">Expense Approved</option>
+                  <option value="expense_rejected">Expense Rejected</option>
                   <option value="expense_updated">Expense Updated</option>
                   <option value="entity_assigned">Entity Assigned</option>
                 </select>
@@ -511,51 +513,61 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
 
               {/* Logs Table */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Time</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">User</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Action</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Entity</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-gray-900 whitespace-nowrap">
-                            {new Date(log.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div>
-                              <p className="text-gray-900 font-medium">{log.user_name || 'N/A'}</p>
-                              <p className="text-xs text-gray-500">{log.user_role}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-900">{log.action.replace('_', ' ')}</td>
-                          <td className="px-4 py-3 text-gray-600">{log.entity_type || '-'}</td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                log.status === 'success'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : log.status === 'failure'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}
-                            >
-                              {log.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{log.ip_address || '-'}</td>
+                {auditLogs.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Activity className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">No Audit Logs Yet</h3>
+                    <p className="text-sm text-gray-600">
+                      Activity logs will appear here once users start performing actions.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Time</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">User</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Action</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Entity</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {auditLogs.map((log) => (
+                          <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-gray-900 whitespace-nowrap">
+                              {new Date(log.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="text-gray-900 font-medium">{log.user_name || 'N/A'}</p>
+                                <p className="text-xs text-gray-500">{log.user_role || '-'}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-900 capitalize">{log.action.replace(/_/g, ' ')}</td>
+                            <td className="px-4 py-3 text-gray-600 capitalize">{log.entity_type || '-'}</td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  log.status === 'success'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : log.status === 'failure'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
+                                {log.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 text-xs">{log.ip_address || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -563,43 +575,70 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
           {/* Sessions Tab */}
           {activeTab === 'sessions' && (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Last Activity</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Expires</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {sessions.map((session) => (
-                      <tr key={session.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="text-gray-900 font-medium">{session.user_name}</p>
-                            <p className="text-xs text-gray-500">{session.user_email}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
-                            {session.user_role}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-900">
-                          {new Date(session.last_activity).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">{session.ip_address}</td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {new Date(session.expires_at).toLocaleString()}
-                        </td>
+              {sessions.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">No Active Sessions</h3>
+                  <p className="text-sm text-gray-600">
+                    User sessions will appear here once they log in and start using the app.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">User</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Last Activity</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Expires</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {sessions.map((session) => (
+                        <tr key={session.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="text-gray-900 font-medium">{session.user_name}</p>
+                              <p className="text-xs text-gray-500">{session.user_email}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
+                              {session.user_role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {session.last_activity ? (
+                              <div>
+                                <p className="text-gray-900">
+                                  {new Date(session.last_activity).toLocaleString()}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {session.status === 'active' ? (
+                                    <span className="text-emerald-600 font-medium">● Active</span>
+                                  ) : session.status === 'idle' ? (
+                                    <span className="text-yellow-600">○ Idle</span>
+                                  ) : (
+                                    <span className="text-gray-400">○ Inactive</span>
+                                  )}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-gray-500 italic">No recent activity</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-xs">{session.ip_address || 'N/A'}</td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {new Date(session.expires_at).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
