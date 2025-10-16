@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.12] - 2025-10-16 (Frontend v1.4.12) - PRODUCTION
+**Deployed to: Production (Container 202)**
+
+### Changed
+- **Settings UI Streamlined**: Removed redundant "Settings Summary" section
+  - Item counts moved directly to card headers (small, right-aligned text)
+  - Auto-save note moved to top as prominent blue info banner
+  - Cleaner, less cluttered interface with better visual hierarchy
+  - Counts now read: "7 configured", "4 configured", "12 configured"
+
+### UI Improvements
+- **Card Options**: Count displayed in header next to title
+- **Entity Options**: Count displayed in header next to title
+- **Expense Categories**: Count displayed in header next to title
+- **Auto-save Note**: More prominent positioning above cards
+
+### Technical Details
+- **Files Changed**: `src/components/admin/AdminSettings.tsx`
+- **Design Goal**: Reduce visual clutter, improve information hierarchy
+- **User Benefit**: Faster scanning, less cognitive load
+
+### Deployment
+- **Version**: v1.4.12
+- **Git Tag**: `v1.4.12-frontend`
+- **Container**: 202 (Production Frontend)
+- **Date**: October 16, 2025
+
 ## [1.4.11] - 2025-10-16 (Frontend v1.4.11) - PRODUCTION
 **Deployed to: Production (Container 202)**
 
