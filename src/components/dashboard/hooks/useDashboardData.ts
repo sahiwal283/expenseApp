@@ -32,9 +32,18 @@ export function useDashboardData() {
           console.log('[Dashboard] Loaded expenses:', ex?.length || 0);
           setExpenses(ex || []);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Dashboard] Error loading expenses:', error);
+        // If we get a 401/403, the apiClient unauthorized callback should handle logout
+        // But if that fails, we'll at least show empty data instead of crashing
         if (mounted) setExpenses([]);
+        
+        // Don't continue loading other data if authentication failed
+        if (error?.statusCode === 401 || error?.statusCode === 403) {
+          console.error('[Dashboard] Authentication failed, stopping data load');
+          if (mounted) setLoading(false);
+          return;
+        }
       }
 
       // Fetch events (critical)
@@ -44,9 +53,16 @@ export function useDashboardData() {
           console.log('[Dashboard] Loaded events:', ev?.length || 0);
           setEvents(ev || []);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Dashboard] Error loading events:', error);
         if (mounted) setEvents([]);
+        
+        // Don't continue if authentication failed
+        if (error?.statusCode === 401 || error?.statusCode === 403) {
+          console.error('[Dashboard] Authentication failed, stopping data load');
+          if (mounted) setLoading(false);
+          return;
+        }
       }
 
       // Fetch users (non-critical)
@@ -56,7 +72,7 @@ export function useDashboardData() {
           console.log('[Dashboard] Loaded users:', us?.length || 0);
           setUsers(us || []);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Dashboard] Error loading users (non-critical):', error);
         if (mounted) setUsers([]);
       }

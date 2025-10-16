@@ -1,15 +1,16 @@
 // ExpenseApp Service Worker
-// Version: 1.1.4 - FIX: User Management Navigation
-// Date: October 15, 2025
+// Version: 1.1.5 - CRITICAL FIX: Session Timeout Handling
+// Date: October 16, 2025
+//
+// Changes from v1.1.4:
+// - CRITICAL FIX: Backend now returns 401 (not 403) for expired tokens
+// - FIXED: Session timeout now properly logs user out (no more blank dashboard)
+// - Backend: Changed auth middleware to return correct HTTP status codes
+// - Frontend: 401 = logout, 403 = show error (no logout)
+// - Improved dashboard error handling to stop loading on auth failure
 //
 // Changes from v1.1.3:
-// - FIXED: "Go to User Management" now opens User Management tab directly
-// - Changed: Using sessionStorage instead of hash for reliable tab navigation
-// - Improved: No more landing on System Settings when clicking User Management link
-//
-// Changes from v1.1.2:
-// - FIXED: Events in progress show "Today" instead of negative days
-// - Improved: Dashboard Upcoming Events checks event date range
+// - FIXED: User Management navigation using sessionStorage
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -74,8 +75,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.4';  // BUMPED VERSION for user management nav fix
-const STATIC_CACHE = 'expenseapp-static-v1.1.4';
+const CACHE_NAME = 'expenseapp-v1.1.5';  // BUMPED VERSION for session timeout fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -85,7 +86,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.4...');
+  console.log('[ServiceWorker] Installing v1.1.5...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -176,7 +177,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.4...');
+  console.log('[ServiceWorker] Activating v1.1.5...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -190,7 +191,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.4 activated and ready!');
+      console.log('[ServiceWorker] v1.1.5 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

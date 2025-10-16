@@ -22,7 +22,9 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    // 401 = Authentication failed (token invalid/expired)
+    // This is different from 403 which means authenticated but lacks permission
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
 
