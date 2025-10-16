@@ -42,47 +42,48 @@ Let's say production (`main`) is at **v1.1.14** and you're starting a new sandbo
 # 1. Create ONE new version branch for this entire session
 git checkout main
 git pull origin main
-git checkout -b v1.2.0-dev-dashboard-fixes  # Descriptive name for the session
+git checkout -b v1.2.0  # JUST the version number - no description!
 
 # 2. Make MANY commits to this SAME branch as you work
 git add -A
 git commit -m "Fix dev dashboard metrics"
-git push origin v1.2.0-dev-dashboard-fixes
+git push origin v1.2.0
 
 # 3. Continue making MORE commits to the SAME branch
 git add -A
 git commit -m "Add audit logging"
-git push origin v1.2.0-dev-dashboard-fixes
+git push origin v1.2.0
 
 # 4. Keep committing to the SAME branch
 git add -A
 git commit -m "Unify expense and approval workflows"
-git push origin v1.2.0-dev-dashboard-fixes
+git push origin v1.2.0
 
 # ... many more commits ...
 
 # 5. When ENTIRE session is complete and ready for production, then merge
 git checkout main
-git merge v1.2.0-dev-dashboard-fixes
+git merge v1.2.0
 git push origin main
 
 # 6. ONLY NOW create a new branch for the NEXT session
-git checkout -b v1.3.0-next-feature
+git checkout -b v1.3.0  # Again, just the version number
 ```
 
 **Current Working Branch:**
-- `v1.2.0-dev-dashboard-fixes` (as of October 16, 2025)
+- `v1.2.0` (as of October 16, 2025)
 - **ALL current sandbox work should go on THIS branch**
 - Do NOT create `v1.2.1`, `v1.2.2`, etc. for individual changes
 - Only create a new branch after this one is merged to production
 
 **Important:**
 - ❌ WRONG: Create a new branch for each change (clutters repo!)
+- ❌ WRONG: Use descriptive names like `v1.2.0-dev-dashboard-fixes`
+- ✅ CORRECT: Branch name is JUST the version number (e.g., `v1.2.0`)
 - ✅ CORRECT: Make many commits to the same working branch
 - Each branch should have MANY commits before being merged
 - Look at GitHub branch view - each branch has 10s of commits
 - DO NOT work directly on `main` branch (production only)
-- Branch names should be descriptive (e.g., `v1.2.0-dev-dashboard-fixes`, not just `v1.2.0`)
 
 ### Version Number Management
 
