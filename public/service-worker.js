@@ -1,6 +1,11 @@
 // ExpenseApp Service Worker
-// Version: 1.4.0 - MAJOR: Automated Approval Workflow Redesign
+// Version: 1.4.1 - PATCH: Auto-approval from "needs further review" + Button fixes
 // Date: October 16, 2025
+//
+// Changes from v1.4.0:
+// - FIXED: Auto-approval now works from "needs further review" status (entity assignment & reimbursement)
+// - FIXED: Reimbursement buttons now show when status is NULL
+// - FIXED: Mark as Paid button shows for all approved reimbursements (not just approved expenses)
 //
 // Changes from v1.1.14:
 // - FIXED: Session timing out without showing warning modal
@@ -93,8 +98,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.4.0';  // BUMPED VERSION for automated approval workflow
-const STATIC_CACHE = 'expenseapp-static-v1.4.0';
+const CACHE_NAME = 'expenseapp-v1.4.1';  // BUMPED VERSION for auto-approval fixes and button improvements
+const STATIC_CACHE = 'expenseapp-static-v1.4.1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -195,7 +200,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.4.0...');
+  console.log('[ServiceWorker] Activating v1.4.1...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
