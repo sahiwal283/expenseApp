@@ -1,6 +1,6 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.0.58  
-**Last Updated:** October 15, 2025  
+**Version:** 1.1.11 (Frontend) / 1.1.5 (Backend)
+**Last Updated:** October 16, 2025  
 **Status:** Production & Sandbox Active
 
 ---
@@ -1483,6 +1483,548 @@ When working on this project:
 ---
 
 ## 🔥 RECENT SESSIONS & LESSONS LEARNED
+
+### Session: October 16, 2025 (v1.1.0 - v1.1.11 Post-Production Bug Fixes)
+
+**Objective:** Fix critical bugs discovered in production, improve UX, enhance file upload support
+
+**Duration:** ~6 hours
+
+**Version Range:** Frontend v1.1.0 → v1.1.11, Backend v1.1.0 → v1.1.5
+
+---
+
+#### 🐛 BUGS DISCOVERED & FIXED
+
+**1. Dashboard "Push to Zoho" Button Navigation (v1.0.59)**
+- **Issue:** Button navigated to `/reports` instead of `/approvals`
+- **Impact:** User confusion - Push to Zoho was moved from Reports to Approvals
+- **Root Cause:** Hardcoded link in QuickActions component not updated after feature move
+- **Fix:** Updated `backend/src/routes/quickActions.ts` and `src/components/dashboard/QuickActions.tsx`
+  ```typescript
+  // BEFORE
+  link: '/reports'
+  
+  // AFTER  
+  link: '/approvals'
+  ```
+- **Lesson:** When moving features between pages, search for ALL references (navigation, links, buttons)
+
+**2. Reports Table Redundant "Push to Zoho" Column (v1.0.60)**
+- **Issue:** Push to Zoho column still visible in Reports table after moving functionality to Approvals
+- **Impact:** Confusing UX - users saw button in two places with different behavior
+- **Fix:** Removed column, replaced with "View Details" eye icon that opens modal
+  ```typescript
+  // Removed: Push to Zoho button column
+  // Added: Details column with eye icon → modal for expense details/receipts
+  ```
+- **Lesson:** When deprecating features, remove ALL UI elements, not just disable them
+
+**3. Developer Role Missing Pending User Tasks (v1.0.61)**
+- **Issue:** Test user pending approval didn't show in developer's Dashboard "Pending Tasks"
+- **Root Cause:** `quickActions.ts` backend only checked `admin` role for pending users task
+- **Fix:** Added `developer` to authorization check
+  ```typescript
+  if (req.user?.role === 'admin' || req.user?.role === 'developer') {
+    // Show pending users task
+  }
+  ```
+- **Lesson:** Developer role should have same capabilities as admin + dev dashboard
+
+**4. "Go to User Management" Navigation Failure (v1.0.61, v1.0.62, v1.1.4)**
+- **Issue:** Dashboard button navigated to Settings but didn't open User Management tab
+- **Attempt 1 (v1.0.61):** Set `window.location.hash` after `setTimeout`
+  - **Result:** ❌ Race condition - hash set before page loaded
+- **Attempt 2 (v1.0.62):** Set hash BEFORE navigation
+  - **Result:** ❌ Still failed - timing issue
+- **Attempt 3 (v1.1.4):** Switch to `sessionStorage`
+  ```typescript
+  // QuickActions.tsx
+  sessionStorage.setItem('openSettingsTab', 'users');
+  onNavigate('settings');
+  
+  // AdminSettings.tsx
+  useEffect(() => {
+    const targetTab = sessionStorage.getItem('openSettingsTab');
+    if (targetTab === 'users') {
+      setActiveTab('users');
+      sessionStorage.removeItem('openSettingsTab');
+    }
+  }, []);
+  ```
+- **Result:** ✅ **FIXED** - Reliable cross-component communication
+- **Lesson:** `sessionStorage` is more reliable than URL hash for programmatic navigation
+
+**5. Push to Zoho Force Logout Issue (v1.1.0)**
+- **Issue:** Clicking "Push to Zoho" forcefully logged out developer role
+- **Root Cause 1:** Backend route not authorized for `developer` role
+- **Root Cause 2:** Frontend `apiClient` logged out on ALL 401/403 errors
+- **Fix:** 
+  ```typescript
+  // Backend: Added developer to authorize middleware
+  router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), ...);
+  
+  // Frontend: Only logout on 401, NOT on 403
+  if (error.statusCode === 401) {
+    // 401 = Authentication failed (logout)
+  }
+  // 403 = Permission denied (show error, don't logout)
+  ```
+- **Lesson:** Distinguish between authentication (401) and authorization (403) errors
+
+**6. Push to Zoho Error Messages Using Wrong Entity (v1.0.63)**
+- **Issue:** Error showed "haute" instead of actual entity name like "nirvana kulture"
+- **Root Cause:** Hardcoded entity name in error message
+- **Fix:** Use dynamic `expense.zohoEntity` in all error messages
+- **Improvement:** Changed harsh red error to friendly blue "coming soon" toast for unconfigured entities
+  ```typescript
+  addToast(
+    `🕐 Zoho Books integration for "${expense.zohoEntity}" is coming soon...`,
+    'info'  // Blue toast instead of red error
+  );
+  ```
+- **Lesson:** User-friendly errors improve UX for features under development
+
+**7. Entity Change Not Re-enabling Push Button (v1.1.1, v1.1.2)**
+- **Issue:** Changing entity on pushed expense didn't allow re-push
+- **Root Cause:** Backend didn't clear `zoho_expense_id` when entity changed
+- **Fix:** 
+  ```typescript
+  // Backend: Clear zoho_expense_id when entity changes
+  if (currentExpense.zoho_entity !== entityValue && currentExpense.zoho_expense_id) {
+    updates.zoho_expense_id = undefined;  // Allow re-push
+  }
+  
+  // Frontend: Show warning dialog, remove from pushedExpenses Set
+  if (wasPushed && isChangingEntity) {
+    const confirmed = window.confirm("⚠️ This expense has already been pushed...");
+    if (confirmed) {
+      setPushedExpenses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(expense.id);
+        return newSet;
+      });
+    }
+  }
+  ```
+- **UX Improvement:** Moved entity editing to modal (disabled in table) for deliberate workflow
+
+**8. Event Card Showing Negative Days (v1.1.3)**
+- **Issue:** Event that started yesterday showed "-1 days" on dashboard card
+- **Expected:** Should show "Today" for entire event duration (start to end date)
+- **Fix:**
+  ```typescript
+  const isInProgress = today >= startDate && today <= endDate;
+  const daysUntil = isInProgress ? 0 : getDaysUntil(event.startDate);
+  // daysUntil === 0 displays as "Today"
+  ```
+- **Lesson:** Date logic should account for date RANGES, not just single dates
+
+**9. Session Timeout Causing Blank Dashboard (v1.1.5)**
+- **Issue:** After inactivity, dashboard went blank (no data, no logout)
+- **Root Cause:** Backend returned `403 Forbidden` for expired tokens (should be `401 Unauthorized`)
+- **Impact:** Frontend didn't recognize expired session, tried to load data with invalid token
+- **Fix:**
+  ```typescript
+  // Backend: auth.ts middleware
+  // BEFORE
+  return res.status(403).json({ error: 'Invalid or expired token' });
+  
+  // AFTER
+  return res.status(401).json({ error: 'Invalid or expired token' });
+  
+  // Frontend: apiClient.ts
+  if (error.statusCode === 401) {
+    TokenManager.removeToken();
+    this.onUnauthorized();  // Trigger logout
+  }
+  
+  // Frontend: useDashboardData.ts
+  if (error?.statusCode === 401 || error?.statusCode === 403) {
+    console.error('Authentication failed, stopping data load');
+    if (mounted) setLoading(false);
+    return;  // Don't continue loading
+  }
+  ```
+- **Lesson:** HTTP status codes matter! 401 = auth failed, 403 = permission denied
+
+**10. Zoho Event Format Incorrect (v1.1.3 Backend)**
+- **Issue:** Zoho showed "Event: Event Name: date - date" (redundant "Event:")
+- **Expected:** "Event Name (date - date)"
+- **Fix:**
+  ```typescript
+  // backend/src/services/zohoMultiAccountService.ts
+  // BEFORE
+  eventInfo = `Event: ${eventName}: ${startDate} - ${endDate}`;
+  
+  // AFTER
+  eventInfo = `${eventName} (${MM/DD/YY} - ${MM/DD/YY})`;
+  ```
+
+**11. Admin User Deletion Not Protected (v1.1.8)**
+- **Issue:** User "sahil" was permanent, but only "admin" should be
+- **Root Cause:** No username check in delete logic
+- **Fix:**
+  ```typescript
+  // Frontend: UserManagement.tsx
+  const userToDelete = users.find(u => u.id === userId);
+  if (userToDelete && userToDelete.username === 'admin') {
+    alert("Cannot delete the system admin user!");
+    return;
+  }
+  
+  // Backend: users.ts
+  const userCheck = await query('SELECT username FROM users WHERE id = $1', [id]);
+  if (userCheck.rows[0].username === 'admin') {
+    return res.status(403).json({ error: 'Cannot delete the system admin user' });
+  }
+  ```
+- **Lesson:** Protect system accounts at BOTH frontend (UX) and backend (security) layers
+
+**12. CRITICAL: Missing useEffect Import (v1.1.9)**
+- **Issue:** Approvals page completely broken - blank screen
+- **Root Cause:** Added `useEffect` hook in v1.1.7 but forgot to import it from React
+- **Impact:** PRODUCTION-BREAKING - entire Approvals page unusable
+- **Error:** `ReferenceError: useEffect is not defined`
+- **Fix:**
+  ```typescript
+  // BEFORE
+  import React, { useState, useMemo } from 'react';
+  
+  // AFTER
+  import React, { useState, useMemo, useEffect } from 'react';
+  ```
+- **Lesson:** Build succeeds even with missing imports - TypeScript doesn't always catch it!
+- **Prevention:** Always verify imports when adding new React hooks
+
+**13. Phone Camera Images Rejected (v1.1.5 Backend)**
+- **Issue:** User's phone camera receipt upload failed with "Only images... allowed" error
+- **Root Cause:** Backend validation too strict - only accepted exact MIME types (jpeg, jpg, png, pdf)
+- **Problem:** Phone cameras send unusual MIME types:
+  - iPhone HEIC: `image/heic`, `image/heif`
+  - Android variations: `image/x-png`, `image/pjpeg`
+- **Fix:**
+  ```typescript
+  // BEFORE
+  const allowedTypes = /jpeg|jpg|png|pdf/;
+  const mimetype = allowedTypes.test(file.mimetype);  // Too strict!
+  
+  // AFTER
+  const allowedExtensions = /jpeg|jpg|png|pdf|heic|heif|webp/i;
+  const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+  // Accept ANY image/* MIME type
+  ```
+- **Additional Changes:**
+  - Increased file size limit: 5MB → 10MB (modern phone photos)
+  - Added logging for accepted/rejected files
+- **Lesson:** Real-world files from phones have unpredictable formats - be permissive with validation
+
+---
+
+#### 🔄 ONGOING ISSUES (Not Yet Resolved)
+
+**1. Entity Change Warning Dialog Not Appearing (v1.1.10, v1.1.11)**
+- **Issue:** When changing entity in modal, no warning dialog appears
+- **Expected:** User should see warning before changing entity on pushed expense
+- **Current Status:** 
+  - Button state works correctly ✅
+  - pushedExpenses Set updates correctly ✅
+  - `handleAssignEntity` function has correct logic ✅
+  - onChange event may not be firing ❌
+- **Debug Attempts:**
+  - v1.1.10: Added logging to `pushedExpenses` useEffect
+  - v1.1.11: Added logging directly in onChange handler
+- **Next Steps:**
+  - Check if onChange fires at all
+  - Consider alternative approaches (onBlur, manual save button)
+- **Note:** Tabled for future session
+
+**2. Zoho Push Duplicate Prevention Issue**
+- **Issue:** Backend's in-memory `submittedExpenses` Set persists across restarts
+- **Impact:** Expenses pushed to Zoho, then deleted from Zoho, can't be re-pushed
+- **Current Behavior:** Returns "Already submitted (duplicate prevented)" with `zohoExpenseId: undefined`
+- **Workaround:** Restart backend to clear Set
+- **Proper Fix Needed:** Check database `zoho_expense_id`, not just in-memory Set
+
+---
+
+#### 📚 LESSONS LEARNED
+
+**1. HTTP Status Codes Matter**
+- 401 Unauthorized = Authentication failed (token expired/invalid) → Logout required
+- 403 Forbidden = Authenticated but lacks permission → Show error, don't logout
+- Using wrong code causes incorrect behavior (blank screens, unwanted logouts)
+
+**2. State Management Requires Syncing**
+- In-memory state (like `pushedExpenses` Set) must sync with actual data
+- Use `useEffect` to update state when source data changes
+- Race conditions happen when relying on URL hash for navigation
+
+**3. Validation Should Be Permissive for User Content**
+- Phone cameras produce unpredictable file formats
+- Use broad patterns (`image/*`) instead of strict regex
+- Log rejected files for debugging real-world issues
+
+**4. Import Errors Can Be Silent**
+- TypeScript doesn't always catch missing React imports
+- Build succeeds, runtime fails with `ReferenceError`
+- Always double-check imports when adding new hooks
+
+**5. Frontend UX vs Backend Security**
+- Disable/hide UI for invalid actions (UX)
+- ALSO enforce rules at API level (security)
+- Example: Admin user deletion prevented at both layers
+
+**6. Cross-Component Communication Patterns**
+- URL hash: ❌ Unreliable for programmatic navigation
+- sessionStorage: ✅ Reliable for passing data between components
+- Pattern: Set before navigate, read in useEffect, clean up after
+
+**7. Debug Versions Are Essential**
+- Add logging at multiple levels (component, function, API)
+- Log BEFORE and AFTER key operations
+- Helps identify where logic fails
+
+**8. Cache Busting Is Multi-Layered**
+- Browser cache (version increment)
+- Service worker cache (cache names)
+- Proxy cache (NPMplus restart)
+- ALL THREE must be cleared for users to see changes
+
+**9. User-Friendly Error Messages**
+- Red errors feel harsh for features under development
+- Use blue "info" toasts for "coming soon" features
+- Include emoji/icons for visual clarity (🕐 ⚠️ ✅)
+- Dynamic messages (use actual entity names, not hardcoded)
+
+**10. Semantic Versioning Guides Development**
+- Patch (1.1.0 → 1.1.1): Bug fixes
+- Minor (1.0.X → 1.1.0): New features, improvements
+- Major (1.X.X → 2.0.0): Breaking changes
+- Don't increment by 0.0.1 every time - make it meaningful
+
+---
+
+#### ✅ WHAT WORKED WELL
+
+1. **Incremental Deployments**
+   - Fixed issues one at a time
+   - Each fix was tested before moving to next
+   - Easy to roll back if needed
+
+2. **Debug Logging Strategy**
+   - Added logging at multiple points
+   - Helped identify exact failure location
+   - Console logs provided clear evidence
+
+3. **sessionStorage for Navigation**
+   - More reliable than URL hash
+   - Clean pattern: set → navigate → read → remove
+   - Fixed multi-attempt bug instantly
+
+4. **HTTP Status Code Correction**
+   - Changed 403 → 401 for expired tokens
+   - Immediately fixed blank dashboard issue
+   - Proper logout behavior restored
+
+5. **Permissive File Validation**
+   - Accept `image/*` instead of specific types
+   - Handles all phone camera formats
+   - Increased file size limit for modern photos
+
+6. **Dual-Layer Protection**
+   - Frontend: Disable UI for invalid actions
+   - Backend: Enforce rules at API level
+   - Prevents both accidental and malicious actions
+
+---
+
+#### ❌ WHAT DIDN'T WORK
+
+1. **URL Hash Navigation**
+   - Race conditions with page load
+   - Timing issues with state updates
+   - Unreliable for programmatic navigation
+
+2. **setTimeout Workarounds**
+   - Attempted to fix hash timing with delays
+   - Still unreliable
+   - Proper solution: use sessionStorage
+
+3. **Strict MIME Type Validation**
+   - Rejected real-world phone camera images
+   - Users couldn't upload legitimate receipts
+   - Too narrow for diverse file sources
+
+4. **In-Memory Duplicate Prevention**
+   - `submittedExpenses` Set persists
+   - Doesn't survive backend restarts
+   - Should check database instead
+
+5. **onChange for Entity Dropdown**
+   - Warning dialog not appearing
+   - Event may not be firing
+   - May need alternative approach (onBlur, save button)
+
+---
+
+#### 🎯 BEST PRACTICES ESTABLISHED
+
+**1. Navigation Between Components**
+```typescript
+// ✅ GOOD: Use sessionStorage
+sessionStorage.setItem('openSettingsTab', 'users');
+onNavigate('settings');
+
+// In target component:
+useEffect(() => {
+  const tab = sessionStorage.getItem('openSettingsTab');
+  if (tab) {
+    setActiveTab(tab);
+    sessionStorage.removeItem('openSettingsTab');
+  }
+}, []);
+
+// ❌ BAD: Use URL hash with timing hacks
+window.location.hash = '#users';
+setTimeout(() => onNavigate('settings'), 100);  // Unreliable!
+```
+
+**2. Error Handling in API Client**
+```typescript
+// ✅ GOOD: Distinguish auth failures from permission errors
+if (error.statusCode === 401) {
+  // Token expired - logout
+  TokenManager.removeToken();
+  onUnauthorized();
+} else if (error.statusCode === 403) {
+  // Permission denied - show error, don't logout
+  throw error;
+}
+
+// ❌ BAD: Logout on any 401 or 403
+if (error.statusCode === 401 || error.statusCode === 403) {
+  logout();  // Too aggressive!
+}
+```
+
+**3. File Upload Validation**
+```typescript
+// ✅ GOOD: Permissive validation
+const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+const extOk = /jpeg|jpg|png|heic|heif|webp|pdf/i.test(ext);
+
+// ❌ BAD: Strict validation
+const allowed = /jpeg|jpg|png|pdf/;
+if (allowed.test(ext) && allowed.test(mimetype)) {
+  // Rejects phone camera images!
+}
+```
+
+**4. State Syncing**
+```typescript
+// ✅ GOOD: Sync in-memory state with data source
+useEffect(() => {
+  const pushed = new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id));
+  setPushedExpenses(pushed);
+}, [expenses]);  // Re-sync when expenses change
+
+// ❌ BAD: Initialize once and never update
+const [pushedExpenses] = useState(new Set(expenses.filter(...)));
+// State gets stale!
+```
+
+**5. React Hooks Imports**
+```typescript
+// ✅ GOOD: Import all hooks you use
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+
+// ❌ BAD: Add hooks without importing
+import React, { useState } from 'react';
+// Then use useEffect() → ReferenceError!
+```
+
+---
+
+#### 📝 THINGS TO REMEMBER FOR FUTURE
+
+1. **Always Test Phone Uploads**
+   - Real phones send different file formats than desktop
+   - Test with iPhone (HEIC), Android (various JPEG variants)
+   - Don't rely on desktop testing alone
+
+2. **Cache Busting Is 3-Layered**
+   - Browser: Version increment
+   - Service Worker: Cache name change
+   - Proxy: Manual restart required
+   - Forgetting any layer = users see old version
+
+3. **Navigation Requires sessionStorage**
+   - URL hash is unreliable for programmatic navigation
+   - sessionStorage pattern is proven to work
+   - Always remove item after reading
+
+4. **Backend Auth Middleware Order Matters**
+   - `authenticateToken` first (checks if logged in)
+   - `authorize(roles...)` second (checks permissions)
+   - Return 401 for auth failures, 403 for permission denials
+
+5. **Developer Role = Admin + Dev Dashboard**
+   - Include developer in all admin authorization checks
+   - Don't special-case developer separately
+   - Makes code simpler and more maintainable
+
+6. **Entity Change Warning Still Needs Work**
+   - Current approach (onChange) may not work
+   - Consider onBlur or explicit save button
+   - Investigate why event isn't firing
+
+7. **In-Memory State Isn't Persistent**
+   - `submittedExpenses` Set clears on restart
+   - Should check database, not memory
+   - Or use Redis for persistent in-memory cache
+
+8. **Import Checks Are Manual**
+   - TypeScript doesn't always catch missing React imports
+   - Build succeeds, runtime fails
+   - Always verify when adding hooks
+
+---
+
+#### 🔧 TECHNICAL IMPROVEMENTS MADE
+
+**Frontend (v1.1.0 → v1.1.11)**
+- Navigation improvements (sessionStorage pattern)
+- Better error handling (distinguish 401 vs 403)
+- State management (pushedExpenses Set syncing)
+- UX improvements (entity editing in modal, friendly errors)
+- Debug logging (multiple levels for troubleshooting)
+
+**Backend (v1.1.0 → v1.1.5)**
+- File upload validation (permissive MIME types)
+- Authorization fixes (developer role access)
+- HTTP status codes (401 for expired tokens)
+- Entity management (clear zoho_expense_id on change)
+- Admin protection (username checks)
+
+---
+
+#### 📊 DEPLOYMENT STATISTICS
+
+**Total Deployments:** 12 (Frontend) + 5 (Backend) = 17 deployments
+**Time per deployment:** ~3-5 minutes (build + deploy + verify)
+**Hot fixes:** 1 critical (v1.1.9 - missing useEffect import)
+**Debug versions:** 3 (v1.1.10, v1.1.11 - ongoing investigation)
+
+**Version Progression:**
+- Frontend: 1.0.58 → 1.1.11 (13 versions)
+- Backend: 1.0.23 → 1.1.5 (6 versions)
+
+**Semantic Versioning Used:**
+- Minor bumps: 1.0.X → 1.1.0 (new features, improvements)
+- Patch bumps: 1.1.X → 1.1.Y (bug fixes, hotfixes)
+
+---
 
 ### Session: October 15, 2025 (v1.0.58 Production Deployment)
 
