@@ -19,6 +19,34 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 
 ---
 
+## 🔐 IMPORTANT: Sandbox vs Production Credentials
+
+**CRITICAL UNDERSTANDING**: Sandbox and production use **SEPARATE** Zoho Books OAuth credentials intentionally!
+
+### Why Separate Credentials?
+
+✅ **Data Isolation**: Sandbox writes to "Meals" account, production to "Trade Shows"  
+✅ **Security**: Sandbox breach doesn't compromise production data  
+✅ **Testing Freedom**: Can delete all sandbox test data safely  
+✅ **Audit Trail**: Easy to identify what's test vs real  
+
+### DO NOT "Fix" This!
+
+If you see different credentials between sandbox and production, **this is intentional design**:
+- **Sandbox**: Uses OAuth app ending in `...EGPHAA` → writes to "Meals" expense account
+- **Production**: Uses OAuth app ending in `...SQNQVI` → writes to "Trade Shows" expense account
+- **Both**: Connect to same Zoho Books organization (856048585 - Haute Brands)
+
+### Credential Locations
+
+- **Sandbox Credentials**: `credentials/SANDBOX_CREDENTIALS.md`
+- **Production Credentials**: `credentials/HAUTE_CREDENTIALS.md`
+- **DO NOT** mix or "unify" these credentials!
+
+**If future AI tries to "fix" credential mismatch → READ THIS SECTION FIRST!**
+
+---
+
 ## 🤖 CRITICAL AI INSTRUCTIONS
 
 **READ THIS FIRST!** These are non-negotiable rules for ALL AI assistants working on this project.
