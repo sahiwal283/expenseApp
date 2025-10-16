@@ -25,52 +25,64 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 
 ### Branch Management Strategy
 
-**RULE 1: Create a new version branch for each sandbox development cycle**
+**RULE 1: ONE working branch per development session (NOT one branch per change!)**
+
+**CRITICAL: Do NOT create a new branch for each individual change!** 
 
 **How It Works:**
-1. Check what version is currently in production (`main` branch)
-2. Create a NEW branch with the next version number
-3. ALL sandbox changes go on that version branch
-4. When ready for production, merge that branch back to `main`
+1. When starting a NEW sandbox development session, create ONE version branch
+2. Make MULTIPLE commits to that same branch as you work
+3. Only create a new branch when the current one is merged to production and you're starting fresh
 
 **Example Workflow:**
 
-Let's say production (`main`) is at **v1.0.53**:
+Let's say production (`main`) is at **v1.1.14** and you're starting a new sandbox session:
 
 ```bash
-# 1. Create new version branch for sandbox work
+# 1. Create ONE new version branch for this entire session
 git checkout main
 git pull origin main
-git checkout -b v1.0.54  # or v1.1.0 for new features
+git checkout -b v1.2.0-dev-dashboard-fixes  # Descriptive name for the session
 
-# 2. Make all your sandbox changes on this branch
+# 2. Make MANY commits to this SAME branch as you work
 git add -A
-git commit -m "Add new feature"
-git push origin v1.0.54
+git commit -m "Fix dev dashboard metrics"
+git push origin v1.2.0-dev-dashboard-fixes
 
-# 3. Continue working on v1.0.54 until ready for production
-# ... more commits ...
+# 3. Continue making MORE commits to the SAME branch
+git add -A
+git commit -m "Add audit logging"
+git push origin v1.2.0-dev-dashboard-fixes
 
-# 4. When ready, merge to main for production deployment
+# 4. Keep committing to the SAME branch
+git add -A
+git commit -m "Unify expense and approval workflows"
+git push origin v1.2.0-dev-dashboard-fixes
+
+# ... many more commits ...
+
+# 5. When ENTIRE session is complete and ready for production, then merge
 git checkout main
-git merge v1.0.54
+git merge v1.2.0-dev-dashboard-fixes
 git push origin main
+
+# 6. ONLY NOW create a new branch for the NEXT session
+git checkout -b v1.3.0-next-feature
 ```
 
-**Version Branch Naming:**
-- Bug fixes / small changes: Increment patch (v1.0.53 → v1.0.54)
-- New features: Increment minor (v1.0.53 → v1.1.0)
-- Breaking changes: Increment major (v1.0.53 → v2.0.0)
-
-**Current Branch:**
-- The current sandbox branch is `v1.0.10` (as of October 2025)
-- Continue using this branch until it's merged to main
-- After merge, create a new version branch for the next development cycle
+**Current Working Branch:**
+- `v1.2.0-dev-dashboard-fixes` (as of October 16, 2025)
+- **ALL current sandbox work should go on THIS branch**
+- Do NOT create `v1.2.1`, `v1.2.2`, etc. for individual changes
+- Only create a new branch after this one is merged to production
 
 **Important:**
+- ❌ WRONG: Create a new branch for each change (clutters repo!)
+- ✅ CORRECT: Make many commits to the same working branch
+- Each branch should have MANY commits before being merged
+- Look at GitHub branch view - each branch has 10s of commits
 - DO NOT work directly on `main` branch (production only)
-- Each development cycle gets its own version branch
-- Branch name should match the version being developed
+- Branch names should be descriptive (e.g., `v1.2.0-dev-dashboard-fixes`, not just `v1.2.0`)
 
 ### Version Number Management
 
