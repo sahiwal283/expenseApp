@@ -348,11 +348,18 @@ class ExpenseService {
 
     // AUTOMATIC APPROVAL LOGIC
     // If changing from "pending review" (or NULL) to "approved" or "rejected" (and expense is pending or needs further review), auto-approve
+    // AUTOMATIC APPROVAL LOGIC
+    // Case 1: Initial review - from pending/NULL to approved/rejected
     const isInitialReview = (!currentExpense.reimbursement_status || currentExpense.reimbursement_status === 'pending review') && 
                            (status === 'approved' || status === 'rejected');
-    if (isInitialReview && (currentExpense.status === 'pending' || currentExpense.status === 'needs further review')) {
+    
+    // Case 2: Corrective action - from rejected to approved (fixing a mistake)
+    const isCorrectiveApproval = currentExpense.reimbursement_status === 'rejected' && status === 'approved';
+    
+    // Auto-approve if it's an initial review OR corrective approval, and expense needs approval
+    if ((isInitialReview || isCorrectiveApproval) && (currentExpense.status === 'pending' || currentExpense.status === 'needs further review')) {
       updates.status = 'approved';
-      console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to reimbursement status change`);
+      console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to reimbursement ${isCorrectiveApproval ? 'corrective approval' : 'initial review'}`);
     }
 
     // REGRESSION LOGIC
