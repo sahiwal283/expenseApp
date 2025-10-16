@@ -439,28 +439,28 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-max">
               <thead className="bg-gray-50">
                 {/* Column Headers */}
                 <tr>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Date</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Date</th>
                   {hasApprovalPermission && (
-                    <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">User</th>
+                    <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">User</th>
                   )}
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Event</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Category</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Merchant</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Amount</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Card Used</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Status</th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Reimbursement</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Event</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Category</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Merchant</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Amount</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Card Used</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Status</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Reimbursement</th>
                   {hasApprovalPermission && (
                     <>
-                      <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Entity</th>
-                      <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-xs sm:text-sm font-medium text-gray-900">Zoho</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Entity</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-center text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Zoho</th>
                     </>
                   )}
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Actions</th>
                 </tr>
                 {/* Inline Filters Row */}
                 <tr className="bg-gray-50 border-t border-gray-100">
@@ -580,27 +580,27 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   return (
                     <tr key={expense.id} className="hover:bg-gray-50">
                       {/* Date */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900 whitespace-nowrap">
                         {formatLocalDate(expense.date)}
                       </td>
                       {/* User (Approval Users Only) */}
                       {hasApprovalPermission && (
-                        <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-700">
+                        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-700">
                           {userName}
                         </td>
                       )}
                       {/* Event */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900">
                         {event ? event.name : 'No Event'}
                       </td>
                       {/* Category */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                         <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getCategoryColor(expense.category)}`}>
                           {expense.category}
                         </span>
                       </td>
                       {/* Merchant */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                         <div>
                           <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
                           {expense.location && (
@@ -609,21 +609,21 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         </div>
                       </td>
                       {/* Amount */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
                         ${expense.amount.toFixed(2)}
                       </td>
                       {/* Card Used */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900">
                         {expense.cardUsed}
                       </td>
                       {/* Status */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                         <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(expense.status)}`}>
                           {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
                         </span>
                       </td>
                       {/* Reimbursement */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                         <div className="space-y-1">
                           <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${
                             expense.reimbursementRequired 
@@ -671,11 +671,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       </td>
                       {/* Entity (Approval Users Only) */}
                       {hasApprovalPermission && (
-                        <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                           <select
                             value={expense.zohoEntity || ''}
                             onChange={(e) => handleAssignEntity(expense, e.target.value)}
-                            className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full ${
+                            className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full min-w-[120px] ${
                               expense.zohoEntity 
                                 ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                                 : 'border-gray-300 bg-white text-gray-900'
@@ -696,7 +696,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       )}
                       {/* Zoho Push (Approval Users Only) */}
                       {hasApprovalPermission && (
-                        <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                           <div className="flex justify-center">
                             {!expense.zohoEntity ? (
                               <span className="text-xs text-gray-400 italic">No entity</span>
@@ -727,7 +727,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         </td>
                       )}
                       {/* Actions */}
-                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
+                      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           {/* Manual approval removed - expenses auto-approve via reimbursement/entity assignment */}
                           {/* View Details (All Users) */}
