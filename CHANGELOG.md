@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.11] - 2025-10-16 (Frontend v1.4.11) - PRODUCTION
+**Deployed to: Production (Container 202)**
+
+### Added
+- **Zoho Push Status in Detail Modal**: Added Zoho sync status display for accountants/admins
+  - Shows "Pushed" (green badge) with Zoho expense ID when expense has been synced to Zoho Books
+  - Shows "Not Pushed" (yellow badge) when entity is assigned but expense not yet synced
+  - Only visible to users with approval permissions (accountants, admins, developers)
+  - Only displayed when an entity is assigned to the expense
+  - Provides quick visibility into Zoho sync status without checking the main table
+
+### Technical Details
+- **Files Changed**: `src/components/expenses/ExpenseSubmission.tsx`
+- **Location**: Added as fourth field in detail modal (after Status, Reimbursement, Entity)
+- **UI**: Color-coded badges matching existing design system (emerald=pushed, yellow=pending)
+- **Conditional Rendering**: `hasApprovalPermission && viewingExpense.zohoEntity`
+
+### Deployment
+- **Version**: v1.4.11
+- **Git Tag**: `v1.4.11-frontend`
+- **Container**: 202 (Production Frontend)
+- **Date**: October 16, 2025
+
 ## [1.5.0] - 2025-10-16 (Backend v1.5.0) - CRITICAL FIX
 **Branch: v1.2.0 (Sandbox Only)**
 
