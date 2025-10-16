@@ -218,6 +218,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   };
 
   const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
+    // Confirmation before changing reimbursement status
+    const confirmed = window.confirm(
+      `Are you sure you want to ${status === 'approved' ? 'approve' : 'reject'} this reimbursement?\n\n` +
+      `Expense: $${expense.amount.toFixed(2)} - ${expense.merchant}\n` +
+      `${status === 'approved' ? 'The user will be notified of approval.' : 'The user will be notified of rejection.'}`
+    );
+    
+    if (!confirmed) return;
+    
     try {
       if (api.USE_SERVER) {
         await api.setExpenseReimbursement(expense.id, { reimbursement_status: status });
@@ -227,6 +236,29 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     } catch (error) {
       console.error('Error updating reimbursement:', error);
       addToast('❌ Failed to update reimbursement status. Please try again.', 'error');
+    }
+  };
+
+  const handleMarkAsPaid = async (expense: Expense) => {
+    // Confirmation before marking as paid
+    const confirmed = window.confirm(
+      `Mark this reimbursement as PAID?\n\n` +
+      `Expense: $${expense.amount.toFixed(2)} - ${expense.merchant}\n` +
+      `User: ${users.find(u => u.id === expense.userId)?.name || 'Unknown'}\n\n` +
+      `This indicates the reimbursement has been processed and paid to the user.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      if (api.USE_SERVER) {
+        await api.setExpenseReimbursement(expense.id, { reimbursement_status: 'paid' });
+        addToast(`✅ Reimbursement marked as paid!`, 'success');
+      }
+      await reloadData();
+    } catch (error) {
+      console.error('Error marking reimbursement as paid:', error);
+      addToast('❌ Failed to mark reimbursement as paid. Please try again.', 'error');
     }
   };
 
@@ -625,23 +657,38 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                               ? `Required (${expense.reimbursementStatus || 'pending review'})` 
                               : 'Not Required'}
                           </span>
-                          {hasApprovalPermission && expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
-                            <div className="flex items-center space-x-1 mt-1">
-                              <button
-                                onClick={() => handleReimbursementApproval(expense, 'approved')}
-                                className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
-                                title="Approve Reimbursement"
-                              >
-                                <CheckCircle className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => handleReimbursementApproval(expense, 'rejected')}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                title="Reject Reimbursement"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
+                          {hasApprovalPermission && expense.reimbursementRequired && (
+                            <>
+                              {expense.reimbursementStatus === 'pending review' && (
+                                <div className="flex items-center space-x-1 mt-1">
+                                  <button
+                                    onClick={() => handleReimbursementApproval(expense, 'approved')}
+                                    className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                                    title="Approve Reimbursement"
+                                  >
+                                    <CheckCircle className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleReimbursementApproval(expense, 'rejected')}
+                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Reject Reimbursement"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                              {expense.reimbursementStatus === 'approved' && expense.status === 'approved' && (
+                                <div className="flex items-center space-x-1 mt-1">
+                                  <button
+                                    onClick={() => handleMarkAsPaid(expense)}
+                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    title="Mark as Paid"
+                                  >
+                                    <DollarSign className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
@@ -892,12 +939,29 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <select
                         value={viewingExpense.reimbursementStatus || 'pending review'}
                         onChange={async (e) => {
-                          const newStatus = e.target.value as 'pending review' | 'approved' | 'rejected';
+                          const newStatus = e.target.value as 'pending review' | 'approved' | 'rejected' | 'paid';
+                          
+                          // Confirmation before changing reimbursement status
+                          const statusText = newStatus === 'pending review' ? 'Pending Review' : 
+                                           newStatus === 'approved' ? 'Approved' : 
+                                           newStatus === 'rejected' ? 'Rejected' : 'Paid';
+                          const confirmed = window.confirm(
+                            `Change reimbursement status to "${statusText}"?\n\n` +
+                            `Expense: $${viewingExpense.amount.toFixed(2)} - ${viewingExpense.merchant}\n` +
+                            (newStatus === 'paid' ? `\nThis indicates the reimbursement has been processed and paid to the user.` : '')
+                          );
+                          
+                          if (!confirmed) {
+                            // Reset the select to previous value
+                            e.target.value = viewingExpense.reimbursementStatus || 'pending review';
+                            return;
+                          }
+                          
                           try {
                             await api.setExpenseReimbursement(viewingExpense.id, { reimbursement_status: newStatus });
                             await reloadData();
                             setViewingExpense({...viewingExpense, reimbursementStatus: newStatus});
-                            addToast(`✅ Reimbursement status updated`, 'success');
+                            addToast(`✅ Reimbursement status updated to ${statusText}`, 'success');
                           } catch (error) {
                             console.error('[ExpenseSubmission] Error updating reimbursement:', error);
                             addToast('❌ Failed to update reimbursement status', 'error');
@@ -908,6 +972,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         <option value="pending review">Pending Review</option>
                         <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
+                        {(viewingExpense.status === 'approved' || viewingExpense.reimbursementStatus === 'paid') && (
+                          <option value="paid">Paid</option>
+                        )}
                       </select>
                     ) : (
                       <span className={`px-3 py-1 text-sm font-medium rounded-full ${
