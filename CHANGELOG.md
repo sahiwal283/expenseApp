@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2025-10-16 (Frontend v1.3.3 / Backend v1.3.2)
+**Branch: v1.2.0 (Sandbox Only)**
+
+### Added
+- **"Mark as Paid" Button**: New dollar sign ($) button in reimbursement column
+  - Appears after expense is approved AND reimbursement is approved
+  - Allows marking reimbursement as 'Paid' inline (no need to open detail modal)
+  - Includes confirmation dialog with expense details
+- **'Paid' Option in Detail Modal**: Reimbursement dropdown now includes 'Paid' status
+  - Only visible when expense status is 'approved' or already marked as 'paid'
+  - Allows full reimbursement workflow from modal
+
+### Changed
+- **Reimbursement Confirmations**: All reimbursement status changes now require confirmation
+  - Confirmation dialogs display expense amount, merchant, and user
+  - Special warning message for 'Mark as Paid' action
+  - Prevents accidental status changes
+
+### UX Improvements
+- **Complete Inline Reimbursement Workflow**:
+  - Step 1: Approve/Reject buttons (✓/✗) for 'pending review' status
+  - Step 2: Mark as Paid button ($) for 'approved' status
+  - Step 3: 'Paid' status badge displayed
+  - All actions available directly in table view
+- **Smart Button Display**: Buttons only show when applicable to current status
+- **Confirmation Safety**: All actions require explicit confirmation with details
+
+### Technical Details
+- Added `handleMarkAsPaid()` function for 'paid' status workflow
+- Enhanced `handleReimbursementApproval()` with confirmation dialog
+- Detail modal reimbursement dropdown includes confirmation on change
+- Conditional rendering of 'Paid' option based on expense approval status
+- Blue color scheme for 'paid' status (bg-blue-100, text-blue-800)
+
 ## [1.3.2] - 2025-10-16 (Frontend v1.3.2 / Backend v1.3.2)
 **Branch: v1.2.0 (Sandbox Only)**
 
