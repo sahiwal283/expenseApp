@@ -148,25 +148,21 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                         // Extract page name from link
                         let page = task.link.replace('/', '');
                         
-                        // Set hash BEFORE navigation so it's available when page loads
+                        // Use sessionStorage to pass tab information (more reliable than hash for navigation)
                         if (task.type === 'pending_users' && page === 'settings') {
-                          // Direct navigation to User Management tab
-                          window.location.hash = 'users';
+                          // Signal to AdminSettings to open User Management tab
+                          sessionStorage.setItem('openSettingsTab', 'users');
                         } else if (task.type === 'unpushed_zoho' && page === 'approvals') {
                           // Direct navigation to specific event if only one event has unsynced expenses
                           if (task.eventIds && task.eventIds.length === 1) {
-                            window.location.hash = `event=${task.eventIds[0]}`;
+                            sessionStorage.setItem('openApprovalsEvent', task.eventIds[0]);
                           } else if (task.primaryEventId) {
                             // Navigate to event with most unsynced expenses
-                            window.location.hash = `event=${task.primaryEventId}`;
-                          } else {
-                            window.location.hash = '';
+                            sessionStorage.setItem('openApprovalsEvent', task.primaryEventId);
                           }
-                        } else {
-                          window.location.hash = '';
                         }
                         
-                        // Navigate after setting hash
+                        // Navigate
                         onNavigate(page);
                       }}
                       className={`inline-flex items-center text-sm font-medium transition-colors ${

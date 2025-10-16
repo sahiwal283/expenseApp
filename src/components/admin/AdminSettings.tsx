@@ -75,9 +75,15 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [editCardName, setEditCardName] = useState('');
   const [editCardLastFour, setEditCardLastFour] = useState('');
 
-  // Check hash on mount and set initial tab
+  // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
-    if (window.location.hash === '#users') {
+    // Priority 1: Check sessionStorage (more reliable for programmatic navigation)
+    const targetTab = sessionStorage.getItem('openSettingsTab');
+    if (targetTab === 'users') {
+      setActiveTab('users');
+      sessionStorage.removeItem('openSettingsTab'); // Clear after reading
+    } else if (window.location.hash === '#users') {
+      // Priority 2: Check hash (for manual navigation or bookmarks)
       setActiveTab('users');
     }
   }, []);
