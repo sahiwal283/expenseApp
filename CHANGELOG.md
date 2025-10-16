@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2025-10-16 (Frontend v1.3.1 / Backend v1.3.1)
+**Branch: v1.2.0 (Sandbox Only)**
+
+### Fixed
+- **Entity Dropdown Display Issue**: Fixed entity dropdown not showing assigned entity values
+  - Added fallback logic to ensure assigned entity is always available in dropdown options
+  - Prevents blank dropdown when entity is assigned but not yet in `entityOptions` array
+  - Dropdown now correctly shows "Haute Brands", "Boomin", etc. when assigned
+  - Maintains disabled state for already-assigned entities
+
+### Changed
+- **Version Numbering**: Corrected version from 1.2.1 → 1.3.1 to maintain proper semantic versioning
+  - Version numbers should always increment forward, never backwards
+  - Users had already seen v1.3.0 in sandbox, so incremented to 1.3.1
+
+### Technical Details
+- Modified entity dropdown rendering in `ExpenseSubmission.tsx` to include current `expense.zohoEntity` as an option even if it's not in the `entityOptions` array
+- This handles race conditions where expenses load before settings, or when entities are archived/removed from settings
+
 ## [1.2.1] - 2025-10-16 (Frontend v1.2.1 / Backend v1.2.1)
 **Branch: v1.2.0-dev-dashboard-fixes (Sandbox Only)**
 

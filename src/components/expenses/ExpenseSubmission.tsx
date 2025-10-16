@@ -660,6 +660,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                             title={expense.zohoEntity ? 'Entity assigned - use View Details to change' : ''}
                           >
                             <option value="">Unassigned</option>
+                            {/* If expense has an entity that's not in options, show it first */}
+                            {expense.zohoEntity && !entityOptions.includes(expense.zohoEntity) && (
+                              <option value={expense.zohoEntity}>{expense.zohoEntity}</option>
+                            )}
                             {entityOptions.map((entity, index) => (
                               <option key={index} value={entity}>{entity}</option>
                             ))}
