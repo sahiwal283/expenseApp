@@ -18,7 +18,7 @@ export interface Expense {
   description?: string;
   location?: string;
   card_used: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'needs further review';
   receipt_url?: string;
   reimbursement_required: boolean;
   reimbursement_status?: string;
@@ -102,9 +102,9 @@ export class ExpenseRepository extends BaseRepository<Expense> {
   }
 
   /**
-   * Update expense status (for approvals)
+   * Update expense status (for approvals and regressions)
    */
-  async updateStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<Expense> {
+  async updateStatus(id: string, status: 'pending' | 'approved' | 'rejected' | 'needs further review'): Promise<Expense> {
     return this.update(id, { status });
   }
 
