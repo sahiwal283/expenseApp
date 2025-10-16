@@ -66,9 +66,14 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
   // Zoho push state
   const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
-  const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(
-    new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id))
-  );
+  const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(new Set());
+
+  // Update pushedExpenses set when expenses data changes
+  useEffect(() => {
+    const pushed = new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id));
+    setPushedExpenses(pushed);
+    console.log('[Approvals] Updated pushedExpenses set:', pushed.size, 'expenses');
+  }, [expenses]);
 
   // Zoho-enabled entities (entities that have Zoho Books accounts configured)
   const zohoEnabledEntities = ['haute', 'alpha', 'beta', 'gamma', 'delta'];
@@ -158,7 +163,20 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
   const handleAssignEntity = async (expense: Expense, entity: string) => {
     // Warn if changing entity on an already-pushed expense
-    if (expense.zohoExpenseId && expense.zohoEntity && expense.zohoEntity !== entity) {
+    // Check both zohoExpenseId (current state) and pushedExpenses Set (in-memory tracking)
+    const wasPushed = expense.zohoExpenseId || pushedExpenses.has(expense.id);
+    const isChangingEntity = expense.zohoEntity && expense.zohoEntity !== entity;
+    
+    console.log('[Approvals] Entity change check:', {
+      expenseId: expense.id,
+      wasPushed,
+      isChangingEntity,
+      currentEntity: expense.zohoEntity,
+      newEntity: entity,
+      hasZohoId: !!expense.zohoExpenseId
+    });
+    
+    if (wasPushed && isChangingEntity) {
       const confirmed = window.confirm(
         `⚠️ This expense has already been pushed to "${expense.zohoEntity}" Zoho Books.\n\n` +
         `Changing the entity will allow you to push it to "${entity || 'Unassigned'}" instead, ` +
@@ -167,8 +185,10 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
       );
       
       if (!confirmed) {
+        console.log('[Approvals] User cancelled entity change');
         return; // User cancelled
       }
+      console.log('[Approvals] User confirmed entity change');
     }
 
     try {

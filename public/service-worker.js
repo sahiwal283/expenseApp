@@ -1,17 +1,20 @@
 // ExpenseApp Service Worker
-// Version: 1.1.6 - Cache Refresh (No Code Changes)
+// Version: 1.1.7 - CRITICAL FIX: Entity Change Warning & Button State
 // Date: October 16, 2025
 //
-// Changes from v1.1.5:
-// - CACHE FIX: Force browser cache refresh for entity editing functionality
-// - No code changes, just version bump to invalidate browser cache
-// - Ensures v1.1.2 entity changes are properly loaded in browser
+// Changes from v1.1.6:
+// - CRITICAL FIX: pushedExpenses Set now updates when expenses data changes
+// - FIXED: Warning dialog now appears when changing entity on pushed expenses
+// - FIXED: Push to Zoho button state correctly reflects push status
+// - Added useEffect to sync pushedExpenses with actual expense data
+// - Improved warning condition to check both zohoExpenseId and pushedExpenses Set
+// - Added debug logging for entity change operations
 //
-// Entity Changes (from v1.1.2 - should now work):
-// - Entity dropdown disabled in table when assigned
-// - Entity editing available in View Details modal
-// - Warning when changing already-pushed expense entity
-// - Push to Zoho button reappears after entity change
+// Bug Fixes:
+// 1. pushedExpenses Set was initialized once and never updated (empty on mount)
+// 2. Button appeared incorrectly after hard refresh
+// 3. Warning dialog didn't appear when changing entity
+// 4. Now properly tracks push state across page loads and data refreshes
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -76,8 +79,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.6';  // BUMPED VERSION to force cache refresh
-const STATIC_CACHE = 'expenseapp-static-v1.1.6';
+const CACHE_NAME = 'expenseapp-v1.1.7';  // BUMPED VERSION for entity warning fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.7';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -87,7 +90,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.6...');
+  console.log('[ServiceWorker] Installing v1.1.7...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -178,7 +181,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.6...');
+  console.log('[ServiceWorker] Activating v1.1.7...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -192,7 +195,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.6 activated and ready!');
+      console.log('[ServiceWorker] v1.1.7 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
