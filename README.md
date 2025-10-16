@@ -2,7 +2,7 @@
 
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
-**Current Version: 1.0.58 (October 15, 2025)**
+**Current Version: 1.1.11 (Frontend) / 1.1.5 (Backend) - October 16, 2025**
 
 📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
 🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
@@ -25,6 +25,34 @@ A professional web application for managing trade show events and expenses with 
 ### Production Environment
 **URL:** http://192.168.1.138  
 See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production credentials
+
+---
+
+## 🆕 Recent Updates (v1.1.0 - v1.1.11)
+
+**October 16, 2025 - Post-Production Bug Fixes & Enhancements**
+
+### Fixed Issues
+- ✅ **Dashboard Navigation**: "Push to Zoho" button now correctly navigates to Approvals page
+- ✅ **Session Management**: Fixed blank dashboard issue - backend now returns correct HTTP 401 status for expired tokens
+- ✅ **User Management Navigation**: Reliable tab navigation using sessionStorage (3rd attempt success!)
+- ✅ **Push to Zoho Workflow**: No more force logouts, dynamic entity names in errors, friendly "coming soon" messages
+- ✅ **Entity Management**: Re-enabled push button after entity change, modal-based editing for deliberate workflow
+- ✅ **Event Display**: Events in progress now show "Today" instead of negative days
+- ✅ **Admin Protection**: Only "admin" user is permanent/undeletable (both frontend + backend enforcement)
+- ✅ **File Uploads**: Phone camera images now accepted (HEIC, HEIF, WebP), increased limit to 10MB
+- ✅ **Critical Hotfix**: Fixed missing `useEffect` import that broke Approvals page (v1.1.9)
+
+### Improvements
+- 🔄 **Error Messages**: Blue "info" toasts for unconfigured Zoho entities (not harsh red errors)
+- 🔄 **HTTP Status Codes**: Proper 401 (auth failed) vs 403 (permission denied) distinction
+- 🔄 **State Management**: pushedExpenses Set syncs with actual data via useEffect
+- 🔄 **Zoho Format**: Event info displays as "Event Name (MM/DD/YY - MM/DD/YY)" in Zoho Books
+- 🔄 **Developer Permissions**: Developer role now has same capabilities as admin + Dev Dashboard
+
+### Known Issues
+- ⚠️ **Entity Change Warning** (v1.1.11): Warning dialog not appearing when changing entity in modal - under investigation
+- ⚠️ **Zoho Duplicate Prevention**: In-memory Set may prevent re-push of deleted expenses - restart backend to clear
 
 ---
 
@@ -62,13 +90,15 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 - **Smart navigation** (takes user to report with most unsynced items)
 
 ### 📋 Expense Management
-- **Submit expenses** with receipt upload (JPEG, PNG, PDF)
+- **Submit expenses** with receipt upload (JPEG, PNG, PDF, HEIC, HEIF, WebP) - phone camera images supported!
 - **OCR text extraction** from receipts (Tesseract.js + Sharp image preprocessing)
 - **Approval workflows** (pending → approved → rejected)
 - **Entity assignment** (assign expenses to specific Zoho Books entities)
+- **Entity re-assignment** with automatic push button re-enablement
 - **Reimbursement tracking** (pending review → approved → paid)
 - **Receipt viewing** (full-size default with hide option)
 - **Duplicate prevention** (form submit disabled during save)
+- **File size limit**: 10MB (supports modern phone photos)
 
 ### 📊 Reporting & Analytics
 - **Detailed reports** by event with real-time filters
@@ -148,12 +178,12 @@ GRANT ALL PRIVILEGES ON DATABASE expense_app_sandbox TO expense_sandbox;
 ```
 
 **Run Migrations:**
-```bash
+   ```bash
 cd backend
-npm install
+   npm install
 npm run migrate
 npm run seed
-```
+   ```
 
 ### 3. Backend Setup
 

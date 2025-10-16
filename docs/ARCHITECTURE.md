@@ -1,7 +1,7 @@
 # Trade Show Expense App - Architecture Documentation
 
-**Version:** 1.0.58 (Frontend) / 1.0.23 (Backend)  
-**Last Updated:** October 15, 2025  
+**Version:** 1.1.11 (Frontend) / 1.1.5 (Backend)  
+**Last Updated:** October 16, 2025  
 **Status:** Production Active
 
 ---
@@ -11,7 +11,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     TRADE SHOW EXPENSE APP                          │
-│         Frontend v1.0.58 / Backend v1.0.23                          │
+│         Frontend v1.1.11 / Backend v1.1.5                           │
 │                    PRODUCTION + SANDBOX                             │
 └─────────────────────────────────────────────────────────────────────┘
 
@@ -496,6 +496,28 @@ See [CHANGELOG.md](../CHANGELOG.md) for complete history.
 ### Offline Sync
 **Problem:** Expenses not syncing after connection restored  
 **Solution:** Background sync with retry mechanism
+
+### Entity Change Warning (v1.1.11 - ONGOING)
+**Problem:** Warning dialog not appearing when changing entity in modal  
+**Current Status:** Button state works correctly, but onChange event may not fire  
+**Solution:** Under investigation - may need alternative approach (onBlur, save button)  
+**Workaround:** User can still change entities, just without warning
+
+### Zoho Duplicate Prevention (v1.1.11 - ONGOING)
+**Problem:** In-memory `submittedExpenses` Set prevents re-push of deleted expenses  
+**Root Cause:** Set persists across requests but not backend restarts  
+**Solution Needed:** Check database `zoho_expense_id` instead of in-memory Set  
+**Workaround:** Restart backend to clear Set
+
+### Recent Fixes (v1.1.0 - v1.1.11)
+- ✅ **Session timeout blank dashboard** - Backend now returns 401 (not 403) for expired tokens
+- ✅ **Push to Zoho force logout** - Distinguish 401 (auth failed) from 403 (permission denied)
+- ✅ **Phone camera images rejected** - Accept any `image/*` MIME type (HEIC, HEIF, WebP)
+- ✅ **Navigation failures** - Use sessionStorage instead of URL hash for reliable navigation
+- ✅ **Missing useEffect import** - Production-breaking bug fixed in v1.1.9
+- ✅ **Admin protection** - Only "admin" user undeletable (frontend + backend enforcement)
+- ✅ **Event days display** - Events in progress show "Today" instead of negative days
+- ✅ **Entity re-assignment** - Clear zoho_expense_id to allow re-push after entity change
 
 ---
 
