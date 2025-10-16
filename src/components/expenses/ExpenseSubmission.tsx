@@ -11,7 +11,7 @@ import { PendingActions } from '../common/PendingActions';
 import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { formatLocalDate, getTodayLocalDateString } from '../../utils/dateUtils';
-import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
+import { getStatusColor, getCategoryColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../constants/appConstants';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
@@ -631,7 +631,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                               : 'bg-gray-100 text-gray-800'
                           }`}>
                             {expense.reimbursementRequired 
-                              ? `Required (${expense.reimbursementStatus || 'pending review'})` 
+                              ? formatReimbursementStatus(expense.reimbursementStatus)
                               : 'Not Required'}
                           </span>
                           {hasApprovalPermission && expense.reimbursementRequired && (
@@ -887,9 +887,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           const newStatus = e.target.value as 'pending review' | 'approved' | 'rejected' | 'paid';
                           
                           // Confirmation before changing reimbursement status
-                          const statusText = newStatus === 'pending review' ? 'Pending Review' : 
-                                           newStatus === 'approved' ? 'Approved' : 
-                                           newStatus === 'rejected' ? 'Rejected' : 'Paid';
+                          const statusText = formatReimbursementStatus(newStatus);
                           const confirmed = window.confirm(
                             `Change reimbursement status to "${statusText}"?\n\n` +
                             `Expense: $${viewingExpense.amount.toFixed(2)} - ${viewingExpense.merchant}\n` +
@@ -915,7 +913,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
                       >
                         <option value="pending review">Pending Review</option>
-                        <option value="approved">Approved</option>
+                        <option value="approved">Approved (pending payment)</option>
                         <option value="rejected">Rejected</option>
                         {(viewingExpense.status === 'approved' || viewingExpense.reimbursementStatus === 'paid') && (
                           <option value="paid">Paid</option>
@@ -925,7 +923,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                         getReimbursementStatusColor(viewingExpense.reimbursementStatus || 'pending review')
                       }`}>
-                        {viewingExpense.reimbursementStatus || 'Pending Review'}
+                        {formatReimbursementStatus(viewingExpense.reimbursementStatus)}
                       </span>
                     )}
                   </div>

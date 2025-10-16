@@ -331,6 +331,17 @@ export const getReimbursementStatusColor = (status: string | undefined): string 
 };
 
 /**
+ * Format reimbursement status for display
+ */
+export const formatReimbursementStatus = (status: string | undefined): string => {
+  if (!status || status === 'pending review') return 'Pending Review';
+  if (status === 'approved') return 'Approved (pending payment)';
+  if (status === 'rejected') return 'Rejected';
+  if (status === 'paid') return 'Paid';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+/**
  * Format currency
  */
 export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
