@@ -679,7 +679,14 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <p className="text-xs font-medium text-gray-500 mb-1">Entity</p>
                         <select
                           value={viewingExpense.zohoEntity || ''}
-                          onChange={(e) => handleAssignEntity(viewingExpense, e.target.value)}
+                          onChange={(e) => {
+                            console.log('[Approvals] Modal entity dropdown changed!', {
+                              from: viewingExpense.zohoEntity,
+                              to: e.target.value,
+                              expenseId: viewingExpense.id
+                            });
+                            handleAssignEntity(viewingExpense, e.target.value);
+                          }}
                           className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full bg-white"
                         >
                           <option value="">Unassigned</option>

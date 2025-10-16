@@ -1,22 +1,24 @@
 // ExpenseApp Service Worker
-// Version: 1.1.10 - DEBUG: Entity Warning & Button State
+// Version: 1.1.11 - DEBUG: Entity Change Event Tracking
 // Date: October 16, 2025
 //
-// Changes from v1.1.9:
-// - DEBUG: Added comprehensive logging to pushedExpenses useEffect
-// - ISSUE: Warning dialog not appearing when changing entity on pushed expenses
-// - ISSUE: Button state incorrect (not showing "Pushed" checkmark)
-// - Console shows: "Updated pushedExpenses set: 0 expenses" even with 2 expenses loaded
+// Changes from v1.1.11:
+// - DEBUG: Added onChange logging to modal entity dropdown
+// - ISSUE: Warning dialog not appearing when changing entity
+// - ISSUE: onChange event may not be firing at all
+// - Console missing "[Approvals] Entity change check" log
 //
-// Debug Logging Added:
-// - Log expenses count when useEffect triggers
-// - Log first expense sample with zohoEntity, zohoExpenseId, hasZohoExpenseId
-// - Log pushed expense IDs when Set is populated
+// Debug Logging Added to Modal Dropdown:
+// - Log when dropdown value changes (before handleAssignEntity)
+// - Log: from entity, to entity, expense ID
+// - This will confirm if onChange is even firing
 //
-// Investigating:
-// - Possible field name mismatch (zohoExpenseId vs zoho_expense_id)
-// - Possible timing issue with data loading
-// - Possible state update issue
+// Expected Console Output:
+// [Approvals] Modal entity dropdown changed! { from: "Haute Brands", to: "Boomin Brands", expenseId: "..." }
+// [Approvals] Entity change check: { ... }
+//
+// If first log appears but second doesn't = handleAssignEntity issue
+// If neither log appears = onChange not firing (different bug)
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -81,8 +83,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.10';  // BUMPED VERSION for debug logging
-const STATIC_CACHE = 'expenseapp-static-v1.1.10';
+const CACHE_NAME = 'expenseapp-v1.1.11';  // BUMPED VERSION for onChange debug
+const STATIC_CACHE = 'expenseapp-static-v1.1.11';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -92,7 +94,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.10...');
+  console.log('[ServiceWorker] Installing v1.1.11...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -183,7 +185,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.10...');
+  console.log('[ServiceWorker] Activating v1.1.11...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -197,7 +199,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.10 activated and ready!');
+      console.log('[ServiceWorker] v1.1.11 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
