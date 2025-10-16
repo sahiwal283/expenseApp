@@ -1,0 +1,257 @@
+/**
+ * OCR Service Orchestrator
+ * 
+ * Main service that coordinates OCR providers, inference engines, and user corrections.
+ * Provides high-level API for receipt processing with confidence-based fallbacks.
+ */
+
+import { OCRProvider, InferenceEngine, OCRServiceConfig, ProcessedReceipt, FieldInference } from './types';
+import { TesseractProvider } from './providers/TesseractProvider';
+import { PaddleOCRProvider } from './providers/PaddleOCRProvider';
+import { RuleBasedInferenceEngine } from './inference/RuleBasedInferenceEngine';
+import { createLLMProvider } from './inference/LLMProvider';
+
+export class OCRService {
+  private config: OCRServiceConfig;
+  private primaryProvider: OCRProvider;
+  private fallbackProvider?: OCRProvider;
+  private inferenceEngine: InferenceEngine;
+  private llmProvider: any = null; // LLMProvider when implemented
+  
+  constructor(config?: Partial<OCRServiceConfig>) {
+    // Default configuration
+    this.config = {
+      primaryProvider: 'paddleocr',
+      fallbackProvider: 'tesseract',
+      inferenceEngine: 'rule-based',
+      confidenceThreshold: 0.6,
+      enableUserCorrections: true,
+      logOCRResults: true,
+      ...config
+    };
+    
+    // Initialize providers
+    this.primaryProvider = this.createProvider(this.config.primaryProvider);
+    if (this.config.fallbackProvider) {
+      this.fallbackProvider = this.createProvider(this.config.fallbackProvider);
+    }
+    
+    // Initialize inference engine
+    this.inferenceEngine = new RuleBasedInferenceEngine();
+    
+    console.log('[OCRService] Initialized with config:', {
+      primary: this.primaryProvider.name,
+      fallback: this.fallbackProvider?.name,
+      inference: this.inferenceEngine.name
+    });
+  }
+  
+  /**
+   * Initialize service (check availability, load LLM if configured)
+   */
+  async initialize(): Promise<void> {
+    console.log('[OCRService] Checking provider availability...');
+    
+    // Check primary provider
+    const primaryAvailable = await this.primaryProvider.isAvailable();
+    console.log(`[OCRService] Primary provider (${this.primaryProvider.name}): ${primaryAvailable ? 'available' : 'NOT available'}`);
+    
+    // If primary not available and fallback exists, swap
+    if (!primaryAvailable && this.fallbackProvider) {
+      console.log('[OCRService] Primary provider not available, checking fallback...');
+      const fallbackAvailable = await this.fallbackProvider.isAvailable();
+      
+      if (fallbackAvailable) {
+        console.log('[OCRService] Swapping to fallback provider');
+        [this.primaryProvider, this.fallbackProvider] = [this.fallbackProvider, this.primaryProvider];
+      } else {
+        console.error('[OCRService] No OCR providers available!');
+      }
+    }
+    
+    // Initialize LLM if configured
+    if (this.config.llmProvider) {
+      console.log(`[OCRService] Initializing LLM provider: ${this.config.llmProvider}`);
+      this.llmProvider = await createLLMProvider(this.config.llmProvider);
+      
+      if (this.llmProvider) {
+        console.log(`[OCRService] LLM provider ready: ${this.llmProvider.name}`);
+      } else {
+        console.warn('[OCRService] LLM provider not available');
+      }
+    }
+  }
+  
+  /**
+   * Process receipt image with OCR and field inference
+   */
+  async processReceipt(imagePath: string): Promise<ProcessedReceipt> {
+    console.log('[OCRService] Processing receipt:', imagePath);
+    const startTime = Date.now();
+    
+    try {
+      // Step 1: OCR with primary provider
+      let ocrResult = await this.primaryProvider.process(imagePath);
+      
+      // Step 2: Fallback if confidence is too low
+      if (ocrResult.confidence < this.config.confidenceThreshold && this.fallbackProvider) {
+        console.log(`[OCRService] Primary OCR confidence (${ocrResult.confidence.toFixed(2)}) below threshold, trying fallback...`);
+        const fallbackResult = await this.fallbackProvider.process(imagePath);
+        
+        if (fallbackResult.confidence > ocrResult.confidence) {
+          console.log(`[OCRService] Using fallback result (confidence: ${fallbackResult.confidence.toFixed(2)})`);
+          ocrResult = fallbackResult;
+        }
+      }
+      
+      // Step 3: Field inference
+      console.log('[OCRService] Running field inference...');
+      const inference = await this.inferenceEngine.infer(ocrResult);
+      
+      // Step 4: Category suggestions
+      const categories = await this.inferenceEngine.suggestCategories(ocrResult, inference);
+      
+      // Step 5: LLM enhancement (if available and needed)
+      if (this.llmProvider) {
+        const lowConfidenceFields = this.findLowConfidenceFields(inference);
+        if (lowConfidenceFields.length > 0) {
+          console.log(`[OCRService] Enhancing low-confidence fields with LLM: ${lowConfidenceFields.join(', ')}`);
+          try {
+            const llmEnhancements = await this.llmProvider.extractFields(ocrResult.text, lowConfidenceFields);
+            // Merge LLM enhancements (would update inference here)
+            console.log('[OCRService] LLM enhancements applied');
+          } catch (error: any) {
+            console.warn('[OCRService] LLM enhancement failed:', error.message);
+          }
+        }
+      }
+      
+      // Step 6: Calculate overall confidence and review needs
+      const { overallConfidence, needsReview, reviewReasons } = this.assessQuality(inference, ocrResult.confidence);
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`[OCRService] Processing complete in ${totalTime}ms (overall confidence: ${overallConfidence.toFixed(2)})`);
+      
+      // Step 7: Log if configured
+      if (this.config.logOCRResults) {
+        // TODO: Store in database for analytics
+      }
+      
+      return {
+        ocr: ocrResult,
+        inference,
+        categories,
+        overallConfidence,
+        needsReview,
+        reviewReasons
+      };
+      
+    } catch (error: any) {
+      console.error('[OCRService] Processing error:', error.message);
+      throw error;
+    }
+  }
+  
+  /**
+   * Create OCR provider instance
+   */
+  private createProvider(name: string): OCRProvider {
+    switch (name) {
+      case 'paddleocr':
+        return new PaddleOCRProvider();
+      case 'tesseract':
+        return new TesseractProvider();
+      default:
+        console.warn(`[OCRService] Unknown provider: ${name}, defaulting to Tesseract`);
+        return new TesseractProvider();
+    }
+  }
+  
+  /**
+   * Find fields with low confidence that need LLM assistance
+   */
+  private findLowConfidenceFields(inference: FieldInference): string[] {
+    const threshold = 0.7;
+    const lowConfidence: string[] = [];
+    
+    if (inference.merchant.confidence < threshold) lowConfidence.push('merchant');
+    if (inference.amount.confidence < threshold) lowConfidence.push('amount');
+    if (inference.date.confidence < threshold) lowConfidence.push('date');
+    if (inference.cardLastFour.confidence < threshold) lowConfidence.push('cardLastFour');
+    if (inference.category.confidence < threshold) lowConfidence.push('category');
+    
+    return lowConfidence;
+  }
+  
+  /**
+   * Assess overall quality and determine if manual review is needed
+   */
+  private assessQuality(inference: FieldInference, ocrConfidence: number): {
+    overallConfidence: number;
+    needsReview: boolean;
+    reviewReasons?: string[];
+  } {
+    const fieldConfidences = [
+      inference.merchant.confidence,
+      inference.amount.confidence,
+      inference.date.confidence,
+      inference.cardLastFour.confidence || 0,
+      inference.category.confidence
+    ].filter(c => c > 0); // Only count fields that were found
+    
+    // Calculate weighted average
+    const avgFieldConfidence = fieldConfidences.reduce((a, b) => a + b, 0) / fieldConfidences.length;
+    const overallConfidence = (avgFieldConfidence * 0.7) + (ocrConfidence * 0.3);
+    
+    // Determine if review is needed
+    const reviewReasons: string[] = [];
+    const criticalThreshold = 0.6;
+    
+    if (ocrConfidence < 0.5) {
+      reviewReasons.push('Low OCR quality');
+    }
+    
+    if (!inference.merchant.value || inference.merchant.confidence < criticalThreshold) {
+      reviewReasons.push('Merchant unclear');
+    }
+    
+    if (!inference.amount.value || inference.amount.confidence < criticalThreshold) {
+      reviewReasons.push('Amount unclear');
+    }
+    
+    if (!inference.date.value || inference.date.confidence < criticalThreshold) {
+      reviewReasons.push('Date unclear');
+    }
+    
+    if (!inference.category.value || inference.category.confidence < 0.5) {
+      reviewReasons.push('Category uncertain');
+    }
+    
+    const needsReview = reviewReasons.length > 0 || overallConfidence < 0.7;
+    
+    return {
+      overallConfidence,
+      needsReview,
+      reviewReasons: needsReview ? reviewReasons : undefined
+    };
+  }
+  
+  /**
+   * Get service configuration
+   */
+  getConfig(): OCRServiceConfig {
+    return { ...this.config };
+  }
+  
+  /**
+   * Update service configuration
+   */
+  updateConfig(config: Partial<OCRServiceConfig>): void {
+    this.config = { ...this.config, ...config };
+    console.log('[OCRService] Configuration updated');
+  }
+}
+
+// Export singleton instance
+export const ocrService = new OCRService();
+
