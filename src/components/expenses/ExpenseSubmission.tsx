@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
-import { Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, Calendar, DollarSign, CreditCard, User as UserIcon, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, 
+  Calendar, DollarSign, CreditCard, User as UserIcon, Clock, CheckCircle, Upload, 
+  Loader2, CheckCircle2 
+} from 'lucide-react';
 import { User, Expense } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { PendingActions } from '../common/PendingActions';
+import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { formatLocalDate, getTodayLocalDateString } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
@@ -18,8 +23,13 @@ interface ExpenseSubmissionProps {
 }
 
 export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) => {
-  // Use custom hooks
-  const { expenses, events, reload: reloadData } = useExpenses();
+  // Check if user has approval permissions
+  const hasApprovalPermission = ['admin', 'accountant', 'developer'].includes(user.role);
+  
+  // Use custom hooks (enhanced with approval data when needed)
+  const { expenses, events, users, entityOptions, reload: reloadData } = useExpenses({ 
+    hasApprovalPermission 
+  });
   const { pendingCount } = usePendingSync();
   const {
     dateFilter, setDateFilter,
@@ -46,8 +56,20 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [showPendingSync, setShowPendingSync] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Approval-specific state (only used when hasApprovalPermission is true)
+  const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
+  const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(new Set());
+
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
+
+  // Update pushedExpenses set when expenses data changes
+  useEffect(() => {
+    if (hasApprovalPermission) {
+      const pushed = new Set(expenses.filter(e => e.zohoExpenseId).map(e => e.id));
+      setPushedExpenses(pushed);
+    }
+  }, [expenses, hasApprovalPermission]);
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
     // Prevent duplicate submissions
@@ -167,11 +189,133 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setShowReceiptUpload(false);
   };
 
+  // === APPROVAL HANDLERS (Only used when hasApprovalPermission is true) ===
+
+  const handleApproveExpense = async (expense: Expense) => {
+    try {
+      if (api.USE_SERVER) {
+        await api.reviewExpense(expense.id, { status: 'approved' });
+        addToast('✅ Expense approved!', 'success');
+      }
+      await reloadData();
+    } catch (error) {
+      console.error('Error approving expense:', error);
+      addToast('❌ Failed to approve expense. Please try again.', 'error');
+    }
+  };
+
+  const handleRejectExpense = async (expense: Expense) => {
+    try {
+      if (api.USE_SERVER) {
+        await api.reviewExpense(expense.id, { status: 'rejected' });
+        addToast('✅ Expense rejected.', 'success');
+      }
+      await reloadData();
+    } catch (error) {
+      console.error('Error rejecting expense:', error);
+      addToast('❌ Failed to reject expense. Please try again.', 'error');
+    }
+  };
+
+  const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
+    try {
+      if (api.USE_SERVER) {
+        await api.setExpenseReimbursement(expense.id, { reimbursement_status: status });
+        addToast(`✅ Reimbursement ${status}!`, 'success');
+      }
+      await reloadData();
+    } catch (error) {
+      console.error('Error updating reimbursement:', error);
+      addToast('❌ Failed to update reimbursement status. Please try again.', 'error');
+    }
+  };
+
+  const handleAssignEntity = async (expense: Expense, entity: string) => {
+    // Warn if changing entity on an already-pushed expense
+    const wasPushed = expense.zohoExpenseId || pushedExpenses.has(expense.id);
+    const isChangingEntity = expense.zohoEntity && expense.zohoEntity !== entity;
+    
+    if (wasPushed && isChangingEntity) {
+      const confirmed = window.confirm(
+        `⚠️ This expense has already been pushed to "${expense.zohoEntity}" Zoho Books.\n\n` +
+        `Changing the entity will allow you to push it to "${entity || 'Unassigned'}" instead, ` +
+        `but it will NOT remove it from "${expense.zohoEntity}" Zoho Books.\n\n` +
+        `Are you sure you want to change entities?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    try {
+      if (api.USE_SERVER) {
+        await api.assignEntity(expense.id, { zoho_entity: entity });
+      }
+
+      // Remove from pushedExpenses set to allow re-push
+      if (expense.zohoEntity !== entity) {
+        setPushedExpenses(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(expense.id);
+          return newSet;
+        });
+      }
+
+      await reloadData();
+      
+      if (expense.zohoExpenseId) {
+        addToast('✅ Entity changed. You can now push to the new entity.', 'success');
+      } else {
+        addToast('✅ Entity assigned!', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to assign entity:', error);
+      addToast('❌ Failed to assign entity. Please try again.', 'error');
+    }
+  };
+
+  const handlePushToZoho = async (expense: Expense) => {
+    if (!expense.zohoEntity) {
+      addToast('⚠️ No entity assigned to this expense. Please assign an entity first.', 'warning');
+      return;
+    }
+
+    if (expense.zohoExpenseId || pushedExpenses.has(expense.id)) {
+      return; // Already pushed
+    }
+
+    setPushingExpenseId(expense.id);
+    try {
+      await api.pushToZoho(expense.id);
+      setPushedExpenses(prev => new Set(prev).add(expense.id));
+      addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
+      await reloadData();
+    } catch (error: any) {
+      console.error('Failed to push to Zoho:', error);
+      
+      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+      
+      if (errorMsg.includes('does not have Zoho Books integration configured')) {
+        addToast(
+          `🕐 Zoho Books integration for "${expense.zohoEntity}" is coming soon. Please try again later or add manually.`,
+          'info'
+        );
+      } else {
+        addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
+      }
+    } finally {
+      setPushingExpenseId(null);
+    }
+  };
+
   // Apply user permission filter and sorting to hook's filtered results
   const finalFilteredExpenses = filteredExpenses
     .filter(expense => {
-      // User permission filter (component-specific)
-      return user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || expense.userId === user.id;
+      // User permission filter:
+      // - Users with approval permission see ALL expenses
+      // - Regular users see only their own expenses
+      return hasApprovalPermission || expense.userId === user.id;
     })
     .sort((a, b) => {
       // Sort: pending expenses at the top, then by date
@@ -210,10 +354,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-gray-900">Expense Management</h1>
-          <p className="text-gray-600 mt-1">Submit and track your trade show expenses</p>
+          <p className="text-gray-600 mt-1">
+            {hasApprovalPermission 
+              ? 'Review, approve, and manage expense submissions'
+              : 'Submit and track your trade show expenses'}
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           {hasActiveFilters && (
@@ -246,6 +395,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           </button>
         </div>
       </div>
+
+      {/* Approval Workflow Cards (Only visible to admin/accountant/developer) */}
+      {hasApprovalPermission && <ApprovalCards expenses={expenses} />}
 
       {/* Expenses Table */}
       {finalFilteredExpenses.length === 0 ? (
@@ -283,6 +435,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 {/* Column Headers */}
                 <tr>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Date</th>
+                  {hasApprovalPermission && (
+                    <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">User</th>
+                  )}
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Event</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Category</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Merchant</th>
@@ -290,6 +445,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Card Used</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Status</th>
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Reimbursement</th>
+                  {hasApprovalPermission && (
+                    <>
+                      <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900">Entity</th>
+                      <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-xs sm:text-sm font-medium text-gray-900">Zoho</th>
+                    </>
+                  )}
                   <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900">Actions</th>
                 </tr>
                 {/* Inline Filters Row */}
@@ -303,6 +464,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       className="w-full px-1.5 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                     />
                   </th>
+                  {/* User Filter Placeholder (Approval Users) */}
+                  {hasApprovalPermission && (
+                    <th className="px-3 py-1.5">
+                      <div className="text-xs text-gray-300 text-center">-</div>
+                    </th>
+                  )}
                   {/* Event Filter */}
                   <th className="px-3 py-1.5">
                     <select
@@ -381,6 +548,17 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <option value="not-required">Not Required</option>
                     </select>
                   </th>
+                  {/* Entity and Zoho Filter Placeholders (Approval Users) */}
+                  {hasApprovalPermission && (
+                    <>
+                      <th className="px-3 py-1.5">
+                        <div className="text-xs text-gray-300 text-center">-</div>
+                      </th>
+                      <th className="px-3 py-1.5">
+                        <div className="text-xs text-gray-300 text-center">-</div>
+                      </th>
+                    </>
+                  )}
                   {/* Actions - No filter */}
                   <th className="px-3 py-1.5"></th>
                 </tr>
@@ -388,6 +566,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               <tbody className="divide-y divide-gray-200">
                 {finalFilteredExpenses.map((expense) => {
                   const event = events.find(e => e.id === expense.tradeShowId);
+                  const userName = expense.user_name || users.find(u => u.id === expense.userId)?.name || 'Unknown User';
                   
                   return (
                     <tr key={expense.id} className="hover:bg-gray-50">
@@ -395,6 +574,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900 whitespace-nowrap">
                         {formatLocalDate(expense.date)}
                       </td>
+                      {/* User (Approval Users Only) */}
+                      {hasApprovalPermission && (
+                        <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-700">
+                          {userName}
+                        </td>
+                      )}
                       {/* Event */}
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-xs sm:text-sm text-gray-900">
                         {event ? event.name : 'No Event'}
@@ -430,19 +615,106 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       </td>
                       {/* Reimbursement */}
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
-                        <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${
-                          expense.reimbursementRequired 
-                            ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {expense.reimbursementRequired 
-                            ? `Required (${expense.reimbursementStatus || 'pending review'})` 
-                            : 'Not Required'}
-                        </span>
+                        <div className="space-y-1">
+                          <span className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${
+                            expense.reimbursementRequired 
+                              ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {expense.reimbursementRequired 
+                              ? `Required (${expense.reimbursementStatus || 'pending review'})` 
+                              : 'Not Required'}
+                          </span>
+                          {hasApprovalPermission && expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              <button
+                                onClick={() => handleReimbursementApproval(expense, 'approved')}
+                                className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                                title="Approve Reimbursement"
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleReimbursementApproval(expense, 'rejected')}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Reject Reimbursement"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
+                      {/* Entity (Approval Users Only) */}
+                      {hasApprovalPermission && (
+                        <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                          <select
+                            value={expense.zohoEntity || ''}
+                            onChange={(e) => handleAssignEntity(expense, e.target.value)}
+                            className="text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full bg-white border-gray-300 text-gray-900"
+                          >
+                            <option value="">Unassigned</option>
+                            {entityOptions.map((entity, index) => (
+                              <option key={index} value={entity}>{entity}</option>
+                            ))}
+                          </select>
+                        </td>
+                      )}
+                      {/* Zoho Push (Approval Users Only) */}
+                      {hasApprovalPermission && (
+                        <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
+                          <div className="flex justify-center">
+                            {!expense.zohoEntity ? (
+                              <span className="text-xs text-gray-400 italic">No entity</span>
+                            ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
+                              <div className="flex items-center space-x-1 text-emerald-600">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span className="text-xs font-medium">Pushed</span>
+                              </div>
+                            ) : pushingExpenseId === expense.id ? (
+                              <button
+                                disabled
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md cursor-not-allowed"
+                              >
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Pushing...</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handlePushToZoho(expense)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                                title={`Push to ${expense.zohoEntity} Zoho Books`}
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Push</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       {/* Actions */}
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
+                          {/* Approval Actions (Approval Users Only, Pending Expenses Only) */}
+                          {hasApprovalPermission && expense.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApproveExpense(expense)}
+                                className="p-1.5 sm:p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                title="Approve Expense"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRejectExpense(expense)}
+                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Reject Expense"
+                              >
+                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              </button>
+                            </>
+                          )}
+                          {/* View Details (All Users) */}
                           <button
                             onClick={() => setViewingExpense(expense)}
                             className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -450,13 +722,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteExpense(expense.id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {/* Delete (Own Expenses Only) */}
+                          {expense.userId === user.id && (
+                            <button
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

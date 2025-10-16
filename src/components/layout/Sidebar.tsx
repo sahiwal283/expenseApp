@@ -28,7 +28,7 @@ const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer', 'temporary'] },
   { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer', 'temporary'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
-  { id: 'approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'accountant', 'developer'] },
+  // NOTE: 'approvals' tab removed in v1.3.0 - approval workflows are now integrated into the Expenses page
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'developer'] },
   { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant', 'developer'] },
   { id: 'devdashboard', label: 'Dev Dashboard', icon: Code, roles: ['developer'] },

@@ -5,7 +5,7 @@ import { EventSetup } from './components/events/EventSetup';
 import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
 import { AdminSettings } from './components/admin/AdminSettings';
 import { DevDashboard } from './components/developer/DevDashboard';
-import { Approvals } from './components/admin/Approvals';
+// import { Approvals } from './components/admin/Approvals'; // REMOVED in v1.3.0 - approval workflows now in ExpenseSubmission
 import { Reports } from './components/reports/Reports';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -321,7 +321,8 @@ function App() {
           {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
           {currentPage === 'events' && <EventSetup user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
-          {currentPage === 'approvals' && <Approvals user={user} />}
+          {/* REMOVED in v1.3.0: Approvals page - approval workflows now integrated into Expenses page */}
+          {/* {currentPage === 'approvals' && <Approvals user={user} />} */}
           {currentPage === 'reports' && <Reports user={user} />}
           {currentPage === 'settings' && <AdminSettings user={user} />}
           {currentPage === 'devdashboard' && <DevDashboard user={user} />}
