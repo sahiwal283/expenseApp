@@ -851,34 +851,134 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 </div>
               )}
 
-              {/* Status Badges */}
-              <div className="flex flex-wrap gap-3">
+              {/* Status Badges / Editable Fields */}
+              <div className="flex flex-wrap gap-6">
+                {/* Status */}
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Status</p>
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
-                    {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
-                  </span>
+                  <p className="text-sm text-gray-500 mb-2">Status</p>
+                  {hasApprovalPermission ? (
+                    <select
+                      value={viewingExpense.status}
+                      onChange={async (e) => {
+                        const newStatus = e.target.value as 'pending' | 'approved' | 'rejected';
+                        try {
+                          await api.reviewExpense(viewingExpense.id, newStatus);
+                          await reloadData();
+                          setViewingExpense({...viewingExpense, status: newStatus});
+                          addToast(`✅ Status updated to ${newStatus}`, 'success');
+                        } catch (error) {
+                          console.error('[ExpenseSubmission] Error updating status:', error);
+                          addToast('❌ Failed to update status', 'error');
+                        }
+                      }}
+                      className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  ) : (
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
+                      {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Reimbursement</p>
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    viewingExpense.reimbursementRequired 
-                      ? getReimbursementStatusColor(viewingExpense.reimbursementStatus || 'pending review')
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {viewingExpense.reimbursementRequired 
-                      ? viewingExpense.reimbursementStatus || 'Pending Review'
-                      : 'Not Required'}
-                  </span>
-                </div>
-                {viewingExpense.zohoEntity && (
+
+                {/* Reimbursement Status */}
+                {viewingExpense.reimbursementRequired && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Entity</p>
-                    <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
-                      {viewingExpense.zohoEntity}
+                    <p className="text-sm text-gray-500 mb-2">Reimbursement</p>
+                    {hasApprovalPermission ? (
+                      <select
+                        value={viewingExpense.reimbursementStatus || 'pending review'}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value as 'pending review' | 'approved' | 'rejected';
+                          try {
+                            await api.setExpenseReimbursement(viewingExpense.id, newStatus);
+                            await reloadData();
+                            setViewingExpense({...viewingExpense, reimbursementStatus: newStatus});
+                            addToast(`✅ Reimbursement status updated`, 'success');
+                          } catch (error) {
+                            console.error('[ExpenseSubmission] Error updating reimbursement:', error);
+                            addToast('❌ Failed to update reimbursement status', 'error');
+                          }
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                      >
+                        <option value="pending review">Pending Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    ) : (
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                        getReimbursementStatusColor(viewingExpense.reimbursementStatus || 'pending review')
+                      }`}>
+                        {viewingExpense.reimbursementStatus || 'Pending Review'}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {!viewingExpense.reimbursementRequired && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Reimbursement</p>
+                    <span className="px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-800">
+                      Not Required
                     </span>
                   </div>
                 )}
+
+                {/* Entity */}
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Entity</p>
+                  {hasApprovalPermission ? (
+                    <select
+                      value={viewingExpense.zohoEntity || ''}
+                      onChange={async (e) => {
+                        const newEntity = e.target.value;
+                        
+                        // If entity is already assigned and changing it, confirm
+                        if (viewingExpense.zohoEntity && viewingExpense.zohoExpenseId && newEntity !== viewingExpense.zohoEntity) {
+                          if (!confirm(`This expense was already pushed to Zoho under "${viewingExpense.zohoEntity}". Changing the entity will clear the Zoho ID. Continue?`)) {
+                            return;
+                          }
+                        }
+                        
+                        try {
+                          await api.assignEntity(viewingExpense.id, newEntity);
+                          await reloadData();
+                          setViewingExpense({
+                            ...viewingExpense, 
+                            zohoEntity: newEntity,
+                            zohoExpenseId: newEntity !== viewingExpense.zohoEntity ? undefined : viewingExpense.zohoExpenseId
+                          });
+                          addToast(`✅ Entity ${newEntity ? `set to ${newEntity}` : 'cleared'}`, 'success');
+                        } catch (error) {
+                          console.error('[ExpenseSubmission] Error updating entity:', error);
+                          addToast('❌ Failed to update entity', 'error');
+                        }
+                      }}
+                      className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                    >
+                      <option value="">Unassigned</option>
+                      {viewingExpense.zohoEntity && !entityOptions.includes(viewingExpense.zohoEntity) && (
+                        <option value={viewingExpense.zohoEntity}>{viewingExpense.zohoEntity}</option>
+                      )}
+                      {entityOptions.map((entity, index) => (
+                        <option key={index} value={entity}>{entity}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    viewingExpense.zohoEntity ? (
+                      <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+                        {viewingExpense.zohoEntity}
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-600">
+                        Unassigned
+                      </span>
+                    )
+                  )}
+                </div>
               </div>
 
               {/* Receipt Section */}

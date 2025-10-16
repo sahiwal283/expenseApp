@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.3.1 - FIX: Entity dropdown not showing assigned values
+// Version: 1.3.2 - FEAT: Editable Status/Reimbursement/Entity in Detail Modal
 // Date: October 16, 2025
 //
 // Changes from v1.1.14:
@@ -93,8 +93,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.3.1';  // BUMPED VERSION for entity dropdown fix
-const STATIC_CACHE = 'expenseapp-static-v1.3.1';
+const CACHE_NAME = 'expenseapp-v1.3.2';  // BUMPED VERSION for editable detail modal
+const STATIC_CACHE = 'expenseapp-static-v1.3.2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -195,7 +195,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.3.1...');
+  console.log('[ServiceWorker] Activating v1.3.2...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
