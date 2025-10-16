@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2025-10-16 (Frontend v1.3.2 / Backend v1.3.1)
+**Branch: v1.2.0 (Sandbox Only)**
+
+### Added
+- **Editable Status/Reimbursement/Entity in Expense Detail Modal**:
+  - Approval users (admin, accountant, developer) can now edit Status, Reimbursement, and Entity directly from the detail modal
+  - **Status Dropdown**: Pending / Approved / Rejected
+  - **Reimbursement Dropdown**: Pending Review / Approved / Rejected (shown only when reimbursement is required)
+  - **Entity Dropdown**: Unassigned / Haute Brands / Boomin
+  - Changes save immediately with toast notifications
+  - Confirmation dialog when changing entity for expenses already pushed to Zoho
+  - Regular users continue to see read-only status badges
+
+### Changed
+- **Database Configuration**: Updated sandbox `entityOptions` to `["Haute Brands", "Boomin"]` (previously had placeholder values)
+
+### Fixed
+- Removed debug console.logs from `useExpenses` hook
+
+### Technical Details
+- Modified `ExpenseSubmission.tsx` detail modal (lines 854-982)
+- Conditional rendering: dropdowns for approval users, badges for regular users
+- Inline async handlers for immediate save on dropdown change
+- Entity change includes warning if `zohoExpenseId` exists and entity is changing
+
+### UX Improvements
+- **Streamlined Workflow**: No need to close detail modal and enter edit mode to change status/reimbursement/entity
+- **Visual Clarity**: Dropdowns have colored focus rings matching their purpose (purple for status, orange for reimbursement, blue for entity)
+- **Safety**: Confirmation prompt prevents accidental entity changes for Zoho-synced expenses
+
 ## [1.3.1] - 2025-10-16 (Frontend v1.3.1 / Backend v1.3.1)
 **Branch: v1.2.0 (Sandbox Only)**
 
