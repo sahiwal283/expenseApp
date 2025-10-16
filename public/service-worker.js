@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.4.9 - PATCH: Collapsible inline filters
+// Version: 1.4.10 - PATCH: Category colors in charts match expense table
 // Date: October 16, 2025
 //
 // Changes from v1.4.4:

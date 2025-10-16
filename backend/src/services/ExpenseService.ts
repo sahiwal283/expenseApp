@@ -345,35 +345,39 @@ class ExpenseService {
     }
 
     const updates: Partial<Expense> = { reimbursement_status: status };
+    console.log(`[Reimbursement Update START] Expense ${expenseId}:`);
+    console.log(`  - Current Reimbursement: ${currentExpense.reimbursement_status || 'NULL'}`);
+    console.log(`  - New Reimbursement: ${status}`);
+    console.log(`  - Current Expense Status: ${currentExpense.status}`);
 
-    // AUTOMATIC APPROVAL LOGIC
-    // If changing from "pending review" (or NULL) to "approved" or "rejected" (and expense is pending or needs further review), auto-approve
-    // AUTOMATIC APPROVAL LOGIC
-    // Case 1: Initial review - from pending/NULL to approved/rejected
-    const isInitialReview = (!currentExpense.reimbursement_status || currentExpense.reimbursement_status === 'pending review') && 
-                           (status === 'approved' || status === 'rejected');
+    // SIMPLIFIED AUTO-STATUS LOGIC
+    const oldReimbursement = currentExpense.reimbursement_status;
+    const currentStatus = currentExpense.status;
     
-    // Case 2: Corrective action - from rejected to approved (fixing a mistake)
-    const isCorrectiveApproval = currentExpense.reimbursement_status === 'rejected' && status === 'approved';
+    // 1. CHECK FOR REGRESSIONS (highest priority)
+    const isRegression = 
+      (oldReimbursement === 'approved' && status === 'rejected') ||
+      (oldReimbursement === 'paid' && status === 'approved') ||
+      (oldReimbursement === 'paid' && status === 'rejected');
     
-    // Auto-approve if it's an initial review OR corrective approval, and expense needs approval
-    if ((isInitialReview || isCorrectiveApproval) && (currentExpense.status === 'pending' || currentExpense.status === 'needs further review')) {
-      updates.status = 'approved';
-      console.log(`[Auto-Approval] Expense ${expenseId} auto-approved due to reimbursement ${isCorrectiveApproval ? 'corrective approval' : 'initial review'}`);
-    }
-
-    // REGRESSION LOGIC
-    // If reimbursement goes from "approved" to "rejected", set expense to "needs further review"
-    const isReimbursementRegression = currentExpense.reimbursement_status === 'approved' && status === 'rejected';
-    
-    // If reimbursement goes from "paid" to "approved" or "rejected", set expense to "needs further review"
-    const isPaidRegression = currentExpense.reimbursement_status === 'paid' && 
-                            (status === 'approved' || status === 'rejected');
-    
-    if (isReimbursementRegression || isPaidRegression) {
+    if (isRegression) {
       updates.status = 'needs further review';
-      console.log(`[Regression] Expense ${expenseId} set to "needs further review" due to reimbursement regression`);
+      console.log(`  ⚠️  REGRESSION: ${oldReimbursement} → ${status}`);
+      console.log(`  → Status: ${currentStatus} → needs further review`);
     }
+    // 2. AUTO-APPROVE if decision made and expense needs approval
+    else if ((status === 'approved' || status === 'rejected' || status === 'paid') && 
+             (currentStatus === 'pending' || currentStatus === 'needs further review')) {
+      updates.status = 'approved';
+      console.log(`  ✅ REIMBURSEMENT DECISION MADE: ${oldReimbursement || 'NULL'} → ${status}`);
+      console.log(`  → Status: ${currentStatus} → approved`);
+    }
+    // 3. NO STATUS CHANGE needed
+    else {
+      console.log(`  ℹ️  No status change: already ${currentStatus} or setting to pending review`);
+    }
+    
+    console.log(`[Reimbursement Update END] Final updates:`, JSON.stringify(updates));
 
     return expenseRepository.update(expenseId, updates);
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import { BarChart3, PieChart } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
+import { CATEGORY_COLORS } from '../../constants/appConstants';
 
 interface ExpenseChartProps {
   expenses: Expense[];
@@ -36,15 +37,12 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   }, {} as Record<string, { amount: number; eventId: string }>);
 
   const getCategoryColor = (category: string) => {
-    const colors = {
-      'Flights': 'bg-blue-500',
-      'Hotels': 'bg-emerald-500',
-      'Meals': 'bg-orange-500',
-      'Supplies': 'bg-purple-500',
-      'Transportation': 'bg-yellow-500',
-      'Other': 'bg-gray-500'
-    };
-    return colors[category as keyof typeof colors] || colors['Other'];
+    const colorConfig = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
+    if (!colorConfig) return 'bg-gray-500';
+    
+    // Convert badge colors (bg-blue-100) to chart bar colors (bg-blue-500)
+    const bgClass = colorConfig.bg;
+    return bgClass.replace('-100', '-500');
   };
 
   return (
