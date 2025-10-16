@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-10-16 (Backend v1.5.0) - CRITICAL FIX
+**Branch: v1.2.0 (Sandbox Only)**
+
+### 🚨 CRITICAL: Auto-Status Logic Reliability Fix
+
+**Problem**: The automated approval workflow introduced in v1.4.0 was not working reliably. Approving reimbursements or assigning entities on expenses with "needs further review" status did NOT auto-update the expense status to "approved", despite regression detection working correctly.
+
+**Root Cause**: Complex nested conditional logic made the auto-approval flow unreliable and hard to debug.
+
+### Changed
+- **Simplified Auto-Status Logic**: Completely rewrote `updateReimbursementStatus()` and `assignZohoEntity()` with 3 clear, prioritized rules:
+  1. **Check for regressions first** (highest priority) - any backward movement = "needs further review"
+  2. **Auto-approve any reimbursement decision** - approved, rejected, or paid = auto-approve expense if pending or needs review
+  3. **No change** - if already approved or other cases
+- **Improved Logging**: Added comprehensive status transition logging:
+  - `[Reimbursement Update START]` - shows current state
+  - `✅ REIMBURSEMENT DECISION MADE` - auto-approval triggered
+  - `⚠️ REGRESSION` - regression detected
+  - `[Reimbursement Update END]` - final updates logged
+
+### Fixed
+- ✅ Approving a reimbursement now correctly updates expense status from "needs further review" → "approved"
+- ✅ Assigning an entity now correctly updates expense status from "needs further review" → "approved"
+- ✅ Regression detection still works reliably (approved → rejected = "needs further review")
+
+### Technical Details
+- **Files Changed**: `backend/src/services/ExpenseService.ts`
+- **Logic Before**: 6+ complex boolean conditions with nested if statements
+- **Logic After**: 3 simple, sequential checks (regressions → approvals → no-op)
+- **Result**: Bulletproof, easy to understand, impossible to miss edge cases
+
+**⚠️ DEPLOYMENT ISSUE DISCOVERED**: This update revealed a critical deployment path mismatch. Backend service runs from `/opt/expenseApp/backend/` (capital A), but deployments were going to `/opt/expenseapp/` (lowercase). See AI_MASTER_GUIDE.md → Critical Debugging Sessions for full details.
+
+## [1.4.10] - 2025-10-16 (Frontend v1.4.10)
+**Branch: v1.2.0 (Sandbox Only)**
+
+### Fixed
+- **Chart Colors**: "Expenses by Category" chart colors now match expense table category colors
+  - Replaced hardcoded color mappings with `CATEGORY_COLORS` constant
+  - Charts now dynamically reflect the same colors as category badges in tables
+  - Meal and Entertainment → Orange, Booth/Supplies → Purple, Flights → Blue, etc.
+
+### Changed
+- **Files Modified**:
+  - `src/components/reports/ExpenseChart.tsx` - uses `CATEGORY_COLORS`
+  - `src/components/reports/DetailedReport.tsx` - uses `CATEGORY_COLORS`
+- **Implementation**: Badge colors (bg-blue-100) automatically converted to chart colors (bg-blue-500)
+
 ## [1.4.0] - 2025-10-16 (Frontend v1.4.0 / Backend v1.4.0)
 **Branch: v1.2.0 (Sandbox Only)**
 
