@@ -651,7 +651,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           <select
                             value={expense.zohoEntity || ''}
                             onChange={(e) => handleAssignEntity(expense, e.target.value)}
-                            className="text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full bg-white border-gray-300 text-gray-900"
+                            className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full ${
+                              expense.zohoEntity 
+                                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
+                                : 'border-gray-300 bg-white text-gray-900'
+                            }`}
+                            disabled={!!expense.zohoEntity}
+                            title={expense.zohoEntity ? 'Entity assigned - use View Details to change' : ''}
                           >
                             <option value="">Unassigned</option>
                             {entityOptions.map((entity, index) => (
