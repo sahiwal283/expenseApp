@@ -15,6 +15,9 @@ export interface OCRResult {
     imageSize?: { width: number; height: number };
     preprocessed?: boolean;
     language?: string;
+    wordCount?: number;
+    error?: string;
+    available?: boolean;
   };
 }
 
@@ -91,7 +94,7 @@ export interface OCRServiceConfig {
   primaryProvider: 'tesseract' | 'paddleocr';
   fallbackProvider?: 'tesseract' | 'paddleocr';
   inferenceEngine: 'rule-based' | 'llm' | 'hybrid';
-  llmProvider?: 'openai' | 'claude' | 'local';
+  llmProvider?: 'openai' | 'claude' | 'local' | 'ollama';
   confidenceThreshold: number; // Minimum confidence to accept OCR result
   enableUserCorrections: boolean;
   logOCRResults: boolean;
