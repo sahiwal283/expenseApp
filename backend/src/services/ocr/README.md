@@ -123,6 +123,38 @@ Tracks user edits for continuous learning:
 
 ---
 
+## Ollama LLM Integration (v1.6.0)
+
+**✅ IMPLEMENTED AND ACTIVE IN SANDBOX**
+
+The OCR system now includes optional LLM enhancement using Ollama Lite for low-confidence fields.
+
+**Quick Start:**
+- Ollama Container: 302 (ollama-lite) at 192.168.1.173:11434
+- Model: dolphin-llama3 (4.7GB, CPU-optimized)
+- Enabled by default for fields with confidence < 0.7
+- Fully local inference (no external APIs)
+
+**See:** [OLLAMA_SETUP.md](./OLLAMA_SETUP.md) for complete setup guide
+
+**How it Works:**
+1. PaddleOCR extracts text → Rule-based engine infers fields
+2. Identify low-confidence fields (< 0.7 threshold)
+3. Send to Ollama for LLM-based extraction
+4. Merge results (keep higher confidence)
+5. Store alternatives for user selection
+
+**Example Enhancement:**
+```
+Rule-based: merchant="WALMAR" (confidence: 0.65)
+    ↓
+Ollama LLM: merchant="Walmart" (confidence: 0.85)
+    ↓
+Final: merchant="Walmart" (source: 'llm', alternatives: ["WALMAR"])
+```
+
+---
+
 ## Installation
 
 ### 1. Install Python Dependencies
