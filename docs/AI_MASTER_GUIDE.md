@@ -1231,11 +1231,90 @@ ssh root@192.168.1.190 "pct exec 203 -- tail -50 /var/log/postgresql/postgresql-
 ### Database Best Practices
 
 1. **Always run migrations** via `npm run migrate`, not manually
-2. **Always include new columns in base `schema.sql`**, not just migrations
+2. **Always include new columns in base `schema.sql``, not just migrations
 3. **Always add indexes** for frequently queried columns (especially foreign keys)
 4. **Always use transactions** for multi-step operations
 5. **Never expose sensitive data** in API responses (passwords, tokens)
 6. **Always validate input** on both frontend and backend
+
+### Database Migration: v1.4.1 - Fix Needs Further Review Status
+
+**File**: `backend/src/database/migrations/fix_needs_further_review_status.sql`  
+**Purpose**: Auto-approve old expenses that should have been approved but were stuck in "needs further review"  
+**Status**: ✅ Tested in Sandbox, Ready for Production
+
+#### What This Migration Does
+
+Fixes expenses that have corrective actions applied but status wasn't updated:
+
+1. **Auto-approves expenses with assigned entities**
+   - Updates status: "needs further review" → "approved"
+   - Applies when `zoho_entity` is not null
+
+2. **Auto-approves expenses with reviewed reimbursements**
+   - Updates status: "needs further review" → "approved"
+   - Applies when `reimbursement_status` is 'approved' or 'rejected'
+
+#### Why This Is Needed
+
+The auto-approval logic (introduced in v1.4.0) only runs **when entities are assigned or reimbursements are reviewed**. Expenses that already had these fields set BEFORE v1.4.0 deployment were stuck in "needs further review" and needed manual correction.
+
+This migration ensures that when v1.4.1 is deployed to production, ALL old expenses will automatically update to the correct status.
+
+#### Deployment to Production
+
+**Automatic (Recommended):**
+```bash
+# After deploying backend v1.4.1
+pct exec 201 -- bash -c 'cd /opt/expenseapp && npm run migrate'
+```
+
+The migration will:
+- Run automatically via `npm run migrate`
+- Skip if already applied (idempotent)
+- Log results to console
+
+**Manual (If Needed):**
+```bash
+# Direct SQL execution
+pct exec 201 -- sudo -u postgres psql -d expense_app -f /opt/expenseapp/src/database/migrations/fix_needs_further_review_status.sql
+```
+
+#### Verification After Deployment
+
+Check that no expenses are stuck:
+```sql
+-- Should return 0
+SELECT COUNT(*) 
+FROM expenses 
+WHERE status = 'needs further review' 
+  AND (zoho_entity IS NOT NULL OR reimbursement_status IN ('approved', 'rejected'));
+```
+
+Check how many were fixed:
+```sql
+SELECT 
+  COUNT(*) FILTER (WHERE zoho_entity IS NOT NULL) as with_entities,
+  COUNT(*) FILTER (WHERE reimbursement_status IN ('approved', 'rejected')) as with_reimbursements
+FROM expenses 
+WHERE status = 'approved';
+```
+
+#### Safety Features
+
+✅ **Idempotent** - Safe to run multiple times  
+✅ **No data loss** - Only updates status field  
+✅ **Tested** - Verified in sandbox (6 entities + 3 reimbursements)  
+✅ **Automatic** - Runs with standard migration command  
+✅ **Logged** - Reports affected expense count  
+
+#### Sandbox Test Results
+
+```
+UPDATE 0   (second run - already applied)
+UPDATE 0   (second run - already applied)
+NOTICE: Migration complete: 6 expenses with entities, 3 with reimbursement decisions
+```
 
 ### Code Quality Best Practices
 
