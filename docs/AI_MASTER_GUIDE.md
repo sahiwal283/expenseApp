@@ -1,7 +1,7 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.4.13 (Frontend) / 1.5.1 (Backend)
+**Version:** 1.4.13 (Frontend) / 1.5.1 (Backend) / 1.6.0 (OCR Upgrade - Dev Branch)
 **Last Updated:** October 16, 2025  
-**Status:** ✅ Production & Sandbox Active
+**Status:** ✅ Production & Sandbox Active | 🔬 v1.6.0 OCR Upgrade in Development
 
 **Production Deployment:** October 16, 2025
 - **Backend:** v1.5.1 (Container 201)
@@ -559,6 +559,376 @@ interface Expense {
   location?: string;
 }
 ```
+
+### 🔬 OCR System Architecture (v1.6.0 - In Development)
+
+**Branch**: `v1.6.0` (Sandbox Only)  
+**Status**: Backend Complete, Frontend Pending  
+**Documentation**: [OCR README](../backend/src/services/ocr/README.md) | [Status Report](../OCR_UPGRADE_STATUS.md)
+
+#### Overview
+
+Major architectural upgrade to receipt OCR replacing legacy Tesseract-only system with:
+- **PaddleOCR** - High-accuracy primary OCR engine
+- **Modular Provider System** - Easy OCR engine swapping
+- **Field Inference Engine** - Automatic extraction with confidence scores
+- **User Correction Tracking** - Continuous learning from user edits
+- **LLM-Ready Framework** - Designed for future AI enhancement
+
+#### Component Architecture
+
+```
+Receipt Image
+     ↓
+┌────────────────────────────────────┐
+│   OCR Service Orchestrator         │
+│  - Provider selection              │
+│  - Quality assessment              │
+│  - LLM enhancement (future)        │
+└─────┬──────────────────────────────┘
+      │
+      ├→ PaddleOCR (primary)
+      ├→ Tesseract (fallback)
+      │
+      ↓
+┌────────────────────────────────────┐
+│  Rule-Based Inference Engine       │
+│  - Merchant extraction             │
+│  - Amount detection ($ patterns)   │
+│  - Date parsing (multiple formats) │
+│  - Card detection (last 4 digits)  │
+│  - Category prediction (keywords)  │
+└────────────────────────────────────┘
+      ↓
+Structured Data + Confidence Scores
+```
+
+#### File Structure
+
+```
+backend/src/services/ocr/
+├── types.ts                      # TypeScript interfaces
+├── OCRService.ts                 # Main orchestrator
+├── paddleocr_processor.py        # Python OCR script
+├── providers/
+│   ├── TesseractProvider.ts      # Legacy OCR (fallback)
+│   └── PaddleOCRProvider.ts      # PaddleOCR integration
+├── inference/
+│   ├── RuleBasedInferenceEngine.ts   # Field extraction logic
+│   └── LLMProvider.ts                # AI framework (not implemented)
+└── UserCorrectionService.ts      # Correction tracking
+```
+
+#### API Endpoints (New v2)
+
+**Enhanced OCR Processing:**
+- `POST /api/ocr/v2/process` - Process receipt with field inference
+  - Returns: OCR text, extracted fields, confidence scores, category suggestions
+  - Response includes `needsReview` flag for low-confidence results
+
+**User Corrections:**
+- `POST /api/ocr/v2/corrections` - Submit user corrections
+  - Stores original OCR + inference + user edits
+  - Powers continuous learning system
+
+**Analytics (Admin/Developer):**
+- `GET /api/ocr/v2/corrections/stats` - Correction analytics
+  - Most-corrected fields
+  - Average confidence when corrections needed
+- `GET /api/ocr/v2/corrections/export` - Export for ML training
+
+**Legacy (Unchanged):**
+- `POST /api/expenses/ocr` - Legacy Tesseract endpoint (backward compatible)
+
+#### Data Models
+
+**OCR Result:**
+```typescript
+interface OCRResult {
+  text: string;                    // Full OCR text
+  confidence: number;              // Overall 0-1
+  provider: 'paddleocr' | 'tesseract';
+  processingTime: number;          // milliseconds
+}
+```
+
+**Field Inference:**
+```typescript
+interface ExtractedFields {
+  merchant: Field<string | null>;
+  amount: Field<number | null>;
+  date: Field<string | null>;
+  cardLastFour: Field<string | null>;
+  category: Field<string | null>;
+  location?: Field<string | null>;
+  taxAmount?: Field<number | null>;
+  tipAmount?: Field<number | null>;
+}
+
+interface Field<T> {
+  value: T;
+  confidence: number;              // Field-specific 0-1
+  source: 'ocr' | 'inference' | 'llm' | 'user';
+  rawText?: string;
+  alternatives?: Field<T>[];       // For ambiguous results
+}
+```
+
+**Category Suggestions:**
+```typescript
+interface CategorySuggestion {
+  category: string;                // e.g., "Meal and Entertainment"
+  confidence: number;              // 0-1
+  keywordsMatched: string[];
+  source: 'rule-based' | 'llm';
+}
+```
+
+**User Correction:**
+```typescript
+interface UserCorrection {
+  id: UUID;
+  expenseId?: UUID;
+  userId: UUID;
+  ocrProvider: string;
+  ocrText: string;
+  ocrConfidence: number;
+  originalInference: JSONB;
+  correctedFields: {
+    merchant?: string;
+    amount?: number;
+    date?: string;
+    cardLastFour?: string;
+    category?: string;
+  };
+  fieldsCorrect: string[];        // Array of field names corrected
+  notes?: string;
+  createdAt: timestamp;
+}
+```
+
+#### Category Detection Rules
+
+**12 Categories with Keyword Matching:**
+- `Meal and Entertainment` - restaurant, dinner, lunch, bar, grill, bistro, cafe
+- `Booth Supplies` - booth, display, banner, signage, exhibit
+- `Setup Supplies` - setup, install, tools, hardware, fastener
+- `Marketing` - marketing, promo, brochure, flyer, card, merchandise
+- `Office Expense` - office, staples, paper, printer, supplies
+- `Hotel` - hotel, inn, suite, lodge, resort, hilton, marriott
+- `Uber/Car` - uber, lyft, taxi, car, transport, rental, hertz, enterprise
+- `Flight` - flight, airline, airport, southwest, delta, united
+- `Shipping` - shipping, fedex, ups, usps, freight, delivery
+- `Home Depot` - home depot, lowe, hardware
+- `Costco` - costco, wholesale
+- `Other` - (default if no matches)
+
+**Confidence Scoring:**
+- High confidence (0.9+): Multiple strong keywords
+- Medium (0.7-0.9): Single strong keyword
+- Low (<0.7): Weak match or default category
+
+#### Inference Logic
+
+**Merchant Extraction:**
+1. First non-trivial line of OCR text
+2. Filter out dates, amounts, common headers
+3. Capitalize properly
+4. Confidence based on line position and clarity
+
+**Amount Detection:**
+- Regex patterns: `Total:`, `Amount:`, `Balance:`, `$XX.XX`
+- Multiple candidates → choose highest confidence
+- Alternatives stored for user selection
+- Confidence based on label proximity and format
+
+**Date Parsing:**
+- Formats: `MM/DD/YYYY`, `Month DD, YYYY`, `DD-Mon-YYYY`, etc.
+- Timezone-aware (uses local date)
+- Falls back to today's date if not found
+- Confidence based on format match strength
+
+**Card Detection:**
+- Patterns: `****1234`, `ending in 1234`, `Card: 1234`
+- Extracts last 4 digits only
+- Confidence based on surrounding context
+
+**Location (Optional):**
+- Address patterns (street, city, state, zip)
+- Stored but not required
+
+**Tax/Tip (Optional):**
+- `Tax:`, `Sales Tax:`, `Tip:`, `Gratuity:`
+- Extracted if found, not required
+
+#### Quality Assessment
+
+**Flags for Review:**
+- Overall confidence < 0.70
+- Amount confidence < 0.80 (critical field)
+- No amount detected
+- Merchant very short (< 3 chars)
+- Multiple high-confidence amount alternatives
+
+**Review Reasons Array:**
+- `"low_overall_confidence"`
+- `"amount_uncertain"`
+- `"merchant_unclear"`
+- `"multiple_amount_candidates"`
+
+#### User Correction Workflow
+
+**Frontend Capture:**
+1. User uploads receipt → OCR processes
+2. Form pre-fills with inferred values
+3. Confidence badges shown per field
+4. User edits field (e.g., corrects merchant)
+5. On save, compare original vs edited values
+6. Send corrections to `/api/ocr/v2/corrections`
+
+**Backend Storage:**
+```sql
+INSERT INTO ocr_corrections (
+  expense_id, user_id, ocr_text, 
+  original_inference, corrected_fields, fields_corrected
+) VALUES (...);
+```
+
+**Analytics Use:**
+- Identify weak extraction patterns
+- Prioritize inference improvements
+- Export for model retraining
+
+#### PaddleOCR Integration
+
+**Python Script** (`paddleocr_processor.py`):
+```python
+from paddleocr import PaddleOCR
+import cv2
+import numpy as np
+
+def preprocess_image(img):
+    # Deskew, enhance contrast, denoise
+    return processed_img
+
+def run_paddle_ocr(image_path):
+    ocr = PaddleOCR(use_angle_cls=True, lang='en')
+    result = ocr.ocr(image_path)
+    # Extract text + confidence
+    return {"text": text, "confidence": avg_conf}
+```
+
+**Node.js Integration** (`PaddleOCRProvider.ts`):
+```typescript
+import { spawn } from 'child_process';
+
+async process(imagePath: string): Promise<OCRResult> {
+  const python = spawn('python3', ['paddleocr_processor.py', imagePath]);
+  const output = await captureOutput(python);
+  return JSON.parse(output);
+}
+```
+
+#### Installation Requirements
+
+**Python Dependencies** (`requirements.txt`):
+- `paddleocr>=2.7.0`
+- `paddlepaddle>=2.5.0` (CPU) or `paddlepaddle-gpu` (GPU)
+- `opencv-python>=4.8.0`
+- `numpy`, `Pillow`
+
+**Install on Proxmox Container 203:**
+```bash
+pip3 install -r backend/requirements.txt
+python3 -c "import paddleocr; print('OK')"
+```
+
+#### Future Enhancements
+
+**1. LLM Integration (Framework Ready)**
+- OpenAI GPT-4 Vision for low-confidence receipts
+- Claude for validation and correction
+- Local LLM for privacy-sensitive deployments
+- Interfaces defined in `LLMProvider.ts`, not implemented
+
+**2. Model Retraining**
+- Export corrections via `/api/ocr/v2/corrections/export`
+- Format as training dataset
+- Fine-tune PaddleOCR or custom model
+- Deploy updated model
+
+**3. Confidence Calibration**
+- Track actual vs predicted confidence
+- Improve `needsReview` accuracy
+- Adjust thresholds per field type
+
+**4. Multi-Page Receipts**
+- Detect page breaks
+- Stitch OCR results
+- Handle itemized lists separately
+
+#### Performance Targets
+
+| Metric | Legacy (Tesseract) | Target (PaddleOCR) | Status |
+|--------|-------------------|-------------------|--------|
+| OCR Confidence | ~0.70 | > 0.85 | TBD (needs benchmarking) |
+| Merchant Accuracy | ~75% | > 90% | TBD |
+| Amount Accuracy | ~85% | > 95% | TBD |
+| Date Accuracy | ~80% | > 90% | TBD |
+| Category Accuracy | N/A | > 75% | TBD |
+| Processing Time | ~2.5s | < 2s | TBD |
+
+#### Database Schema
+
+**Table: `ocr_corrections`**
+```sql
+CREATE TABLE ocr_corrections (
+  id UUID PRIMARY KEY,
+  expense_id UUID REFERENCES expenses(id),
+  user_id UUID NOT NULL REFERENCES users(id),
+  ocr_provider VARCHAR(50),
+  ocr_text TEXT,
+  ocr_confidence DECIMAL(3,2),
+  original_inference JSONB,
+  corrected_merchant VARCHAR(255),
+  corrected_amount DECIMAL(12,2),
+  corrected_date VARCHAR(50),
+  corrected_card_last_four VARCHAR(4),
+  corrected_category VARCHAR(100),
+  fields_corrected TEXT[],
+  correction_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+**Indexes:**
+- `idx_ocr_corrections_user_id` - User analytics
+- `idx_ocr_corrections_expense_id` - Expense history
+- `idx_ocr_corrections_created_at` - Time-based queries
+- `idx_ocr_corrections_fields_corrected` - GIN index for array queries
+
+#### Deployment Status
+
+**Completed:**
+- ✅ PaddleOCR integration
+- ✅ Provider abstraction
+- ✅ Field inference engine
+- ✅ Category detection
+- ✅ User correction system
+- ✅ Enhanced API v2
+- ✅ Database migration
+- ✅ Comprehensive documentation
+
+**Pending:**
+- ⏳ Frontend integration
+- ⏳ Benchmarking suite
+- ⏳ Sandbox testing
+- ⏳ Production deployment
+
+**Branch:** `v1.6.0` (not merged to main)  
+**Next Steps:** Deploy to sandbox, test with real receipts, collect metrics
+
+---
 
 ### API Endpoints
 
