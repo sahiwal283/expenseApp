@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.4.12 - PATCH: Removed Settings Summary, moved counts to cards
+// Version: 1.4.13 - PATCH: Fixed Pending Tasks links to use Expenses page
 // Date: October 16, 2025
 //
 // Changes from v1.4.4:
@@ -108,8 +108,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.4.12';  // BUMPED VERSION for settings UI cleanup
-const STATIC_CACHE = 'expenseapp-static-v1.4.12';
+const CACHE_NAME = 'expenseapp-v1.4.13';  // BUMPED VERSION for pending tasks navigation fix
+const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
   '/index.html',

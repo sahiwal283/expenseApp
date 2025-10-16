@@ -56,7 +56,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           description: `Review and approve pending expense submissions`,
           count: pendingExpensesCount,
           action: 'Review Expenses',
-          link: '/approvals',
+          link: '/expenses', // v1.3.0+: Approvals merged into unified Expenses page
           icon: 'FileText'
         });
       }
@@ -106,7 +106,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           description: `Push approved expenses to Zoho Books`,
           count: unpushedCount,
           action: 'Push to Zoho',
-          link: '/approvals', // Changed from /reports - Push to Zoho button is on Approvals page
+          link: '/expenses', // v1.3.0+: Push to Zoho now on unified Expenses page
           icon: 'Upload',
           eventIds: eventIds,
           primaryEventId: primaryEventId // Event with most unsynced expenses
@@ -131,7 +131,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           description: `Review and approve pending expense submissions`,
           count: pendingExpensesCount,
           action: 'Review Expenses',
-          link: '/approvals',
+          link: '/expenses', // v1.3.0+: Approvals merged into unified Expenses page
           icon: 'FileText'
         });
       }

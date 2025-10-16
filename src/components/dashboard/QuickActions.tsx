@@ -152,15 +152,9 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                         if (task.type === 'pending_users' && page === 'settings') {
                           // Signal to AdminSettings to open User Management tab
                           sessionStorage.setItem('openSettingsTab', 'users');
-                        } else if (task.type === 'unpushed_zoho' && page === 'approvals') {
-                          // Direct navigation to specific event if only one event has unsynced expenses
-                          if (task.eventIds && task.eventIds.length === 1) {
-                            sessionStorage.setItem('openApprovalsEvent', task.eventIds[0]);
-                          } else if (task.primaryEventId) {
-                            // Navigate to event with most unsynced expenses
-                            sessionStorage.setItem('openApprovalsEvent', task.primaryEventId);
-                          }
                         }
+                        // Note: 'unpushed_zoho' tasks now direct to unified expenses page (v1.3.0+)
+                        // Approvals page was removed and merged into expenses page
                         
                         // Navigate
                         onNavigate(page);
