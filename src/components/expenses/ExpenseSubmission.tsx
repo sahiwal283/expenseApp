@@ -154,14 +154,38 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
-    if (api.USE_SERVER) {
-      await api.deleteExpense(expenseId);
+    const expense = expenses.find(e => e.id === expenseId);
+    if (!expense) return;
+    
+    const userName = expense.user_name || users.find(u => u.id === expense.userId)?.name || 'Unknown User';
+    const event = events.find(e => e.id === expense.tradeShowId);
+    
+    const confirmed = window.confirm(
+      `⚠️ DELETE EXPENSE?\n\n` +
+      `User: ${userName}\n` +
+      `Amount: $${expense.amount.toFixed(2)}\n` +
+      `Merchant: ${expense.merchant}\n` +
+      `Category: ${expense.category}\n` +
+      `Event: ${event?.name || 'Unknown'}\n` +
+      `Date: ${formatLocalDate(expense.date, 'DISPLAY')}\n\n` +
+      `This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      if (api.USE_SERVER) {
+        await api.deleteExpense(expenseId);
+        addToast('✅ Expense deleted successfully', 'success');
+      } else {
+        const updatedExpenses = expenses.filter(expense => expense.id !== expenseId);
+        localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
+      }
       setPendingReceiptFile(null);
       await reloadData();
-    } else {
-      const updatedExpenses = expenses.filter(expense => expense.id !== expenseId);
-      localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
-      await reloadData();
+    } catch (error) {
+      console.error('[ExpenseSubmission] Error deleting expense:', error);
+      addToast('❌ Failed to delete expense', 'error');
     }
   };
 
@@ -738,8 +762,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {/* Delete (Own Expenses Only) */}
-                          {expense.userId === user.id && (
+                          {/* Delete (Own Expenses OR Approval Users) */}
+                          {(expense.userId === user.id || hasApprovalPermission) && (
                             <button
                               onClick={() => handleDeleteExpense(expense.id)}
                               className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
