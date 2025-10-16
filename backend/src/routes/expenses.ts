@@ -29,16 +29,22 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880') }, // 5MB default
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') }, // 10MB default (increased for phone photos)
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Accept common image formats and PDFs (including phone camera formats)
+    const allowedExtensions = /jpeg|jpg|png|pdf|heic|heif|webp/i;
+    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
+    
+    // Accept any image MIME type (image/*) or PDF
+    // This handles phone cameras which may send image/heic, image/heif, image/x-png, etc.
+    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
 
-    if (extname && mimetype) {
+    if (extname && mimetypeOk) {
+      console.log(`[Upload] Accepting file: ${file.originalname} (${file.mimetype})`);
       return cb(null, true);
     } else {
-      cb(new Error('Only images (jpeg, jpg, png) and PDF files are allowed'));
+      console.warn(`[Upload] Rejected file: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
+      cb(new Error('Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
     }
   }
 });
