@@ -2,7 +2,8 @@
 
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
-**Current Version: 1.1.11 (Frontend) / 1.1.5 (Backend) - October 16, 2025**
+**Current Version: 1.4.13 (Frontend) / 1.5.1 (Backend) - October 16, 2025**  
+**Production Status:** ✅ Stable and Active
 
 📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
 🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
@@ -28,31 +29,75 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 
 ---
 
-## 🆕 Recent Updates (v1.1.0 - v1.1.11)
+## 🆕 Recent Updates (v1.1.0 - v1.5.1)
 
-**October 16, 2025 - Post-Production Bug Fixes & Enhancements**
+**October 16, 2025 - Major Feature Release & Production Deployment**
 
-### Fixed Issues
-- ✅ **Dashboard Navigation**: "Push to Zoho" button now correctly navigates to Approvals page
-- ✅ **Session Management**: Fixed blank dashboard issue - backend now returns correct HTTP 401 status for expired tokens
-- ✅ **User Management Navigation**: Reliable tab navigation using sessionStorage (3rd attempt success!)
-- ✅ **Push to Zoho Workflow**: No more force logouts, dynamic entity names in errors, friendly "coming soon" messages
-- ✅ **Entity Management**: Re-enabled push button after entity change, modal-based editing for deliberate workflow
-- ✅ **Event Display**: Events in progress now show "Today" instead of negative days
-- ✅ **Admin Protection**: Only "admin" user is permanent/undeletable (both frontend + backend enforcement)
-- ✅ **File Uploads**: Phone camera images now accepted (HEIC, HEIF, WebP), increased limit to 10MB
-- ✅ **Critical Hotfix**: Fixed missing `useEffect` import that broke Approvals page (v1.1.9)
+### 🎯 Major Features (v1.3.0 - v1.4.13)
 
-### Improvements
-- 🔄 **Error Messages**: Blue "info" toasts for unconfigured Zoho entities (not harsh red errors)
-- 🔄 **HTTP Status Codes**: Proper 401 (auth failed) vs 403 (permission denied) distinction
-- 🔄 **State Management**: pushedExpenses Set syncs with actual data via useEffect
-- 🔄 **Zoho Format**: Event info displays as "Event Name (MM/DD/YY - MM/DD/YY)" in Zoho Books
-- 🔄 **Developer Permissions**: Developer role now has same capabilities as admin + Dev Dashboard
+#### ✨ Unified Expense & Approval Workflows (v1.3.0)
+- **Merged Approvals page into Expenses page** - Single unified interface for all expense management
+- **Role-based views**: Regular users see only their expenses, accountants/admins see approval workflows
+- **Approval cards** showing pending counts, reimbursements, and unassigned entities
+- **Inline entity assignment** and Zoho push directly from expense table
+- **Editable detail modal** - Status, reimbursement, and entity can be modified in-place
+- **Mark as Paid button** - Quick reimbursement payment tracking
+- **Zoho push status indicator** in detail modal
 
-### Known Issues
-- ⚠️ **Entity Change Warning** (v1.1.11): Warning dialog not appearing when changing entity in modal - under investigation
-- ⚠️ **Zoho Duplicate Prevention**: In-memory Set may prevent re-push of deleted expenses - restart backend to clear
+#### 🤖 Automated Approval Workflow (v1.4.0)
+- **Removed manual approval buttons** - Approvals now happen automatically
+- **Auto-approve on entity assignment** - Assigning an entity automatically approves the expense
+- **Auto-approve on reimbursement decision** - Approved/rejected reimbursement auto-approves expense
+- **Regression detection** - Automatically sets "needs further review" status when fields are reverted
+- **Simplified 3-rule logic** - Clear, reliable status transitions
+
+### 🐛 Critical Bug Fixes
+
+#### Timezone Bug (v1.1.12)
+- **Issue**: Expenses submitted at 9:35 PM showed next day's date
+- **Fix**: Created `getTodayLocalDateString()` to use local time instead of UTC
+- **Impact**: All date inputs now use correct local dates
+
+#### Offline Notification Spam (v1.1.13)
+- **Issue**: Multiple "Working Offline" notifications stacking up, not dismissing
+- **Fix**: Implemented notification ID tracking, less aggressive network detection
+- **Impact**: Clean, single offline notification that properly dismisses
+
+#### Session Timeout Warning (v1.1.14)
+- **Issue**: Users logged out without seeing 5-minute warning modal
+- **Fix**: Corrected token refresh URL, improved session/API coordination
+- **Impact**: Users now see warning before timeout
+
+#### Auto-Status Logic Reliability (v1.5.0)
+- **Issue**: Expenses stuck in "needs further review" despite corrective actions
+- **Fix**: Completely rewrote logic with 3 clear rules (regression → approval → no-op)
+- **Impact**: Bulletproof status transitions, impossible to miss edge cases
+
+#### Pending Tasks Navigation (v1.4.13/v1.5.1)
+- **Issue**: "Push to Zoho" button in dashboard led to 404 (old approvals page)
+- **Fix**: Updated all task links to point to unified expenses page
+- **Impact**: All dashboard quick actions work correctly
+
+### 💡 UI/UX Improvements
+- **Settings cleanup** - Removed redundant summary, counts moved to card headers
+- **Responsive expense table** - Readable with nav pane open or closed
+- **Collapsible inline filters** - Hidden by default, toggle button in Actions column
+- **Category colors restored** - Charts match expense table colors
+- **Delete confirmations** - All delete operations now ask for confirmation
+- **Reimbursement status clarity** - "Approved" now reads "Approved (pending payment)"
+
+### 📝 Lessons Learned
+- **Database schema constraints** must be updated BEFORE deploying code that uses new values
+- **Frontend deployment directory** is `/var/www/expenseapp/current/` not root
+- **Backend service path** is `/opt/expenseApp/backend/` (capital A in expenseApp)
+- **Always create version tags** after production deployment
+- **One branch per development session**, not per individual change
+- **Separate Zoho credentials** for sandbox/production is intentional (data isolation)
+
+### ⚠️ Breaking Changes (v1.3.0+)
+- **Approvals page removed** - All approval workflows moved to Expenses page
+- **Manual approval buttons removed** - Status changes are now automated
+- **Navigation structure changed** - Dashboard tasks now navigate to /expenses
 
 ---
 
@@ -90,13 +135,24 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 - **Smart navigation** (takes user to report with most unsynced items)
 
 ### 📋 Expense Management
+- **Unified expense interface** - Single page for submitting, reviewing, and managing expenses
 - **Submit expenses** with receipt upload (JPEG, PNG, PDF, HEIC, HEIF, WebP) - phone camera images supported!
 - **OCR text extraction** from receipts (Tesseract.js + Sharp image preprocessing)
-- **Approval workflows** (pending → approved → rejected)
-- **Entity assignment** (assign expenses to specific Zoho Books entities)
-- **Entity re-assignment** with automatic push button re-enablement
+- **Automated approval workflows** - Status changes automatically based on entity/reimbursement actions
+  - Assigning entity → auto-approve
+  - Reimbursement decision → auto-approve
+  - Reverting fields → "needs further review"
+- **Inline entity assignment** - Assign Zoho entities directly from expense table
+- **Entity re-assignment** with Zoho ID clearing for already-pushed expenses
 - **Reimbursement tracking** (pending review → approved → paid)
+  - Inline approve/reject buttons
+  - Mark as Paid button ($ icon) for approved reimbursements
+  - Confirmation dialogs for all status changes
+- **Approval cards** (for accountants/admins) - Summary metrics at top of page
+- **Editable detail modal** - Modify status, reimbursement, entity, and view Zoho push status
+- **Collapsible inline filters** - Filter by date, merchant, category, status, entity
 - **Receipt viewing** (full-size default with hide option)
+- **Delete confirmations** - All deletions require explicit confirmation
 - **Duplicate prevention** (form submit disabled during save)
 - **File size limit**: 10MB (supports modern phone photos)
 
@@ -286,11 +342,14 @@ npm run dev
 - `GET /api/expenses/:id` - Get expense by ID
 - `POST /api/expenses` - Create expense with receipt upload
 - `PUT /api/expenses/:id` - Update expense
-- `PATCH /api/expenses/:id/review` - Approve/reject expense
-- `PATCH /api/expenses/:id/entity` - Assign Zoho entity
-- `PATCH /api/expenses/:id/reimbursement` - Approve/reject reimbursement
+- `PATCH /api/expenses/:id/status` - Update expense status (auto-approval workflow)
+- `PATCH /api/expenses/:id/entity` - Assign Zoho entity (triggers auto-approval)
+- `PATCH /api/expenses/:id/reimbursement` - Set reimbursement status (triggers auto-approval)
 - `POST /api/expenses/:id/zoho` - Push expense to Zoho Books
 - `DELETE /api/expenses/:id` - Delete expense
+
+### Quick Actions
+- `GET /api/quick-actions` - Get pending tasks for dashboard widget
 
 ### Settings
 - `GET /api/settings` - Get application settings
