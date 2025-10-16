@@ -100,6 +100,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
       alert("You cannot delete your own account!");
       return;
     }
+    
+    // Prevent deleting the permanent "admin" user
+    const userToDelete = users.find(u => u.id === userId);
+    if (userToDelete && userToDelete.username === 'admin') {
+      alert("Cannot delete the system admin user!");
+      return;
+    }
+    
     if (api.USE_SERVER) {
       await api.deleteUser(userId);
       const refreshed = await api.getUsers();
@@ -354,9 +362,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        disabled={user.id === currentUser.id}
+                        disabled={user.id === currentUser.id || user.username === 'admin'}
                         className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete User"
+                        title={user.username === 'admin' ? 'Cannot delete system admin' : user.id === currentUser.id ? 'Cannot delete yourself' : 'Delete User'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

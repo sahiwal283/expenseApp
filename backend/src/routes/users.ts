@@ -104,11 +104,18 @@ router.delete('/:id', authorize('admin', 'developer'), async (req: AuthRequest, 
   try {
     const { id } = req.params;
 
-    const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
-
-    if (result.rows.length === 0) {
+    // First, check if this is the admin user (cannot delete system admin)
+    const userCheck = await query('SELECT username FROM users WHERE id = $1', [id]);
+    
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
+    if (userCheck.rows[0].username === 'admin') {
+      return res.status(403).json({ error: 'Cannot delete the system admin user' });
+    }
+
+    const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {

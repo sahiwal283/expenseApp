@@ -1,20 +1,18 @@
 // ExpenseApp Service Worker
-// Version: 1.1.7 - CRITICAL FIX: Entity Change Warning & Button State
+// Version: 1.1.8 - FIX: Admin User Protection
 // Date: October 16, 2025
 //
-// Changes from v1.1.6:
-// - CRITICAL FIX: pushedExpenses Set now updates when expenses data changes
-// - FIXED: Warning dialog now appears when changing entity on pushed expenses
-// - FIXED: Push to Zoho button state correctly reflects push status
-// - Added useEffect to sync pushedExpenses with actual expense data
-// - Improved warning condition to check both zohoExpenseId and pushedExpenses Set
-// - Added debug logging for entity change operations
+// Changes from v1.1.7:
+// - FIXED: Only "admin" user is now permanent/undeletable (not "sahil")
+// - Frontend: Delete button disabled for "admin" user with tooltip
+// - Frontend: Added check in handleDeleteUser to prevent admin deletion
+// - Backend: Added username check before DELETE query
+// - Backend: Returns 403 error if attempting to delete "admin" user
+// - Proper tooltip: "Cannot delete system admin" vs "Cannot delete yourself"
 //
-// Bug Fixes:
-// 1. pushedExpenses Set was initialized once and never updated (empty on mount)
-// 2. Button appeared incorrectly after hard refresh
-// 3. Warning dialog didn't appear when changing entity
-// 4. Now properly tracks push state across page loads and data refreshes
+// Security Fix:
+// - Frontend and backend both enforce admin user protection
+// - Cannot bypass frontend check via API calls
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -79,8 +77,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.7';  // BUMPED VERSION for entity warning fix
-const STATIC_CACHE = 'expenseapp-static-v1.1.7';
+const CACHE_NAME = 'expenseapp-v1.1.8';  // BUMPED VERSION for admin user protection
+const STATIC_CACHE = 'expenseapp-static-v1.1.8';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -90,7 +88,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.7...');
+  console.log('[ServiceWorker] Installing v1.1.8...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -181,7 +179,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.7...');
+  console.log('[ServiceWorker] Activating v1.1.8...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -195,7 +193,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.7 activated and ready!');
+      console.log('[ServiceWorker] v1.1.8 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
