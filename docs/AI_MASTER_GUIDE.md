@@ -1,12 +1,12 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.4.12 (Frontend) / 1.5.0 (Backend)
+**Version:** 1.4.13 (Frontend) / 1.5.1 (Backend)
 **Last Updated:** October 16, 2025  
 **Status:** ✅ Production & Sandbox Active
 
 **Production Deployment:** October 16, 2025
-- **Backend:** v1.5.0 (Container 201)
-- **Frontend:** v1.4.12 (Container 202)
-- **Git Tags:** `v1.5.0-backend`, `v1.4.12-frontend`
+- **Backend:** v1.5.1 (Container 201)
+- **Frontend:** v1.4.13 (Container 202)
+- **Git Tags:** `v1.5.1-backend`, `v1.4.13-frontend`
 
 ---
 

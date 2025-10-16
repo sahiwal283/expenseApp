@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.13 / 1.5.1] - 2025-10-16 - PRODUCTION
+**Deployed to: Production (Containers 201 & 202)**
+
+### Fixed
+- **Pending Tasks Navigation**: Fixed links that pointed to obsolete `/approvals` page
+  - Frontend (v1.4.13): Removed obsolete sessionStorage logic for 'openApprovalsEvent'
+  - Backend (v1.5.1): Updated Quick Actions API to return `/expenses` instead of `/approvals`
+  - All pending task types now navigate to unified expenses page
+  - Tasks fixed: pending-expenses (admin/accountant), unpushed-zoho
+
+### Bug Resolution
+- ✅ "Push to Zoho" button in Pending Tasks widget now works correctly
+- ✅ "Review Expenses" tasks navigate to expenses page instead of 404
+- ✅ Prevents errors from attempting to load non-existent approvals page
+
+### Technical Details
+- **Frontend Files Changed**: `src/components/dashboard/QuickActions.tsx`
+- **Backend Files Changed**: `backend/src/routes/quickActions.ts`
+- **Root Cause**: Approvals page was merged into Expenses page in v1.3.0, but dashboard links weren't updated
+- **Solution**: Updated all task links to point to `/expenses`
+
+### Deployment
+- **Frontend Version**: v1.4.13
+- **Backend Version**: v1.5.1
+- **Git Tags**: `v1.4.13-frontend`, `v1.5.1-backend`
+- **Containers**: 201 (Backend), 202 (Frontend)
+- **Date**: October 16, 2025
+
 ## [1.4.12] - 2025-10-16 (Frontend v1.4.12) - PRODUCTION
 **Deployed to: Production (Container 202)**
 
