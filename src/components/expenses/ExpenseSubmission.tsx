@@ -636,7 +636,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           </span>
                           {hasApprovalPermission && expense.reimbursementRequired && (
                             <>
-                              {expense.reimbursementStatus === 'pending review' && (
+                              {(!expense.reimbursementStatus || expense.reimbursementStatus === 'pending review') && (
                                 <div className="flex items-center space-x-1 mt-1">
                                   <button
                                     onClick={() => handleReimbursementApproval(expense, 'approved')}
