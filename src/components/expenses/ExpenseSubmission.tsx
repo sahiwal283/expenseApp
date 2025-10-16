@@ -862,7 +862,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       onChange={async (e) => {
                         const newStatus = e.target.value as 'pending' | 'approved' | 'rejected';
                         try {
-                          await api.reviewExpense(viewingExpense.id, newStatus);
+                          await api.updateExpenseStatus(viewingExpense.id, { status: newStatus });
                           await reloadData();
                           setViewingExpense({...viewingExpense, status: newStatus});
                           addToast(`✅ Status updated to ${newStatus}`, 'success');
@@ -894,7 +894,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         onChange={async (e) => {
                           const newStatus = e.target.value as 'pending review' | 'approved' | 'rejected';
                           try {
-                            await api.setExpenseReimbursement(viewingExpense.id, newStatus);
+                            await api.setExpenseReimbursement(viewingExpense.id, { reimbursement_status: newStatus });
                             await reloadData();
                             setViewingExpense({...viewingExpense, reimbursementStatus: newStatus});
                             addToast(`✅ Reimbursement status updated`, 'success');
@@ -944,7 +944,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         }
                         
                         try {
-                          await api.assignEntity(viewingExpense.id, newEntity);
+                          await api.assignEntity(viewingExpense.id, { zoho_entity: newEntity });
                           await reloadData();
                           setViewingExpense({
                             ...viewingExpense, 

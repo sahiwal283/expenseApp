@@ -46,8 +46,6 @@ export function useExpenses(options: UseExpensesOptions = {}) {
         if (hasApprovalPermission) {
           setUsers(results[2] || []);
           const settings = results[3];
-          console.log('[useExpenses] Settings response:', settings);
-          console.log('[useExpenses] Entity options:', settings?.entityOptions);
           setEntityOptions(settings?.entityOptions || []);
         }
       } catch (error) {

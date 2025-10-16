@@ -58,6 +58,11 @@ export const api = {
     return apiClient.put(`/expenses/${id}`, payload);
   },
   
+  // Update expense status (pending/approved/rejected)
+  updateExpenseStatus: (id: string, payload: { status: 'pending' | 'approved' | 'rejected' }) =>
+    apiClient.patch(`/expenses/${id}/status`, payload),
+  
+  // Legacy review endpoint (kept for backwards compatibility)
   reviewExpense: (id: string, payload: { status: 'approved' | 'rejected'; comments?: string }) =>
     apiClient.patch(`/expenses/${id}/review`, payload),
   
