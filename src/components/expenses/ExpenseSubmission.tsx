@@ -486,29 +486,27 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   )}
                   <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Actions</th>
                 </tr>
-                {/* Inline Filters Row */}
+                {/* Compact Inline Filters Row */}
                 <tr className="border-t border-gray-100">
                   {/* Date Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <input
                       type="date"
                       value={dateFilter}
                       onChange={(e) => setDateFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                     />
                   </th>
                   {/* User Filter Placeholder (Approval Users) */}
                   {hasApprovalPermission && (
-                    <th className="px-2 sm:px-3 lg:px-4 py-1">
-                      <div className="text-xs text-gray-200 text-center">-</div>
-                    </th>
+                    <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
                   )}
                   {/* Event Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <select
                       value={eventFilter}
                       onChange={(e) => setEventFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                     >
                       <option value="all">All Events</option>
                       {events.map(event => (
@@ -517,11 +515,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Category Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                     >
                       <option value="all">All</option>
                       {uniqueCategories.map(cat => (
@@ -530,25 +528,23 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Merchant Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <input
                       type="text"
                       value={merchantFilter}
                       onChange={(e) => setMerchantFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 placeholder-gray-300 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                       placeholder="Search..."
                     />
                   </th>
                   {/* Amount - No Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <div className="text-xs text-gray-200 text-center">-</div>
-                  </th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
                   {/* Card Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <select
                       value={cardFilter}
                       onChange={(e) => setCardFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                     >
                       <option value="all">All</option>
                       {uniqueCards.map(card => (
@@ -557,11 +553,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Status Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
@@ -570,11 +566,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </select>
                   </th>
                   {/* Reimbursement Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5">
                     <select
                       value={reimbursementFilter}
                       onChange={(e) => setReimbursementFilter(e.target.value)}
-                      className="w-full px-1.5 py-0.5 text-xs bg-transparent border-0 border-b border-gray-200 text-gray-400 focus:outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-1 py-0 text-[10px] bg-white/50 border border-gray-100 rounded text-gray-500 focus:outline-none focus:border-gray-300 focus:bg-white transition-all"
                     >
                       <option value="all">All</option>
                       <option value="required">Required</option>
@@ -584,16 +580,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   {/* Entity and Zoho Filter Placeholders (Approval Users) */}
                   {hasApprovalPermission && (
                     <>
-                      <th className="px-2 sm:px-3 lg:px-4 py-1">
-                        <div className="text-xs text-gray-200 text-center">-</div>
-                      </th>
-                      <th className="px-2 sm:px-3 lg:px-4 py-1">
-                        <div className="text-xs text-gray-200 text-center">-</div>
-                      </th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
                     </>
                   )}
                   {/* Actions - No filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-0.5"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">

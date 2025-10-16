@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.4.7 - PATCH: Delete button visibility & confirmation
+// Version: 1.4.8 - PATCH: Compact tucked-away filters
 // Date: October 16, 2025
 //
 // Changes from v1.4.4:
@@ -108,8 +108,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.4.7';  // BUMPED VERSION for delete button fix
-const STATIC_CACHE = 'expenseapp-static-v1.4.7';
+const CACHE_NAME = 'expenseapp-v1.4.8';  // BUMPED VERSION for compact filters
+const STATIC_CACHE = 'expenseapp-static-v1.4.8';
 const urlsToCache = [
   '/',
   '/index.html',
