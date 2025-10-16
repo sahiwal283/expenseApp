@@ -1,29 +1,34 @@
 // ExpenseApp Service Worker
-// Version: 1.1.13 - FIX: Spam "Working Offline" Notifications
+// Version: 1.1.14 - FIX: Session Timeout Warning Not Appearing
 // Date: October 16, 2025
 //
-// Changes from v1.1.13:
-// - FIXED: Multiple "Working Offline" notifications stacking up
-// - FIXED: Notifications appearing even when online
-// - FIXED: Notifications not dismissing when clicking X
-// - Issue: Users connected to internet seeing repeated offline warnings
+// Changes from v1.1.14:
+// - FIXED: Session timing out without showing warning modal
+// - FIXED: Token refresh using wrong URL in production
+// - FIXED: Immediate logout on 401 bypassing session manager
 //
 // Root Causes:
-// 1. Network listener created new notification on every state change
-// 2. No duplicate prevention - each check created new notification
-// 3. No cleanup when back online - old notifications persisted
-// 4. Immediate callback on addListener triggered false positives
-// 5. Health check too aggressive (5s timeout, marking offline on any error)
+// 1. Token refresh used relative URL '/api/auth/refresh' instead of full URL
+// 2. In production, this caused refresh to fail silently
+// 3. JWT expired after 20 minutes while session timeout is 15 minutes
+// 4. When JWT expired first, any API call triggered immediate 401 logout
+// 5. 401 logout bypassed session manager's warning system
 //
 // Solutions Applied:
-// - Track notification IDs to prevent duplicates (App.tsx)
-// - Auto-dismiss offline notification when back online
-// - Only show one offline/degraded notification at a time
-// - Don't notify immediately on listener registration (prevent false positives)
-// - Increased health check timeout: 5s → 10s
-// - Only mark offline if BOTH browser API and health check confirm offline
-// - Backend errors/CORS issues no longer trigger offline notifications
-// - Treat as online if browser reports online even if health check fails
+// - sessionManager now uses VITE_API_URL for token refresh (proper base URL)
+// - Added better error logging for token refresh failures
+// - Modified apiClient unauthorized callback to check session manager state
+// - If within 5 minutes of session timeout, let session manager handle it
+// - Only force immediate logout if token expired unexpectedly
+// - This ensures warning modal always shows for inactivity timeouts
+//
+// Timeline Now Works Correctly:
+// T+0: Login (JWT valid for 20 minutes)
+// T+10min: Token refresh (JWT extended to T+30)
+// T+10min inactivity: Warning shows (5 min until logout)
+// T+15min inactivity: Logout with warning
+// T+20min: Another token refresh (if active)
+// T+30min: Token expires (if inactive), but session already logged out at T+15
 //
 // Changes from v1.0.49:
 // - Added 'temporary' role to database CHECK constraint
@@ -88,8 +93,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.1.13';  // BUMPED VERSION for offline notification fix
-const STATIC_CACHE = 'expenseapp-static-v1.1.13';
+const CACHE_NAME = 'expenseapp-v1.1.14';  // BUMPED VERSION for session timeout fix
+const STATIC_CACHE = 'expenseapp-static-v1.1.14';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -99,7 +104,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.13...');
+  console.log('[ServiceWorker] Installing v1.1.14...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -190,7 +195,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.1.13...');
+  console.log('[ServiceWorker] Activating v1.1.14...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -204,7 +209,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.13 activated and ready!');
+      console.log('[ServiceWorker] v1.1.14 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

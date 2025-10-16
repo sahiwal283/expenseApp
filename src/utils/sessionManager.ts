@@ -181,8 +181,12 @@ export class SessionManager {
 
       console.log('[SessionManager] Refreshing authentication token');
       
-      // Call refresh endpoint
-      const response = await fetch('/api/auth/refresh', {
+      // Get API base URL from environment or use default
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+      const refreshUrl = `${apiBaseUrl}/auth/refresh`;
+      
+      // Call refresh endpoint with proper base URL
+      const response = await fetch(refreshUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,12 +199,19 @@ export class SessionManager {
         if (data.token) {
           localStorage.setItem('jwt_token', data.token);
           console.log('[SessionManager] Token refreshed successfully');
+        } else {
+          console.warn('[SessionManager] Token refresh response missing token');
         }
       } else {
-        console.warn('[SessionManager] Token refresh failed, status:', response.status);
+        console.error('[SessionManager] Token refresh failed, status:', response.status);
+        // If refresh fails with 401, token is already expired - let normal logout flow handle it
+        if (response.status === 401) {
+          console.error('[SessionManager] Token expired and cannot be refreshed');
+        }
       }
     } catch (error) {
       console.error('[SessionManager] Error refreshing token:', error);
+      // Network errors during refresh shouldn't crash the session
     }
   }
 

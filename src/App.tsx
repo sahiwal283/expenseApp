@@ -91,16 +91,29 @@ function App() {
   useEffect(() => {
     console.log('[App] Registering API unauthorized callback');
     apiClient.setUnauthorizedCallback(() => {
-      console.log('[App] API detected unauthorized access, forcing logout');
+      console.log('[App] API detected unauthorized access (401)');
+      
+      // Check if session manager is showing warning or about to show it
+      const timeRemaining = sessionManager.getTimeRemaining();
+      
+      if (timeRemaining > 0 && timeRemaining <= 300) {
+        // Within 5 minutes of logout - let session manager handle it with warning
+        console.log('[App] Session manager will handle logout with warning, time remaining:', timeRemaining);
+        return;
+      }
+      
+      // Token expired unexpectedly (not due to inactivity timeout)
+      // This can happen if token refresh failed or backend restarted
+      console.log('[App] Token expired unexpectedly, forcing immediate logout');
       notifications.showWarning(
         'Session Expired',
         'Your session has expired. Please log in again.',
-        false
+        3000
       );
       // Use setTimeout to ensure the notification is shown before logout
       setTimeout(() => {
         handleLogout();
-      }, 100);
+      }, 500);
     });
   }, [notifications]);
 
