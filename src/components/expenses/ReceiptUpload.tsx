@@ -487,12 +487,9 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   </div>
                 )}
 
-                {/* Additional Required Fields */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
-                  <div className="space-y-4">
-                    {/* Event Selection */}
-                    <div>
+                {/* Event Selection */}
+                <div className="mt-6 space-y-4">
+                  <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Trade Show Event *
                       </label>
@@ -553,7 +550,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                         placeholder="Optional: Add any additional notes or details..."
                       />
                     </div>
-                  </div>
                 </div>
               </div>
             )}

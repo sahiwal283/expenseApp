@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.5 - PATCH: Make Event and Card dropdowns more compact
+// Version: 1.9.6 - PATCH: Remove "Additional Details" section for seamless form
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.5';  // BUMPED VERSION for compact dropdowns
+const CACHE_NAME = 'expenseapp-v1.9.6';  // BUMPED VERSION for seamless form
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
