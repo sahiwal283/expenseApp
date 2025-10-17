@@ -540,19 +540,16 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
                 {/* Description / Notes */}
                 <div className="mt-4">
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description / Notes
-                    </label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full max-w-2xl bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows={3}
-                      placeholder="Optional: Add any additional notes or details..."
-                    />
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description / Notes
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full max-w-2xl bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    placeholder="Optional: Add any additional notes or details..."
+                  />
                 </div>
               </div>
             )}
