@@ -418,45 +418,29 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Category (Top Suggestion)
+                        Category
                         {ocrResults.ocrV2Data?.inference?.category && (
                           <span className={`ml-2 text-xs ${
                             ocrResults.ocrV2Data.inference.category.confidence >= 0.7 ? 'text-emerald-600' :
                             ocrResults.ocrV2Data.inference.category.confidence >= 0.5 ? 'text-yellow-600' :
                             'text-orange-600'
                           }`}>
-                            ({Math.round(ocrResults.ocrV2Data.inference.category.confidence * 100)}%)
+                            ({Math.round(ocrResults.ocrV2Data.inference.category.confidence * 100)}% confidence)
                           </span>
                         )}
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={ocrResults.category}
                         onChange={(e) => setOcrResults({ ...ocrResults, category: e.target.value })}
                         className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Category"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location
-                        {ocrResults.ocrV2Data?.inference?.location && (
-                          <span className={`ml-2 text-xs ${
-                            ocrResults.ocrV2Data.inference.location.confidence >= 0.7 ? 'text-emerald-600' :
-                            ocrResults.ocrV2Data.inference.location.confidence >= 0.5 ? 'text-yellow-600' :
-                            'text-orange-600'
-                          }`}>
-                            ({Math.round(ocrResults.ocrV2Data.inference.location.confidence * 100)}%)
-                          </span>
-                        )}
-                      </label>
-                      <input
-                        type="text"
-                        value={ocrResults.location}
-                        onChange={(e) => setOcrResults({ ...ocrResults, location: e.target.value })}
-                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Location"
-                      />
+                      >
+                        <option value="">Select category...</option>
+                        {categories.map((cat, idx) => (
+                          <option key={idx} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
