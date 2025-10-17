@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.10 - PATCH: Remove AI-Suggested Categories section
+// Version: 1.9.11 - PATCH: Remove leading zeros from Total Amount
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.10';  // BUMPED VERSION to remove AI category badges
+const CACHE_NAME = 'expenseapp-v1.9.11';  // BUMPED VERSION for leading zero fix
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

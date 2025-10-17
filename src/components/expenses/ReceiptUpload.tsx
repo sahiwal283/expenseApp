@@ -138,7 +138,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       const inference = result.inference || {};
       const ocrData = {
         file: file,
-        total: inference.amount?.value || 0,
+        total: parseFloat(inference.amount?.value) || 0,
         merchant: inference.merchant?.value || 'Unknown Merchant',
         date: inference.date?.value || getTodayLocalDateString(),
         location: inference.location?.value || 'Unknown Location',
