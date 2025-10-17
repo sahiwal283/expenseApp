@@ -478,7 +478,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             </button>
           )}
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => setShowReceiptUpload(true)}
             className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/30"
           >
             <Receipt className="w-5 h-5" />
@@ -511,7 +511,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               </button>
             )}
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => setShowReceiptUpload(true)}
               className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
             >
               Add Expense

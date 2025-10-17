@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.8.0 - MINOR: Complete User Correction Feedback Pipeline
-// Date: October 16, 2025
+// Version: 1.8.1 - PATCH: Fix Add Expense button to show OCR v2 component
+// Date: October 17, 2025
 //
 // Changes from v1.4.4:
 // - IMPROVED: Added colors to all expense categories
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.8.0';  // BUMPED VERSION for user correction feedback pipeline
+const CACHE_NAME = 'expenseapp-v1.8.1';  // BUMPED VERSION to fix OCR v2 component access
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
