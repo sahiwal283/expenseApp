@@ -27,11 +27,17 @@ export interface OCRCorrection {
  */
 export async function sendOCRCorrection(correction: OCRCorrection): Promise<void> {
   try {
+    const token = localStorage.getItem('auth_token'); // Fixed: Use correct token key
+    if (!token) {
+      console.warn('[OCR Correction] No auth token found, skipping correction logging');
+      return;
+    }
+    
     const response = await fetch(`${api.API_BASE || '/api'}/api/ocr/v2/corrections`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(correction)
     });
