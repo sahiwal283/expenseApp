@@ -248,26 +248,24 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       });
     }
 
-    const newExpense: Omit<Expense, 'id'> = {
+    // Save expense directly with all fields from ReceiptUpload
+    const expenseData: Omit<Expense, 'id'> = {
       userId: user.id,
-      tradeShowId: '',
+      tradeShowId: receiptData.tradeShowId || '',
       amount: receiptData.total || 0,
       category: receiptData.category || 'Other',
       merchant: receiptData.merchant || '',
       date: receiptData.date || getTodayLocalDateString(),
       description: receiptData.description || '',
+      cardUsed: receiptData.cardUsed || '',
       status: 'pending',
       location: receiptData.location || '',
+      ocrText: receiptData.ocrText || '',
       extractedData: receiptData
     };
 
-    setEditingExpense(null);
-    setShowForm(true);
-    setPendingReceiptFile(file);
-    setTimeout(() => {
-      const event = new CustomEvent('populateExpenseForm', { detail: newExpense });
-      window.dispatchEvent(event);
-    }, 100);
+    // Save directly and close the form
+    handleSaveExpense(expenseData, file);
     setShowReceiptUpload(false);
   };
 
