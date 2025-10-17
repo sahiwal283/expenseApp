@@ -1,15 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle, CreditCard, Building2 } from 'lucide-react';
 import { api, TokenManager } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
+import { TradeShow, User } from '../../App';
+import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 
 interface ReceiptUploadProps {
   onReceiptProcessed: (data: ReceiptData, file: File) => void;
   onCancel: () => void;
+  user: User;
+  events: TradeShow[];
 }
 
-export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel }) => {
+export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel, user, events }) => {
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -17,6 +21,36 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [ocrResults, setOcrResults] = useState<ReceiptData | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Additional fields for complete expense submission
+  const [selectedEvent, setSelectedEvent] = useState('');
+  const [selectedCard, setSelectedCard] = useState('');
+  const [description, setDescription] = useState('');
+  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string}>>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  
+  // Filter events
+  const activeEvents = filterActiveEvents(events);
+  const userEvents = filterEventsByParticipation(activeEvents, user);
+  
+  // Load card options and categories
+  useEffect(() => {
+    (async () => {
+      if (api.USE_SERVER) {
+        try {
+          const settings = await api.getSettings();
+          setCardOptions(settings.cardOptions || []);
+          setCategories(settings.categoryOptions || []);
+        } catch {
+          setCardOptions([]);
+        }
+      } else {
+        const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+        setCardOptions(settings.cardOptions || []);
+        setCategories(settings.categoryOptions || []);
+      }
+    })();
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -114,8 +148,21 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   };
 
   const handleConfirm = () => {
+    // Validate required fields
+    if (!selectedEvent) {
+      alert('Please select an event for this expense.');
+      return;
+    }
+    
     if (ocrResults) {
-      onReceiptProcessed(ocrResults, selectedFile!);
+      // Include additional fields in the data
+      const completeData = {
+        ...ocrResults,
+        tradeShowId: selectedEvent,
+        cardUsed: selectedCard,
+        description: description,
+      };
+      onReceiptProcessed(completeData as ReceiptData, selectedFile!);
     }
   };
 
@@ -418,6 +465,67 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                     </div>
                   </div>
                 )}
+
+                {/* Additional Required Fields */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
+                  <div className="space-y-4">
+                    {/* Event Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <Building2 className="w-4 h-4 inline mr-1" />
+                        Event <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={selectedEvent}
+                        onChange={(e) => setSelectedEvent(e.target.value)}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Select an event...</option>
+                        {userEvents.map(event => (
+                          <option key={event.id} value={event.id}>
+                            {event.name} ({event.startDate} - {event.endDate})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Card Used */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <CreditCard className="w-4 h-4 inline mr-1" />
+                        Card Used
+                      </label>
+                      <select
+                        value={selectedCard}
+                        onChange={(e) => setSelectedCard(e.target.value)}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select card...</option>
+                        {cardOptions.map((card, idx) => (
+                          <option key={idx} value={`${card.name} (...${card.lastFour})`}>
+                            {card.name} (...{card.lastFour})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Description / Notes */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description / Notes
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        placeholder="Optional: Add any additional notes or details..."
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

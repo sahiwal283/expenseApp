@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.8.5 - PATCH: Fix auth token in correction tracking
+// Version: 1.9.0 - MINOR: Unified expense submission page (all fields in one place)
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.8.5';  // BUMPED VERSION for correction auth fix
+const CACHE_NAME = 'expenseapp-v1.9.0';  // BUMPED VERSION for unified expense form
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

@@ -73,6 +73,9 @@ export interface ReceiptData {
   ocrText?: string;
   receiptFile?: File;
   file?: File;
+  tradeShowId?: string;
+  cardUsed?: string;
+  description?: string;
   ocrV2Data?: {
     inference?: any;
     categories?: Array<{ category: string; confidence: number; keywordsMatched?: string[] }>;

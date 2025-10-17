@@ -436,10 +436,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   if (showReceiptUpload) {
     return (
-      <ReceiptUpload
-        onReceiptProcessed={handleReceiptProcessed}
-        onCancel={() => setShowReceiptUpload(false)}
-      />
+      <>
+        <ReceiptUpload
+          user={user}
+          events={events}
+          onReceiptProcessed={handleReceiptProcessed}
+          onCancel={() => setShowReceiptUpload(false)}
+        />
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </>
     );
   }
 
