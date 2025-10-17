@@ -487,69 +487,72 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   </div>
                 )}
 
-                {/* Event Selection */}
-                <div className="mt-6 space-y-4">
+                {/* Event and Card Selection - Side by Side */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Trade Show Event *
-                      </label>
-                      <select
-                        value={selectedEvent}
-                        onChange={(e) => setSelectedEvent(e.target.value)}
-                        className="w-full max-w-md px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        required
-                      >
-                        <option value="">Select an event</option>
-                        {userEvents.map(event => (
-                          <option key={event.id} value={event.id}>
-                            {event.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Trade Show Event *
+                    </label>
+                    <select
+                      value={selectedEvent}
+                      onChange={(e) => setSelectedEvent(e.target.value)}
+                      className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="">Select an event</option>
+                      {userEvents.map(event => (
+                        <option key={event.id} value={event.id}>
+                          {event.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    {/* Card Used */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        <CreditCard className="w-4 h-4 inline mr-1" />
-                        Card Used
-                        {ocrResults?.ocrV2Data?.inference?.cardLastFour && (
-                          <span className={`ml-2 text-xs ${
-                            ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.7 ? 'text-emerald-600' :
-                            ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.5 ? 'text-yellow-600' :
-                            'text-orange-600'
-                          }`}>
-                            ({Math.round(ocrResults.ocrV2Data.inference.cardLastFour.confidence * 100)}% - OCR found ...{ocrResults.ocrV2Data.inference.cardLastFour.value})
-                          </span>
-                        )}
-                      </label>
-                      <select
-                        value={selectedCard}
-                        onChange={(e) => setSelectedCard(e.target.value)}
-                        className="w-full max-w-md bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      >
-                        <option value="">Select card...</option>
-                        {cardOptions.map((card, idx) => (
-                          <option key={idx} value={`${card.name} (...${card.lastFour})`}>
-                            {card.name} (...{card.lastFour})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Card Used */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <CreditCard className="w-4 h-4 inline mr-1" />
+                      Card Used
+                      {ocrResults?.ocrV2Data?.inference?.cardLastFour && (
+                        <span className={`ml-2 text-xs ${
+                          ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.7 ? 'text-emerald-600' :
+                          ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.5 ? 'text-yellow-600' :
+                          'text-orange-600'
+                        }`}>
+                          ({Math.round(ocrResults.ocrV2Data.inference.cardLastFour.confidence * 100)}% - OCR found ...{ocrResults.ocrV2Data.inference.cardLastFour.value})
+                        </span>
+                      )}
+                    </label>
+                    <select
+                      value={selectedCard}
+                      onChange={(e) => setSelectedCard(e.target.value)}
+                      className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select card...</option>
+                      {cardOptions.map((card, idx) => (
+                        <option key={idx} value={`${card.name} (...${card.lastFour})`}>
+                          {card.name} (...{card.lastFour})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-                    {/* Description / Notes */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description / Notes
-                      </label>
-                      <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full max-w-2xl bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={3}
-                        placeholder="Optional: Add any additional notes or details..."
-                      />
-                    </div>
+                {/* Description / Notes */}
+                <div className="mt-4">
+                  <div>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description / Notes
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full max-w-2xl bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows={3}
+                      placeholder="Optional: Add any additional notes or details..."
+                    />
+                  </div>
                 </div>
               </div>
             )}
