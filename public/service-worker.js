@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.7 - PATCH: Constrain width of Event/Card/Description fields
+// Version: 1.9.8 - PATCH: Balance grid layout columns (2-2 instead of 3-1)
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.7';  // BUMPED VERSION for field width constraints
+const CACHE_NAME = 'expenseapp-v1.9.8';  // BUMPED VERSION for balanced grid
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
