@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.13 - PATCH: Force cache clear for leading zero fix and spinner
+// Version: 1.9.14 - PATCH: Fix saving spinner by managing state in parent
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.13';  // BUMPED VERSION for cache bust
+const CACHE_NAME = 'expenseapp-v1.9.14';  // BUMPED VERSION for spinner fix
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

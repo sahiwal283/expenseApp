@@ -11,9 +11,10 @@ interface ReceiptUploadProps {
   onCancel: () => void;
   user: User;
   events: TradeShow[];
+  isSaving?: boolean;
 }
 
-export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel, user, events }) => {
+export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel, user, events, isSaving = false }) => {
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -28,7 +29,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [description, setDescription] = useState('');
   const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string}>>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
   
   // Filter events
   const activeEvents = filterActiveEvents(events);
@@ -186,7 +186,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     }
     
     if (ocrResults) {
-      setSaving(true);
       // Include additional fields in the data
       const completeData = {
         ...ocrResults,
@@ -547,14 +546,14 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               {ocrResults && (
                 <button
                   onClick={handleConfirm}
-                  disabled={saving}
+                  disabled={isSaving}
                   className={`${
-                    saving 
+                    isSaving 
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600'
                   } text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2`}
                 >
-                  {saving ? (
+                  {isSaving ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Saving...</span>

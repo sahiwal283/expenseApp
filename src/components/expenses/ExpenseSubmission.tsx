@@ -228,7 +228,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleReceiptProcessed = (receiptData: ReceiptData, file: File) => {
+  const handleReceiptProcessed = async (receiptData: ReceiptData, file: File) => {
+    setIsSaving(true);
+    
     // Store OCR v2 data for correction tracking
     if (receiptData.ocrV2Data) {
       console.log('[OCR Correction] Storing OCR v2 data for correction tracking');
@@ -264,8 +266,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       extractedData: receiptData
     };
 
-    // Save directly and close the form
-    handleSaveExpense(expenseData, file);
+    // Save and wait for completion before closing
+    await handleSaveExpense(expenseData, file);
+    setIsSaving(false);
     setShowReceiptUpload(false);
   };
 
@@ -440,6 +443,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           events={events}
           onReceiptProcessed={handleReceiptProcessed}
           onCancel={() => setShowReceiptUpload(false)}
+          isSaving={isSaving}
         />
         <ToastContainer toasts={toasts} removeToast={removeToast} />
       </>
