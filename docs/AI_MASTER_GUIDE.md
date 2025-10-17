@@ -1,15 +1,15 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.8.0 (Sandbox - User Correction Feedback Pipeline)
-**Last Updated:** October 16, 2025  
-**Status:** ✅ Production Active | 🔬 v1.8.0 in Sandbox Testing
+**Version:** 1.9.17 (Sandbox - Debugging OCR Correction Capture)
+**Last Updated:** October 17, 2025  
+**Status:** ✅ Production Active | 🔬 v1.9.17 in Sandbox Testing
 
 **Production Deployment:** October 16, 2025
 - **Backend:** v1.5.1 (Container 201)
 - **Frontend:** v1.4.13 (Container 202)
 
-**Sandbox Deployment:** October 16, 2025
+**Sandbox Deployment:** October 17, 2025
 - **Backend:** v1.8.0 (Container 203) - User Correction Feedback Pipeline
-- **Frontend:** v1.8.0 (Container 203) - OCR v2 with Correction Capture
+- **Frontend:** v1.9.17 (Container 203) - OCR v2 with Correction Capture (Debugging)
 - **Branch:** `v1.6.0`
 
 ---
@@ -4790,6 +4790,360 @@ ssh container -- echo $NODE_ENV
 - Track model/prompt versions for reproducibility
 - Export to standard formats (JSONL) for flexibility
 - Build anonymization from the start
+
+---
+
+## 📅 Development Session Summaries
+
+### October 17, 2025 - OCR Correction Pipeline Debugging (v1.9.15 - v1.9.17)
+
+**Branch:** `v1.6.0` (Sandbox)  
+**Deployed Versions:** v1.9.15 → v1.9.16 → v1.9.17  
+**Status:** 🔴 IN PROGRESS - Corrections Not Capturing Correctly
+
+#### Session Context
+
+User reported that despite making OCR corrections in the UI, the `ocr_corrections` table remained at 0 records. This session focused on debugging and fixing the user correction capture pipeline for the continuous learning system.
+
+#### Issues Discovered
+
+**1. Original OCR Values Not Stored Correctly (v1.9.15)**
+
+**Problem:**
+```typescript
+// WRONG: Storing already-edited values as "original"
+setOcrV2Data({
+  originalValues: {
+    merchant: receiptData.merchant,  // ❌ Already edited by user!
+    amount: receiptData.total,       // ❌ Already edited!
+    category: receiptData.category   // ❌ Already edited!
+  }
+});
+```
+
+This caused the system to compare the edited values against themselves, resulting in 0 detected corrections.
+
+**Root Cause:**
+- `handleReceiptProcessed` received `receiptData` AFTER user edits in `ReceiptUpload`
+- The `originalValues` field was being populated from the edited `receiptData` instead of from the raw OCR inference
+
+**Fix Attempt 1 (v1.9.15):**
+```typescript
+// CORRECT: Store original OCR inference before edits
+const inference = receiptData.ocrV2Data.inference;
+setOcrV2Data({
+  originalValues: {
+    merchant: inference?.merchant?.value || 'Unknown Merchant',  // ✅ Original OCR
+    amount: inference?.amount?.value || 0,                       // ✅ Original OCR
+    category: inference?.category?.value || 'Other',             // ✅ Original OCR
+    cardLastFour: inference?.cardLastFour?.value || null         // ✅ Added card tracking
+  }
+});
+```
+
+**Deployment:** v1.9.15
+- Frontend: Updated `ExpenseSubmission.tsx` to extract original values from `inference`
+- Added console logging to compare original vs submitted values
+- Added `cardLastFour` to correction tracking
+
+**Result:** ❌ Still 0 corrections - New issue discovered
+
+---
+
+**2. React State Timing Issue (v1.9.16)**
+
+**Problem:**
+After fixing the original values storage, corrections still weren't captured. Console logs showed:
+```javascript
+[OCR Correction] Storing OCR v2 data for correction tracking
+[ExpenseSubmission] Saving expense...
+// ❌ Correction detection code never ran!
+```
+
+**Root Cause:**
+- `setOcrV2Data()` is asynchronous (React state update)
+- `handleSaveExpense()` was called immediately after `setOcrV2Data()`
+- When `handleSaveExpense` tried to read `ocrV2Data`, it still had the OLD (null) value
+- The state hadn't updated yet!
+
+**Fix Attempt 2 (v1.9.16):**
+```typescript
+// Pass OCR data directly instead of relying on state
+const handleReceiptProcessed = async (receiptData: ReceiptData, file: File) => {
+  setIsSaving(true);
+  
+  // Prepare OCR data locally (don't wait for state update)
+  let ocrDataForCorrections: any = null;
+  if (receiptData.ocrV2Data) {
+    ocrDataForCorrections = {
+      ocrText: receiptData.ocrText,
+      inference: receiptData.ocrV2Data.inference,
+      originalValues: { /* ... */ }
+    };
+  }
+
+  // Pass directly to save function
+  await handleSaveExpense(expenseData, file, ocrDataForCorrections);  // ✅ Direct pass
+};
+
+// Update function to accept parameter
+const handleSaveExpense = async (
+  expenseData: Omit<Expense, 'id'>, 
+  file?: File, 
+  ocrDataOverride?: any  // ✅ New parameter
+) => {
+  // Use passed data or fall back to state
+  const ocrDataToUse = ocrDataOverride || ocrV2Data;  // ✅ Prefer parameter
+  
+  if (ocrDataToUse && ocrDataToUse.originalValues) {
+    const corrections = detectCorrections(ocrDataToUse.inference, submittedData);
+    // ... send corrections ...
+  }
+};
+```
+
+**Deployment:** v1.9.16
+- Modified `handleReceiptProcessed` to prepare OCR data locally
+- Updated `handleSaveExpense` to accept `ocrDataOverride` parameter
+- Added fallback logic: `ocrDataOverride || ocrV2Data`
+
+**Result:** ❌ Build failed, then runtime error
+
+---
+
+**3. Missing Function Parameter (v1.9.17)**
+
+**Problem:**
+After deploying v1.9.16, user got error: `ReferenceError: ocrDataOverride is not defined`
+
+**Root Cause:**
+- The function signature fix didn't apply correctly
+- `handleSaveExpense` was still defined as `async (expenseData, file)` without the third parameter
+- When the function body tried to use `ocrDataOverride`, it was out of scope
+
+**Fix Attempt 3 (v1.9.17):**
+```typescript
+// Added missing parameter to function signature
+const handleSaveExpense = async (
+  expenseData: Omit<Expense, 'id'>, 
+  file?: File, 
+  ocrDataOverride?: any  // ✅ This was missing!
+) => {
+  // ... rest of function ...
+};
+```
+
+**Deployment:** v1.9.17
+- Fixed function signature to include `ocrDataOverride` parameter
+- Verified build succeeded
+- Deployed to sandbox
+
+**Result:** ✅ Expense saves successfully, BUT ❌ Still 0 corrections in database
+
+---
+
+**4. Current Issue: OCR Inference Not Populating (ONGOING)**
+
+**Problem:**
+Console logs show:
+```javascript
+[OCR Correction] Original OCR values stored: 
+  { merchant: undefined, amount: undefined, category: undefined }
+```
+
+**Root Cause (Suspected):**
+- The OCR v2 API is returning a response, BUT
+- The `inference` object structure doesn't match what the frontend expects
+- OR the OCR is failing and returning empty/null inference
+
+**Evidence:**
+- User submitted multiple expenses successfully
+- OCR processing appears to work (no errors)
+- But `inference?.merchant?.value` is `undefined`
+
+**Next Steps:**
+1. Inspect the actual OCR v2 API response structure
+2. Check if PaddleOCR is running correctly on container 203
+3. Verify Ollama LLM is being called and returning data
+4. Compare expected vs actual response format
+
+---
+
+#### Code Changes Summary
+
+**Files Modified:**
+
+1. **`src/components/expenses/ExpenseSubmission.tsx`**
+   - Modified `handleReceiptProcessed` to extract original OCR values correctly
+   - Changed to pass OCR data directly instead of relying on state
+   - Updated `handleSaveExpense` signature to accept `ocrDataOverride`
+   - Added extensive console logging for debugging
+
+2. **`package.json`**
+   - v1.9.15: Fix OCR correction tracking to store original values
+   - v1.9.16: Pass OCR data directly to avoid state timing issue
+   - v1.9.17: Fix missing function parameter
+
+3. **`public/service-worker.js`**
+   - Updated cache name for each version
+   - Updated version comments
+
+---
+
+#### Deployment Log
+
+```bash
+# v1.9.15 - Original values fix
+npm run build && deploy to sandbox
+✅ Deployed successfully
+
+# v1.9.16 - State timing fix
+npm run build && deploy to sandbox
+✅ Deployed successfully
+
+# v1.9.17 - Function parameter fix
+npm run build && deploy to sandbox
+✅ Deployed successfully
+```
+
+---
+
+#### Technical Lessons Learned
+
+**1. React State is Asynchronous**
+- Never assume state updates immediately after `setState()`
+- If you need the value immediately, store it in a local variable
+- Pass data directly between functions when timing is critical
+
+**2. TypeScript Function Signatures**
+- When adding optional parameters, they must be in ALL function definitions
+- Missing parameters cause runtime `ReferenceError`, not compile-time errors
+- Always verify function signatures match their implementations
+
+**3. Debugging OCR Pipelines**
+- Console logging is essential for debugging complex data flows
+- Log BOTH the raw API response AND the processed data
+- Expand objects in console to see actual structure vs expected
+
+**4. Correction Detection Logic**
+- Must compare ORIGINAL OCR values against FINAL submitted values
+- Original = what OCR/LLM extracted (before user sees it)
+- Final = what user submitted (after editing in UI)
+- Any mismatch between these two = a correction to learn from
+
+---
+
+#### Database Impact
+
+**Tables Affected:**
+- `ocr_corrections` - Still at 0 records (bug not fully resolved)
+
+**Expected Behavior:**
+When a user edits an OCR-extracted field and saves:
+1. Frontend detects the change
+2. Sends POST to `/api/ocr/v2/corrections`
+3. Backend inserts record into `ocr_corrections`
+4. Record includes: original OCR, user correction, confidence scores
+
+**Actual Behavior:**
+1. Frontend shows "Expense saved successfully"
+2. Console logs show "No corrections detected - OCR was accurate"
+3. But this is because original values are `undefined`, not because OCR was actually accurate
+
+---
+
+#### Current Status
+
+**✅ Working:**
+- Expense submission with OCR
+- Receipt upload and processing
+- UI for editing OCR fields
+- Saving expenses to database
+- Category dropdown auto-population
+- Card detection and auto-matching
+- Unified expense submission page
+
+**❌ Not Working:**
+- User corrections not being captured
+- Original OCR values showing as `undefined`
+- Correction count remains at 0 in database
+
+**🔍 Under Investigation:**
+- OCR v2 API response structure
+- PaddleOCR inference output format
+- Ollama LLM integration status
+
+---
+
+#### Next Session Action Items
+
+**Priority 1: Debug OCR Response Structure**
+1. Add logging in `ReceiptUpload.tsx` to show full OCR v2 response
+2. Check backend logs for OCR v2 processing
+3. Verify PaddleOCR is returning structured inference
+4. Test Ollama LLM endpoint directly
+
+**Priority 2: Fix Correction Capture**
+1. Once OCR structure is understood, update frontend parsing
+2. Ensure `inference` object is properly populated
+3. Test correction detection with real data
+4. Verify database inserts
+
+**Priority 3: End-to-End Testing**
+1. Submit expense with deliberate OCR mistakes
+2. Correct all fields in UI
+3. Verify corrections are logged
+4. Check correction data quality
+
+---
+
+#### Commands for Next Session
+
+**Check OCR v2 Processing:**
+```bash
+# Check backend logs for OCR errors
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -f | grep 'OCR'"
+
+# Test PaddleOCR directly
+ssh root@192.168.1.190 "pct exec 203 -- python3 /opt/expenseApp/backend/src/services/ocr/paddleocr_processor.py /path/to/test/image.jpg"
+
+# Test Ollama endpoint
+ssh root@192.168.1.190 "pct exec 302 -- curl http://localhost:11434/api/generate -d '{\"model\":\"dolphin-llama3\",\"prompt\":\"test\"}'"
+```
+
+**Check Database:**
+```bash
+# Verify table structure
+ssh root@192.168.1.190 "pct exec 203 -- psql ... -c '\d ocr_corrections'"
+
+# Check for ANY data
+ssh root@192.168.1.190 "pct exec 203 -- psql ... -c 'SELECT COUNT(*) FROM ocr_corrections;'"
+```
+
+**Frontend Debugging:**
+```javascript
+// In browser console, after uploading receipt:
+// Look for: [ReceiptUpload] OCR response:
+// Expand the object to see full structure
+```
+
+---
+
+#### Files to Review Next Session
+
+1. **Backend:**
+   - `backend/src/routes/ocrV2.ts` - OCR v2 endpoint
+   - `backend/src/services/ocr/OCRService.ts` - Main OCR orchestrator
+   - `backend/src/services/ocr/inference/RuleBasedInferenceEngine.ts` - Field extraction
+
+2. **Frontend:**
+   - `src/components/expenses/ReceiptUpload.tsx` - OCR response parsing
+   - `src/components/expenses/ExpenseSubmission.tsx` - Correction detection
+   - `src/utils/ocrCorrections.ts` - Correction sending
+
+3. **Environment:**
+   - `backend/env.sandbox.template` - OCR configuration
+   - Verify `OLLAMA_API_URL`, `PYTHON_PATH`, `PROJECT_ROOT`
 
 ---
 

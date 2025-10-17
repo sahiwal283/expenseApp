@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.15 - PATCH: Fix OCR correction tracking to store original values
+// Version: 1.9.17 - PATCH: Fix missing function parameter
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.15';  // BUMPED VERSION for correction tracking fix
+const CACHE_NAME = 'expenseapp-v1.9.17';  // BUMPED VERSION for function parameter fix
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

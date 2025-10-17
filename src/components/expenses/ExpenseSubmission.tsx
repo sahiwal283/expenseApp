@@ -76,7 +76,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   }, [expenses, hasApprovalPermission]);
 
-  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File) => {
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File, ocrDataOverride?: any) => {
     // Prevent duplicate submissions
     if (isSaving) {
       console.log('[ExpenseSubmission] Already saving, ignoring duplicate submission');
@@ -122,11 +122,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           addToast('✅ Expense saved successfully!', 'success');
         }
 
-        // Track OCR corrections if OCR v2 data exists
-        if (ocrV2Data && ocrV2Data.originalValues) {
+        // Track OCR corrections if OCR v2 data exists (use passed data or state)
+        const ocrDataToUse = ocrDataOverride || ocrV2Data;
+        if (ocrDataToUse && ocrDataToUse.originalValues) {
           console.log('[OCR Correction] Checking for user corrections...');
           console.log('[OCR Correction] Comparing original vs submitted:', {
-            original: ocrV2Data.originalValues,
+            original: ocrDataToUse.originalValues,
             submitted: {
               merchant: expenseData.merchant,
               amount: expenseData.amount,
@@ -134,7 +135,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               category: expenseData.category
             }
           });
-          const corrections = detectCorrections(ocrV2Data.inference, {
+          const corrections = detectCorrections(ocrDataToUse.inference, {
             merchant: expenseData.merchant,
             amount: expenseData.amount,
             date: expenseData.date,
@@ -147,8 +148,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             
             // Send corrections to backend for continuous learning
             await sendOCRCorrection({
-              originalOCRText: ocrV2Data.ocrText || '',
-              originalInference: ocrV2Data.inference,
+              originalOCRText: ocrDataToUse.ocrText || '',
+              originalInference: ocrDataToUse.inference,
               correctedFields: corrections,
               notes: `User corrected ${Object.keys(corrections).length} field(s) during expense submission`
             }).catch(err => {
@@ -160,8 +161,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           } else {
             console.log('[OCR Correction] No corrections detected - OCR was accurate!');
           }
+        } else {
+          console.log('[OCR Correction] No OCR v2 data available for correction tracking');
+        }
 
-          // Clear OCR data after processing
+        // Clear OCR data after processing if we used the override
+        if (ocrDataOverride) {
           setOcrV2Data(null);
         }
         
@@ -241,11 +246,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const handleReceiptProcessed = async (receiptData: ReceiptData, file: File) => {
     setIsSaving(true);
     
-    // Store OCR v2 data for correction tracking
+    // Prepare OCR v2 data for correction tracking (but don't rely on state)
+    let ocrDataForCorrections: any = null;
     if (receiptData.ocrV2Data) {
-      console.log('[OCR Correction] Storing OCR v2 data for correction tracking');
+      console.log('[OCR Correction] Preparing OCR v2 data for correction tracking');
       const inference = receiptData.ocrV2Data.inference;
-      setOcrV2Data({
+      ocrDataForCorrections = {
         ocrText: receiptData.ocrText,
         inference: inference,
         categories: receiptData.ocrV2Data.categories,
@@ -260,7 +266,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           location: inference?.location?.value || '',
           cardLastFour: inference?.cardLastFour?.value || null
         }
-      });
+      };
       console.log('[OCR Correction] Original OCR values stored:', {
         merchant: inference?.merchant?.value,
         amount: inference?.amount?.value,
@@ -289,8 +295,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       extractedData: receiptData
     };
 
-    // Save and wait for completion before closing
-    await handleSaveExpense(expenseData, file);
+    // Save and wait for completion before closing - pass OCR data directly
+    await handleSaveExpense(expenseData, file, ocrDataForCorrections);
     setIsSaving(false);
     setShowReceiptUpload(false);
   };

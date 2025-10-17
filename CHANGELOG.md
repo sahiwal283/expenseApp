@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.17] - 2025-10-17 (Sandbox) 🔧 PATCH
+
+### Fixed
+- Added missing `ocrDataOverride` parameter to `handleSaveExpense` function signature
+
+### Status
+- ✅ Expense submission working
+- ❌ OCR corrections still not capturing (original values showing as `undefined`)
+- 🔍 Under investigation: OCR v2 response structure
+
+### Technical Notes
+- Fixed `ReferenceError: ocrDataOverride is not defined`
+- Function parameter must be in signature to be in scope
+
+---
+
+## [1.9.16] - 2025-10-17 (Sandbox) 🔧 PATCH
+
+### Changed
+- Refactored OCR correction tracking to pass data directly instead of using React state
+- Modified `handleReceiptProcessed` to prepare OCR data locally before passing to save function
+- Updated `handleSaveExpense` to accept `ocrDataOverride` parameter with fallback to state
+
+### Fixed
+- React state timing issue causing correction detection to fail
+
+### Technical Notes
+- `setOcrV2Data()` is asynchronous, state doesn't update immediately
+- Passing data directly between functions avoids race conditions
+
+---
+
+## [1.9.15] - 2025-10-17 (Sandbox) 🔧 PATCH
+
+### Fixed
+- OCR correction tracking now stores original OCR values (before user edits) instead of edited values
+- Added `cardLastFour` to correction tracking
+
+### Changed
+- Updated `handleReceiptProcessed` to extract values from `receiptData.ocrV2Data.inference`
+- Added console logging to compare original vs submitted values
+
+### Technical Notes
+- Previous implementation compared edited values against themselves, resulting in 0 corrections detected
+- Must capture OCR inference BEFORE user edits fields in UI
+
+---
+
 ## [1.4.13 / 1.5.1] - 2025-10-16 - PRODUCTION
 **Deployed to: Production (Containers 201 & 202)**
 
