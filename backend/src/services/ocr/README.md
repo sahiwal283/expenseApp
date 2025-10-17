@@ -1,8 +1,8 @@
 # Enhanced OCR System - Architecture & Usage
 
-**Version:** 1.6.0  
-**Branch:** v1.6.0 (Sandbox Only)  
-**Status:** ⚠️ Development - Not Production Ready
+**Version:** 1.8.0  
+**Branch:** v1.6.0 (Sandbox - Full User Correction Pipeline)  
+**Status:** ✅ Sandbox Ready - Complete Feedback Loop Active
 
 ---
 
@@ -634,6 +634,108 @@ For issues or questions:
 
 ---
 
+## 🔄 User Correction Feedback Pipeline (v1.8.0)
+
+### Overview
+v1.8.0 adds complete user correction capture and cross-environment training dataset generation for continuous learning.
+
+### How It Works
+
+**1. Frontend Captures Corrections**
+```typescript
+// When user edits OCR-extracted fields, system detects changes
+// Automatically sends to: POST /api/ocr/v2/corrections
+```
+
+**2. Backend Stores with Metadata**
+```typescript
+// UserCorrectionService stores:
+- Original OCR text & inference
+- User corrections (merchant, amount, date, category)
+- Environment tag (sandbox/production)
+- LLM model version
+- Confidence scores
+```
+
+**3. Cross-Environment Aggregation**
+```typescript
+// CrossEnvironmentSyncService aggregates:
+- Sandbox corrections (testing data)
+- Production corrections (real user data)
+- Filters by quality score
+- Exports to JSONL training datasets
+```
+
+**4. Export Training Data**
+```bash
+# Admin can export corrections for ML training
+POST /api/training/sync/export
+{
+  "minQualityScore": 0.7,
+  "includeSandbox": true,
+  "includeProduction": true,
+  "limit": 10000
+}
+```
+
+### Database Schema (Migration 007)
+```sql
+-- Enhanced ocr_corrections table with:
+- environment (sandbox/production)
+- llm_model_version
+- used_in_training
+- training_dataset_id
+- data_quality_score
+- anonymized (privacy flag)
+- correction_confidence_before/after
+- synced_to_training
+```
+
+### API Endpoints
+```bash
+# Export dataset
+POST /api/training/sync/export
+
+# Get statistics
+GET /api/training/sync/report
+
+# View dataset
+GET /api/training/sync/dataset/:id
+
+# Mark as trained
+POST /api/training/sync/mark-used/:id
+
+# Anonymize
+POST /api/training/sync/anonymize
+```
+
+### Files
+- `UserCorrectionService.ts` - Stores corrections with metadata
+- `CrossEnvironmentSyncService.ts` - ETL and dataset export
+- `routes/trainingSync.ts` - Admin API endpoints
+- `migrations/007_*.sql` - Enhanced schema
+
+### Usage Example
+```bash
+# Check correction stats
+curl http://sandbox/api/training/sync/report
+
+# Export training dataset
+curl -X POST http://sandbox/api/training/sync/export \
+  -d '{"minQualityScore": 0.7, "limit": 1000}'
+
+# Verify export
+ls /opt/expenseApp/training_data/dataset_*.jsonl
+```
+
+### Future (v1.9.0)
+- Automated retraining workflows
+- Prompt optimization based on corrections
+- A/B testing of LLM models
+- Real-time accuracy monitoring
+
+---
+
 **Last Updated:** October 16, 2025  
-**Branch:** v1.6.0 (Sandbox Only)
+**Branch:** v1.6.0 (Sandbox - v1.8.0 Complete Pipeline Active)
 

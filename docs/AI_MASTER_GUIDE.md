@@ -1,12 +1,16 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.4.13 (Frontend) / 1.5.1 (Backend) / 1.6.0 (OCR Upgrade - Dev Branch)
+**Version:** 1.8.0 (Sandbox - User Correction Feedback Pipeline)
 **Last Updated:** October 16, 2025  
-**Status:** ✅ Production & Sandbox Active | 🔬 v1.6.0 OCR Upgrade in Development
+**Status:** ✅ Production Active | 🔬 v1.8.0 in Sandbox Testing
 
 **Production Deployment:** October 16, 2025
 - **Backend:** v1.5.1 (Container 201)
 - **Frontend:** v1.4.13 (Container 202)
-- **Git Tags:** `v1.5.1-backend`, `v1.4.13-frontend`
+
+**Sandbox Deployment:** October 16, 2025
+- **Backend:** v1.8.0 (Container 203) - User Correction Feedback Pipeline
+- **Frontend:** v1.8.0 (Container 203) - OCR v2 with Correction Capture
+- **Branch:** `v1.6.0`
 
 ---
 
@@ -4376,6 +4380,416 @@ tar -xzf frontend-deploy.tar.gz -C /var/www/expenseapp/current --strip-component
 - **Documentation:** 4 files updated (README, CHANGELOG, master guide, credentials)
 
 **Final Status:** ✅ Production stable, all critical bugs fixed, major feature deployed successfully
+
+---
+
+---
+
+## 🎓 v1.8.0: COMPLETE USER CORRECTION FEEDBACK PIPELINE
+
+**Deployed:** October 16, 2025  
+**Status:** ✅ Live in Sandbox (Container 203)  
+**Branch:** `v1.6.0`
+
+### Overview
+
+Version 1.8.0 implements a complete cross-environment user correction feedback pipeline that captures user edits to OCR-extracted data and prepares it for machine learning model improvements. This closes the feedback loop between user corrections and OCR/LLM accuracy improvements.
+
+### Architecture
+
+```
+User Edits OCR Data
+       ↓
+Frontend Auto-Detects Changes
+       ↓
+Send to /api/ocr/v2/corrections
+       ↓
+Store with Environment Tag
+       ↓
+Cross-Environment Aggregation
+       ↓
+Export to Training Dataset (JSONL)
+       ↓
+[Future] Automated Retraining
+```
+
+### Key Components
+
+#### 1. Frontend Correction Capture
+**File:** `src/components/expenses/ExpenseSubmission.tsx`
+
+- Stores OCR v2 data when receipt processed
+- Tracks original values (merchant, amount, date, category)
+- Auto-detects changes when expense saved
+- Sends corrections silently to backend
+- Zero user interruption
+
+**Example Flow:**
+```typescript
+// OCR extracts: merchant = "WALMART"
+// User edits to: merchant = "Walmart Supercenter"
+// System detects difference and logs correction
+```
+
+#### 2. Enhanced Database Schema
+**Migration:** `007_enhance_ocr_corrections_for_cross_environment.sql`
+
+**New Columns:**
+- `environment` - sandbox/production tag (for data isolation)
+- `llm_model_version` - tracks which LLM version was used
+- `llm_prompt_version` - tracks prompt version for A/B testing
+- `used_in_training` - marks if correction was used for retraining
+- `training_dataset_id` - groups corrections into datasets
+- `data_quality_score` - 0-1 score for ML readiness
+- `anonymized` - privacy flag for PII removal
+- `correction_confidence_before/after` - tracks improvement
+- `synced_to_training` - ETL status flag
+- `sync_timestamp` - last sync time
+- `source_expense_environment` - origin tracking
+
+**Views Created:**
+- `ocr_training_ready_corrections` - Ready for training (not yet used, recent)
+- `ocr_correction_stats_by_env` - Statistics by environment
+
+#### 3. Cross-Environment Sync Service
+**File:** `backend/src/services/ocr/CrossEnvironmentSyncService.ts`
+
+**Purpose:** Aggregates corrections from both sandbox and production into unified training datasets.
+
+**Key Methods:**
+```typescript
+// Export corrections to JSONL training file
+await crossEnvironmentSyncService.exportToTrainingDataset({
+  minQualityScore: 0.7,      // Quality threshold
+  includeSandbox: true,       // Include sandbox data
+  includeProduction: true,    // Include production data
+  limit: 10000                // Max corrections per export
+});
+
+// Get sync statistics
+const report = await crossEnvironmentSyncService.getSyncReport();
+// Returns: { totalCorrections, byEnvironment, syncedToTraining, ... }
+
+// Mark dataset as used after retraining
+await crossEnvironmentSyncService.markDatasetUsed(datasetId);
+
+// Anonymize for privacy
+await crossEnvironmentSyncService.anonymizeCorrections(correctionIds);
+```
+
+**Export Format (JSONL):**
+```json
+{"id":"uuid","environment":"sandbox","input":{"ocr_text":"...","original_inference":{...}},"corrections":{"merchant":"Walmart Supercenter"},"fields_corrected":["merchant"],"metadata":{...}}
+{"id":"uuid","environment":"production","input":{...},"corrections":{...},"fields_corrected":[...],"metadata":{...}}
+```
+
+#### 4. Training Sync API Endpoints
+**File:** `backend/src/routes/trainingSync.ts`
+
+**Access:** Admin/Developer only
+
+**Endpoints:**
+```bash
+# Export corrections to training dataset
+POST /api/training/sync/export
+Body: { minQualityScore, includeSandbox, includeProduction, limit }
+Returns: { exportPath, recordCount, datasetId }
+
+# Get sync statistics
+GET /api/training/sync/report
+Returns: { totalCorrections, byEnvironment, syncedToTraining, readyForTraining, lastSyncTime }
+
+# View dataset corrections
+GET /api/training/sync/dataset/:datasetId
+Returns: { datasetId, corrections[], count }
+
+# Mark dataset as trained
+POST /api/training/sync/mark-used/:datasetId
+Returns: { markedCount }
+
+# Anonymize corrections
+POST /api/training/sync/anonymize
+Body: { correctionIds: [...] }
+Returns: { anonymizedCount }
+```
+
+### Configuration
+
+#### Environment Variables
+```bash
+# Training data storage location
+TRAINING_DATA_PATH=/opt/expenseApp/training_data  # Default
+
+# Environment detection (automatic)
+NODE_ENV=development  # Tagged as "sandbox"
+NODE_ENV=production   # Tagged as "production"
+
+# LLM version tracking (automatic)
+OLLAMA_MODEL=dolphin-llama3  # Stored in corrections
+```
+
+#### Database Setup
+```bash
+# Run migration in sandbox
+PGPASSWORD=sandbox123 psql -h localhost -U expense_sandbox \
+  -d expense_app_sandbox \
+  -f /path/to/007_enhance_ocr_corrections_for_cross_environment.sql
+
+# Verify tables
+\d ocr_corrections
+
+# Check views
+SELECT * FROM ocr_training_ready_corrections LIMIT 5;
+SELECT * FROM ocr_correction_stats_by_env;
+```
+
+### Usage Examples
+
+#### Developer Workflow
+
+**1. Check Correction Statistics:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://sandbox/api/training/sync/report
+
+# Response:
+{
+  "success": true,
+  "report": {
+    "totalCorrections": 150,
+    "byEnvironment": { "sandbox": 120, "production": 30 },
+    "syncedToTraining": 50,
+    "readyForTraining": 100,
+    "lastSyncTime": "2025-10-16T20:00:00Z"
+  }
+}
+```
+
+**2. Export Training Dataset:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "minQualityScore": 0.7,
+    "includeSandbox": true,
+    "includeProduction": true,
+    "limit": 1000
+  }' \
+  http://sandbox/api/training/sync/export
+
+# Response:
+{
+  "success": true,
+  "exportPath": "/opt/expenseApp/training_data/dataset_1729123456789_100.jsonl",
+  "recordCount": 100,
+  "datasetId": "dataset_1729123456789_100"
+}
+```
+
+**3. View Dataset:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://sandbox/api/training/sync/dataset/dataset_1729123456789_100
+```
+
+**4. After Retraining:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  http://sandbox/api/training/sync/mark-used/dataset_1729123456789_100
+```
+
+### Continuous Learning Workflow
+
+**Phase 1: Data Collection (Ongoing)**
+- Users upload receipts → OCR extracts data
+- Users edit incorrect fields → Corrections captured
+- Backend tags with environment, LLM version
+- Data accumulates in `ocr_corrections` table
+
+**Phase 2: Dataset Export (Weekly/Monthly)**
+- Admin exports corrections to JSONL
+- Filters by quality score, environment
+- Groups into versioned datasets
+- Marks corrections as synced
+
+**Phase 3: Analysis (Manual - v1.8.0)**
+- Review common correction patterns
+- Identify OCR weaknesses
+- Analyze confidence vs accuracy
+- Determine retraining priorities
+
+**Phase 4: Retraining (Future - v1.9.0)**
+- Use JSONL datasets for prompt tuning
+- Fine-tune LLM models with corrections
+- A/B test improved models
+- Deploy winning models
+
+**Phase 5: Monitoring (Future - v1.9.0)**
+- Track correction frequency over time
+- Measure accuracy improvements
+- Monitor model performance
+- Trigger automatic retraining
+
+### Privacy & Security
+
+**Environment Isolation:**
+- Sandbox and production corrections tagged separately
+- No cross-environment data leakage
+- Separate analysis possible
+
+**Anonymization:**
+- `anonymized` flag marks PII removal
+- User ID can be zeroed out for training
+- API endpoint for bulk anonymization
+- Compliance-ready
+
+**Access Control:**
+- All training sync endpoints require `admin` or `developer` role
+- Regular users can only submit corrections
+- RBAC enforced at API layer
+
+### Testing
+
+**1. Test Correction Capture:**
+```bash
+# In browser (sandbox):
+1. Go to http://192.168.1.144
+2. Submit expense with receipt
+3. Click "Receipt Scanner"
+4. Upload image
+5. Edit a field (e.g., change merchant name)
+6. Save expense
+7. Check backend logs for "[OCR Correction] Sent X correction(s)"
+```
+
+**2. Verify Database:**
+```sql
+-- Check corrections stored
+SELECT id, environment, fields_corrected, created_at 
+FROM ocr_corrections 
+ORDER BY created_at DESC 
+LIMIT 10;
+
+-- Check statistics
+SELECT * FROM ocr_correction_stats_by_env;
+
+-- Check training-ready
+SELECT COUNT(*) FROM ocr_training_ready_corrections;
+```
+
+**3. Test Export:**
+```bash
+# Export via API
+curl -X POST ... /api/training/sync/export
+
+# Check file created
+ls -lh /opt/expenseApp/training_data/
+
+# Verify JSONL format
+head -1 /opt/expenseApp/training_data/dataset_*.jsonl | jq .
+```
+
+### Performance Considerations
+
+**Database Indexes:**
+- `idx_ocr_corrections_environment` - Fast environment filtering
+- `idx_ocr_corrections_training_ready` - Quick training-ready queries
+- `idx_ocr_corrections_sync_status` - Efficient sync tracking
+- `idx_ocr_corrections_quality` - Quality-based sorting
+
+**Query Optimization:**
+- Views use filtered indexes for speed
+- Export query uses LIMIT to prevent memory issues
+- Pagination recommended for large datasets
+
+**Storage:**
+- Training data stored in `/opt/expenseApp/training_data/`
+- JSONL format is space-efficient
+- Old datasets can be archived/deleted
+
+### Troubleshooting
+
+**Corrections Not Captured:**
+```bash
+# Check frontend logs (browser console)
+"[OCR Correction] Storing OCR v2 data..."
+"[OCR Correction] User made corrections: {...}"
+
+# Check backend logs
+journalctl -u expenseapp-backend -f | grep "OCR Correction"
+
+# Verify API endpoint
+curl -X POST .../api/ocr/v2/corrections (should get 401 or 400, not 404)
+```
+
+**Export Fails:**
+```bash
+# Check training data directory exists
+ssh container -- ls -ld /opt/expenseApp/training_data
+
+# Check permissions
+ssh container -- ls -l /opt/expenseApp/training_data
+
+# Check database corrections exist
+SELECT COUNT(*) FROM ocr_corrections WHERE used_in_training = FALSE;
+```
+
+**Environment Tag Wrong:**
+```bash
+# Check NODE_ENV
+ssh container -- echo $NODE_ENV
+
+# Should be "development" for sandbox, "production" for production
+# Update /etc/expenseapp/backend.env if wrong
+```
+
+### Future Enhancements (v1.9.0)
+
+**Automated Retraining:**
+- Scheduled exports (cron jobs)
+- Automatic prompt optimization
+- LLM fine-tuning pipeline
+- Model versioning & rollback
+
+**Real-time Monitoring:**
+- Correction frequency dashboard
+- Field-specific accuracy tracking
+- Confidence vs accuracy correlation
+- Alert system for accuracy degradation
+
+**A/B Testing:**
+- Test multiple LLM prompts
+- Compare model versions
+- Gradual rollout of improvements
+- Automatic winner selection
+
+**Production Deployment:**
+- Enable correction capture in production
+- Merge sandbox + production datasets
+- Privacy-first anonymization pipeline
+- Compliance audit trails
+
+### Lessons Learned
+
+**What Worked:**
+- Silent background correction capture (zero user friction)
+- Environment tagging prevents data mixing
+- JSONL format perfect for ML workflows
+- View-based queries simplify common operations
+
+**Challenges:**
+- TypeScript type issues with dynamic inference objects
+- Deployment script needed Python file inclusion
+- Migration requires manual database execution
+- Documentation lagged behind implementation
+
+**Best Practices:**
+- Always tag with environment for isolation
+- Track model/prompt versions for reproducibility
+- Export to standard formats (JSONL) for flexibility
+- Build anonymization from the start
 
 ---
 
