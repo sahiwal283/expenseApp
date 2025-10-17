@@ -97,6 +97,35 @@ export class RuleBasedInferenceEngine implements InferenceEngine {
    * Extract merchant name (usually first substantial line)
    */
   private extractMerchant(lines: string[], ocrConfidence: number): FieldValue<string> {
+    const fullText = lines.join(' ').toLowerCase();
+    
+    // Check for known brands/merchants in entire text
+    const knownMerchants = [
+      { pattern: /\blyft\b/i, name: 'Lyft', confidence: 0.95 },
+      { pattern: /\buber\b/i, name: 'Uber', confidence: 0.95 },
+      { pattern: /\bstarbucks\b/i, name: 'Starbucks', confidence: 0.95 },
+      { pattern: /\bmcdonalds?\b/i, name: 'McDonalds', confidence: 0.95 },
+      { pattern: /\bwalmart\b/i, name: 'Walmart', confidence: 0.95 },
+      { pattern: /\btarget\b/i, name: 'Target', confidence: 0.95 },
+      { pattern: /\bamazon\b/i, name: 'Amazon', confidence: 0.95 },
+      { pattern: /\bmarriott\b/i, name: 'Marriott', confidence: 0.95 },
+      { pattern: /\bhilton\b/i, name: 'Hilton', confidence: 0.95 },
+      { pattern: /\bhyatt\b/i, name: 'Hyatt', confidence: 0.95 }
+    ];
+    
+    for (const { pattern, name, confidence } of knownMerchants) {
+      if (pattern.test(fullText)) {
+        console.log(`[Inference] Merchant: "${name}" (known brand, confidence: ${confidence.toFixed(2)})`);
+        return {
+          value: name,
+          confidence,
+          source: 'inference',
+          rawText: lines.find(l => pattern.test(l))
+        };
+      }
+    }
+    
+    // Fall back to extracting first substantial line
     for (const line of lines.slice(0, 8)) {
       const trimmed = line.trim();
       // Skip lines that are just numbers, dates, or common headers

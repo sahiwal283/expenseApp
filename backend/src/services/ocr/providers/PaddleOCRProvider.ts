@@ -17,7 +17,10 @@ export class PaddleOCRProvider implements OCRProvider {
   
   constructor() {
     this.pythonPath = process.env.PYTHON_PATH || 'python3';
-    this.scriptPath = path.join(__dirname, '../paddleocr_processor.py');
+    // In production, __dirname points to dist/, but Python script is in src/
+    // Use environment variable or fall back to relative path from project root
+    const projectRoot = process.env.PROJECT_ROOT || path.join(__dirname, '../../../..');
+    this.scriptPath = path.join(projectRoot, 'src/services/ocr/paddleocr_processor.py');
   }
   
   /**

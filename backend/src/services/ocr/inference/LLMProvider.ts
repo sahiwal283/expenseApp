@@ -168,7 +168,7 @@ export class LocalLLMProvider extends BaseLLMProvider {
     this.apiUrl = process.env.OLLAMA_API_URL || 'http://192.168.1.173:11434';
     this.model = process.env.OLLAMA_MODEL || 'dolphin-llama3';
     this.temperature = parseFloat(process.env.OLLAMA_TEMPERATURE || '0.1');
-    this.timeout = parseInt(process.env.OLLAMA_TIMEOUT || '30000');
+    this.timeout = parseInt(process.env.OLLAMA_TIMEOUT || '60000'); // Increased from 30s to 60s
   }
   
   /**

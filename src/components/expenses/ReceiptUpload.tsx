@@ -305,7 +305,13 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                           </span>
                         )}
                       </label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.merchant}</div>
+                      <input
+                        type="text"
+                        value={ocrResults.merchant}
+                        onChange={(e) => setOcrResults({ ...ocrResults, merchant: e.target.value })}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Merchant name"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -320,9 +326,14 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                           </span>
                         )}
                       </label>
-                      <div className="bg-white px-3 py-2 rounded-lg border font-semibold text-emerald-600">
-                        ${typeof ocrResults.total === 'number' ? ocrResults.total.toFixed(2) : ocrResults.total}
-                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={ocrResults.total}
+                        onChange={(e) => setOcrResults({ ...ocrResults, total: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-emerald-600"
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -337,7 +348,12 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                           </span>
                         )}
                       </label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.date}</div>
+                      <input
+                        type="date"
+                        value={ocrResults.date}
+                        onChange={(e) => setOcrResults({ ...ocrResults, date: e.target.value })}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -354,11 +370,13 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                           </span>
                         )}
                       </label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 text-sm font-medium rounded-full">
-                          {ocrResults.category}
-                        </span>
-                      </div>
+                      <input
+                        type="text"
+                        value={ocrResults.category}
+                        onChange={(e) => setOcrResults({ ...ocrResults, category: e.target.value })}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Category"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -373,7 +391,13 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                           </span>
                         )}
                       </label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.location}</div>
+                      <input
+                        type="text"
+                        value={ocrResults.location}
+                        onChange={(e) => setOcrResults({ ...ocrResults, location: e.target.value })}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Location"
+                      />
                     </div>
                   </div>
                 </div>

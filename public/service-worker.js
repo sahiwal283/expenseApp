@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.8.3 - PATCH: Fix authentication token key for OCR v2
+// Version: 1.8.4 - PATCH: Major OCR fixes (PaddleOCR path, editable fields, timeout, merchant extraction)
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.8.3';  // BUMPED VERSION to fix auth token
+const CACHE_NAME = 'expenseapp-v1.8.4';  // BUMPED VERSION for OCR improvements
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
