@@ -36,18 +36,36 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   // Load card options and categories
   useEffect(() => {
     (async () => {
+      const defaultCategories = [
+        'Booth / Marketing / Tools',
+        'Travel - Flight',
+        'Accommodation - Hotel',
+        'Transportation - Uber / Lyft / Others',
+        'Parking Fees',
+        'Rental - Car / U-haul',
+        'Meal and Entertainment',
+        'Gas / Fuel',
+        'Show Allowances - Per Diem',
+        'Model',
+        'Shipping Charges',
+        'Other'
+      ];
+      
       if (api.USE_SERVER) {
         try {
           const settings = await api.getSettings();
           setCardOptions(settings.cardOptions || []);
-          setCategories(settings.categoryOptions || []);
-        } catch {
+          setCategories(settings.categoryOptions || defaultCategories);
+          console.log('[ReceiptUpload] Loaded categories:', settings.categoryOptions?.length || defaultCategories.length);
+        } catch (error) {
+          console.error('[ReceiptUpload] Failed to load settings:', error);
           setCardOptions([]);
+          setCategories(defaultCategories);
         }
       } else {
         const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
         setCardOptions(settings.cardOptions || []);
-        setCategories(settings.categoryOptions || []);
+        setCategories(settings.categoryOptions || defaultCategories);
       }
     })();
   }, []);
@@ -430,16 +448,23 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                         )}
                       </label>
                       <select
-                        value={ocrResults.category}
-                        onChange={(e) => setOcrResults({ ...ocrResults, category: e.target.value })}
+                        value={ocrResults.category || ''}
+                        onChange={(e) => {
+                          console.log('[ReceiptUpload] Category changed to:', e.target.value);
+                          setOcrResults({ ...ocrResults, category: e.target.value });
+                        }}
                         className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="">Select category...</option>
-                        {categories.map((cat, idx) => (
-                          <option key={idx} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
+                        {categories.length > 0 ? (
+                          categories.map((cat, idx) => (
+                            <option key={idx} value={cat}>
+                              {cat}
+                            </option>
+                          ))
+                        ) : (
+                          <option disabled>Loading categories...</option>
+                        )}
                       </select>
                     </div>
                   </div>

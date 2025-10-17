@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.3 - PATCH: Event field styling to match old form
+// Version: 1.9.4 - PATCH: Fix category dropdown not showing options
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.3';  // BUMPED VERSION for event field styling
+const CACHE_NAME = 'expenseapp-v1.9.4';  // BUMPED VERSION for category fix
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
