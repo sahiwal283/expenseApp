@@ -25,11 +25,12 @@ export class UserCorrectionService {
     const environment = process.env.NODE_ENV === 'production' ? 'production' : 'sandbox';
     
     // Extract confidence scores from original inference
-    const originalConfidence = correction.originalInference?.overallConfidence || 
+    const inference: any = correction.originalInference;
+    const originalConfidence = inference?.overallConfidence || 
                                 this.calculateAverageConfidence(correction.originalInference);
     
     // Get OCR provider from inference metadata
-    const ocrProvider = correction.originalInference?.provider || 'paddleocr';
+    const ocrProvider = inference?.provider || 'paddleocr';
     
     // Get LLM model version if available
     const llmModelVersion = process.env.OLLAMA_MODEL || null;

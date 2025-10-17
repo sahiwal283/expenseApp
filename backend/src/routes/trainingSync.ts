@@ -11,7 +11,7 @@ import { authorize } from '../middleware/auth';
 const router = Router();
 
 // All routes require admin or developer role
-const adminOnly = authorize(['admin', 'developer']);
+const adminOnly = authorize('admin', 'developer');
 
 /**
  * POST /api/training/sync/export
