@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.11 - PATCH: Remove leading zeros from Total Amount
+// Version: 1.9.12 - PATCH: Add saving indicator to Create Expense button
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.11';  // BUMPED VERSION for leading zero fix
+const CACHE_NAME = 'expenseapp-v1.9.12';  // BUMPED VERSION for saving indicator
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
