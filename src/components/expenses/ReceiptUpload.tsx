@@ -59,7 +59,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       const formData = new FormData();
       formData.append('receipt', file);
       
-      const response = await fetch(`${api.API_BASE || '/api'}/api/ocr/v2/process`, {
+      const response = await fetch('/api/ocr/v2/process', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
