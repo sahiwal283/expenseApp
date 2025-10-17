@@ -17,6 +17,7 @@ import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
 import { ReceiptData } from '../../types/types';
 import { useToast, ToastContainer } from '../common/Toast';
+import { sendOCRCorrection, detectCorrections } from '../../utils/ocrCorrections';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -60,6 +61,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // Approval-specific state (only used when hasApprovalPermission is true)
   const [pushingExpenseId, setPushingExpenseId] = useState<string | null>(null);
   const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(new Set());
+
+  // OCR correction tracking
+  const [ocrV2Data, setOcrV2Data] = useState<any>(null);
 
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
@@ -117,6 +121,40 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           console.log('[ExpenseSubmission] Expense created successfully');
           addToast('✅ Expense saved successfully!', 'success');
         }
+
+        // Track OCR corrections if OCR v2 data exists
+        if (ocrV2Data && ocrV2Data.originalValues) {
+          console.log('[OCR Correction] Checking for user corrections...');
+          const corrections = detectCorrections(ocrV2Data.inference, {
+            merchant: expenseData.merchant,
+            amount: expenseData.amount,
+            date: expenseData.date,
+            category: expenseData.category
+          });
+
+          if (Object.keys(corrections).length > 0) {
+            console.log('[OCR Correction] User made corrections:', corrections);
+            
+            // Send corrections to backend for continuous learning
+            await sendOCRCorrection({
+              originalOCRText: ocrV2Data.ocrText || '',
+              originalInference: ocrV2Data.inference,
+              correctedFields: corrections,
+              notes: `User corrected ${Object.keys(corrections).length} field(s) during expense submission`
+            }).catch(err => {
+              console.error('[OCR Correction] Failed to send correction:', err);
+              // Don't throw - corrections are optional
+            });
+
+            console.log(`[OCR Correction] Sent ${Object.keys(corrections).length} correction(s) to backend`);
+          } else {
+            console.log('[OCR Correction] No corrections detected - OCR was accurate!');
+          }
+
+          // Clear OCR data after processing
+          setOcrV2Data(null);
+        }
+        
         setPendingReceiptFile(null);
         
         console.log('[ExpenseSubmission] Refreshing expense list...');
@@ -191,6 +229,25 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   };
 
   const handleReceiptProcessed = (receiptData: ReceiptData, file: File) => {
+    // Store OCR v2 data for correction tracking
+    if (receiptData.ocrV2Data) {
+      console.log('[OCR Correction] Storing OCR v2 data for correction tracking');
+      setOcrV2Data({
+        ocrText: receiptData.ocrText,
+        inference: receiptData.ocrV2Data.inference,
+        categories: receiptData.ocrV2Data.categories,
+        provider: receiptData.ocrV2Data.ocrProvider,
+        confidence: receiptData.confidence,
+        originalValues: {
+          merchant: receiptData.merchant,
+          amount: receiptData.total,
+          date: receiptData.date,
+          category: receiptData.category,
+          location: receiptData.location
+        }
+      });
+    }
+
     const newExpense: Omit<Expense, 'id'> = {
       userId: user.id,
       tradeShowId: '',

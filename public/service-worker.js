@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.7.0 - MINOR: OCR v2 frontend integration (PaddleOCR + Ollama LLM)
+// Version: 1.8.0 - MINOR: Complete User Correction Feedback Pipeline
 // Date: October 16, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.7.0';  // BUMPED VERSION for OCR v2 frontend integration
+const CACHE_NAME = 'expenseapp-v1.8.0';  // BUMPED VERSION for user correction feedback pipeline
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

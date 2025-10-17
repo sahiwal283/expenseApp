@@ -21,6 +21,19 @@ export class UserCorrectionService {
     if (correction.correctedFields.cardLastFour) fieldsCorrect.push('cardLastFour');
     if (correction.correctedFields.category) fieldsCorrect.push('category');
     
+    // Determine environment (sandbox vs production)
+    const environment = process.env.NODE_ENV === 'production' ? 'production' : 'sandbox';
+    
+    // Extract confidence scores from original inference
+    const originalConfidence = correction.originalInference?.overallConfidence || 
+                                this.calculateAverageConfidence(correction.originalInference);
+    
+    // Get OCR provider from inference metadata
+    const ocrProvider = correction.originalInference?.provider || 'paddleocr';
+    
+    // Get LLM model version if available
+    const llmModelVersion = process.env.OLLAMA_MODEL || null;
+    
     const result = await query(
       `INSERT INTO ocr_corrections (
         expense_id,
@@ -36,15 +49,19 @@ export class UserCorrectionService {
         corrected_category,
         receipt_image_path,
         correction_notes,
-        fields_corrected
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        fields_corrected,
+        environment,
+        llm_model_version,
+        correction_confidence_before,
+        source_expense_environment
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING id`,
       [
         correction.expenseId || null,
         correction.userId,
-        'paddleocr', // TODO: Get from correction or default
+        ocrProvider,
         correction.originalOCRText,
-        0.85, // TODO: Get actual confidence from OCR result
+        originalConfidence,
         JSON.stringify(correction.originalInference),
         correction.correctedFields.merchant || null,
         correction.correctedFields.amount || null,
@@ -53,14 +70,37 @@ export class UserCorrectionService {
         correction.correctedFields.category || null,
         correction.receiptImagePath || null,
         correction.notes || null,
-        fieldsCorrect
+        fieldsCorrect,
+        environment,
+        llmModelVersion,
+        originalConfidence,
+        environment
       ]
     );
     
     const correctionId = result.rows[0].id;
-    console.log(`[UserCorrection] Stored correction ${correctionId} with ${fieldsCorrect.length} field(s) corrected`);
+    console.log(`[UserCorrection] Stored correction ${correctionId} in ${environment} with ${fieldsCorrect.length} field(s) corrected`);
     
     return correctionId;
+  }
+
+  /**
+   * Calculate average confidence from inference object
+   */
+  private calculateAverageConfidence(inference: any): number {
+    if (!inference) return 0;
+    
+    const fields = ['merchant', 'amount', 'date', 'category', 'location'];
+    const confidences: number[] = [];
+    
+    fields.forEach(field => {
+      if (inference[field]?.confidence !== undefined) {
+        confidences.push(inference[field].confidence);
+      }
+    });
+    
+    if (confidences.length === 0) return 0;
+    return confidences.reduce((a, b) => a + b, 0) / confidences.length;
   }
   
   /**
