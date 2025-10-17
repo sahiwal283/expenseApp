@@ -341,32 +341,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   )}
                 </div>
 
-                {/* Category Suggestions */}
-                {ocrResults.ocrV2Data?.categories && ocrResults.ocrV2Data.categories.length > 0 && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      AI-Suggested Categories
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {ocrResults.ocrV2Data.categories.slice(0, 3).map((cat: any, idx: number) => (
-                        <div 
-                          key={idx}
-                          className={`px-3 py-1.5 rounded-lg border-2 ${
-                            idx === 0 
-                              ? 'bg-blue-50 border-blue-300 text-blue-900' 
-                              : 'bg-white border-gray-200 text-gray-700'
-                          }`}
-                        >
-                          <span className="font-medium">{cat.category}</span>
-                          <span className="ml-2 text-xs opacity-75">
-                            {Math.round(cat.confidence * 100)}%
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>

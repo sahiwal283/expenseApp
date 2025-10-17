@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.9 - PATCH: Event/Card side-by-side with smaller dropdowns
+// Version: 1.9.10 - PATCH: Remove AI-Suggested Categories section
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.9';  // BUMPED VERSION for side-by-side fields
+const CACHE_NAME = 'expenseapp-v1.9.10';  // BUMPED VERSION to remove AI category badges
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
