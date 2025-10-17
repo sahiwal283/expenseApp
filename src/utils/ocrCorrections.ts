@@ -60,7 +60,7 @@ export async function sendOCRCorrection(correction: OCRCorrection): Promise<void
 export function detectCorrections(
   originalInference: any,
   submittedData: any
-): { merchant?: string; amount?: number; date?: string; category?: string } {
+): { merchant?: string; amount?: number; date?: string; category?: string; cardLastFour?: string } {
   const corrections: any = {};
 
   if (originalInference?.merchant?.value && 
@@ -85,6 +85,19 @@ export function detectCorrections(
       submittedData.category && 
       originalInference.category.value !== submittedData.category) {
     corrections.category = submittedData.category;
+  }
+
+  // Card correction tracking
+  if (originalInference?.cardLastFour?.value && submittedData.cardUsed) {
+    // Extract last 4 from submitted card (e.g. "Corporate Amex (...1234)" -> "1234")
+    const cardMatch = submittedData.cardUsed.match(/\(\.\.\.(\d{4})\)/);
+    if (cardMatch) {
+      const submittedLastFour = cardMatch[1];
+      if (originalInference.cardLastFour.value !== submittedLastFour) {
+        corrections.cardLastFour = submittedLastFour;
+        console.log(`[OCR Correction] Card changed: ...${originalInference.cardLastFour.value} → ...${submittedLastFour}`);
+      }
+    }
   }
 
   return corrections;

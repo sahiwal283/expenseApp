@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.0 - MINOR: Unified expense submission page (all fields in one place)
+// Version: 1.9.1 - PATCH: OCR card detection with auto-match and correction tracking
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.0';  // BUMPED VERSION for unified expense form
+const CACHE_NAME = 'expenseapp-v1.9.1';  // BUMPED VERSION for card detection
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',

@@ -139,6 +139,18 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       };
 
       setOcrResults(ocrData);
+      
+      // Auto-match card if last 4 digits extracted
+      if (inference.cardLastFour?.value && cardOptions.length > 0) {
+        const lastFour = inference.cardLastFour.value;
+        const matchingCard = cardOptions.find(card => card.lastFour === lastFour);
+        if (matchingCard) {
+          setSelectedCard(`${matchingCard.name} (...${matchingCard.lastFour})`);
+          console.log(`[ReceiptUpload] Auto-matched card: ${matchingCard.name} (...${lastFour})`);
+        } else {
+          console.log(`[ReceiptUpload] Card last 4 extracted (...${lastFour}) but no matching card found in options`);
+        }
+      }
     } catch (error) {
       console.error('OCR v2 Error:', error);
       alert('Failed to process receipt with OCR v2. Please try again or enter manually.');
@@ -496,6 +508,15 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         <CreditCard className="w-4 h-4 inline mr-1" />
                         Card Used
+                        {ocrResults?.ocrV2Data?.inference?.cardLastFour && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.cardLastFour.confidence * 100)}% - OCR found ...{ocrResults.ocrV2Data.inference.cardLastFour.value})
+                          </span>
+                        )}
                       </label>
                       <select
                         value={selectedCard}
