@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.4 - PATCH: Fix category dropdown not showing options
+// Version: 1.9.5 - PATCH: Make Event and Card dropdowns more compact
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.4';  // BUMPED VERSION for category fix
+const CACHE_NAME = 'expenseapp-v1.9.5';  // BUMPED VERSION for compact dropdowns
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
