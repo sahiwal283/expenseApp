@@ -125,11 +125,21 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         // Track OCR corrections if OCR v2 data exists
         if (ocrV2Data && ocrV2Data.originalValues) {
           console.log('[OCR Correction] Checking for user corrections...');
+          console.log('[OCR Correction] Comparing original vs submitted:', {
+            original: ocrV2Data.originalValues,
+            submitted: {
+              merchant: expenseData.merchant,
+              amount: expenseData.amount,
+              date: expenseData.date,
+              category: expenseData.category
+            }
+          });
           const corrections = detectCorrections(ocrV2Data.inference, {
             merchant: expenseData.merchant,
             amount: expenseData.amount,
             date: expenseData.date,
-            category: expenseData.category
+            category: expenseData.category,
+            cardLastFour: (expenseData.cardUsed?.match(/\(\.\.\.(\d{4})\)/) || [])[1] || null
           });
 
           if (Object.keys(corrections).length > 0) {
@@ -234,19 +244,32 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     // Store OCR v2 data for correction tracking
     if (receiptData.ocrV2Data) {
       console.log('[OCR Correction] Storing OCR v2 data for correction tracking');
+      const inference = receiptData.ocrV2Data.inference;
       setOcrV2Data({
         ocrText: receiptData.ocrText,
-        inference: receiptData.ocrV2Data.inference,
+        inference: inference,
         categories: receiptData.ocrV2Data.categories,
         provider: receiptData.ocrV2Data.ocrProvider,
         confidence: receiptData.confidence,
+        // Store the ORIGINAL OCR-extracted values (before user edits)
         originalValues: {
-          merchant: receiptData.merchant,
-          amount: receiptData.total,
-          date: receiptData.date,
-          category: receiptData.category,
-          location: receiptData.location
+          merchant: inference?.merchant?.value || 'Unknown Merchant',
+          amount: inference?.amount?.value || 0,
+          date: inference?.date?.value || '',
+          category: inference?.category?.value || 'Other',
+          location: inference?.location?.value || '',
+          cardLastFour: inference?.cardLastFour?.value || null
         }
+      });
+      console.log('[OCR Correction] Original OCR values stored:', {
+        merchant: inference?.merchant?.value,
+        amount: inference?.amount?.value,
+        category: inference?.category?.value
+      });
+      console.log('[OCR Correction] User submitted values:', {
+        merchant: receiptData.merchant,
+        amount: receiptData.total,
+        category: receiptData.category
       });
     }
 
