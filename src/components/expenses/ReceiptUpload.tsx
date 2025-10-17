@@ -468,20 +468,19 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   <div className="space-y-4">
                     {/* Event Selection */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        <Building2 className="w-4 h-4 inline mr-1" />
-                        Event <span className="text-red-500">*</span>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Trade Show Event *
                       </label>
                       <select
                         value={selectedEvent}
                         onChange={(e) => setSelectedEvent(e.target.value)}
-                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       >
-                        <option value="">Select an event...</option>
+                        <option value="">Select an event</option>
                         {userEvents.map(event => (
                           <option key={event.id} value={event.id}>
-                            {event.name} ({event.startDate} - {event.endDate})
+                            {event.name}
                           </option>
                         ))}
                       </select>

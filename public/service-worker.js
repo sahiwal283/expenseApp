@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.9.2 - PATCH: Category dropdown and remove location field
+// Version: 1.9.3 - PATCH: Event field styling to match old form
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.2';  // BUMPED VERSION for category dropdown
+const CACHE_NAME = 'expenseapp-v1.9.3';  // BUMPED VERSION for event field styling
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
