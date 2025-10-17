@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle } from 'lucide-react';
-import { api } from '../../utils/api';
+import { api, TokenManager } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 
@@ -59,10 +59,15 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       const formData = new FormData();
       formData.append('receipt', file);
       
+      const token = TokenManager.getToken();
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
       const response = await fetch('/api/ocr/v2/process', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });

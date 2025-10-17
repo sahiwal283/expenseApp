@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.8.2 - PATCH: Fix OCR v2 endpoint URL (remove double /api/)
+// Version: 1.8.3 - PATCH: Fix authentication token key for OCR v2
 // Date: October 17, 2025
 //
 // Changes from v1.4.4:
@@ -108,7 +108,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.8.2';  // BUMPED VERSION to fix OCR endpoint URL
+const CACHE_NAME = 'expenseapp-v1.8.3';  // BUMPED VERSION to fix auth token
 const STATIC_CACHE = 'expenseapp-static-v1.4.13';
 const urlsToCache = [
   '/',
