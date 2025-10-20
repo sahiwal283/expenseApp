@@ -89,13 +89,8 @@ def process_receipt(image_path):
     start_time = time.time()
     
     try:
-        # Initialize PaddleOCR (use_angle_cls=True for rotated text)
-        ocr = PaddleOCR(
-            use_angle_cls=True,
-            lang='en',
-            show_log=False,
-            use_gpu=False  # Set to True if GPU available
-        )
+        # Initialize PaddleOCR with minimal parameters (server has older version)
+        ocr = PaddleOCR(lang='en')
         
         # Preprocess image
         preprocessed = preprocess_image(image_path)

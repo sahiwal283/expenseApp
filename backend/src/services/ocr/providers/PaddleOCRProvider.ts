@@ -133,6 +133,7 @@ export class PaddleOCRProvider implements OCRProvider {
       
       // Timeout after 45 seconds (first run may be slow due to model loading)
       setTimeout(() => {
+        console.warn('[PaddleOCR] Processing timeout reached (45s), killing Python process');
         python.kill();
         reject(new Error('PaddleOCR processing timeout (45s)'));
       }, 45000);
@@ -152,24 +153,42 @@ export class PaddleOCRProvider implements OCRProvider {
       
       // Try to run Python and check if PaddleOCR is installed
       const result = await new Promise<boolean>((resolve) => {
+        console.log('[PaddleOCR] Testing availability with command:', this.pythonPath, ['-c', 'import paddleocr; print("ok")']);
         const python = spawn(this.pythonPath, ['-c', 'import paddleocr; print("ok")']);
         
         let success = false;
+        let stdoutData = '';
+        let stderrData = '';
+        
         python.stdout.on('data', (data) => {
-          if (data.toString().trim() === 'ok') {
+          const text = data.toString();
+          stdoutData += text;
+          console.log('[PaddleOCR] stdout:', JSON.stringify(text.trim()));
+          if (text.trim() === 'ok') {
             success = true;
+            console.log('[PaddleOCR] Match found! Setting success = true');
           }
         });
         
-        python.on('close', () => {
+        python.stderr.on('data', (data) => {
+          stderrData += data.toString();
+          console.log('[PaddleOCR] stderr:', data.toString().slice(0, 200));
+        });
+        
+        python.on('close', (code) => {
+          console.log('[PaddleOCR] Process closed with code:', code);
+          console.log('[PaddleOCR] Final success value:', success);
+          console.log('[PaddleOCR] Full stdout:', JSON.stringify(stdoutData.trim()));
           resolve(success);
         });
         
-        python.on('error', () => {
+        python.on('error', (err) => {
+          console.error('[PaddleOCR] Spawn error:', err.message);
           resolve(false);
         });
         
         setTimeout(() => {
+          console.warn('[PaddleOCR] Timeout reached (15s), killing process');
           python.kill();
           resolve(false);
         }, 15000); // Increased from 5s to 15s - PaddleOCR takes ~8s to import models
