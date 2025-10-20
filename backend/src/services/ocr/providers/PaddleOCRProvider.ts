@@ -131,11 +131,11 @@ export class PaddleOCRProvider implements OCRProvider {
         reject(new Error(`Failed to start Python process: ${error.message}`));
       });
       
-      // Timeout after 30 seconds
+      // Timeout after 45 seconds (first run may be slow due to model loading)
       setTimeout(() => {
         python.kill();
-        reject(new Error('PaddleOCR processing timeout (30s)'));
-      }, 30000);
+        reject(new Error('PaddleOCR processing timeout (45s)'));
+      }, 45000);
     });
   }
   
@@ -172,7 +172,7 @@ export class PaddleOCRProvider implements OCRProvider {
         setTimeout(() => {
           python.kill();
           resolve(false);
-        }, 5000);
+        }, 15000); // Increased from 5s to 15s - PaddleOCR takes ~8s to import models
       });
       
       if (result) {
