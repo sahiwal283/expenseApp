@@ -155,6 +155,15 @@ class AdvancedImagePreprocessor:
             2    # Constant subtracted from mean
         )
         
+        # Check if image is inverted (more white pixels than black)
+        # Tesseract expects black text on white background
+        white_pixels = np.sum(binary == 255)
+        black_pixels = np.sum(binary == 0)
+        
+        if black_pixels > white_pixels:
+            print("[Preprocessor] Inverting binary image (detected white text on black background)")
+            binary = cv2.bitwise_not(binary)
+        
         return binary
     
     def crop_borders(self, image: np.ndarray) -> np.ndarray:
@@ -258,9 +267,10 @@ class AdvancedImagePreprocessor:
         gray = self.sharpen(gray)
         metadata["steps_applied"].append("sharpening")
         
-        # Step 8: Adaptive threshold (binarization)
-        binary = self.adaptive_threshold(gray)
-        metadata["steps_applied"].append("adaptive_threshold")
+        # Step 8: Simple Otsu's thresholding (more reliable than adaptive for receipts)
+        # Otsu's method automatically determines optimal threshold
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        metadata["steps_applied"].append("otsu_threshold")
         
         metadata["final_size"] = {"width": binary.shape[1], "height": binary.shape[0]}
         
@@ -330,28 +340,27 @@ class TesseractOCR:
             confidences = [int(conf) for conf in data['conf'] if int(conf) > 0]
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
             
-            # Extract full text
-            text = pytesseract.image_to_string(
-                image,
-                lang=self.language,
-                config=custom_config
-            )
-            
-            # Extract per-line confidence
+            # Extract per-line confidence and build full text
             lines = []
+            all_words = []
             current_line = []
             current_line_conf = []
-            current_block = -1
+            current_line_num = -1
             
             for i in range(len(data['text'])):
-                if data['block_num'][i] != current_block:
+                # Group by line_num for proper line extraction
+                line_num = data['line_num'][i]
+                
+                if line_num != current_line_num:
+                    # Save previous line
                     if current_line:
                         line_text = ' '.join(current_line)
                         line_conf = sum(current_line_conf) / len(current_line_conf) if current_line_conf else 0
                         lines.append({"text": line_text, "confidence": line_conf / 100})
+                    # Start new line
                     current_line = []
                     current_line_conf = []
-                    current_block = data['block_num'][i]
+                    current_line_num = line_num
                 
                 word = data['text'][i].strip()
                 conf = int(data['conf'][i])
@@ -359,12 +368,16 @@ class TesseractOCR:
                 if word and conf > 0:
                     current_line.append(word)
                     current_line_conf.append(conf)
+                    all_words.append(word)
             
             # Add last line
             if current_line:
                 line_text = ' '.join(current_line)
                 line_conf = sum(current_line_conf) / len(current_line_conf) if current_line_conf else 0
                 lines.append({"text": line_text, "confidence": line_conf / 100})
+            
+            # Build full text from lines (preserves structure better than joining all words)
+            text = '\n'.join([line['text'] for line in lines])
             
             return {
                 "text": text.strip(),
