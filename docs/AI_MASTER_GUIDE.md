@@ -1,18 +1,19 @@
 # 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.11.0 (Sandbox - Advanced Tesseract OCR + AI Enhancement)
+**Version:** 1.13.1 (Sandbox - Model Training Dashboard + AI Training Pipeline)
 **Last Updated:** October 21, 2025  
-**Status:** ✅ Production Active | 🔬 v1.11.0 in Sandbox Development
+**Status:** ✅ Production Active | 🔬 v1.13.1 in Sandbox Development
 
 **Production Deployment:** October 16, 2025
 - **Backend:** v1.5.1 (Container 201)
 - **Frontend:** v1.4.13 (Container 202)
 
-**Sandbox Deployment:** October 21, 2025 (Latest: v1.11.0)
-- **Backend:** v1.11.0 (Container 203) - **Advanced Tesseract OCR + Ollama AI**
-- **Frontend:** v1.11.0 (Container 203) - OCR v2 with field enhancements
+**Sandbox Deployment:** October 21, 2025 (Latest: v1.13.1)
+- **Backend:** v1.13.1 (Container 203) - **Model Training Dashboard + AI Pipeline**
+- **Frontend:** v1.13.1 (Container 203) - Training analytics and monitoring
 - **Branch:** `v1.6.0`
-- **OCR Status:** ✅ **Optimized Tesseract with 8-step preprocessing (92%+ accuracy)**
+- **OCR Status:** ✅ **Optimized Tesseract with 8-step preprocessing**
 - **AI Enhancement:** ✅ **Ollama integration for low-confidence fields**
+- **Training Pipeline:** ✅ **Adaptive learning with cross-environment sync**
 - **Hardware:** Sandy Bridge compatible (AVX-only, no AVX2 required)
 
 ---
@@ -96,6 +97,56 @@ If you see different credentials between sandbox and production, **this is inten
 - Fix: Run ALTER TABLE to update constraint
 
 **LESSON:** Schema constraints and code must stay in sync!
+
+### 🔥 CRITICAL: AI Training Pipeline Database Setup
+
+**⚠️ TRAINING PIPELINE REQUIRES SPECIFIC DATABASE TABLES!**
+
+As of **v1.11.0+**, the AI training pipeline requires `ocr_corrections` table to exist. Without it, the training system cannot store user corrections and the Model Training Dashboard will show no data.
+
+**Required Database Migrations:**
+
+The following migrations MUST be run before the training pipeline will work:
+- `006_create_ocr_corrections_table.sql` - Creates main corrections table
+- `007_enhance_ocr_corrections_for_cross_environment.sql` - Adds training features
+
+**How to Verify Training Tables Exist:**
+
+```bash
+# SSH into container
+ssh root@192.168.1.190
+pct exec 203 -- su - postgres -c 'psql -d expense_app -c "\dt"'
+
+# You should see:
+# - ocr_corrections (required for training)
+# - expenses
+# - users
+# - events
+# etc.
+```
+
+**How to Run Missing Migrations:**
+
+If `ocr_corrections` table is missing:
+
+```bash
+# Run migrations manually
+ssh root@192.168.1.190
+pct exec 203 -- su - postgres -c 'psql -d expense_app -f /opt/expenseApp/backend/src/database/migrations/006_create_ocr_corrections_table.sql'
+pct exec 203 -- su - postgres -c 'psql -d expense_app -f /opt/expenseApp/backend/src/database/migrations/007_enhance_ocr_corrections_for_cross_environment.sql'
+
+# Restart backend to pick up changes
+pct exec 203 -- systemctl restart expenseapp-backend
+```
+
+**Common Symptoms of Missing Training Tables:**
+
+- ❌ Model Training Dashboard shows "0 corrections" despite uploads
+- ❌ API errors: `relation "ocr_corrections" does not exist`
+- ❌ Accuracy metrics all show 100% / 0%
+- ❌ No learned patterns appear
+
+**IMPORTANT:** If you deploy a new container or reset the database, you MUST re-run these migrations!
 
 ### 🔥 CRITICAL: Backend Deployment Path Case Sensitivity
 
@@ -245,7 +296,7 @@ git checkout -b v1.3.0  # Again, just the version number
 ```
 
 **Current Working Branch:**
-- `v1.2.0` (as of October 16, 2025)
+- `v1.6.0` (as of October 21, 2025) - Model Training Dashboard + AI Pipeline
 - **ALL current sandbox work should go on THIS branch**
 - Do NOT create `v1.2.1`, `v1.2.2`, etc. for individual changes
 - Only create a new branch after this one is merged to production
@@ -733,8 +784,103 @@ backend/src/services/ocr/
   - Average confidence when corrections needed
 - `GET /api/ocr/v2/corrections/export` - Export for ML training
 
+**Model Training (Developer):**
+- `GET /api/training/stats` - Training system statistics
+  - Total corrections, unique users, date range
+  - Corrections by field (merchant, amount, date, etc.)
+  - Corrections by OCR provider
+  - Recent trend data (last 30 days)
+- `GET /api/training/patterns` - Learned patterns
+  - Pattern-based corrections (e.g., "WALMAR" → "Walmart")
+  - Frequency and confidence data
+  - Filter by field and minimum frequency
+- `GET /api/ocr/v2/accuracy` - Field accuracy metrics
+  - Per-field accuracy rates
+  - Historical correction counts
+  - Common issues and warnings
+- `POST /api/training/refresh` - Force pattern refresh
+  - Manually trigger pattern learning update
+  - Rebuilds inference engine cache
+
 **Legacy (Unchanged):**
 - `POST /api/expenses/ocr` - Legacy Tesseract endpoint (backward compatible)
+
+---
+
+### 📊 Model Training Dashboard (v1.13.0+)
+
+**Location:** Developer → Model Training (Developer role required)
+
+The Model Training Dashboard provides real-time visibility into the AI training pipeline, showing how user corrections improve OCR accuracy over time.
+
+#### Dashboard Tabs
+
+**1. Overview Tab**
+- **Corrections by Field**: Bar charts showing which fields users correct most
+- **Recent Trend**: 30-day timeline of correction activity
+- **Training Statistics**: Total corrections, unique users, date ranges
+- **System Status**: OCR provider distribution, environment info
+
+**2. Learned Patterns Tab** (NOT SHOWING YET - No patterns learned)
+- **Pattern List**: Shows learned corrections (e.g., "WALMAR" → "Walmart")
+- **Frequency & Confidence**: How often each pattern appears
+- **Filters**: Filter by field (merchant, amount, etc.) and minimum frequency
+- **Auto-Applied**: Patterns are automatically applied during OCR inference
+
+**3. Accuracy Metrics Tab**
+- **Per-Field Accuracy**: Merchant, Amount, Date, Category, CardLastFour
+  - Current accuracy percentage
+  - Total extractions vs corrections
+  - Common issues for each field
+- **Target Goals**: Progress bars showing accuracy targets
+  - Merchant: 85%, Amount: 95%, Date: 90%, Category: 75%
+- **Improvement Tips**: Suggestions for improving accuracy
+
+#### Key Features
+
+**Force Refresh Button:**
+- Manually triggers pattern learning refresh
+- Rebuilds inference engine with latest corrections
+- Normally runs every 24 hours automatically
+- Use when: You've made many corrections and want immediate improvements
+
+**Export Functions:**
+- **Export JSON**: Download training data for external analysis
+- **Export CSV**: Spreadsheet-compatible format for reporting
+
+#### How to Use
+
+1. **Upload receipts** via Expenses → Add Expense → Upload Receipt
+2. **Review OCR results** and correct any mistakes
+3. **Corrections auto-save** to `ocr_corrections` table
+4. **View dashboard** to see correction patterns emerge
+5. **After 20-30 corrections**, accuracy improves significantly
+6. **Force refresh** if you want immediate pattern application
+
+#### Database Requirements
+
+⚠️ **CRITICAL**: Dashboard will show no data without these tables:
+- `ocr_corrections` (created by migration 006)
+- Enhanced columns (created by migration 007)
+
+See "AI Training Pipeline Database Setup" section above for migration instructions.
+
+#### Common Issues
+
+**Dashboard shows "0 corrections":**
+- ✅ Verify `ocr_corrections` table exists: `\dt` in psql
+- ✅ Check receipt uploads are using `/api/ocr/v2/process` endpoint
+- ✅ Ensure corrections are being saved (check browser console)
+- ✅ Restart backend after running migrations
+
+**"100% accuracy" with no data:**
+- This is correct! 0 corrections / 0 attempts = 100% (no errors yet)
+- Upload receipts and make corrections to populate data
+
+**Patterns not appearing:**
+- Patterns require minimum frequency (default: 3 occurrences)
+- Make multiple similar corrections (e.g., "WALMAR" → "Walmart" 3+ times)
+- Click "Force Refresh" to rebuild pattern cache
 
 ---
 
