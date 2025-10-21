@@ -884,6 +884,92 @@ See "AI Training Pipeline Database Setup" section above for migration instructio
 
 ---
 
+### ⚠️ CRITICAL: Cross-Environment Training Limitations
+
+**IMPORTANT: Sandbox and Production train INDEPENDENTLY**
+
+#### How It Actually Works
+
+Each environment has its **own separate database** and trains **only from its own corrections**:
+
+**Sandbox (Container 203):**
+- Has its own PostgreSQL database
+- `AdaptiveInferenceEngine` queries **sandbox's** `ocr_corrections` table only
+- Patterns learned from sandbox corrections improve **sandbox OCR only**
+- Refreshes patterns every 24 hours from **local** corrections
+
+**Production (Container 201):**
+- Has its own PostgreSQL database
+- `AdaptiveInferenceEngine` queries **production's** `ocr_corrections` table only  
+- Patterns learned from production corrections improve **production OCR only**
+- Refreshes patterns every 24 hours from **local** corrections
+
+**The `environment` column in `ocr_corrections` table:**
+- This is metadata for tracking purposes (tags corrections as 'sandbox' or 'production')
+- It does NOT enable cross-environment sync
+- It's used for manual export/reporting
+
+#### What Does NOT Work Automatically
+
+❌ **Sandbox corrections do NOT automatically improve production OCR**
+❌ **No automated sync between environments**  
+❌ **Training in sandbox does NOT train production models**
+
+#### What You CAN Do (Manual Cross-Environment Sync)
+
+**Option 1: Manual Export/Import** (requires manual steps)
+```bash
+# In sandbox: Export corrections
+POST /api/training/sync/export {
+  "includeSandbox": true,
+  "minQualityScore": 0.7
+}
+# Creates JSONL file in /opt/expenseApp/training_data/
+
+# Manually transfer file to production server
+# In production: Would need to import (NOT IMPLEMENTED YET)
+```
+
+**Option 2: Shared Learning Strategy** (recommended workflow)
+1. Test and refine in sandbox
+2. When satisfied with sandbox accuracy, deploy same code to production
+3. Production will learn from its own corrections independently
+4. Export high-quality sandbox corrections for production seeding (manual)
+
+**Option 3: Build Automated Sync** (not implemented, would require)
+- Scheduled job (cron) to replicate corrections
+- API endpoint for production to pull sandbox corrections  
+- Quality filtering to prevent bad data
+- One-way sync: sandbox → production
+
+#### Why Separate Training?
+
+**Benefits of independent training:**
+- ✅ **Data Isolation**: Sandbox bugs don't corrupt production patterns
+- ✅ **Quality Control**: Only real user corrections train production
+- ✅ **Environment Fidelity**: Each environment optimizes for its own use case
+- ✅ **Safe Testing**: Experiment with training in sandbox without risk
+
+**Drawbacks:**
+- ⚠️ Sandbox corrections don't immediately benefit production
+- ⚠️ Must retrain production separately from real user data
+- ⚠️ Manual export/import needed for cross-environment learning
+
+#### Recommendation
+
+**For best results:**
+1. Use sandbox to test OCR accuracy and make corrections
+2. Deploy tested code to production
+3. Let production learn from **real user corrections** (gold standard)
+4. Optionally: Export high-quality sandbox patterns and manually import to production as "seed data"
+
+**Do NOT:**
+- Assume sandbox training will improve production automatically
+- Expect patterns to sync between environments without manual intervention
+- Deploy to production expecting it to have learned from sandbox
+
+---
+
 ### 📸 Advanced OCR Preprocessing Pipeline (v1.11.0)
 
 #### Overview
