@@ -13,6 +13,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { ocrService } from '../services/ocr/OCRService';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
+import { FieldWarningService } from '../services/ocr/FieldWarningService';
 
 const router = Router();
 
@@ -73,6 +74,9 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     
     // Process receipt with enhanced OCR
     const result = await ocrService.processReceipt(req.file.path);
+    
+    // Analyze fields for potential issues
+    const fieldWarnings = FieldWarningService.analyzeFields(result.inference, result.ocr.text);
     
     // Prepare response
     const response = {
@@ -138,12 +142,18 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
         reviewReasons: result.reviewReasons
       },
       
+      // Field warnings (NEW)
+      warnings: fieldWarnings,
+      
       // Receipt URL
       receiptUrl: `/uploads/${req.file.filename}`
     };
     
     console.log(`[OCR v2] Success - Overall confidence: ${result.overallConfidence.toFixed(2)}`);
     console.log(`[OCR v2] Needs review: ${result.needsReview}${result.reviewReasons ? ` (${result.reviewReasons.join(', ')})` : ''}`);
+    if (fieldWarnings.length > 0) {
+      console.log(`[OCR v2] Field warnings: ${fieldWarnings.map(w => `${w.field} (${w.severity}): ${w.reason}`).join('; ')}`);
+    }
     
     res.json(response);
     
@@ -274,6 +284,50 @@ router.get('/config', asyncHandler(async (req: AuthRequest, res) => {
   res.json({
     success: true,
     config
+  });
+}));
+
+/**
+ * GET /api/ocr/v2/accuracy
+ * 
+ * Get historical accuracy metrics for OCR fields (admin/developer only)
+ */
+router.get('/accuracy', asyncHandler(async (req: AuthRequest, res) => {
+  const userRole = req.user?.role;
+  
+  if (userRole !== 'admin' && userRole !== 'developer') {
+    return res.status(403).json({ error: 'Admin or developer access required' });
+  }
+  
+  const { field, days } = req.query;
+  const daysBack = parseInt(days as string || '30');
+  
+  // If specific field requested
+  if (field) {
+    const db = req.app.get('db');
+    const accuracy = await FieldWarningService.getHistoricalAccuracy(db, field as string, daysBack);
+    return res.json({
+      success: true,
+      field,
+      daysBack,
+      ...accuracy
+    });
+  }
+  
+  // Otherwise, get accuracy for all fields
+  const db = req.app.get('db');
+  const fields = ['merchant', 'amount', 'date', 'category', 'cardLastFour'];
+  const accuracyData = await Promise.all(
+    fields.map(async (f) => ({
+      field: f,
+      ...(await FieldWarningService.getHistoricalAccuracy(db, f, daysBack))
+    }))
+  );
+  
+  res.json({
+    success: true,
+    daysBack,
+    fields: accuracyData
   });
 }));
 

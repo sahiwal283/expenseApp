@@ -68,12 +68,12 @@ class AdvancedImagePreprocessor:
         new_width = int(width * scale_factor)
         new_height = int(height * scale_factor)
         
-        print(f"[Preprocessor] Normalizing DPI: {current_dpi} -> {self.target_dpi} (scale: {scale_factor:.2f}x)")
+        print(f"[Preprocessor] Normalizing DPI: {current_dpi} -> {self.target_dpi} (scale: {scale_factor:.2f}x)", file=sys.stderr)
         return cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
     
     def denoise(self, image: np.ndarray) -> np.ndarray:
         """Remove noise while preserving text edges"""
-        print("[Preprocessor] Applying bilateral denoise filter...")
+        print("[Preprocessor] Applying bilateral denoise filter...", file=sys.stderr)
         # Bilateral filter: reduces noise while keeping edges sharp
         denoised = cv2.bilateralFilter(image, 9, 75, 75)
         
@@ -85,7 +85,7 @@ class AdvancedImagePreprocessor:
     
     def deskew(self, image: np.ndarray) -> Tuple[np.ndarray, float]:
         """Correct image rotation/skew"""
-        print("[Preprocessor] Detecting and correcting skew...")
+        print("[Preprocessor] Detecting and correcting skew...", file=sys.stderr)
         
         # Convert to grayscale if needed
         gray = image if len(image.shape) == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -97,7 +97,7 @@ class AdvancedImagePreprocessor:
         lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
         
         if lines is None or len(lines) == 0:
-            print("[Preprocessor] No skew detected")
+            print("[Preprocessor] No skew detected", file=sys.stderr)
             return image, 0.0
         
         # Calculate average angle
@@ -115,10 +115,10 @@ class AdvancedImagePreprocessor:
         
         # Only deskew if angle is significant
         if abs(median_angle) < 0.5:
-            print(f"[Preprocessor] Skew negligible: {median_angle:.2f}°")
+            print(f"[Preprocessor] Skew negligible: {median_angle:.2f}°", file=sys.stderr)
             return image, median_angle
         
-        print(f"[Preprocessor] Correcting skew: {median_angle:.2f}°")
+        print(f"[Preprocessor] Correcting skew: {median_angle:.2f}°", file=sys.stderr)
         
         # Rotate image
         height, width = image.shape[:2]
@@ -141,7 +141,7 @@ class AdvancedImagePreprocessor:
     
     def adaptive_threshold(self, image: np.ndarray) -> np.ndarray:
         """Apply adaptive thresholding for binarization"""
-        print("[Preprocessor] Applying adaptive thresholding...")
+        print("[Preprocessor] Applying adaptive thresholding...", file=sys.stderr)
         
         # Convert to grayscale if needed
         gray = image if len(image.shape) == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -161,14 +161,14 @@ class AdvancedImagePreprocessor:
         black_pixels = np.sum(binary == 0)
         
         if black_pixels > white_pixels:
-            print("[Preprocessor] Inverting binary image (detected white text on black background)")
+            print("[Preprocessor] Inverting binary image (detected white text on black background)", file=sys.stderr)
             binary = cv2.bitwise_not(binary)
         
         return binary
     
     def crop_borders(self, image: np.ndarray) -> np.ndarray:
         """Remove dark borders/edges from image"""
-        print("[Preprocessor] Cropping borders...")
+        print("[Preprocessor] Cropping borders...", file=sys.stderr)
         
         gray = image if len(image.shape) == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
@@ -191,13 +191,13 @@ class AdvancedImagePreprocessor:
         h = min(image.shape[0] - y, h + 2 * margin)
         
         cropped = image[y:y+h, x:x+w]
-        print(f"[Preprocessor] Cropped to {w}x{h} (from {image.shape[1]}x{image.shape[0]})")
+        print(f"[Preprocessor] Cropped to {w}x{h} (from {image.shape[1]}x{image.shape[0]})", file=sys.stderr)
         
         return cropped
     
     def enhance_contrast(self, image: np.ndarray) -> np.ndarray:
         """Enhance contrast using CLAHE"""
-        print("[Preprocessor] Enhancing contrast with CLAHE...")
+        print("[Preprocessor] Enhancing contrast with CLAHE...", file=sys.stderr)
         
         gray = image if len(image.shape) == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
@@ -209,7 +209,7 @@ class AdvancedImagePreprocessor:
     
     def sharpen(self, image: np.ndarray) -> np.ndarray:
         """Sharpen image to enhance text edges"""
-        print("[Preprocessor] Sharpening image...")
+        print("[Preprocessor] Sharpening image...", file=sys.stderr)
         
         kernel = np.array([[-1, -1, -1],
                            [-1,  9, -1],
@@ -226,7 +226,7 @@ class AdvancedImagePreprocessor:
             processed_image: Optimized image for OCR
             metadata: Processing metadata (DPI, skew, dimensions, etc.)
         """
-        print(f"[Preprocessor] Loading image: {image_path}")
+        print(f"[Preprocessor] Loading image: {image_path}", file=sys.stderr)
         
         # Load image
         image = cv2.imread(image_path)
@@ -278,10 +278,10 @@ class AdvancedImagePreprocessor:
         if save_debug:
             debug_path = image_path.replace('.', '_preprocessed.')
             cv2.imwrite(debug_path, binary)
-            print(f"[Preprocessor] Saved debug image: {debug_path}")
+            print(f"[Preprocessor] Saved debug image: {debug_path}", file=sys.stderr)
             metadata["debug_image"] = debug_path
         
-        print(f"[Preprocessor] Pipeline complete: {len(metadata['steps_applied'])} steps applied")
+        print(f"[Preprocessor] Pipeline complete: {len(metadata['steps_applied'])} steps applied", file=sys.stderr)
         
         return binary, metadata
 
@@ -320,7 +320,7 @@ class TesseractOCR:
         Returns:
             dict with text, confidence, and metadata
         """
-        print(f"[Tesseract] Running OCR with PSM mode {psm_mode}...")
+        print(f"[Tesseract] Running OCR with PSM mode {psm_mode}...", file=sys.stderr)
         
         # Custom config for receipts
         custom_config = f'--psm {psm_mode} -c preserve_interword_spaces=1'
@@ -389,7 +389,7 @@ class TesseractOCR:
             }
             
         except Exception as e:
-            print(f"[Tesseract] OCR error: {str(e)}")
+            print(f"[Tesseract] OCR error: {str(e)}", file=sys.stderr)
             return {
                 "text": "",
                 "confidence": 0.0,
@@ -411,7 +411,7 @@ class TesseractOCR:
                 best_confidence = result['confidence']
                 best_result = result
         
-        print(f"[Tesseract] Best PSM mode: {best_result['psm_mode']} (confidence: {best_confidence:.2%})")
+        print(f"[Tesseract] Best PSM mode: {best_result['psm_mode']} (confidence: {best_confidence:.2%})", file=sys.stderr)
         return best_result
 
 

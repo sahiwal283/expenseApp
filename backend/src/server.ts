@@ -13,6 +13,7 @@ import devDashboardRoutes from './routes/devDashboard';
 import quickActionsRoutes from './routes/quickActions';
 import syncRoutes from './routes/sync';
 import ocrV2Routes from './routes/ocrV2';
+import ocrTrainingRoutes from './routes/ocrTraining';
 import learningAnalyticsRoutes from './routes/learningAnalytics';
 import modelRetrainingRoutes from './routes/modelRetraining';
 import trainingSyncRoutes from './routes/trainingSync';
@@ -51,6 +52,7 @@ app.use('/api/dev-dashboard', devDashboardRoutes);
 app.use('/api/quick-actions', quickActionsRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/ocr/v2', ocrV2Routes); // Enhanced OCR with field inference
+app.use('/api/training', ocrTrainingRoutes); // AI training & learning management
 app.use('/api/learning', learningAnalyticsRoutes); // Continuous learning analytics
 app.use('/api/retraining', modelRetrainingRoutes); // Model retraining pipeline
 app.use('/api/training/sync', trainingSyncRoutes); // Cross-environment training data sync

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, Clock, Cpu, Database, HardDrive,
-  RefreshCw, Search, Server, TrendingUp, Users, Eye, CheckCircle2, X, Filter, AlertCircle, Code, Zap
+  RefreshCw, Search, Server, TrendingUp, Users, Eye, CheckCircle2, X, Filter, AlertCircle, Code, Zap, Brain
 } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
+import { ModelTrainingDashboard } from '../dev/ModelTrainingDashboard';
 
 interface DevDashboardProps {
   user: User;
@@ -234,6 +235,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'metrics', label: 'Metrics', icon: Cpu },
+              { id: 'training', label: 'Model Training', icon: Brain },
               { id: 'logs', label: 'Audit Logs', icon: Activity },
               { id: 'sessions', label: 'Sessions', icon: Users },
               { id: 'api', label: 'API Analytics', icon: Zap },
@@ -388,6 +390,11 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Model Training Tab */}
+          {activeTab === 'training' && (
+            <ModelTrainingDashboard />
           )}
 
           {/* Metrics Tab */}

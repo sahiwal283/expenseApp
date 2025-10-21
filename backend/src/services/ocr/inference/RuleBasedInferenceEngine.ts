@@ -25,7 +25,7 @@ export class RuleBasedInferenceEngine implements InferenceEngine {
       weight: 1.0
     },
     'Transportation - Uber / Lyft / Others': {
-      keywords: ['uber', 'lyft', 'taxi', 'cab', 'rideshare', 'ride-share', 'transport'],
+      keywords: ['uber', 'lyft', 'taxi', 'cab', 'rideshare', 'ride-share', 'transport', 'your ride', 'trip with', 'pickup', 'drop-off', 'dropoff', 'driver'],
       weight: 1.0
     },
     'Parking Fees': {
@@ -99,7 +99,25 @@ export class RuleBasedInferenceEngine implements InferenceEngine {
   private extractMerchant(lines: string[], ocrConfidence: number): FieldValue<string> {
     const fullText = lines.join(' ').toLowerCase();
     
-    // Check for known brands/merchants in entire text
+    // Check for contextual patterns (even if brand name isn't explicit)
+    const contextualMerchants = [
+      { pattern: /your ride to|trip with|pickup.*drop[-\s]?off/i, name: 'Uber', confidence: 0.92 },
+      { pattern: /lyft ride|lyft trip/i, name: 'Lyft', confidence: 0.93 }
+    ];
+    
+    for (const { pattern, name, confidence } of contextualMerchants) {
+      if (pattern.test(fullText)) {
+        console.log(`[Inference] Merchant: "${name}" (contextual match, confidence: ${confidence.toFixed(2)})`);
+        return {
+          value: name,
+          confidence,
+          source: 'inference',
+          rawText: 'Detected from receipt context'
+        };
+      }
+    }
+    
+    // Check for known brands/merchants explicitly mentioned
     const knownMerchants = [
       { pattern: /\blyft\b/i, name: 'Lyft', confidence: 0.95 },
       { pattern: /\buber\b/i, name: 'Uber', confidence: 0.95 },

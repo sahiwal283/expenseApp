@@ -29,10 +29,16 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [description, setDescription] = useState('');
   const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string}>>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [fieldWarnings, setFieldWarnings] = useState<Array<{field: string; reason: string; severity: string; suggestedAction?: string}>>([]);
   
   // Filter events
   const activeEvents = filterActiveEvents(events);
   const userEvents = filterEventsByParticipation(activeEvents, user);
+  
+  // Helper: Get warnings for a specific field
+  const getFieldWarnings = (fieldName: string) => {
+    return fieldWarnings.filter(w => w.field === fieldName);
+  };
   
   // Load card options and categories
   useEffect(() => {
@@ -139,24 +145,33 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       
       console.log('[OCR v2] Response:', result);
       
+      // Store field warnings
+      if (result.warnings && result.warnings.length > 0) {
+        console.log('[OCR v2] Field warnings:', result.warnings);
+        setFieldWarnings(result.warnings);
+      } else {
+        setFieldWarnings([]);
+      }
+      
       // Transform OCR v2 response to match expected format
-      const inference = result.inference || {};
+      // Backend returns 'fields' (not 'inference')
+      const fields = result.fields || {};
       const ocrData = {
         file: file,
-        total: parseFloat(inference.amount?.value) || 0,
-        merchant: inference.merchant?.value || 'Unknown Merchant',
-        date: inference.date?.value || getTodayLocalDateString(),
-        location: inference.location?.value || 'Unknown Location',
-        category: inference.category?.value || result.categories?.[0]?.category || 'Other',
+        total: parseFloat(fields.amount?.value) || 0,
+        merchant: fields.merchant?.value || 'Unknown Merchant',
+        date: fields.date?.value || getTodayLocalDateString(),
+        location: fields.location?.value || 'Unknown Location',
+        category: fields.category?.value || result.categories?.[0]?.category || 'Other',
         ocrText: result.ocr?.text || '',
-        confidence: result.overallConfidence || result.ocr?.confidence || 0,
+        confidence: result.quality?.overallConfidence || result.ocr?.confidence || 0,
         receiptFile: file,
         // Store enhanced OCR v2 data for corrections
         ocrV2Data: {
-          inference,
+          inference: fields, // Store as 'inference' for correction tracking
           categories: result.categories || [],
-          needsReview: result.needsReview,
-          reviewReasons: result.reviewReasons || [],
+          needsReview: result.quality?.needsReview,
+          reviewReasons: result.quality?.reviewReasons || [],
           ocrProvider: result.ocr?.provider
         }
       };
@@ -164,8 +179,8 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       setOcrResults(ocrData);
       
       // Auto-match card if last 4 digits extracted
-      if (inference.cardLastFour?.value && cardOptions.length > 0) {
-        const lastFour = inference.cardLastFour.value;
+      if (fields.cardLastFour?.value && cardOptions.length > 0) {
+        const lastFour = fields.cardLastFour.value;
         const matchingCard = cardOptions.find(card => card.lastFour === lastFour);
         if (matchingCard) {
           setSelectedCard(`${matchingCard.name} (...${matchingCard.lastFour})`);
@@ -338,12 +353,17 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                       </span>
                     )}
                   </div>
-                  {ocrResults.ocrV2Data?.needsReview && (
-                    <div className="flex items-center text-orange-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      Review recommended
-                    </div>
-                  )}
+                  <div className={`flex items-center text-sm ${
+                    ocrResults.ocrV2Data?.needsReview ? 'text-orange-600 font-medium' : 'text-blue-600'
+                  }`}>
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <span>
+                      {ocrResults.ocrV2Data?.needsReview 
+                        ? `⚠️ Review: ${ocrResults.ocrV2Data.reviewReasons?.join(', ') || 'Low confidence fields'}`
+                        : '✓ Please verify all fields before submitting'
+                      }
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -360,14 +380,37 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                             ({Math.round(ocrResults.ocrV2Data.inference.merchant.confidence * 100)}%)
                           </span>
                         )}
+                        {getFieldWarnings('merchant').length > 0 && (
+                          <span className="ml-2 text-orange-600">
+                            ⚠️
+                          </span>
+                        )}
                       </label>
                       <input
                         type="text"
                         value={ocrResults.merchant}
                         onChange={(e) => setOcrResults({ ...ocrResults, merchant: e.target.value })}
-                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className={`w-full bg-white px-3 py-2 rounded-lg border ${
+                          getFieldWarnings('merchant').some(w => w.severity === 'high') 
+                            ? 'border-orange-400 focus:ring-orange-500' 
+                            : 'border-gray-300 focus:ring-blue-500'
+                        } focus:ring-2 focus:border-blue-500`}
                         placeholder="Merchant name"
                       />
+                      {getFieldWarnings('merchant').map((warning, idx) => (
+                        <div key={idx} className={`mt-1 text-xs ${
+                          warning.severity === 'high' ? 'text-orange-600' :
+                          warning.severity === 'medium' ? 'text-yellow-600' :
+                          'text-blue-600'
+                        }`}>
+                          <span className="font-medium">⚠️ {warning.reason}</span>
+                          {warning.suggestedAction && (
+                            <div className="ml-4 mt-0.5 text-gray-600 italic">
+                              → {warning.suggestedAction}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

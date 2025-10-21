@@ -1,12 +1,13 @@
 {
   "name": "expense-app-backend",
-  "version": "1.11.0",
+  "version": "1.13.1",
   "description": "Trade Show Expense Management Backend",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
+    "build": "tsc && npm run copy-py",
+    "copy-py": "cp src/services/ocr/*.py dist/services/ocr/",
     "migrate": "ts-node src/database/migrate.ts",
     "seed": "ts-node src/database/seed.ts"
   },
