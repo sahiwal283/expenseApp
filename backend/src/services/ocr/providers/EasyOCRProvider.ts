@@ -215,7 +215,14 @@ export class EasyOCRProvider implements OCRProvider {
    */
   private executePython(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
-      const python = spawn(this.pythonPath, args);
+      // Set HOME environment for EasyOCR model cache
+      const env = {
+        ...process.env,
+        HOME: process.env.HOME || '/var/lib/expenseapp',
+        EASYOCR_MODULE_PATH: '/var/lib/expenseapp/.EasyOCR'
+      };
+      
+      const python = spawn(this.pythonPath, args, { env });
       
       let stdout = '';
       let stderr = '';
