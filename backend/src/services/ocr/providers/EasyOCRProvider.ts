@@ -216,10 +216,17 @@ export class EasyOCRProvider implements OCRProvider {
   private executePython(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
       // Set HOME environment for EasyOCR model cache
+      // Disable CPU optimizations that require AVX2 (for older CPUs like Sandy Bridge)
       const env = {
         ...process.env,
         HOME: process.env.HOME || '/var/lib/expenseapp',
-        EASYOCR_MODULE_PATH: '/var/lib/expenseapp/.EasyOCR'
+        EASYOCR_MODULE_PATH: '/var/lib/expenseapp/.EasyOCR',
+        // Disable PyTorch optimizations that cause SIGILL on older CPUs
+        MKL_THREADING_LAYER: 'GNU',
+        MKL_SERVICE_FORCE_INTEL: '0',
+        OMP_NUM_THREADS: '1',
+        // Disable NNPACK (causes "Unsupported hardware" errors)
+        PYTORCH_NNPACK_DISABLE: '1'
       };
       
       const python = spawn(this.pythonPath, args, { env });

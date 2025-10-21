@@ -27,6 +27,13 @@ from typing import Dict, List, Tuple
 os.environ['EASYOCR_MODULE_PATH'] = os.environ.get('EASYOCR_MODULE_PATH', '/var/lib/expenseapp/.EasyOCR')
 os.environ['HOME'] = os.environ.get('HOME', '/var/lib/expenseapp')
 
+# Disable PyTorch CPU optimizations that require AVX2 (for older CPUs like Sandy Bridge)
+# These settings prevent SIGILL (Illegal Instruction) errors on older hardware
+os.environ['MKL_THREADING_LAYER'] = 'GNU'
+os.environ['MKL_SERVICE_FORCE_INTEL'] = '0'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['PYTORCH_NNPACK_DISABLE'] = '1'
+
 # Suppress warnings
 warnings.filterwarnings('ignore')
 

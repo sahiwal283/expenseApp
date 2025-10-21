@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.10.3 - PATCH: Force HOME in Python OCR script
+// Version: 1.10.4 - PATCH: CPU compatibility fix for PyTorch/EasyOCR
 // Date: October 21, 2025
 //
 // Changes from v1.4.4:
@@ -108,8 +108,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.10.3';  // BUMPED VERSION for Python HOME fix
-const STATIC_CACHE = 'expenseapp-static-v1.10.3';
+const CACHE_NAME = 'expenseapp-v1.10.4';  // BUMPED VERSION for CPU compatibility fix
+const STATIC_CACHE = 'expenseapp-static-v1.10.4';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -119,7 +119,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.10.3...');
+  console.log('[ServiceWorker] Installing v1.10.4...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -210,7 +210,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.10.3...');
+  console.log('[ServiceWorker] Activating v1.10.4...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -224,7 +224,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.10.3 activated and ready!');
+      console.log('[ServiceWorker] v1.10.4 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
