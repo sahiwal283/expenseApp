@@ -17,14 +17,18 @@ export interface OCRResult {
     preprocessed?: boolean;
     language?: string;
     wordCount?: number;
-    lineCount?: number; // EasyOCR: number of text lines detected
+    lineCount?: number; // EasyOCR/Tesseract: number of text lines detected
     detectionCount?: number; // EasyOCR: number of text regions detected
     available?: boolean;
-    lines?: Array<{ text: string; confidence: number }>; // EasyOCR: per-line results
+    lines?: Array<{ text: string; confidence: number }>; // EasyOCR/Tesseract: per-line results
     pageCount?: number; // PDF: number of pages processed
     pages?: Array<{ page: number; text: string; confidence: number }>; // PDF: per-page results
     dpi?: number; // PDF: DPI used for conversion
     languages?: string[]; // OCR: languages used
+    // Tesseract-specific metadata
+    psmMode?: number; // Tesseract: Page segmentation mode used
+    skewAngle?: number; // Tesseract: Skew angle detected and corrected (degrees)
+    stepsApplied?: string[]; // Tesseract: Preprocessing steps applied
   };
 }
 

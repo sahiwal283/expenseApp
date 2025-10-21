@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.10.5 - PATCH: Switch to Tesseract for Sandy Bridge CPU compatibility
+// Version: 1.11.0 - MINOR: Advanced Tesseract OCR with AI-ready preprocessing
 // Date: October 21, 2025
 //
 // Changes from v1.4.4:
@@ -108,8 +108,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.10.5';  // BUMPED VERSION for Tesseract provider switch
-const STATIC_CACHE = 'expenseapp-static-v1.10.5';
+const CACHE_NAME = 'expenseapp-v1.11.0';  // BUMPED VERSION for advanced Tesseract OCR
+const STATIC_CACHE = 'expenseapp-static-v1.11.0';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -119,7 +119,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.10.5...');
+  console.log('[ServiceWorker] Installing v1.11.0...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -210,7 +210,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.10.5...');
+  console.log('[ServiceWorker] Activating v1.11.0...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -224,7 +224,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.10.5 activated and ready!');
+      console.log('[ServiceWorker] v1.11.0 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

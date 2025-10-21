@@ -1,40 +1,75 @@
 /**
  * Tesseract OCR Provider
  * 
- * Legacy OCR engine using Tesseract.js
- * Kept for backwards compatibility and as fallback.
+ * Optimized native Tesseract OCR engine with advanced preprocessing.
+ * Uses Python subprocess with OpenCV for maximum accuracy on receipts.
+ * 
+ * Features:
+ * - Advanced image preprocessing (DPI normalization, denoise, deskew, adaptive threshold)
+ * - Custom PSM modes optimized for receipts
+ * - Per-line confidence scores
+ * - Hardware compatible (AVX-only, no AVX2 required)
  */
 
-import { createWorker } from 'tesseract.js';
-import sharp from 'sharp';
-import fs from 'fs';
+import { spawn } from 'child_process';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { OCRProvider, OCRResult } from '../types';
 
 export class TesseractProvider implements OCRProvider {
-  name = 'tesseract';
+  readonly name = 'tesseract';
+  
+  private pythonPath: string;
+  private scriptPath: string;
+  private languages: string[];
+  private psmMode: number;
+  private tryAllPsmModes: boolean;
+  
+  constructor(options: {
+    pythonPath?: string;
+    languages?: string[];
+    psmMode?: number;
+    tryAllPsmModes?: boolean;
+  } = {}) {
+    this.pythonPath = options.pythonPath || 'python3';
+    this.languages = options.languages || ['eng'];
+    this.psmMode = options.psmMode || 6; // PSM 6: Uniform block of text (best for receipts)
+    this.tryAllPsmModes = options.tryAllPsmModes !== undefined ? options.tryAllPsmModes : true;
+    
+    // Path to Python processor script
+    this.scriptPath = path.join(__dirname, '..', 'tesseract_processor.py');
+    
+    console.log('[Tesseract] Provider initialized', {
+      pythonPath: this.pythonPath,
+      languages: this.languages,
+      psmMode: this.psmMode,
+      tryAllPsmModes: this.tryAllPsmModes,
+      scriptPath: this.scriptPath
+    });
+  }
   
   /**
-   * Preprocess image for better OCR accuracy
+   * Check if Tesseract is available on the system
    */
-  private async preprocessImage(inputPath: string): Promise<Buffer> {
+  async isAvailable(): Promise<boolean> {
     try {
-      console.log('[Tesseract] Preprocessing image with Sharp...');
+      // Check if Python is available
+      await this.executePython(['-c', 'import sys; print(sys.version)']);
       
-      const processedImage = await sharp(inputPath)
-        .grayscale() // Convert to grayscale
-        .normalize() // Normalize contrast
-        .sharpen() // Sharpen text edges
-        .median(3) // Reduce noise with median filter
-        .linear(1.2, -(128 * 1.2) + 128) // Increase contrast
-        .toBuffer();
+      // Check if required Python packages are installed
+      await this.executePython(['-c', 'import cv2, pytesseract; print("OK")']);
       
-      console.log('[Tesseract] Image preprocessing completed');
-      return processedImage;
+      // Check if script exists
+      await fs.access(this.scriptPath);
       
-    } catch (error: any) {
-      console.error('[Tesseract] Preprocessing error:', error.message);
-      // Return original image if preprocessing fails
-      return fs.readFileSync(inputPath);
+      // Check if tesseract binary is available
+      await this.executePython(['-c', 'import pytesseract; pytesseract.get_tesseract_version()']);
+      
+      console.log('[Tesseract] Provider is available');
+      return true;
+    } catch (error) {
+      console.error('[Tesseract] Provider not available:', error);
+      return false;
     }
   }
   
@@ -43,76 +78,110 @@ export class TesseractProvider implements OCRProvider {
    */
   async process(imagePath: string): Promise<OCRResult> {
     const startTime = Date.now();
-    let worker = null;
     
     try {
-      console.log('[Tesseract] Starting OCR processing for:', imagePath);
+      console.log('[Tesseract] Processing image:', imagePath);
       
-      // Preprocess the image
-      const preprocessedImage = await this.preprocessImage(imagePath);
+      // Validate image exists
+      await fs.access(imagePath);
       
-      // Create Tesseract worker
-      worker = await createWorker('eng', 1, {
-        logger: (m: any) => {
-          if (m.status === 'recognizing text') {
-            console.log(`[Tesseract] Progress: ${(m.progress * 100).toFixed(1)}%`);
-          }
-        }
-      });
+      // Build command arguments
+      const args = [
+        this.scriptPath,
+        imagePath,
+        '--lang', this.languages.join(','),
+        '--psm', this.psmMode.toString(),
+        '--target-dpi', '300'
+      ];
       
-      // Configure for receipt processing
-      await worker.setParameters({
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$.,/:- '
-      });
+      if (this.tryAllPsmModes) {
+        args.push('--try-all-psm');
+      }
       
-      // Process image
-      const { data } = await worker.recognize(preprocessedImage);
+      // Execute Python script
+      const output = await this.executePython(args);
+      
+      // Parse JSON response
+      const result = JSON.parse(output);
+      
+      // Handle error response
+      if (!result.success) {
+        throw new Error(result.error || 'Tesseract processing failed');
+      }
       
       const processingTime = Date.now() - startTime;
       
-      console.log(`[Tesseract] Completed in ${processingTime}ms`);
-      console.log(`[Tesseract] Confidence: ${data.confidence.toFixed(2)}%`);
-      console.log(`[Tesseract] Text length: ${data.text.length} characters`);
-      
-      return {
-        text: data.text || '',
-        confidence: data.confidence / 100 || 0, // Convert to 0-1 range
+      // Map to OCRResult interface
+      const ocrResult: OCRResult = {
+        text: result.text || '',
+        confidence: result.confidence || 0.0,
         provider: this.name,
         processingTime,
         metadata: {
+          lineCount: result.line_count,
+          lines: result.lines || [],
           preprocessed: true,
-          language: 'eng'
+          language: result.metadata?.language,
+          psmMode: result.metadata?.psm_mode,
+          wordCount: result.metadata?.word_count,
+          skewAngle: result.metadata?.skew_angle,
+          stepsApplied: result.metadata?.steps_applied
         }
       };
       
-    } catch (error: any) {
-      console.error('[Tesseract] Processing error:', error.message);
+      console.log('[Tesseract] Processing complete:', {
+        textLength: ocrResult.text.length,
+        confidence: `${(ocrResult.confidence * 100).toFixed(1)}%`,
+        processingTime: `${processingTime}ms`,
+        lineCount: result.line_count,
+        psmMode: result.metadata?.psm_mode
+      });
+      
+      return ocrResult;
+      
+    } catch (error) {
+      console.error('[Tesseract] Processing error:', error);
       
       return {
         text: '',
         confidence: 0,
         provider: this.name,
         processingTime: Date.now() - startTime,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
-    } finally {
-      if (worker) {
-        await worker.terminate();
-      }
     }
   }
   
   /**
-   * Check if Tesseract is available
+   * Execute Python command and capture output
    */
-  async isAvailable(): Promise<boolean> {
-    try {
-      const worker = await createWorker('eng');
-      await worker.terminate();
-      return true;
-    } catch {
-      return false;
-    }
+  private executePython(args: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const python = spawn(this.pythonPath, args);
+      
+      let stdout = '';
+      let stderr = '';
+      
+      python.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      python.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+      
+      python.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Python process exited with code ${code}: ${stderr}`));
+        } else {
+          resolve(stdout);
+        }
+      });
+      
+      python.on('error', (error) => {
+        reject(new Error(`Failed to spawn Python process: ${error.message}`));
+      });
+    });
   }
 }
 
