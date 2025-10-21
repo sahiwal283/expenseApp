@@ -16,11 +16,16 @@ Usage:
 """
 
 import sys
+import os
 import json
 import argparse
 import warnings
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+# Set EasyOCR cache directory explicitly BEFORE importing easyocr
+os.environ['EASYOCR_MODULE_PATH'] = os.environ.get('EASYOCR_MODULE_PATH', '/var/lib/expenseapp/.EasyOCR')
+os.environ['HOME'] = os.environ.get('HOME', '/var/lib/expenseapp')
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
