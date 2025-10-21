@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle, CreditCard, Building2 } from 'lucide-react';
+import { Upload, X, ArrowLeft, Camera, FileImage, FileText, Scan, CheckCircle, AlertCircle, CreditCard, Building2 } from 'lucide-react';
 import { api, TokenManager } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
@@ -93,7 +93,11 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
   const handleFiles = (files: FileList) => {
     const file = files[0];
-    if (file && file.type.startsWith('image/')) {
+    // Accept both images and PDFs
+    const isImage = file && file.type.startsWith('image/');
+    const isPDF = file && file.type === 'application/pdf';
+    
+    if (file && (isImage || isPDF)) {
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -234,7 +238,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,application/pdf,.pdf"
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -251,7 +255,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   Drop your receipt here, or click to browse
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  Supports JPG and PNG files. Our OCR will automatically extract expense details.
+                  Supports images (JPG, PNG, HEIC, WebP) and PDF files. Our OCR will automatically extract expense details.
                 </p>
               </div>
 
@@ -259,22 +263,22 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 <div className="flex items-center space-x-3">
                   <Camera className="w-8 h-8 text-blue-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Advanced OCR</h4>
-                    <p className="text-sm text-gray-600">PaddleOCR + AI powered</p>
+                    <h4 className="font-medium text-gray-900">EasyOCR Engine</h4>
+                    <p className="text-sm text-gray-600">High-accuracy AI OCR</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <FileImage className="w-8 h-8 text-emerald-600" />
+                  <FileText className="w-8 h-8 text-emerald-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Smart Categories</h4>
-                    <p className="text-sm text-gray-600">AI-suggested with confidence</p>
+                    <h4 className="font-medium text-gray-900">PDF Support</h4>
+                    <p className="text-sm text-gray-600">Multi-page PDFs supported</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Scan className="w-8 h-8 text-purple-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Auto Extract</h4>
-                    <p className="text-sm text-gray-600">Amount, date, merchant</p>
+                    <h4 className="font-medium text-gray-900">Smart Fields</h4>
+                    <p className="text-sm text-gray-600">Amount, date, merchant & more</p>
                   </div>
                 </div>
               </div>

@@ -1,10 +1,19 @@
-# Python requirements for enhanced OCR
-# Install with: pip3 install -r requirements.txt
+# Python dependencies for OCR processing
+# Install: pip3 install -r requirements.txt
 
-paddleocr>=2.7.0
-paddlepaddle>=2.5.0  # CPU version
-# paddlepaddle-gpu>=2.5.0  # Uncomment for GPU support
+# EasyOCR - Modern OCR engine with high accuracy
+easyocr>=1.7.0
+
+# Image processing
 opencv-python>=4.8.0
 numpy>=1.24.0
 Pillow>=10.0.0
 
+# PDF processing
+pdf2image>=1.16.0
+PyPDF2>=3.0.0
+
+# Poppler is required for pdf2image
+# Install on Debian/Ubuntu: sudo apt-get install poppler-utils
+# Install on macOS: brew install poppler
+# Install on Windows: Download from http://blog.alivate.com.au/poppler-windows/

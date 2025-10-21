@@ -37,15 +37,17 @@ const upload = multer({
     fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') // 10MB default
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf|heic|heif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype) || 
-                     file.mimetype === 'image/heic' ||
-                     file.mimetype === 'image/heif';
+    const allowedExtensions = /jpeg|jpg|png|pdf|heic|heif|webp/i;
+    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
     
-    if (mimetype && extname) {
+    // Accept any image MIME type (image/*) or PDF
+    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+    
+    if (extname && mimetypeOk) {
+      console.log(`[OCR v2 Upload] Accepting file: ${file.originalname} (${file.mimetype})`);
       return cb(null, true);
     } else {
+      console.warn(`[OCR v2 Upload] Rejected file: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
       cb(new Error('Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
     }
   }

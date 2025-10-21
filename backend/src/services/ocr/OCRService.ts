@@ -6,8 +6,7 @@
  */
 
 import { OCRProvider, InferenceEngine, OCRServiceConfig, ProcessedReceipt, FieldInference } from './types';
-import { TesseractProvider } from './providers/TesseractProvider';
-import { PaddleOCRProvider } from './providers/PaddleOCRProvider';
+import { EasyOCRProvider } from './providers/EasyOCRProvider';
 import { RuleBasedInferenceEngine } from './inference/RuleBasedInferenceEngine';
 import { createLLMProvider } from './inference/LLMProvider';
 
@@ -21,8 +20,8 @@ export class OCRService {
   constructor(config?: Partial<OCRServiceConfig>) {
     // Default configuration
     this.config = {
-      primaryProvider: 'paddleocr',
-      fallbackProvider: 'tesseract',
+      primaryProvider: 'easyocr',
+      fallbackProvider: undefined, // No fallback needed - EasyOCR is reliable
       inferenceEngine: 'rule-based',
       confidenceThreshold: 0.6,
       enableUserCorrections: true,
@@ -84,19 +83,34 @@ export class OCRService {
   
   /**
    * Process receipt image with OCR and field inference
+   * Supports both image files and PDFs
    */
-  async processReceipt(imagePath: string): Promise<ProcessedReceipt> {
-    console.log('[OCRService] Processing receipt:', imagePath);
+  async processReceipt(filePath: string): Promise<ProcessedReceipt> {
+    console.log('[OCRService] Processing receipt:', filePath);
     const startTime = Date.now();
     
     try {
-      // Step 1: OCR with primary provider
-      let ocrResult = await this.primaryProvider.process(imagePath);
+      // Step 1: Determine file type and run appropriate OCR
+      const isPDF = filePath.toLowerCase().endsWith('.pdf');
+      let ocrResult;
       
-      // Step 2: Fallback if confidence is too low
-      if (ocrResult.confidence < this.config.confidenceThreshold && this.fallbackProvider) {
+      if (isPDF) {
+        console.log('[OCRService] Processing PDF receipt');
+        // Use EasyOCR's PDF processor
+        if (this.primaryProvider instanceof EasyOCRProvider) {
+          ocrResult = await this.primaryProvider.processPDF(filePath);
+        } else {
+          throw new Error('PDF processing requires EasyOCR provider');
+        }
+      } else {
+        console.log('[OCRService] Processing image receipt');
+        ocrResult = await this.primaryProvider.process(filePath);
+      }
+      
+      // Step 2: Fallback if confidence is too low (for images only)
+      if (!isPDF && ocrResult.confidence < this.config.confidenceThreshold && this.fallbackProvider) {
         console.log(`[OCRService] Primary OCR confidence (${ocrResult.confidence.toFixed(2)}) below threshold, trying fallback...`);
-        const fallbackResult = await this.fallbackProvider.process(imagePath);
+        const fallbackResult = await this.fallbackProvider.process(filePath);
         
         if (fallbackResult.confidence > ocrResult.confidence) {
           console.log(`[OCRService] Using fallback result (confidence: ${fallbackResult.confidence.toFixed(2)})`);
@@ -164,13 +178,17 @@ export class OCRService {
    */
   private createProvider(name: string): OCRProvider {
     switch (name) {
-      case 'paddleocr':
-        return new PaddleOCRProvider();
-      case 'tesseract':
-        return new TesseractProvider();
+      case 'easyocr':
+        return new EasyOCRProvider({
+          languages: ['en'],
+          useGPU: false
+        });
       default:
-        console.warn(`[OCRService] Unknown provider: ${name}, defaulting to Tesseract`);
-        return new TesseractProvider();
+        console.warn(`[OCRService] Unknown provider: ${name}, defaulting to EasyOCR`);
+        return new EasyOCRProvider({
+          languages: ['en'],
+          useGPU: false
+        });
     }
   }
   
@@ -289,10 +307,10 @@ export class OCRService {
   }
 }
 
-// Export singleton instance with Ollama LLM enabled
+// Export singleton instance with EasyOCR and Ollama LLM enabled
 export const ocrService = new OCRService({
-  primaryProvider: 'paddleocr',
-  fallbackProvider: 'tesseract',
+  primaryProvider: 'easyocr',
+  fallbackProvider: undefined, // EasyOCR is reliable, no fallback needed
   inferenceEngine: 'rule-based',
   llmProvider: 'ollama', // Enable Ollama for low-confidence field enhancement
   confidenceThreshold: 0.6,
