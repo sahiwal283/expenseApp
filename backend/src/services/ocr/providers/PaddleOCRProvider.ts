@@ -54,8 +54,8 @@ export class PaddleOCRProvider implements OCRProvider {
           confidence: 0,
           provider: this.name,
           processingTime,
+          error: result.error,
           metadata: {
-            error: result.error,
             available: result.available || false
           }
         };
@@ -85,8 +85,8 @@ export class PaddleOCRProvider implements OCRProvider {
         confidence: 0,
         provider: this.name,
         processingTime: Date.now() - startTime,
+        error: error.message,
         metadata: {
-          error: error.message,
           available: false
         }
       };

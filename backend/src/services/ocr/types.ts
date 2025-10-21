@@ -11,13 +11,20 @@ export interface OCRResult {
   confidence: number;
   provider: string;
   processingTime: number;
+  error?: string; // Top-level error for failed OCR attempts
   metadata?: {
     imageSize?: { width: number; height: number };
     preprocessed?: boolean;
     language?: string;
     wordCount?: number;
-    error?: string;
+    lineCount?: number; // EasyOCR: number of text lines detected
+    detectionCount?: number; // EasyOCR: number of text regions detected
     available?: boolean;
+    lines?: Array<{ text: string; confidence: number }>; // EasyOCR: per-line results
+    pageCount?: number; // PDF: number of pages processed
+    pages?: Array<{ page: number; text: string; confidence: number }>; // PDF: per-page results
+    dpi?: number; // PDF: DPI used for conversion
+    languages?: string[]; // OCR: languages used
   };
 }
 
@@ -91,8 +98,8 @@ export interface LLMProvider {
 }
 
 export interface OCRServiceConfig {
-  primaryProvider: 'tesseract' | 'paddleocr';
-  fallbackProvider?: 'tesseract' | 'paddleocr';
+  primaryProvider: 'tesseract' | 'paddleocr' | 'easyocr';
+  fallbackProvider?: 'tesseract' | 'paddleocr' | 'easyocr';
   inferenceEngine: 'rule-based' | 'llm' | 'hybrid';
   llmProvider?: 'openai' | 'claude' | 'local' | 'ollama';
   confidenceThreshold: number; // Minimum confidence to accept OCR result

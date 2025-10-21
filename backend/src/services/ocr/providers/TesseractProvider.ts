@@ -93,9 +93,7 @@ export class TesseractProvider implements OCRProvider {
         confidence: 0,
         provider: this.name,
         processingTime: Date.now() - startTime,
-        metadata: {
-          error: error.message
-        }
+        error: error.message
       };
     } finally {
       if (worker) {
