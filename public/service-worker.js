@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.9.17 - PATCH: Fix missing function parameter
-// Date: October 17, 2025
+// Version: 1.10.0 - MAJOR: EasyOCR Migration + PDF Support
+// Date: October 21, 2025
 //
 // Changes from v1.4.4:
 // - IMPROVED: Added colors to all expense categories
@@ -108,8 +108,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.9.17';  // BUMPED VERSION for function parameter fix
-const STATIC_CACHE = 'expenseapp-static-v1.4.13';
+const CACHE_NAME = 'expenseapp-v1.10.0';  // BUMPED VERSION for EasyOCR migration + PDF support
+const STATIC_CACHE = 'expenseapp-static-v1.10.0';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -119,7 +119,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.14...');
+  console.log('[ServiceWorker] Installing v1.10.0...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -210,7 +210,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.4.5...');
+  console.log('[ServiceWorker] Activating v1.10.0...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -224,7 +224,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] v1.1.14 activated and ready!');
+      console.log('[ServiceWorker] v1.10.0 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
