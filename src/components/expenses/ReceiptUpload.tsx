@@ -385,8 +385,13 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                       <input
                         type="number"
                         step="0.01"
-                        value={ocrResults.total}
-                        onChange={(e) => setOcrResults({ ...ocrResults, total: parseFloat(e.target.value) || 0 })}
+                        value={ocrResults.total || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Remove leading zeros except for "0."
+                          const cleaned = value.replace(/^0+(?=\d)/, '');
+                          setOcrResults({ ...ocrResults, total: parseFloat(cleaned) || 0 });
+                        }}
                         className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-emerald-600"
                         placeholder="0.00"
                       />
