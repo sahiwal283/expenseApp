@@ -7,6 +7,7 @@
 
 import { OCRProvider, InferenceEngine, OCRServiceConfig, ProcessedReceipt, FieldInference } from './types';
 import { EasyOCRProvider } from './providers/EasyOCRProvider';
+import { TesseractProvider } from './providers/TesseractProvider';
 import { RuleBasedInferenceEngine } from './inference/RuleBasedInferenceEngine';
 import { createLLMProvider } from './inference/LLMProvider';
 
@@ -178,17 +179,16 @@ export class OCRService {
    */
   private createProvider(name: string): OCRProvider {
     switch (name) {
+      case 'tesseract':
+        return new TesseractProvider();
       case 'easyocr':
         return new EasyOCRProvider({
           languages: ['en'],
           useGPU: false
         });
       default:
-        console.warn(`[OCRService] Unknown provider: ${name}, defaulting to EasyOCR`);
-        return new EasyOCRProvider({
-          languages: ['en'],
-          useGPU: false
-        });
+        console.warn(`[OCRService] Unknown provider: ${name}, defaulting to Tesseract`);
+        return new TesseractProvider();
     }
   }
   
@@ -307,10 +307,13 @@ export class OCRService {
   }
 }
 
-// Export singleton instance with EasyOCR and Ollama LLM enabled
+// Export singleton instance with Tesseract (CPU-compatible) and Ollama LLM enabled
+// NOTE: Using Tesseract for Sandy Bridge CPU compatibility (no AVX2)
+// EasyOCR requires PyTorch with AVX2, which isn't available on this hardware
+// For newer hardware (Haswell+), switch primaryProvider to 'easyocr' for better accuracy
 export const ocrService = new OCRService({
-  primaryProvider: 'easyocr',
-  fallbackProvider: undefined, // EasyOCR is reliable, no fallback needed
+  primaryProvider: 'tesseract',
+  fallbackProvider: undefined, // No fallback needed - Tesseract is reliable
   inferenceEngine: 'rule-based',
   llmProvider: 'ollama', // Enable Ollama for low-confidence field enhancement
   confidenceThreshold: 0.6,
