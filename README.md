@@ -2,12 +2,15 @@
 
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
-**Current Version: 1.4.13 (Frontend) / 1.5.1 (Backend) - October 16, 2025**  
-**Production Status:** ✅ Stable and Active
+**Production:** Frontend v1.4.13 / Backend v1.5.1 (October 16, 2025)  
+**Sandbox:** Frontend v1.13.4 / Backend v1.13.4 (October 23, 2025)  
+**Production Status:** ✅ Stable and Active  
+**Sandbox Status:** 🔬 AI Pipeline Integration Complete
 
 📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
 🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
-📚 See [docs/AI_MASTER_GUIDE.md](docs/AI_MASTER_GUIDE.md) for development guide
+📚 See [docs/MASTER_GUIDE.md](docs/MASTER_GUIDE.md) for complete development guide  
+🤖 See [docs/OCR_TRAINING_GUIDE.md](docs/OCR_TRAINING_GUIDE.md) for AI/OCR specifics
 
 ---
 
@@ -29,36 +32,62 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 
 ---
 
-## 🚧 In Development (v1.6.0 - OCR Upgrade)
+## 🚧 Latest Development (v1.13.4 - External AI Pipeline)
 
-**Branch:** `v1.6.0` (Sandbox Only)  
-**Status:** 🟡 Backend Complete, Frontend Pending
+**Branch:** `v1.6.0` (Sandbox Only - Container 203)  
+**Status:** ✅ Complete & Operational
 
-### 🔬 Advanced OCR with AI-Ready Architecture
+### 🤖 Full AI-Powered OCR Pipeline with Microservices
 
-Major upgrade to receipt OCR system with:
-- **PaddleOCR Integration**: Higher accuracy OCR engine replacing Tesseract
-- **Field Inference Engine**: Automatic extraction of merchant, amount, date, card, category
-- **Confidence Scores**: Per-field confidence for quality assessment
-- **User Correction Tracking**: Learn from user edits for continuous improvement
-- **LLM-Ready Framework**: Interfaces for OpenAI/Claude integration (not yet implemented)
-- **Enhanced API**: New `/api/ocr/v2/*` endpoints with structured data output
+**Major Achievement:** Integrated 3-microservice AI feedback loop for receipt processing
 
-**Documentation:**
-- [OCR System README](backend/src/services/ocr/README.md) - Technical architecture & API docs
-- [OCR Upgrade Status](OCR_UPGRADE_STATUS.md) - Deployment guide & testing procedures
+**Architecture:**
+```
+Expense App (192.168.1.144)
+    ↓ Receipt Upload
+External OCR Service (192.168.1.195:8000)
+    → Tesseract OCR (15-20s)
+    → LLM Enhancement if confidence < 0.70 (95-115s with Ollama)
+    ↓ Field Extraction
+User Corrections
+    ↓ Automatic Tracking
+Data Pool (192.168.1.196:5000)
+    → Quality Scoring
+    → UTF-8 Storage
+    ↓ Training Data
+Model Training (192.168.1.197:5001)
+    → Pattern Analysis
+    → Prompt Improvement
+    ↓ Enhanced Prompts
+Back to OCR Service (Continuous Learning)
+```
 
 **What's Complete:**
-- ✅ PaddleOCR provider with preprocessing
-- ✅ Rule-based inference engine
-- ✅ Category detection (12 categories with keywords)
-- ✅ User correction database & APIs
-- ✅ Comprehensive documentation (600+ lines)
+- ✅ External OCR Service integration (HTTP multipart file upload)
+- ✅ Automatic user correction tracking
+- ✅ Data Pool sync with UTF-8 encoding
+- ✅ Model Training v1.2.0 (improved merchant/category extraction)
+- ✅ LLM enhancement for low-confidence receipts (Ollama + dolphin-llama3)
+- ✅ Progressive timeout architecture (180s Nginx → 180s Backend → 120s OCR)
+- ✅ Health checks before external service calls
+- ✅ Non-blocking Data Pool integration
+- ✅ Quality score calculation (76-86% average)
+
+**Performance:**
+- High confidence receipts (≥0.70): **15-20 seconds** ⚡
+- Low confidence receipts (<0.70): **95-115 seconds** (LLM-enhanced) 🧠
+
+**Key Files:**
+- `backend/src/routes/ocrV2.ts` - External OCR integration
+- `backend/src/services/ocr/UserCorrectionService.ts` - Data Pool sync
+- `src/utils/ocrCorrections.ts` - Frontend correction tracking
 
 **Next Steps:**
-- ⏳ Frontend integration (confidence indicators, category suggestions)
-- ⏳ Benchmarking suite (50+ test receipts)
-- ⏳ Sandbox deployment & testing
+- ⏳ Session timeout warnings & token refresh
+- ⏳ OCR progress feedback with stages
+- ⏳ Faster LLM model (tinyllama vs dolphin-llama3)
+- ⏳ Batch receipt upload
+- ⏳ Production deployment (Container 201)
 
 ---
 
@@ -134,15 +163,89 @@ Major upgrade to receipt OCR system with:
 
 ---
 
-## ✨ Key Features
+## ✨ Complete Feature List
 
-### 🎭 Dynamic Role Management System (NEW in v1.0.54-56)
+### 🎪 Event Management
+- **Create & manage trade show events** with start/end dates, locations, budgets
+- **Participant tracking** - Add users to events with assigned roles
+- **Temporary attendees** - Create on-the-fly users for one-time participants
+- **Event status tracking** - Upcoming, in progress, completed
+- **Budget management** (admin-only visibility)
+- **Event filtering & search**
+
+### 💰 Expense Management
+- **Submit expenses** with receipt upload (10+ file formats including phone camera images)
+- **OCR receipt scanning** - Auto-extract merchant, amount, date, category, card info
+- **Offline submission** - Queue expenses when offline, sync automatically
+- **Automated approval workflows** (v1.4.0+):
+  - Auto-approve when entity assigned
+  - Auto-approve when reimbursement decided
+  - Regression detection (needs further review)
+- **Inline entity assignment** - Assign Zoho entities directly from table
+- **Reimbursement tracking** - Request, approve/reject, mark as paid
+- **Approval cards** - Dashboard showing pending approvals, reimbursements, unassigned entities
+- **Advanced filtering** - Date, merchant, category, status, entity, reimbursement status
+- **Editable detail modal** - Modify status, entity, reimbursement in-place
+- **Receipt viewing** - Full-size with hide option
+- **Delete confirmations** - All deletions require explicit confirmation
+
+### 🔗 Zoho Books Integration
+- **5-entity support** - Haute Brands, Alpha, Beta, Gamma, Delta
+- **One-click Zoho push** - Sync expenses with receipt attachments
+- **Duplicate prevention** - Track `zoho_expense_id` to prevent re-pushing
+- **OAuth 2.0 authentication** - Automatic token refresh
+- **Entity re-assignment** - Clear Zoho ID and re-push to different entity
+- **Smart navigation** - Dashboard links to events with most unsynced items
+- **Separate credentials** for sandbox/production (data isolation)
+
+### 📊 Reports & Analytics
+- **Detailed reports** by event with real-time filters
+- **Sortable expense tables** - Click column headers to sort
+- **Total calculations** - Automatic sum of filtered expenses
+- **Receipt thumbnails** in reports
+- **Export capabilities** (coming soon: CSV, PDF, Excel)
+- **Entity-based filtering** - View expenses by Zoho organization
+
+### 🎭 Dynamic Role Management System (v1.0.54+)
 - **Create custom roles** dynamically from the UI
 - **System roles** (admin, accountant, coordinator, salesperson, developer, temporary, pending) are protected
 - **Custom roles** can be added, edited, and deleted
 - **Role properties**: Label, description, color badge (10 color options)
 - **Database-driven**: All role data stored in `roles` table
 - **Developer permissions**: Developers have full admin capabilities PLUS exclusive Dev Dashboard access
+
+### 👥 User Management
+- **View all users** - Table with name, username, email, role
+- **Create users** - Add new users with role assignment
+- **Edit users** - Update details, change roles, reset passwords
+- **Delete users** - Confirmation required, "admin" user protected
+- **Dynamic role dropdown** - Loads from database (system + custom roles)
+
+### 📱 Dashboard & Quick Actions
+- **Role-based widgets** - Different views for users vs admins/accountants
+- **Upcoming events** - Next 3 events with countdown
+- **Recent expenses** - Last 5 submitted by user
+- **Active events** - Currently in-progress events
+- **Pending approvals** (admin/accountant) - Count with link to Expenses
+- **Unassigned entities** (admin/accountant) - Count with link
+- **Pending reimbursements** (admin/accountant) - Count with link
+- **Push to Zoho tasks** (admin/accountant) - Count of unsynced expenses
+- **Quick action links** - Direct navigation to filtered expense views
+
+### 🛠️ Developer Dashboard
+- **System diagnostics** - Node version, uptime, memory usage
+- **Database status** - Connection health, query performance
+- **Cache management** - View and clear caches
+- **API health checks** - Test external services (OCR, Data Pool)
+- **Environment info** - View non-sensitive configuration
+- **Exclusive access** - Only developer role, not available to admins
+
+### ⚙️ Settings & Configuration
+- **App version display** - Current frontend/backend versions
+- **Environment indicator** - Production vs Sandbox
+- **Database connection status** - Real-time health monitoring
+- **OCR configuration** (developer only) - Provider, timeouts, Data Pool status
+- **Admin-only access** - Configure application-wide settings
 
 ### 🔐 Role-Based Access Control
 - **Admin**: Full system access + user/role management
@@ -155,61 +258,11 @@ Major upgrade to receipt OCR system with:
 ### 📱 Progressive Web App (PWA)
 - **Offline-first architecture** with IndexedDB
 - **Sync queue** for offline expense submissions
-- **Service Worker** with cache versioning
-- **Network-first strategy** for API calls (fixes stale data)
-- **Background sync** when connection restored
-
-### 🔗 Zoho Books Integration
-- **Automatic expense sync** with receipt attachments
-- **Push to Zoho** button on Approvals page (post-entity-assignment)
-- **Multi-entity support** (Haute Brands, Alpha, Beta, Gamma, Delta)
-- **Duplicate prevention** via `zohoExpenseId` tracking
-- **OAuth 2.0 security** with automatic token refresh
-- **Smart navigation** (takes user to report with most unsynced items)
-
-### 📋 Expense Management
-- **Unified expense interface** - Single page for submitting, reviewing, and managing expenses
-- **Submit expenses** with receipt upload (JPEG, PNG, PDF, HEIC, HEIF, WebP) - phone camera images supported!
-- **OCR text extraction** from receipts (Tesseract.js + Sharp image preprocessing)
-- **Automated approval workflows** - Status changes automatically based on entity/reimbursement actions
-  - Assigning entity → auto-approve
-  - Reimbursement decision → auto-approve
-  - Reverting fields → "needs further review"
-- **Inline entity assignment** - Assign Zoho entities directly from expense table
-- **Entity re-assignment** with Zoho ID clearing for already-pushed expenses
-- **Reimbursement tracking** (pending review → approved → paid)
-  - Inline approve/reject buttons
-  - Mark as Paid button ($ icon) for approved reimbursements
-  - Confirmation dialogs for all status changes
-- **Approval cards** (for accountants/admins) - Summary metrics at top of page
-- **Editable detail modal** - Modify status, reimbursement, entity, and view Zoho push status
-- **Collapsible inline filters** - Filter by date, merchant, category, status, entity
-- **Receipt viewing** (full-size default with hide option)
-- **Delete confirmations** - All deletions require explicit confirmation
-- **Duplicate prevention** (form submit disabled during save)
-- **File size limit**: 10MB (supports modern phone photos)
-
-### 📊 Reporting & Analytics
-- **Detailed reports** by event with real-time filters
-- **Push to Zoho** button for syncing expenses
-- **Entity-based filtering** (view expenses by Zoho entity)
-- **Export capabilities** (coming soon)
-- **Dashboard widgets** with dynamic data
-
-### 🎪 Event Management
-- **Create and manage trade show events**
-- **Participant tracking** with role assignments
-- **Budget management** (admin-only)
-- **Event timeline** (start/end dates)
-- **Location tracking**
-- **Custom temporary participants** (creates user with 'temporary' role)
-
-### 🛠️ Developer Dashboard (Developer Role Only)
-- **System diagnostics** and debugging tools
-- **Environment information**
-- **Cache management**
-- **API health checks**
-- **Version tracking**
+- **Service Worker** with cache versioning (auto-updates)
+- **Network-first strategy** for API calls (prevents stale data)
+- **Background sync** - Auto-sync when connection restored
+- **Install prompt** - Add to home screen on mobile
+- **Push notifications** (coming soon)
 
 ---
 

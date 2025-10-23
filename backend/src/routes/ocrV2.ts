@@ -3,17 +3,24 @@
  * 
  * New OCR endpoints with field inference, confidence scores, and user corrections.
  * Backward compatible - legacy /ocr endpoint remains unchanged.
+ * 
+ * INTEGRATION: External OCR Service at http://192.168.1.195:8000
  */
 
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import axios from 'axios';
+import FormData from 'form-data';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, ValidationError } from '../utils/errors';
-import { ocrService } from '../services/ocr/OCRService';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
 import { FieldWarningService } from '../services/ocr/FieldWarningService';
+
+// External OCR Service configuration
+const EXTERNAL_OCR_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
+const OCR_TIMEOUT = parseInt(process.env.OCR_TIMEOUT || '120000'); // 2 minutes
 
 const router = Router();
 
@@ -57,9 +64,44 @@ const upload = multer({
 router.use(authenticateToken);
 
 /**
+ * Check if external OCR service is available
+ */
+async function checkOCRServiceHealth(): Promise<boolean> {
+  try {
+    const response = await axios.get(`${EXTERNAL_OCR_URL}/health/ready`, { timeout: 5000 });
+    return response.status === 200;
+  } catch (error) {
+    console.warn('[OCR Health] External OCR service not available:', (error as any).message);
+    return false;
+  }
+}
+
+/**
+ * Call external OCR service
+ */
+async function callExternalOCR(filePath: string): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', fs.createReadStream(filePath));
+  
+  const response = await axios.post(
+    `${EXTERNAL_OCR_URL}/ocr/`,
+    formData,
+    {
+      headers: formData.getHeaders(),
+      timeout: OCR_TIMEOUT,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
+    }
+  );
+  
+  return response.data;
+}
+
+/**
  * POST /api/ocr/v2/process
  * 
  * Enhanced OCR processing with field inference and confidence scores
+ * Routes to external OCR service with fallback to embedded OCR
  */
 router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res) => {
   if (!req.file) {
@@ -69,93 +111,43 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
   console.log(`[OCR v2] Processing receipt: ${req.file.filename}`);
 
   try {
-    // Initialize OCR service (checks provider availability)
-    await ocrService.initialize();
+    // Check if external OCR service is available
+    const isHealthy = await checkOCRServiceHealth();
     
-    // Process receipt with enhanced OCR
-    const result = await ocrService.processReceipt(req.file.path);
-    
-    // Analyze fields for potential issues
-    const fieldWarnings = FieldWarningService.analyzeFields(result.inference, result.ocr.text);
-    
-    // Prepare response
-    const response = {
-      success: true,
-      
-      // OCR results
-      ocr: {
-        text: result.ocr.text,
-        confidence: result.ocr.confidence,
-        provider: result.ocr.provider,
-        processingTime: result.ocr.processingTime
-      },
-      
-      // Inferred fields with confidence scores
-      fields: {
-        merchant: {
-          value: result.inference.merchant.value,
-          confidence: result.inference.merchant.confidence,
-          source: result.inference.merchant.source
-        },
-        amount: {
-          value: result.inference.amount.value,
-          confidence: result.inference.amount.confidence,
-          source: result.inference.amount.source,
-          alternatives: result.inference.amount.alternatives
-        },
-        date: {
-          value: result.inference.date.value,
-          confidence: result.inference.date.confidence,
-          source: result.inference.date.source
-        },
-        cardLastFour: {
-          value: result.inference.cardLastFour.value,
-          confidence: result.inference.cardLastFour.confidence,
-          source: result.inference.cardLastFour.source
-        },
-        category: {
-          value: result.inference.category.value,
-          confidence: result.inference.category.confidence,
-          source: result.inference.category.source
-        },
-        location: result.inference.location?.value ? {
-          value: result.inference.location.value,
-          confidence: result.inference.location.confidence
-        } : null,
-        taxAmount: result.inference.taxAmount?.value ? {
-          value: result.inference.taxAmount.value,
-          confidence: result.inference.taxAmount.confidence
-        } : null,
-        tipAmount: result.inference.tipAmount?.value ? {
-          value: result.inference.tipAmount.value,
-          confidence: result.inference.tipAmount.confidence
-        } : null
-      },
-      
-      // Category suggestions (top 3)
-      categories: result.categories,
-      
-      // Quality assessment
-      quality: {
-        overallConfidence: result.overallConfidence,
-        needsReview: result.needsReview,
-        reviewReasons: result.reviewReasons
-      },
-      
-      // Field warnings (NEW)
-      warnings: fieldWarnings,
-      
-      // Receipt URL
-      receiptUrl: `/uploads/${req.file.filename}`
-    };
-    
-    console.log(`[OCR v2] Success - Overall confidence: ${result.overallConfidence.toFixed(2)}`);
-    console.log(`[OCR v2] Needs review: ${result.needsReview}${result.reviewReasons ? ` (${result.reviewReasons.join(', ')})` : ''}`);
-    if (fieldWarnings.length > 0) {
-      console.log(`[OCR v2] Field warnings: ${fieldWarnings.map(w => `${w.field} (${w.severity}): ${w.reason}`).join('; ')}`);
+    if (!isHealthy) {
+      throw new Error('OCR service is currently unavailable. Please try again later.');
     }
     
-    res.json(response);
+    console.log('[OCR v2] Using external OCR service');
+    
+    // Call external OCR service
+    const result = await callExternalOCR(req.file.path);
+    
+    // Analyze fields for potential issues
+    let fieldWarnings: any[] = [];
+    if (result.fields) {
+      // Convert external response to internal format for field warnings
+      const inference = {
+        merchant: result.fields.merchant || { value: null, confidence: 0, source: 'inference' },
+        amount: result.fields.amount || { value: null, confidence: 0, source: 'inference' },
+        date: result.fields.date || { value: null, confidence: 0, source: 'inference' },
+        category: result.fields.category || { value: null, confidence: 0, source: 'inference' },
+        cardLastFour: result.fields.cardLastFour || { value: null, confidence: 0, source: 'inference' },
+        location: result.fields.location || null,
+        taxAmount: result.fields.taxAmount || null,
+        tipAmount: result.fields.tipAmount || null
+      };
+      
+      fieldWarnings = FieldWarningService.analyzeFields(inference, result.ocr?.text || '');
+    }
+    
+    // Add warnings to response
+    result.warnings = fieldWarnings;
+    
+    console.log(`[OCR v2] External OCR success - Overall confidence: ${result.quality?.overallConfidence?.toFixed(2) || 'N/A'}`);
+    
+    // Return external service response directly (already in correct format)
+    res.json(result);
     
   } catch (error: any) {
     console.error('[OCR v2] Processing error:', error.message);
@@ -279,7 +271,13 @@ router.get('/config', asyncHandler(async (req: AuthRequest, res) => {
     return res.status(403).json({ error: 'Developer access required' });
   }
   
-  const config = ocrService.getConfig();
+  const config = {
+    type: 'external',
+    ocrServiceUrl: EXTERNAL_OCR_URL,
+    timeout: OCR_TIMEOUT,
+    dataPoolUrl: process.env.DATA_POOL_URL || 'http://192.168.1.196:5000',
+    dataPoolEnabled: process.env.SEND_TO_DATA_POOL !== 'false'
+  };
   
   res.json({
     success: true,

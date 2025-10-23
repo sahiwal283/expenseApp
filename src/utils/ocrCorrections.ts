@@ -33,7 +33,7 @@ export async function sendOCRCorrection(correction: OCRCorrection): Promise<void
       return;
     }
     
-    const response = await fetch(`${api.API_BASE || '/api'}/api/ocr/v2/corrections`, {
+    const response = await fetch('/api/ocr/v2/corrections', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

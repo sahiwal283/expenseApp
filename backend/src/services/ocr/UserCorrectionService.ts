@@ -3,14 +3,96 @@
  * 
  * Handles storage and retrieval of user corrections to OCR inferences.
  * Used for continuous learning and accuracy improvement.
+ * 
+ * INTEGRATION: Sends corrections to Data Pool at http://192.168.1.196:5000
  */
 
 import { query } from '../../config/database';
 import { UserCorrection, FieldInference } from './types';
+import axios from 'axios';
+import crypto from 'crypto';
+
+// Data Pool configuration
+const DATA_POOL_URL = process.env.DATA_POOL_URL || 'http://192.168.1.196:5000';
+const DATA_POOL_API_KEY = process.env.DATA_POOL_API_KEY || 'dp_live_edb8db992bc7bdb3f4b895c976df4acf';
+const SEND_TO_DATA_POOL = process.env.SEND_TO_DATA_POOL !== 'false'; // Default: true
 
 export class UserCorrectionService {
   /**
-   * Store a user correction
+   * Check if Data Pool service is available
+   */
+  private async checkDataPoolHealth(): Promise<boolean> {
+    if (!SEND_TO_DATA_POOL) return false;
+    
+    try {
+      const response = await axios.get(`${DATA_POOL_URL}/health`, { timeout: 3000 });
+      return response.status === 200 && response.data.database === true;
+    } catch (error) {
+      console.warn('[DataPool] Health check failed:', (error as any).message);
+      return false;
+    }
+  }
+  
+  /**
+   * Send correction to Data Pool
+   */
+  private async sendToDataPool(correction: UserCorrection, correctionId: string, environment: string): Promise<void> {
+    try {
+      // Get OCR provider
+      const inference: any = correction.originalInference;
+      const ocrProvider = inference?.provider || 'tesseract';
+      
+      // Calculate overall confidence
+      const ocrConfidence = this.calculateAverageConfidence(correction.originalInference);
+      
+      // Prepare request body
+      // Note: Data Pool will hash user_id automatically - we send unhashed
+      const requestBody = {
+        source_app: 'expense-app',
+        source_environment: environment,
+        user_id: correction.userId, // Data Pool hashes this automatically
+        ocr_provider: ocrProvider,
+        ocr_text: correction.originalOCRText,
+        ocr_confidence: ocrConfidence,
+        original_inference: correction.originalInference,
+        corrected_fields: {
+          merchant: correction.correctedFields.merchant || undefined,
+          amount: correction.correctedFields.amount !== undefined ? correction.correctedFields.amount : undefined,
+          date: correction.correctedFields.date || undefined,
+          category: correction.correctedFields.category || undefined,
+          cardLastFour: correction.correctedFields.cardLastFour || undefined
+        }
+      };
+      
+      // Send to Data Pool
+      const response = await axios.post(
+        `${DATA_POOL_URL}/corrections/ingest`,
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${DATA_POOL_API_KEY}`
+          },
+          timeout: 10000
+        }
+      );
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log(`[DataPool] Correction ${correctionId} sent successfully (quality: ${response.data.quality_score || 'N/A'})`);
+      }
+      
+    } catch (error: any) {
+      console.error('[DataPool] Failed to send correction:', error.message);
+      if (error.response) {
+        console.error('[DataPool] Response status:', error.response.status);
+        console.error('[DataPool] Response data:', JSON.stringify(error.response.data, null, 2));
+      }
+      // Don't throw - we've already saved locally, Data Pool failure shouldn't block user
+    }
+  }
+  
+  /**
+   * Store a user correction (and send to Data Pool)
    */
   async storeCorrection(correction: UserCorrection): Promise<string> {
     const fieldsCorrect = [];
@@ -81,6 +163,19 @@ export class UserCorrectionService {
     
     const correctionId = result.rows[0].id;
     console.log(`[UserCorrection] Stored correction ${correctionId} in ${environment} with ${fieldsCorrect.length} field(s) corrected`);
+    
+    // Send to Data Pool (async, non-blocking)
+    if (SEND_TO_DATA_POOL) {
+      const isHealthy = await this.checkDataPoolHealth();
+      if (isHealthy) {
+        // Fire and forget - don't wait for Data Pool response
+        this.sendToDataPool(correction, correctionId, environment).catch(err => {
+          console.error('[DataPool] Error sending correction:', err.message);
+        });
+      } else {
+        console.warn('[DataPool] Service unavailable, correction stored locally only');
+      }
+    }
     
     return correctionId;
   }

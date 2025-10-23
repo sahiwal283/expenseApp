@@ -1,20 +1,27 @@
-# 🤖 AI MASTER GUIDE - ExpenseApp
-**Version:** 1.13.1 (Sandbox - Model Training Dashboard + AI Training Pipeline)
-**Last Updated:** October 21, 2025  
-**Status:** ✅ Production Active | 🔬 v1.13.1 in Sandbox Development
+# 🤖 MASTER GUIDE - ExpenseApp
+**Last Updated:** October 23, 2025  
+**Status:** ✅ Production Active | 🔬 Sandbox AI Pipeline Integration Complete
 
-**Production Deployment:** October 16, 2025
-- **Backend:** v1.5.1 (Container 201)
+## 📦 Current Versions
+
+### **Production (Container 201 & 202)** - October 16, 2025
 - **Frontend:** v1.4.13 (Container 202)
+- **Backend:** v1.5.1 (Container 201)
+- **Branch:** `main`
+- **Status:** ✅ Stable, Live Users
+- **Features:** Full expense management, Zoho integration, offline PWA, embedded OCR
 
-**Sandbox Deployment:** October 21, 2025 (Latest: v1.13.1)
-- **Backend:** v1.13.1 (Container 203) - **Model Training Dashboard + AI Pipeline**
-- **Frontend:** v1.13.1 (Container 203) - Training analytics and monitoring
+### **Sandbox (Container 203)** - October 23, 2025
+- **Frontend:** v1.13.4 (Container 203)
+- **Backend:** v1.13.4 (Container 203)
 - **Branch:** `v1.6.0`
-- **OCR Status:** ✅ **Optimized Tesseract with 8-step preprocessing**
-- **AI Enhancement:** ✅ **Ollama integration for low-confidence fields**
-- **Training Pipeline:** ✅ **Adaptive learning with cross-environment sync**
-- **Hardware:** Sandy Bridge compatible (AVX-only, no AVX2 required)
+- **Status:** 🔬 AI Pipeline Testing
+- **Features:** All production features PLUS:
+  - ✅ **External OCR Service** (192.168.1.195:8000) with LLM enhancement
+  - ✅ **Data Pool Integration** (192.168.1.196:5000) with UTF-8 encoding
+  - ✅ **Model Training** (192.168.1.197:5001) - v1.2.0 prompts
+  - ✅ **Ollama LLM** (192.168.1.173:11434) - dolphin-llama3
+  - ⚡ **Performance:** 15-20s (high confidence) | 95-115s (LLM-enhanced)
 
 ---
 
@@ -29,6 +36,49 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 - Session summaries and historical context
 
 **⚠️ IMPORTANT**: Future AI sessions should UPDATE this file rather than creating new documentation files.
+
+---
+
+## 📱 Application Overview
+
+### What is ExpenseApp?
+
+**ExpenseApp** is a professional trade show expense management system for **Haute Brands** and its sub-brands (Alpha, Beta, Gamma, Delta). It manages the complete expense lifecycle from receipt capture to Zoho Books accounting integration.
+
+### Core Modules
+
+| Module | Features | Key Users |
+|--------|----------|-----------|
+| **Event Management** | Create events, manage participants, track budgets | Admin, Coordinator |
+| **Expense Submission** | Upload receipts, OCR extraction, offline support | All users |
+| **Approval Workflows** | Automated approval, entity assignment, reimbursement | Admin, Accountant |
+| **Zoho Integration** | 5-entity sync, duplicate prevention, OAuth 2.0 | Admin, Accountant |
+| **Reports** | Detailed & summary reports, filtering, exports | Admin, Accountant |
+| **User Management** | CRUD operations, role assignments | Admin, Developer |
+| **Role Management** | Custom roles, dynamic permissions | Admin, Developer |
+| **Dashboard** | Widgets, quick actions, pending tasks | All users |
+| **Developer Tools** | Diagnostics, health checks, cache management | Developer only |
+| **PWA/Offline** | Service Worker, IndexedDB, background sync | All users |
+
+### Unique Capabilities
+
+1. **Dynamic Role System** - Create custom roles with colors and permissions
+2. **Automated Approval Workflows** - No manual approval buttons, status changes automatically
+3. **5-Entity Zoho Support** - Multi-brand accounting with separate Zoho organizations
+4. **Offline-First Architecture** - Submit expenses without internet, sync automatically
+5. **OCR + LLM Enhancement** (Sandbox) - AI-powered receipt extraction with continuous learning
+6. **Reimbursement Tracking** - Complete workflow from request to payment
+7. **Developer Dashboard** - Exclusive debugging tools for developer role
+8. **Entity Re-assignment** - Change Zoho entity and re-push expenses
+
+### Technology Stack
+
+**Frontend:** React 18 + TypeScript + Tailwind CSS + Vite  
+**Backend:** Node.js + Express + TypeScript + PostgreSQL  
+**Infrastructure:** Proxmox LXC (Debian 12) + Nginx + PM2  
+**Integrations:** Zoho Books API (OAuth 2.0)  
+**OCR:** Tesseract (production) | External microservice with Ollama LLM (sandbox)  
+**PWA:** Service Worker + IndexedDB + Background Sync
 
 ---
 
@@ -1942,6 +1992,183 @@ Before any deployment:
 ---
 
 ## 📝 SESSION SUMMARIES
+
+### Session v1.13.4 - External OCR Integration (Oct 23, 2025)
+
+**Goal**: Integrate external OCR Service, Data Pool, and Model Training into complete AI feedback loop
+
+**Major Achievement**: ✅ **Full 3-microservice AI pipeline operational**
+
+**Architecture**:
+```
+Receipt Upload (Expense App)
+    ↓
+External OCR Service (192.168.1.195:8000)
+    → Tesseract processing (15-20s)
+    → LLM enhancement if confidence < 0.70 (95-115s)
+    ↓
+Field Extraction Results
+    ↓
+User Corrections
+    ↓
+Data Pool (192.168.1.196:5000)
+    → Quality scoring
+    → UTF-8 storage
+    ↓
+Model Training (192.168.1.197:5001)
+    → Pattern analysis
+    → Prompt improvement (v1.2.0)
+    ↓
+Back to OCR Service (improved prompts)
+```
+
+**Files Modified**:
+- `backend/src/routes/ocrV2.ts` - External OCR integration via HTTP
+- `backend/src/services/ocr/UserCorrectionService.ts` - Data Pool sync
+- `src/utils/ocrCorrections.ts` - Fixed double `/api/` bug
+- `backend/.env` - Service URLs and timeouts
+- `/etc/nginx/sites-enabled/expenseapp` - Timeout configuration
+
+**Versions**: v1.13.1 → v1.13.2 → v1.13.3 → v1.13.4
+
+---
+
+**🐛 BUGS FIXED**:
+
+1. **Double `/api/api/` URL Bug** (v1.13.2)
+   - **Symptom**: 404 on `/api/api/ocr/v2/corrections`
+   - **Cause**: `api.API_BASE` doesn't exist, created double path
+   - **Fix**: Use absolute path `/api/ocr/v2/corrections`
+
+2. **Data Pool 422 Validation Error** (v1.13.4)
+   - **Symptom**: Corrections rejected with 422
+   - **Cause**: Sending corrected fields as top-level keys instead of nested object
+   - **Fix**: Wrap corrections in `corrected_fields: { merchant, amount, ... }`
+
+3. **Data Pool UTF-8 Encoding Error** (Data Pool side)
+   - **Symptom**: 500 error on Unicode characters (™, ®, emojis)
+   - **Cause**: PostgreSQL database created with SQL_ASCII encoding
+   - **Initial fix failed**: Client encoding doesn't help if DB is SQL_ASCII
+   - **Real fix**: Drop and recreate database with `ENCODING 'UTF8'`
+   - **Lesson**: Always verify `SHOW server_encoding;`
+
+4. **Nginx 404 - Frontend Not Loading**
+   - **Symptom**: Entire app returned 404 after deployment
+   - **Cause**: Nginx root pointed to `/var/www/expenseapp/dist`, files in `/var/www/expenseapp/`
+   - **Fix**: Update nginx config `root /var/www/expenseapp;`
+
+5. **OCR Service 504 Gateway Timeout** 
+   - **Symptom**: Receipts timeout after 60s
+   - **Cause**: LLM processing takes 80-120s, timeouts too short
+   - **Fixes**:
+     - Nginx: 60s → 180s (proxy_read_timeout)
+     - Backend: 120s → 180s (OCR_TIMEOUT)
+     - OCR Service: 60s → 120s (httpx timeout)
+   - **Lesson**: Set timeouts progressively with buffers
+
+6. **Session Timeout During OCR**
+   - **Symptom**: 401 Unauthorized when saving after OCR
+   - **Cause**: JWT expired between receipt upload and save
+   - **Status**: ⚠️ **NOT YET FIXED** - Need token refresh mechanism
+
+7. **OCR Performance - 2+ Minute Processing**
+   - **Symptom**: Receipts taking 120+ seconds
+   - **Cause**: 10% random sampling + slow Ollama (dolphin-llama3 8B)
+   - **Discovery**: Good receipts (0.82 confidence) randomly sampled for LLM
+   - **Fix**: Disabled random sampling (v0.2.4)
+   - **Result**: Most receipts now 15-20s!
+
+---
+
+**🎓 KEY LESSONS LEARNED**:
+
+1. **Test External Services End-to-End**
+   - OCR Service claimed features were integrated but weren't wired in
+   - Always verify with real data flow, not just deployment
+
+2. **Database Encoding Requires DB-Level Fixes**
+   - Client encoding settings don't fix SQL_ASCII databases
+   - Must recreate DB with UTF-8 from start
+
+3. **Document Timeout Chain Explicitly**
+   - Map all layers before integration: Nginx → Backend → Service → LLM
+   - Each layer needs progressively longer timeout
+
+4. **Version Everything, Deploy Often**
+   - Small incremental versions made debugging easier
+   - v1.13.1 → v1.13.4 tracked each fix
+
+5. **Performance Test with Real Infrastructure**
+   - Estimated 30-45s, reality was 120+ seconds
+   - Always load test on actual hardware
+
+6. **Non-Blocking External Integrations**
+   - Data Pool sync is async - doesn't block user workflow
+   - Core flows should never depend on optional services
+
+7. **Health Checks Save Timeout Waits**
+   - Quick 5s health check saves 175s timeout wait
+   - Always add health endpoints and use them first
+
+---
+
+**⚙️ CONFIGURATION**:
+
+```bash
+# backend/.env (Container 203)
+OCR_SERVICE_URL=http://192.168.1.195:8000
+OCR_TIMEOUT=180000
+
+DATA_POOL_URL=http://192.168.1.196:5000
+DATA_POOL_API_KEY=dp_live_edb8db992bc7bdb3f4b895c976df4acf
+SEND_TO_DATA_POOL=true
+```
+
+```nginx
+# /etc/nginx/sites-enabled/expenseapp
+location /api/ {
+    proxy_connect_timeout 180s;
+    proxy_send_timeout 180s;
+    proxy_read_timeout 180s;
+}
+```
+
+---
+
+**📊 PERFORMANCE METRICS**:
+- High confidence receipts (≥0.70): **15-20 seconds** ⚡
+- Low confidence receipts (<0.70): **95-115 seconds** 🐢
+- Quality scores: **76-86%** average
+- Corrections tracked: **3+ successful syncs**
+
+---
+
+**✅ SUCCESS CRITERIA MET**:
+- [x] External OCR Service processes receipts
+- [x] User corrections tracked automatically
+- [x] Corrections stored locally
+- [x] Corrections sent to Data Pool
+- [x] UTF-8 encoding working
+- [x] Quality scores calculated
+- [x] Model Training v1.2.0 deployed
+- [x] Full pipeline tested end-to-end
+- [x] All timeout issues resolved
+- [x] Performance optimized
+
+---
+
+**🚀 FUTURE WORK IDENTIFIED**:
+1. Session timeout warnings & token refresh
+2. OCR progress feedback with stages
+3. Remove embedded OCR code (technical debt)
+4. Smart category suggestions based on merchant
+5. Batch receipt upload
+6. Faster LLM model (tinyllama vs dolphin-llama3)
+
+**Deployment**: Sandbox only (Container 203)
+**Status**: ✅ Complete & Operational
+
+---
 
 ### Session v1.0.16 (Oct 14, 2025)
 
