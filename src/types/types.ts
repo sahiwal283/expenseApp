@@ -27,6 +27,18 @@ export interface TradeShow {
   coordinatorId: string;
 }
 
+export interface DuplicateWarning {
+  expenseId: number;
+  merchant: string;
+  amount: number;
+  date: string;
+  similarity: {
+    merchant: number;
+    amount: number;
+    dateDiff: number;
+  };
+}
+
 export interface Expense {
   id: string;
   userId: string;
@@ -44,6 +56,7 @@ export interface Expense {
   zohoEntity?: string;
   location?: string;
   ocrText?: string;
+  duplicateCheck?: DuplicateWarning[] | null;
   extractedData?: {
     total: number;
     category: string;
@@ -88,6 +101,7 @@ export interface ReceiptData {
 export interface CardOption {
   name: string;
   lastFour: string;
+  entity?: string | null;  // Entity assigned to this card (null for personal cards)
 }
 
 // API Response types

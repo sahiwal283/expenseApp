@@ -439,7 +439,17 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                       </td>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
                         <div>
-                          <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
+                            {expense.duplicateCheck && expense.duplicateCheck.length > 0 && (
+                              <div 
+                                className="flex items-center text-amber-600" 
+                                title={`Possible duplicate: ${expense.duplicateCheck.length} similar expense(s) found`}
+                              >
+                                <AlertTriangle className="w-4 h-4" />
+                              </div>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500 mt-1">
                             {eventName}
                           </div>
@@ -723,6 +733,29 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         <p className="text-xs text-gray-700 whitespace-pre-wrap max-h-32 overflow-y-auto">
                           {viewingExpense.ocrText}
                         </p>
+                      </div>
+                    )}
+
+                    {viewingExpense.duplicateCheck && viewingExpense.duplicateCheck.length > 0 && (
+                      <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
+                        <p className="text-xs font-medium text-amber-900 mb-2 flex items-center">
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Possible Duplicate Expenses
+                        </p>
+                        <div className="space-y-2">
+                          {viewingExpense.duplicateCheck.map((dup, index) => {
+                            const dupDate = new Date(dup.date);
+                            const formattedDate = dupDate.toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric' 
+                            });
+                            return (
+                              <div key={index} className="text-xs text-amber-900">
+                                ⚠ Possible duplicate: Expense #{dup.expenseId} (${dup.amount.toFixed(2)} at {dup.merchant} on {formattedDate})
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>

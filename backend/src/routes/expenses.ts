@@ -8,6 +8,8 @@ import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
 import { expenseService } from '../services/ExpenseService';
+import { DuplicateDetectionService } from '../services/DuplicateDetectionService';
+import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
 
 const router = Router();
@@ -239,19 +241,51 @@ function extractStructuredData(text: string): any {
 }
 
 // Helper function to convert numeric strings to numbers
-const normalizeExpense = (expense: any) => ({
-  ...expense,
-  amount: expense.amount ? parseFloat(expense.amount) : null,
-  cardUsed: expense.card_used || null,
-  tradeShowId: expense.event_id || null,
-  receiptUrl: expense.receipt_url || null,
-  reimbursementRequired: expense.reimbursement_required,
-  reimbursementStatus: expense.reimbursement_status || null,
-  ocrText: expense.ocr_text || null,
-  zohoEntity: expense.zoho_entity || null,
-  zohoExpenseId: expense.zoho_expense_id || null,
-  userId: expense.user_id,
-});
+const normalizeExpense = (expense: any) => {
+  // Parse duplicate_check if it's a string (shouldn't be, but just in case)
+  let duplicateCheckValue = expense.duplicate_check;
+  if (typeof duplicateCheckValue === 'string') {
+    try {
+      duplicateCheckValue = JSON.parse(duplicateCheckValue);
+    } catch (e) {
+      console.error('[Normalize] Failed to parse duplicate_check:', e);
+      duplicateCheckValue = null;
+    }
+  }
+  
+  const normalized: any = {
+    id: expense.id,
+    userId: expense.user_id,
+    tradeShowId: expense.event_id || null,
+    amount: expense.amount ? parseFloat(expense.amount) : null,
+    category: expense.category,
+    merchant: expense.merchant,
+    date: expense.date,
+    description: expense.description,
+    cardUsed: expense.card_used || null,
+    receiptUrl: expense.receipt_url || null,
+    reimbursementRequired: expense.reimbursement_required,
+    reimbursementStatus: expense.reimbursement_status || null,
+    status: expense.status,
+    zohoEntity: expense.zoho_entity || null,
+    zohoExpenseId: expense.zoho_expense_id || null,
+    location: expense.location || null,
+    ocrText: expense.ocr_text || null,
+    createdAt: expense.created_at,
+    updatedAt: expense.updated_at,
+    duplicateCheck: duplicateCheckValue || null,
+    // Include pre-fetched JOIN fields if present
+    user_name: expense.user_name,
+    event_name: expense.event_name,
+  };
+  
+  // Debug logging for duplicate check
+  if (duplicateCheckValue) {
+    console.log(`[Normalize] Expense ${expense.id} HAS duplicateCheck:`, Array.isArray(duplicateCheckValue), duplicateCheckValue.length);
+  }
+  
+  return normalized;
+};
 
 router.use(authenticateToken);
 
@@ -407,11 +441,49 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
     zohoEntity: zoho_entity || undefined
   });
 
+  // Check for potential duplicates
+  const duplicates = await DuplicateDetectionService.checkForDuplicates(
+    merchant,
+    parseFloat(amount),
+    date,
+    req.user!.id,
+    expense.id
+  );
+
+  // Update expense with duplicate warnings if found
+  if (duplicates.length > 0) {
+    await query(
+      'UPDATE expenses SET duplicate_check = $1 WHERE id = $2',
+      [JSON.stringify(duplicates), expense.id]
+    );
+    console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${expense.id}`);
+  }
+
   // Log entity assignment status
   const entityStatus = expense.zoho_entity ? `assigned to ${expense.zoho_entity}` : 'unassigned';
   console.log(`[Zoho] Expense created (${entityStatus}). Entity can be assigned in Approvals page.`);
 
-  res.status(201).json(normalizeExpense(expense));
+  // Log expense creation in audit trail
+  await ExpenseAuditService.logChange(
+    expense.id,
+    req.user!.id,
+    req.user!.username || 'Unknown User',
+    'created',
+    {
+      merchant: { old: null, new: expense.merchant },
+      amount: { old: null, new: expense.amount },
+      date: { old: null, new: expense.date },
+      category: { old: null, new: expense.category }
+    }
+  );
+
+  // Include duplicate warnings in response
+  const responseExpense = normalizeExpense(expense);
+  if (duplicates.length > 0) {
+    responseExpense.duplicate_check = duplicates;
+  }
+
+  res.status(201).json(responseExpense);
 }));
 
 // Update expense
@@ -458,6 +530,10 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
     }
   }
 
+  // Get old expense data for audit trail
+  const oldExpenseResult = await query('SELECT * FROM expenses WHERE id = $1', [id]);
+  const oldExpense = oldExpenseResult.rows[0];
+
   // Update expense using service layer (handles authorization)
   const expense = await expenseService.updateExpense(
     id,
@@ -480,6 +556,62 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
     }
   );
 
+  // Log changes in audit trail
+  if (oldExpense) {
+    const changes = ExpenseAuditService.detectChanges(
+      oldExpense,
+      {
+        merchant: expense.merchant,
+        amount: expense.amount,
+        date: expense.date,
+        category: expense.category,
+        description: expense.description,
+        location: expense.location,
+        card_used: expense.card_used,
+        reimbursement_required: expense.reimbursement_required,
+        zoho_entity: expense.zoho_entity
+      },
+      ['merchant', 'amount', 'date', 'category', 'description', 'location', 'card_used', 'reimbursement_required', 'zoho_entity']
+    );
+
+    if (Object.keys(changes).length > 0) {
+      await ExpenseAuditService.logChange(
+        id,
+        req.user!.id,
+        req.user!.username || 'Unknown User',
+        'updated',
+        changes
+      );
+    }
+  }
+
+  // Always check for potential duplicates on update
+  const duplicates = await DuplicateDetectionService.checkForDuplicates(
+    merchant || expense.merchant,
+    amount ? parseFloat(amount) : expense.amount,
+    date || expense.date,
+    req.user!.id,
+    id
+  );
+
+  // Update expense with duplicate warnings
+  if (duplicates.length > 0) {
+    await query(
+      'UPDATE expenses SET duplicate_check = $1 WHERE id = $2',
+      [JSON.stringify(duplicates), id]
+    );
+    console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
+    
+    // Include in response
+    (expense as any).duplicate_check = duplicates;
+  } else {
+    // Clear duplicates if no longer matching
+    await query(
+      'UPDATE expenses SET duplicate_check = NULL WHERE id = $1',
+      [id]
+    );
+  }
+
   console.log(`Successfully updated expense ${id}`);
   res.json(normalizeExpense(expense));
 }));
@@ -493,12 +625,29 @@ router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), async
     throw new ValidationError('Invalid status. Must be "pending", "approved", "rejected", or "needs further review"');
   }
 
+  // Get old status for audit trail
+  const oldStatusResult = await query('SELECT status FROM expenses WHERE id = $1', [id]);
+  const oldStatus = oldStatusResult.rows[0]?.status;
+
   // Update status using service layer
   const expense = await expenseService.updateExpenseStatus(
     id,
     status,
     req.user!.role
   );
+
+  // Log status change in audit trail
+  if (oldStatus && oldStatus !== status) {
+    await ExpenseAuditService.logChange(
+      id,
+      req.user!.id,
+      req.user!.username || 'Unknown User',
+      'status_changed',
+      {
+        status: { old: oldStatus, new: status }
+      }
+    );
+  }
 
   res.json(normalizeExpense(expense));
 }));
@@ -527,10 +676,49 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
   const { id } = req.params;
   const { zoho_entity } = req.body;
 
+  // Get old entity for audit trail
+  const oldEntityResult = await query('SELECT zoho_entity FROM expenses WHERE id = $1', [id]);
+  const oldEntity = oldEntityResult.rows[0]?.zoho_entity;
+
   // Assign entity using service layer
   const expense = await expenseService.assignZohoEntity(id, zoho_entity, req.user!.role);
 
   console.log(`[Entity Assignment] Entity "${zoho_entity}" assigned to expense ${id} (manual push required)`);
+
+  // Log entity assignment in audit trail
+  await ExpenseAuditService.logChange(
+    id,
+    req.user!.id,
+    req.user!.username || 'Unknown User',
+    'entity_assigned',
+    {
+      zoho_entity: { old: oldEntity || null, new: zoho_entity }
+    }
+  );
+
+  // Check for potential duplicates
+  const duplicates = await DuplicateDetectionService.checkForDuplicates(
+    expense.merchant,
+    expense.amount,
+    expense.date,
+    req.user!.id,
+    id
+  );
+
+  // Update expense with duplicate warnings
+  if (duplicates.length > 0) {
+    await query(
+      'UPDATE expenses SET duplicate_check = $1 WHERE id = $2',
+      [JSON.stringify(duplicates), id]
+    );
+    console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
+    (expense as any).duplicate_check = duplicates;
+  } else {
+    await query(
+      'UPDATE expenses SET duplicate_check = NULL WHERE id = $1',
+      [id]
+    );
+  }
 
   res.json(normalizeExpense(expense));
 }));
@@ -619,6 +807,18 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
           [zohoResult.zohoExpenseId, expense.id]
         );
       }
+
+      // Log Zoho push in audit trail
+      await ExpenseAuditService.logChange(
+        expense.id,
+        req.user!.id,
+        req.user!.username || 'Unknown User',
+        'pushed_to_zoho',
+        {
+          zoho_entity: { old: null, new: expense.zoho_entity },
+          zoho_expense_id: { old: null, new: zohoResult.zohoExpenseId }
+        }
+      );
 
       // Return updated expense
       const updatedResult = await query('SELECT * FROM expenses WHERE id = $1', [id]);
@@ -747,6 +947,26 @@ router.get('/zoho/accounts', authenticateToken, authorize('admin'), async (req: 
     });
   }
 });
+
+// ========== AUDIT TRAIL ==========
+// GET /api/expenses/:id/audit - Get audit trail for an expense (accountant/admin/developer only)
+router.get('/:id/audit', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+  const { id } = req.params;
+
+  // Verify expense exists and user has access
+  const expense = await expenseService.getExpenseById(id);
+  if (!expense) {
+    return res.status(404).json({ error: 'Expense not found' });
+  }
+
+  // Get audit trail
+  const auditTrail = await ExpenseAuditService.getAuditTrail(id);
+
+  res.json({
+    expenseId: id,
+    auditTrail
+  });
+}));
 
 export default router;
 

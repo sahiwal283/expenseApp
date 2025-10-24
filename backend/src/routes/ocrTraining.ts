@@ -11,6 +11,7 @@
 import { Router } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
+import { query } from '../config/database';
 
 const router = Router();
 
@@ -29,10 +30,8 @@ router.get('/stats', asyncHandler(async (req: AuthRequest, res) => {
     return res.status(403).json({ error: 'Admin or developer access required' });
   }
   
-  const db = req.app.get('db');
-  
   // Get correction statistics
-  const correctionStats = await db.query(`
+  const correctionStats = await query(`
     SELECT 
       COUNT(*) as total_corrections,
       COUNT(DISTINCT user_id) as unique_users,
@@ -42,10 +41,10 @@ router.get('/stats', asyncHandler(async (req: AuthRequest, res) => {
     FROM ocr_corrections;
   `);
   
-  // Get corrections by field
-  const fieldStats = await db.query(`
+  // Get corrections by field - using fields_corrected array
+  const fieldStats = await query(`
     SELECT 
-      jsonb_object_keys(corrected_fields) as field,
+      UNNEST(fields_corrected) as field,
       COUNT(*) as correction_count
     FROM ocr_corrections
     GROUP BY field
@@ -53,7 +52,7 @@ router.get('/stats', asyncHandler(async (req: AuthRequest, res) => {
   `);
   
   // Get corrections by provider
-  const providerStats = await db.query(`
+  const providerStats = await query(`
     SELECT 
       ocr_provider,
       COUNT(*) as correction_count
@@ -62,7 +61,7 @@ router.get('/stats', asyncHandler(async (req: AuthRequest, res) => {
   `);
   
   // Get recent correction trend (last 30 days)
-  const trendStats = await db.query(`
+  const trendStats = await query(`
     SELECT 
       DATE(created_at) as date,
       COUNT(*) as corrections
@@ -117,55 +116,88 @@ router.get('/patterns', asyncHandler(async (req: AuthRequest, res) => {
     return res.status(403).json({ error: 'Developer access required' });
   }
   
-  const db = req.app.get('db');
   const { field, minFrequency = 3 } = req.query;
   
-  let query = `
+  // Build query to find patterns from corrections
+  const result = await query(`
     SELECT 
-      jsonb_object_keys(corrected_fields) as field,
-      original_inference,
-      corrected_fields,
+      field_name,
+      original_value,
+      corrected_value,
+      original_confidence,
       COUNT(*) as frequency,
       MAX(created_at) as last_seen,
       array_agg(DISTINCT user_id) as correcting_users
     FROM (
+      -- Merchant corrections
       SELECT 
-        jsonb_object_keys(corrected_fields) as field,
-        original_inference,
-        corrected_fields,
+        'merchant' as field_name,
+        COALESCE(original_inference->>'merchant', original_inference->'merchant'->>'value', 'unknown') as original_value,
+        corrected_merchant as corrected_value,
+        COALESCE((original_inference->'merchant'->>'confidence')::numeric, 0) as original_confidence,
         created_at,
         user_id
       FROM ocr_corrections
-      WHERE created_at >= NOW() - INTERVAL '90 days'
-    ) corrections
-    GROUP BY field, original_inference, corrected_fields
-    HAVING COUNT(*) >= $1
-  `;
-  
-  const params: any[] = [minFrequency];
-  
-  if (field) {
-    query += ` AND jsonb_object_keys(corrected_fields) = $2`;
-    params.push(field);
-  }
-  
-  query += ` ORDER BY COUNT(*) DESC LIMIT 50;`;
-  
-  const result = await db.query(query, params);
+      WHERE corrected_merchant IS NOT NULL
+        AND created_at >= NOW() - INTERVAL '90 days'
+      
+      UNION ALL
+      
+      -- Amount corrections
+      SELECT 
+        'amount' as field_name,
+        COALESCE(original_inference->>'amount', original_inference->'amount'->>'value', 'unknown') as original_value,
+        corrected_amount::text as corrected_value,
+        COALESCE((original_inference->'amount'->>'confidence')::numeric, 0) as original_confidence,
+        created_at,
+        user_id
+      FROM ocr_corrections
+      WHERE corrected_amount IS NOT NULL
+        AND created_at >= NOW() - INTERVAL '90 days'
+      
+      UNION ALL
+      
+      -- Date corrections
+      SELECT 
+        'date' as field_name,
+        COALESCE(original_inference->>'date', original_inference->'date'->>'value', 'unknown') as original_value,
+        corrected_date as corrected_value,
+        COALESCE((original_inference->'date'->>'confidence')::numeric, 0) as original_confidence,
+        created_at,
+        user_id
+      FROM ocr_corrections
+      WHERE corrected_date IS NOT NULL
+        AND created_at >= NOW() - INTERVAL '90 days'
+      
+      UNION ALL
+      
+      -- Category corrections
+      SELECT 
+        'category' as field_name,
+        COALESCE(original_inference->>'category', original_inference->'category'->>'value', 'unknown') as original_value,
+        corrected_category as corrected_value,
+        COALESCE((original_inference->'category'->>'confidence')::numeric, 0) as original_confidence,
+        created_at,
+        user_id
+      FROM ocr_corrections
+      WHERE corrected_category IS NOT NULL
+        AND created_at >= NOW() - INTERVAL '90 days'
+    ) all_corrections
+    WHERE ($1::text IS NULL OR field_name = $1)
+    GROUP BY field_name, original_value, corrected_value, original_confidence
+    HAVING COUNT(*) >= $2
+    ORDER BY COUNT(*) DESC
+    LIMIT 50;
+  `, [field || null, minFrequency]);
   
   // Format patterns for display
   const patterns = result.rows.map((row: any) => {
-    const fieldName = row.field;
-    const originalValue = row.original_inference[fieldName]?.value || 'unknown';
-    const correctedValue = row.corrected_fields[fieldName];
-    const originalConfidence = row.original_inference[fieldName]?.confidence || 0;
-    
     return {
-      field: fieldName,
+      field: row.field_name,
       pattern: {
-        original: originalValue,
-        corrected: correctedValue,
-        originalConfidence
+        original: row.original_value,
+        corrected: row.corrected_value,
+        originalConfidence: parseFloat(row.original_confidence)
       },
       frequency: parseInt(row.frequency),
       lastSeen: row.last_seen,
@@ -194,25 +226,28 @@ router.get('/export', asyncHandler(async (req: AuthRequest, res) => {
     return res.status(403).json({ error: 'Developer access required' });
   }
   
-  const db = req.app.get('db');
   const { format = 'json', days = 90 } = req.query;
   
   // Export all corrections with full context
-  const result = await db.query(`
+  const result = await query(`
     SELECT 
       c.id,
       c.expense_id,
       c.user_id,
-      c.original_ocr_text,
+      c.ocr_text,
       c.original_inference,
-      c.corrected_fields,
+      c.corrected_merchant,
+      c.corrected_amount,
+      c.corrected_date,
+      c.corrected_category,
+      c.corrected_card_last_four,
       c.receipt_image_path,
       c.ocr_provider,
-      c.llm_version,
+      c.llm_model_version,
       c.environment,
-      c.notes,
+      c.correction_notes,
       c.created_at,
-      u.name as user_name,
+      u.username as user_name,
       u.role as user_role
     FROM ocr_corrections c
     LEFT JOIN users u ON c.user_id = u.id
@@ -226,20 +261,31 @@ router.get('/export', asyncHandler(async (req: AuthRequest, res) => {
       ['ID', 'Date', 'User', 'Provider', 'Environment', 'Field', 'Original', 'Corrected', 'Original Confidence'].join(','),
       ...result.rows.flatMap((row: any) => {
         const corrections = [];
-        for (const [field, value] of Object.entries(row.corrected_fields)) {
-          const original = row.original_inference[field]?.value || '';
-          const confidence = row.original_inference[field]?.confidence || 0;
-          corrections.push([
-            row.id,
-            new Date(row.created_at).toISOString(),
-            row.user_name,
-            row.ocr_provider,
-            row.environment,
-            field,
-            `"${original}"`,
-            `"${value}"`,
-            confidence
-          ].join(','));
+        // Add each corrected field
+        if (row.corrected_merchant) {
+          const original = row.original_inference?.merchant?.value || row.original_inference?.merchant || '';
+          const confidence = row.original_inference?.merchant?.confidence || 0;
+          corrections.push([row.id, new Date(row.created_at).toISOString(), row.user_name, row.ocr_provider, row.environment, 'merchant', `"${original}"`, `"${row.corrected_merchant}"`, confidence].join(','));
+        }
+        if (row.corrected_amount) {
+          const original = row.original_inference?.amount?.value || row.original_inference?.amount || '';
+          const confidence = row.original_inference?.amount?.confidence || 0;
+          corrections.push([row.id, new Date(row.created_at).toISOString(), row.user_name, row.ocr_provider, row.environment, 'amount', `"${original}"`, `"${row.corrected_amount}"`, confidence].join(','));
+        }
+        if (row.corrected_date) {
+          const original = row.original_inference?.date?.value || row.original_inference?.date || '';
+          const confidence = row.original_inference?.date?.confidence || 0;
+          corrections.push([row.id, new Date(row.created_at).toISOString(), row.user_name, row.ocr_provider, row.environment, 'date', `"${original}"`, `"${row.corrected_date}"`, confidence].join(','));
+        }
+        if (row.corrected_category) {
+          const original = row.original_inference?.category?.value || row.original_inference?.category || '';
+          const confidence = row.original_inference?.category?.confidence || 0;
+          corrections.push([row.id, new Date(row.created_at).toISOString(), row.user_name, row.ocr_provider, row.environment, 'category', `"${original}"`, `"${row.corrected_category}"`, confidence].join(','));
+        }
+        if (row.corrected_card_last_four) {
+          const original = row.original_inference?.cardLastFour?.value || row.original_inference?.cardLastFour || '';
+          const confidence = row.original_inference?.cardLastFour?.confidence || 0;
+          corrections.push([row.id, new Date(row.created_at).toISOString(), row.user_name, row.ocr_provider, row.environment, 'cardLastFour', `"${original}"`, `"${row.corrected_card_last_four}"`, confidence].join(','));
         }
         return corrections;
       })

@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database';
 import { authenticateToken } from '../middleware/auth';
-import pkg from '../../package.json';
+import backendPkg from '../../package.json';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -20,19 +20,19 @@ router.use((req: any, res, next) => {
 // GET /api/dev-dashboard/version
 router.get('/version', async (req, res) => {
   try {
-    // Get backend version from backend package.json
-    const backendVersion = pkg.version;
+    // Backend version from backend/package.json
+    const backendVersion = backendPkg.version;
     
-    // Get frontend version from root package.json
+    // Frontend version from root package.json
     let frontendVersion = backendVersion; // fallback
     try {
-      const frontendPkgPath = path.join(__dirname, '../../../package.json');
-      if (fs.existsSync(frontendPkgPath)) {
-        const frontendPkg = JSON.parse(fs.readFileSync(frontendPkgPath, 'utf-8'));
-        frontendVersion = frontendPkg.version;
+      const rootPkgPath = path.join(__dirname, '../../../package.json');
+      if (fs.existsSync(rootPkgPath)) {
+        const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
+        frontendVersion = rootPkg.version;
       }
     } catch (err) {
-      console.warn('Could not read frontend package.json:', err);
+      console.warn('Could not read root package.json:', err);
     }
     
     // Get database info

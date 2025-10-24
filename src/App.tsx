@@ -317,7 +317,7 @@ function App() {
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
         
-        <main className="flex-1 p-3 sm:p-4 md:p-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 bg-gray-50">
           {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
           {currentPage === 'events' && <EventSetup user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}

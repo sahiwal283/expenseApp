@@ -17,6 +17,7 @@ interface ExpenseFormProps {
 interface CardOption {
   name: string;
   lastFour: string;
+  entity?: string | null;
 }
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user, onSave, onCancel, isSaving = false }) => {
@@ -458,7 +459,17 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               </label>
               <select
                 value={formData.cardUsed}
-                onChange={(e) => setFormData({ ...formData, cardUsed: e.target.value })}
+                onChange={(e) => {
+                  const cardValue = e.target.value;
+                  // Find the selected card and auto-select its entity
+                  const selectedCard = cardOptions.find(card => `${card.name} | ${card.lastFour}` === cardValue);
+                  setFormData({ 
+                    ...formData, 
+                    cardUsed: cardValue,
+                    // Auto-select entity if card has one, otherwise clear it (for personal cards)
+                    zohoEntity: selectedCard?.entity || ''
+                  });
+                }}
                 className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >

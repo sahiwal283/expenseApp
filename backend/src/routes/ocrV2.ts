@@ -17,6 +17,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
 import { FieldWarningService } from '../services/ocr/FieldWarningService';
+import { query } from '../config/database';
 
 // External OCR Service configuration
 const EXTERNAL_OCR_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
@@ -300,27 +301,68 @@ router.get('/accuracy', asyncHandler(async (req: AuthRequest, res) => {
   const { field, days } = req.query;
   const daysBack = parseInt(days as string || '30');
   
-  // If specific field requested
+  // Calculate accuracy based on corrections vs total OCR attempts
+  // Map field names to database columns
+  const fieldMapping: { [key: string]: string } = {
+    'merchant': 'corrected_merchant',
+    'amount': 'corrected_amount',
+    'date': 'corrected_date',
+    'category': 'corrected_category',
+    'cardLastFour': 'corrected_card_last_four'
+  };
+  
+  const fields = field ? [field as string] : ['merchant', 'amount', 'date', 'category', 'cardLastFour'];
+  
+  // First, get the total number of OCR correction sessions (unique correction records)
+  const totalCorrectionsResult = await query(`
+    SELECT COUNT(*) as total_sessions
+    FROM ocr_corrections
+    WHERE created_at >= NOW() - INTERVAL '${daysBack} days'
+  `);
+  
+  const totalExtractions = parseInt(totalCorrectionsResult.rows[0]?.total_sessions || '0');
+  
+  const accuracyData = await Promise.all(
+    fields.map(async (f) => {
+      const dbColumn = fieldMapping[f];
+      
+      // Count how many times this field was corrected
+      const correctionResult = await query(`
+        SELECT COUNT(*) as correction_count
+        FROM ocr_corrections
+        WHERE ${dbColumn} IS NOT NULL
+          AND created_at >= NOW() - INTERVAL '${daysBack} days'
+      `);
+      
+      const correctionCount = parseInt(correctionResult.rows[0]?.correction_count || '0');
+      
+      // Accuracy = (total OCR sessions - field corrections) / total sessions * 100
+      // If a field was NOT corrected, we assume it was correct
+      const accuracyRate = totalExtractions > 0
+        ? ((totalExtractions - correctionCount) / totalExtractions) * 100
+        : 100;
+      
+      return {
+        field: f,
+        totalExtractions,
+        correctionCount,
+        accuracyRate,
+        commonIssues: []
+      };
+    })
+  );
+  
   if (field) {
-    const db = req.app.get('db');
-    const accuracy = await FieldWarningService.getHistoricalAccuracy(db, field as string, daysBack);
+    const result = accuracyData[0];
     return res.json({
       success: true,
-      field,
       daysBack,
-      ...accuracy
+      totalExtractions: result.totalExtractions,
+      correctionCount: result.correctionCount,
+      accuracyRate: result.accuracyRate,
+      commonIssues: result.commonIssues
     });
   }
-  
-  // Otherwise, get accuracy for all fields
-  const db = req.app.get('db');
-  const fields = ['merchant', 'amount', 'date', 'category', 'cardLastFour'];
-  const accuracyData = await Promise.all(
-    fields.map(async (f) => ({
-      field: f,
-      ...(await FieldWarningService.getHistoricalAccuracy(db, f, daysBack))
-    }))
-  );
   
   res.json({
     success: true,

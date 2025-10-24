@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, 
   Calendar, DollarSign, CreditCard, User as UserIcon, Clock, CheckCircle, Upload, 
-  Loader2, CheckCircle2 
+  Loader2, CheckCircle2, AlertTriangle, History 
 } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
@@ -10,7 +10,7 @@ import { ReceiptUpload } from './ReceiptUpload';
 import { PendingActions } from '../common/PendingActions';
 import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
-import { formatLocalDate, getTodayLocalDateString } from '../../utils/dateUtils';
+import { formatLocalDate, getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
 import { getStatusColor, getCategoryColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../constants/appConstants';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
@@ -40,6 +40,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     cardFilter, setCardFilter,
     statusFilter, setStatusFilter,
     reimbursementFilter, setReimbursementFilter,
+    sortBy, setSortBy,
     filteredExpenses,
     hasActiveFilters,
     uniqueCategories,
@@ -65,6 +66,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // OCR correction tracking
   const [ocrV2Data, setOcrV2Data] = useState<any>(null);
 
+  // Audit trail
+  const [auditTrail, setAuditTrail] = useState<any[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+
+  // Inline editing in modal
+  const [isEditingExpense, setIsEditingExpense] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>(null);
+
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
 
@@ -75,6 +85,39 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       setPushedExpenses(pushed);
     }
   }, [expenses, hasApprovalPermission]);
+
+  // Fetch audit trail when viewing expense (accountant/admin/developer only)
+  const fetchAuditTrail = async (expenseId: string) => {
+    if (!hasApprovalPermission) return;
+    
+    setLoadingAudit(true);
+    try {
+      const response = await fetch(`/api/expenses/${expenseId}/audit`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const trail = data.auditTrail || [];
+        setAuditTrail(trail);
+        // Auto-expand if there's history (more than just "created")
+        const hasChanges = trail.filter((entry: any) => entry.action !== 'created').length > 0;
+        setShowAuditTrail(hasChanges);
+      } else {
+        console.error('[Audit] Failed to fetch audit trail');
+        setAuditTrail([]);
+        setShowAuditTrail(false);
+      }
+    } catch (error) {
+      console.error('[Audit] Error fetching audit trail:', error);
+      setAuditTrail([]);
+      setShowAuditTrail(false);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
 
   const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File, ocrDataOverride?: any) => {
     // Prevent duplicate submissions
@@ -89,6 +132,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       console.log('[ExpenseSubmission] Saving expense...', { isEdit: !!editingExpense, hasFile: !!file });
       
       if (api.USE_SERVER) {
+        let expenseId: string | null = null;
+        
         if (editingExpense) {
           console.log('[ExpenseSubmission] Updating expense:', editingExpense.id);
           await api.updateExpense(editingExpense.id, {
@@ -103,11 +148,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             location: expenseData.location,
             zoho_entity: expenseData.zohoEntity,
           }, file || undefined);
+          expenseId = editingExpense.id;
           console.log('[ExpenseSubmission] Expense updated successfully');
           addToast('✅ Expense updated successfully!', 'success');
         } else {
           console.log('[ExpenseSubmission] Creating new expense');
-          await api.createExpense({
+          const newExpense = await api.createExpense({
             event_id: expenseData.tradeShowId,
             category: expenseData.category,
             merchant: expenseData.merchant,
@@ -118,7 +164,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             reimbursement_required: expenseData.reimbursementRequired,
             location: expenseData.location,
           }, file || pendingReceiptFile || undefined);
-          console.log('[ExpenseSubmission] Expense created successfully');
+          expenseId = newExpense.id;
+          console.log('[ExpenseSubmission] Expense created successfully with ID:', expenseId);
           addToast('✅ Expense saved successfully!', 'success');
         }
 
@@ -148,6 +195,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             
             // Send corrections to backend for continuous learning
             await sendOCRCorrection({
+              expenseId: expenseId || undefined,
               originalOCRText: ocrDataToUse.ocrText || '',
               originalInference: ocrDataToUse.inference,
               correctedFields: corrections,
@@ -157,7 +205,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               // Don't throw - corrections are optional
             });
 
-            console.log(`[OCR Correction] Sent ${Object.keys(corrections).length} correction(s) to backend`);
+            console.log(`[OCR Correction] Sent ${Object.keys(corrections).length} correction(s) to backend with expense ID: ${expenseId}`);
           } else {
             console.log('[OCR Correction] No corrections detected - OCR was accurate!');
           }
@@ -205,6 +253,81 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setEditingExpense(expense);
     setShowForm(true);
     if (file) setPendingReceiptFile(file);
+  };
+
+  // Start inline editing in the modal
+  const startInlineEdit = (expense: Expense) => {
+    setIsEditingExpense(true);
+    setEditFormData({
+      tradeShowId: expense.tradeShowId || '',
+      amount: expense.amount || 0,
+      category: expense.category || '',
+      merchant: expense.merchant || '',
+      date: expense.date ? formatForDateInput(expense.date) : getTodayLocalDateString(),
+      description: expense.description || '',
+      cardUsed: expense.cardUsed || '',
+      location: expense.location || '',
+      reimbursementRequired: expense.reimbursementRequired || false
+    });
+  };
+
+  // Cancel inline editing
+  const cancelInlineEdit = () => {
+    setIsEditingExpense(false);
+    setEditFormData(null);
+  };
+
+  // Save inline edits
+  const saveInlineEdit = async () => {
+    if (!viewingExpense || !editFormData) return;
+
+    setIsSaving(true);
+    try {
+      // Convert camelCase to snake_case for backend
+      const response = await fetch(`/api/expenses/${viewingExpense.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          event_id: editFormData.tradeShowId,
+          amount: editFormData.amount,
+          category: editFormData.category,
+          merchant: editFormData.merchant,
+          date: editFormData.date,
+          description: editFormData.description,
+          card_used: editFormData.cardUsed,
+          location: editFormData.location,
+          reimbursement_required: editFormData.reimbursementRequired,
+          userId: user.id
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update expense');
+
+      const updatedExpense = await response.json();
+      
+      // Update the viewing expense
+      setViewingExpense(updatedExpense);
+      
+      // Reload data to refresh the list
+      await reloadData();
+      
+      // Refresh audit trail
+      await fetchAuditTrail(viewingExpense.id);
+      
+      // Exit edit mode
+      setIsEditingExpense(false);
+      setEditFormData(null);
+      
+      addToast('✅ Expense updated successfully', 'success');
+    } catch (error) {
+      console.error('[ExpenseSubmission] Error updating expense:', error);
+      addToast('❌ Failed to update expense. Please try again.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
@@ -430,19 +553,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  // Apply user permission filter and sorting to hook's filtered results
+  // Apply user permission filter to hook's filtered results (sorting already handled by hook)
   const finalFilteredExpenses = filteredExpenses
     .filter(expense => {
       // User permission filter:
       // - Users with approval permission see ALL expenses
       // - Regular users see only their own expenses
       return hasApprovalPermission || expense.userId === user.id;
-    })
-    .sort((a, b) => {
-      // Sort: pending expenses at the top, then by date
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
   if (showForm) {
@@ -596,14 +713,44 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 {/* Compact Inline Filters Row - Collapsible */}
                 {showFilters && (
                 <tr className="border-t border-gray-100">
-                  {/* Date Filter */}
+                  {/* Date Filter (Month Dropdown) */}
                   <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <input
-                      type="date"
-                      value={dateFilter}
+                    <select
+                      value={dateFilter.substring(0, 7) || ''}
                       onChange={(e) => setDateFilter(e.target.value)}
                       className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    />
+                    >
+                      <option value="">All</option>
+                      {(() => {
+                        // Generate list of months from oldest expense to current month
+                        const months = new Set<string>();
+                        const today = new Date();
+                        const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                        months.add(currentYearMonth);
+                        
+                        // Add months from all expenses
+                        expenses.forEach(exp => {
+                          if (exp.date) {
+                            const yearMonth = exp.date.substring(0, 7);
+                            months.add(yearMonth);
+                          }
+                        });
+                        
+                        // Convert to sorted array (newest first)
+                        const sortedMonths = Array.from(months).sort().reverse();
+                        
+                        return sortedMonths.map(month => {
+                          const [year, monthNum] = month.split('-');
+                          const date = new Date(parseInt(year), parseInt(monthNum) - 1);
+                          const monthName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                          return (
+                            <option key={month} value={month}>
+                              {monthName}
+                            </option>
+                          );
+                        });
+                      })()}
+                    </select>
                   </th>
                   {/* User Filter Placeholder (Approval Users) */}
                   {hasApprovalPermission && (
@@ -692,8 +839,24 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
                     </>
                   )}
-                  {/* Actions - No filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
+                  {/* Actions Column - Sort By */}
+                  <th className="px-2 sm:px-3 lg:px-4 py-1">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+                    >
+                      <option value="default">Default</option>
+                      <option value="date-newest">Newest First</option>
+                      <option value="date-oldest">Oldest First</option>
+                      <option value="amount-highest">Highest Amount</option>
+                      <option value="amount-lowest">Lowest Amount</option>
+                      <option value="merchant-az">Merchant A-Z</option>
+                      <option value="merchant-za">Merchant Z-A</option>
+                      <option value="category-az">Category A-Z</option>
+                      <option value="category-za">Category Z-A</option>
+                    </select>
+                  </th>
                 </tr>
                 )}
               </thead>
@@ -727,7 +890,31 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       {/* Merchant */}
                       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
                         <div>
-                          <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
+                            {expense.duplicateCheck && expense.duplicateCheck.length > 0 && (
+                              <div className="relative group">
+                                <div className="flex items-center text-amber-600 cursor-help">
+                                  <AlertTriangle className="w-4 h-4" />
+                                </div>
+                                {/* Tooltip on hover */}
+                                <div className="absolute left-0 top-6 hidden group-hover:block z-50 w-80 p-3 bg-amber-50 border-2 border-amber-400 rounded-lg shadow-lg">
+                                  <p className="text-xs font-semibold text-amber-900 mb-2">⚠ Possible Duplicate Expenses:</p>
+                                  <div className="space-y-1">
+                                    {expense.duplicateCheck.map((dup, idx) => {
+                                      const dupDate = new Date(dup.date);
+                                      const formattedDate = dupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                      return (
+                                        <div key={idx} className="text-xs text-amber-900">
+                                          ${dup.amount.toFixed(2)} at {dup.merchant} on {formattedDate}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           {expense.location && (
                             <div className="text-xs sm:text-sm text-gray-500">{expense.location}</div>
                           )}
@@ -857,7 +1044,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                           {/* Manual approval removed - expenses auto-approve via reimbursement/entity assignment */}
                           {/* View Details (All Users) */}
                           <button
-                            onClick={() => setViewingExpense(expense)}
+                            onClick={() => {
+                              setViewingExpense(expense);
+                              fetchAuditTrail(expense.id);
+                            }}
                             className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             title="View Details & Receipt"
                           >
@@ -909,76 +1099,219 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
             {/* Content */}
             <div className="p-6 space-y-6">
-              {/* Basic Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+              {/* Duplicate Check Warning */}
+              {viewingExpense.duplicateCheck && viewingExpense.duplicateCheck.length > 0 && (
+                <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    <p className="font-semibold text-amber-900">⚠ Possible Duplicate Expenses</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Date</p>
-                    <p className="font-semibold text-gray-900">{formatLocalDate(viewingExpense.date)}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <DollarSign className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Amount</p>
-                    <p className="font-semibold text-gray-900 text-xl">${viewingExpense.amount.toFixed(2)}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Category</p>
-                    <p className="font-semibold text-gray-900">{viewingExpense.category}</p>
+                  <div className="space-y-2">
+                    {viewingExpense.duplicateCheck.map((dup, index) => {
+                      const dupDate = new Date(dup.date);
+                      const formattedDate = dupDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                      });
+                      return (
+                        <div key={index} className="text-sm text-amber-900 bg-white rounded p-2">
+                          ⚠ Possible duplicate: Expense #{dup.expenseId} (${dup.amount.toFixed(2)} at {dup.merchant} on {formattedDate})
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
 
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Receipt className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Merchant</p>
-                    <p className="font-semibold text-gray-900">{viewingExpense.merchant}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Card Used</p>
-                    <p className="font-semibold text-gray-900">{viewingExpense.cardUsed}</p>
-                  </div>
-                </div>
-
-                {viewingExpense.location && (
-                  <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-red-600" />
+              {/* Basic Info Grid - Conditional Edit Mode */}
+              {!isEditingExpense ? (
+                // VIEW MODE
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Date</p>
+                        <p className="font-semibold text-gray-900">{formatLocalDate(viewingExpense.date)}</p>
+                      </div>
                     </div>
+
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <DollarSign className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Amount</p>
+                        <p className="font-semibold text-gray-900 text-xl">${viewingExpense.amount.toFixed(2)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Category</p>
+                        <p className="font-semibold text-gray-900">{viewingExpense.category}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Receipt className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Merchant</p>
+                        <p className="font-semibold text-gray-900">{viewingExpense.merchant}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <CreditCard className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Card Used</p>
+                        <p className="font-semibold text-gray-900">{viewingExpense.cardUsed || 'N/A'}</p>
+                      </div>
+                    </div>
+
+                    {viewingExpense.location && (
+                      <div className="flex items-start space-x-3">
+                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <MapPin className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Location</p>
+                          <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {viewingExpense.description && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-500 mb-2">Description</p>
+                      <p className="text-gray-900">{viewingExpense.description}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                // EDIT MODE
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-blue-800 flex items-center gap-2">
+                      <Edit2 className="w-4 h-4" />
+                      <span>Editing expense - make changes below and click Save</span>
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Date */}
                     <div>
-                      <p className="text-sm text-gray-500">Location</p>
-                      <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                      <input
+                        type="date"
+                        value={editFormData?.date || ''}
+                        onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Amount */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editFormData?.amount || 0}
+                        onChange={(e) => setEditFormData({...editFormData, amount: parseFloat(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                      <select
+                        value={editFormData?.category || ''}
+                        onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Select category</option>
+                        {uniqueCategories.map((cat, idx) => (
+                          <option key={idx} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Merchant */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Merchant *</label>
+                      <input
+                        type="text"
+                        value={editFormData?.merchant || ''}
+                        onChange={(e) => setEditFormData({...editFormData, merchant: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Card Used */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Card Used *</label>
+                      <select
+                        value={editFormData?.cardUsed || ''}
+                        onChange={(e) => setEditFormData({...editFormData, cardUsed: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Select card used</option>
+                        {uniqueCards.map((card, idx) => (
+                          <option key={idx} value={card}>{card}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                      <input
+                        type="text"
+                        value={editFormData?.location || ''}
+                        onChange={(e) => setEditFormData({...editFormData, location: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Optional"
+                      />
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Description */}
-              {viewingExpense.description && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500 mb-2">Description</p>
-                  <p className="text-gray-900">{viewingExpense.description}</p>
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={editFormData?.description || ''}
+                      onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Optional additional details"
+                    />
+                  </div>
+
+                  {/* Reimbursement */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="edit-reimbursement"
+                      checked={editFormData?.reimbursementRequired || false}
+                      onChange={(e) => setEditFormData({...editFormData, reimbursementRequired: e.target.checked})}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="edit-reimbursement" className="text-sm font-medium text-gray-700">
+                      Reimbursement Required (Personal Card)
+                    </label>
+                  </div>
                 </div>
               )}
 
@@ -1127,11 +1460,55 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         <span className="text-xs text-gray-500">
                           ID: {viewingExpense.zohoExpenseId}
                         </span>
+                        {(() => {
+                          // Count actual edits (not creation or Zoho push)
+                          const editCount = auditTrail.filter(entry => 
+                            entry.action !== 'created' && entry.action !== 'pushed_to_zoho'
+                          ).length;
+                          if (editCount > 0) {
+                            return (
+                              <div className="relative group">
+                                <div className="flex items-center text-amber-600 cursor-help">
+                                  <AlertTriangle className="w-4 h-4" />
+                                </div>
+                                <div className="absolute left-0 top-6 hidden group-hover:block z-50 w-56 p-2 bg-amber-50 border-2 border-amber-400 rounded-lg shadow-lg">
+                                  <p className="text-xs text-amber-900 font-medium">
+                                    ⚠ Edited {editCount} {editCount === 1 ? 'time' : 'times'} after push - Zoho data may be stale
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     ) : (
-                      <span className="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
-                        Not Pushed
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
+                          Not Pushed
+                        </span>
+                        {(() => {
+                          // Count actual edits (not creation or Zoho push)
+                          const editCount = auditTrail.filter(entry => 
+                            entry.action !== 'created' && entry.action !== 'pushed_to_zoho'
+                          ).length;
+                          if (editCount > 0) {
+                            return (
+                              <div className="relative group">
+                                <div className="flex items-center text-amber-600 cursor-help">
+                                  <AlertTriangle className="w-4 h-4" />
+                                </div>
+                                <div className="absolute left-0 top-6 hidden group-hover:block z-50 w-48 p-2 bg-amber-50 border-2 border-amber-400 rounded-lg shadow-lg">
+                                  <p className="text-xs text-amber-900 font-medium">
+                                    Edited {editCount} {editCount === 1 ? 'time' : 'times'} before push
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                     )}
                   </div>
                 )}
@@ -1165,29 +1542,170 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   )}
                 </div>
               )}
+
+              {/* Audit Trail (accountant/admin/developer only) */}
+              {hasApprovalPermission && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+                  <button
+                    onClick={() => setShowAuditTrail(!showAuditTrail)}
+                    className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <History className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-gray-900">Change History</h3>
+                      {(() => {
+                        const historyCount = auditTrail.filter(entry => entry.action !== 'created').length;
+                        if (historyCount > 0) {
+                          return (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-600 text-white">
+                              {historyCount}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    <div className="text-blue-600">
+                      {showAuditTrail ? '▼' : '▶'}
+                    </div>
+                  </button>
+                  
+                  {showAuditTrail && (loadingAudit ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      <span className="ml-2 text-sm text-gray-600">Loading history...</span>
+                    </div>
+                  ) : auditTrail.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 text-sm">
+                      No changes recorded yet
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {auditTrail.map((entry, index) => {
+                        const timestamp = new Date(entry.timestamp);
+                        const actionLabels: Record<string, string> = {
+                          created: 'Created',
+                          updated: 'Updated',
+                          status_changed: 'Status Changed',
+                          entity_assigned: 'Entity Assigned',
+                          pushed_to_zoho: 'Pushed to Zoho'
+                        };
+                        const actionColors: Record<string, string> = {
+                          created: 'bg-green-100 text-green-800',
+                          updated: 'bg-blue-100 text-blue-800',
+                          status_changed: 'bg-purple-100 text-purple-800',
+                          entity_assigned: 'bg-orange-100 text-orange-800',
+                          pushed_to_zoho: 'bg-emerald-100 text-emerald-800'
+                        };
+                        
+                        return (
+                          <div key={entry.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 text-xs font-medium rounded ${actionColors[entry.action] || 'bg-gray-100 text-gray-800'}`}>
+                                  {actionLabels[entry.action] || entry.action}
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">{entry.userName}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {timestamp.toLocaleDateString()} {timestamp.toLocaleTimeString()}
+                              </span>
+                            </div>
+                            
+                            {entry.changes && Object.keys(entry.changes).length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {Object.entries(entry.changes).map(([field, change]: [string, any]) => {
+                                  const fieldLabels: Record<string, string> = {
+                                    merchant: 'Merchant',
+                                    amount: 'Amount',
+                                    date: 'Date',
+                                    category: 'Category',
+                                    description: 'Description',
+                                    location: 'Location',
+                                    card_used: 'Card Used',
+                                    reimbursement_required: 'Reimbursement Required',
+                                    zoho_entity: 'Entity',
+                                    zoho_expense_id: 'Zoho Expense ID',
+                                    status: 'Status'
+                                  };
+                                  
+                                  return (
+                                    <div key={field} className="text-xs text-gray-700">
+                                      <span className="font-medium">{fieldLabels[field] || field}:</span>
+                                      {' '}
+                                      {change.old !== null && change.old !== undefined && (
+                                        <span className="text-red-600 line-through">
+                                          {field === 'amount' && typeof change.old === 'number' ? `$${change.old.toFixed(2)}` : String(change.old)}
+                                        </span>
+                                      )}
+                                      {change.old !== null && change.old !== undefined && ' → '}
+                                      <span className="text-green-600 font-medium">
+                                        {field === 'amount' && typeof change.new === 'number' ? `$${change.new.toFixed(2)}` : String(change.new)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setViewingExpense(null);
-                  setShowFullReceipt(true); // Reset to show full receipt next time
-                }}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  handleEditExpense(viewingExpense);
-                  setViewingExpense(null);
-                  setShowFullReceipt(true); // Reset to show full receipt next time
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
-              >
-                Edit Expense
-              </button>
+              {!isEditingExpense ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setViewingExpense(null);
+                      setShowFullReceipt(true);
+                      setIsEditingExpense(false);
+                      setEditFormData(null);
+                    }}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => startInlineEdit(viewingExpense)}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+                  >
+                    Edit Expense
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={cancelInlineEdit}
+                    disabled={isSaving}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveInlineEdit}
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

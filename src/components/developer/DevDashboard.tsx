@@ -209,22 +209,6 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
             <p className="text-xl md:text-2xl font-bold text-gray-900">{summary.total_users || 0}</p>
             <p className="text-xs text-gray-600">Total Users</p>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
-            <div className="flex items-center justify-between mb-2">
-              <BarChart3 className="w-5 h-5 text-orange-600" />
-            </div>
-            <p className="text-xl md:text-2xl font-bold text-gray-900">{summary.active_events || 0}</p>
-            <p className="text-xs text-gray-600">Active Events</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Clock className="w-5 h-5 text-indigo-600" />
-            </div>
-            <p className="text-xl md:text-2xl font-bold text-gray-900">{summary.pending_expenses || 0}</p>
-            <p className="text-xs text-gray-600">Pending</p>
-          </div>
         </div>
       )}
 

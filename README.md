@@ -3,9 +3,9 @@
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
 **Production:** Frontend v1.4.13 / Backend v1.5.1 (October 16, 2025)  
-**Sandbox:** Frontend v1.13.4 / Backend v1.13.4 (October 23, 2025)  
+**Sandbox:** Frontend v1.15.13 / Backend v1.15.10 (October 24, 2025)  
 **Production Status:** ✅ Stable and Active  
-**Sandbox Status:** 🔬 AI Pipeline Integration Complete
+**Sandbox Status:** 🔬 AI Pipeline Refinement & Bug Fixes
 
 📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
 🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
@@ -32,12 +32,28 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 
 ---
 
-## 🚧 Latest Development (v1.13.4 - External AI Pipeline)
+## 🚧 Latest Development (v1.15.13 - AI Pipeline Refinement)
 
 **Branch:** `v1.6.0` (Sandbox Only - Container 203)  
-**Status:** ✅ Complete & Operational
+**Status:** ✅ Operational & Refined
 
-### 🤖 Full AI-Powered OCR Pipeline with Microservices
+### 🔧 Session v1.15.13 - Model Training & Audit Trail Fixes (Oct 24, 2025)
+
+**Major Fixes:**
+- ✅ **Model Training accuracy metrics** - Now shows real data (was incorrectly 100%)
+- ✅ **OCR correction-to-expense linkage** - All new corrections link to their expenses
+- ✅ **Audit trail logging** - Inline edits now properly logged (field name mismatch fixed)
+- ✅ **Developer Dashboard cleanup** - Removed unnecessary stats
+
+**Key Discoveries:**
+- OCR merchant extraction: 0% accuracy (8/8 corrected) - needs improvement
+- OCR amount extraction: 100% accuracy (0/8 corrected) - working well
+- OCR category extraction: 62.5% accuracy (3/8 corrected) - decent
+- Learned patterns require 3+ identical corrections (fuzzy matching recommended)
+
+---
+
+### 🤖 Full AI-Powered OCR Pipeline with Microservices (v1.13.4)
 
 **Major Achievement:** Integrated 3-microservice AI feedback loop for receipt processing
 

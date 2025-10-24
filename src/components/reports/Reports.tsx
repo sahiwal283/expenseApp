@@ -373,6 +373,114 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         />
       )}
 
+      {/* Category Averages Across Trade Shows */}
+      {selectedEvent === 'all' && events.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Category Averages Across Trade Shows</h3>
+              <p className="text-sm text-gray-600">Average spending per category based on {events.length} trade show{events.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+
+          {(() => {
+            // Calculate category totals per trade show
+            const tradeShowCategoryTotals: Record<string, Record<string, number>> = {};
+            
+            filteredExpenses.forEach(expense => {
+              if (!expense.tradeShowId) return;
+              
+              if (!tradeShowCategoryTotals[expense.tradeShowId]) {
+                tradeShowCategoryTotals[expense.tradeShowId] = {};
+              }
+              
+              if (!tradeShowCategoryTotals[expense.tradeShowId][expense.category]) {
+                tradeShowCategoryTotals[expense.tradeShowId][expense.category] = 0;
+              }
+              
+              tradeShowCategoryTotals[expense.tradeShowId][expense.category] += expense.amount;
+            });
+
+            // Calculate averages per category
+            const categoryAverages: Record<string, { total: number; count: number; average: number }> = {};
+            
+            Object.values(tradeShowCategoryTotals).forEach(tradeShowCategories => {
+              Object.entries(tradeShowCategories).forEach(([category, amount]) => {
+                if (!categoryAverages[category]) {
+                  categoryAverages[category] = { total: 0, count: 0, average: 0 };
+                }
+                categoryAverages[category].total += amount;
+                categoryAverages[category].count += 1;
+              });
+            });
+
+            // Calculate final averages and sort by average amount (descending)
+            const sortedAverages = Object.entries(categoryAverages)
+              .map(([category, data]) => ({
+                category,
+                total: data.total,
+                count: data.count,
+                average: data.total / data.count
+              }))
+              .sort((a, b) => b.average - a.average);
+
+            if (sortedAverages.length === 0) {
+              return (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">No category data available for the selected filters</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sortedAverages.map(({ category, total, count, average }) => (
+                  <div 
+                    key={category}
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
+                        {category}
+                      </h4>
+                      <div className="w-8 h-8 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="w-4 h-4 text-amber-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-0.5">Average per Trade Show</p>
+                        <p className="text-2xl font-bold text-amber-600">
+                          ${average.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span>Total Spent:</span>
+                          <span className="font-semibold">${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
+                          <span>Trade Shows:</span>
+                          <span className="font-semibold">{count} of {events.length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Filter Modal */}
       {showFilterModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">

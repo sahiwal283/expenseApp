@@ -1,7 +1,7 @@
 # Trade Show Expense App - Architecture Documentation
 
-**Last Updated:** October 23, 2025  
-**Status:** Production Active | Sandbox AI Pipeline Integration Complete
+**Last Updated:** October 24, 2025  
+**Status:** Production Active | Sandbox AI Pipeline Refinement & Bug Fixes
 
 ## 📦 Current Versions
 
@@ -12,8 +12,8 @@
 - **URL:** http://192.168.1.138
 
 ### **Sandbox (Container 203)**
-- **Frontend:** v1.13.4 (Container 203) - October 23, 2025
-- **Backend:** v1.13.4 (Container 203) - October 23, 2025
+- **Frontend:** v1.15.13 (Container 203) - October 24, 2025
+- **Backend:** v1.15.10 (Container 203) - October 24, 2025
 - **Branch:** `v1.6.0`
 - **URL:** http://192.168.1.144
 

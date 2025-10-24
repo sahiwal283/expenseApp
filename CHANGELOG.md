@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.13] - 2025-10-24 (Sandbox) 🔧 PATCH
+
+### Fixed
+- **Model Training accuracy metrics** - Now calculates based on correction records instead of expenses with `ocr_text`
+- **OCR correction-to-expense linkage** - Frontend now captures and passes `expense_id` from create response
+- **Audit trail logging** - Inline edits now properly logged (fixed camelCase vs snake_case field mismatch)
+- **Developer Dashboard** - Removed unnecessary "Active Events" and "Pending" stat cards
+- **Version numbering** - Corrected from accidental 2.0.0 back to proper semantic versioning
+
+### Changed
+- Accuracy calculation redesigned to use total correction records as baseline
+- `saveInlineEdit()` now explicitly maps camelCase to snake_case field names
+- Developer Dashboard shows only relevant stats (Active Alerts, Total Users)
+
+### Data Analysis
+- OCR merchant extraction: 0% accuracy (8/8 corrections needed)
+- OCR amount extraction: 100% accuracy (0/8 corrections)
+- OCR category extraction: 62.5% accuracy (3/8 corrections)
+- OCR date extraction: 100% accuracy (0/8 corrections)
+- No learned patterns detected (requires 3+ identical original→corrected pairs)
+
+### Technical Notes
+- Accuracy formula: `(total OCR sessions - field corrections) / total sessions × 100`
+- Future corrections will link to expenses for better tracking
+- Inline edits now send: `event_id`, `card_used`, `reimbursement_required` (snake_case)
+
+### Status
+- ✅ Model Training showing real accuracy data
+- ✅ OCR corrections linking to expenses going forward
+- ✅ Audit trail logging all edit types
+- 🔬 Fuzzy pattern matching recommended for future work
+
+### Versions
+- Frontend: v1.15.13
+- Backend: v1.15.10
+
+---
+
 ## [1.9.17] - 2025-10-17 (Sandbox) 🔧 PATCH
 
 ### Fixed
