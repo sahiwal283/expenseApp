@@ -1,23 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Receipt, Search, Filter, Eye, CreditCard as Edit2, Trash2, X, MapPin, FileText, 
-  Calendar, DollarSign, CreditCard, User as UserIcon, Clock, CheckCircle, Upload, 
-  Loader2, CheckCircle2, AlertTriangle, History 
+  Plus, Receipt, Search, Filter, X, Loader2
 } from 'lucide-react';
-import { User, Expense } from '../../App';
+import { User, Expense, TradeShow } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { PendingActions } from '../common/PendingActions';
 import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { formatLocalDate, getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
-import { getStatusColor, getCategoryColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../constants/appConstants';
+import { formatReimbursementStatus } from '../../constants/appConstants';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
 import { ReceiptData } from '../../types/types';
 import { useToast, ToastContainer } from '../common/Toast';
 import { sendOCRCorrection, detectCorrections } from '../../utils/ocrCorrections';
+
+// ✅ REFACTORED: Imported extracted components
+import { ExpenseTableFilters, ExpenseTableRow } from './ExpenseTable';
+import {
+  ExpenseModalHeader,
+  ExpenseModalFooter,
+  ExpenseModalReceipt,
+  ExpenseModalAuditTrail,
+  ExpenseModalDuplicateWarning,
+  ExpenseModalDetailsView,
+  ExpenseModalDetailsEdit,
+  ExpenseModalStatusManagement,
+} from './ExpenseModal';
 
 interface ExpenseSubmissionProps {
   user: User;
