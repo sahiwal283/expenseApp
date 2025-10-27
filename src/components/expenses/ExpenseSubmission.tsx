@@ -721,155 +721,32 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     </div>
                   </th>
                 </tr>
-                {/* Compact Inline Filters Row - Collapsible */}
-                {showFilters && (
-                <tr className="border-t border-gray-100">
-                  {/* Date Filter (Month Dropdown) */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={dateFilter.substring(0, 7) || ''}
-                      onChange={(e) => setDateFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="">All</option>
-                      {(() => {
-                        // Generate list of months from oldest expense to current month
-                        const months = new Set<string>();
-                        const today = new Date();
-                        const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-                        months.add(currentYearMonth);
-                        
-                        // Add months from all expenses
-                        expenses.forEach(exp => {
-                          if (exp.date) {
-                            const yearMonth = exp.date.substring(0, 7);
-                            months.add(yearMonth);
-                          }
-                        });
-                        
-                        // Convert to sorted array (newest first)
-                        const sortedMonths = Array.from(months).sort().reverse();
-                        
-                        return sortedMonths.map(month => {
-                          const [year, monthNum] = month.split('-');
-                          const date = new Date(parseInt(year), parseInt(monthNum) - 1);
-                          const monthName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-                          return (
-                            <option key={month} value={month}>
-                              {monthName}
-                            </option>
-                          );
-                        });
-                      })()}
-                    </select>
-                  </th>
-                  {/* User Filter Placeholder (Approval Users) */}
-                  {hasApprovalPermission && (
-                    <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
-                  )}
-                  {/* Event Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={eventFilter}
-                      onChange={(e) => setEventFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="all">All Events</option>
-                      {events.map(event => (
-                        <option key={event.id} value={event.id}>{event.name}</option>
-                      ))}
-                    </select>
-                  </th>
-                  {/* Category Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="all">All</option>
-                      {uniqueCategories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </th>
-                  {/* Merchant Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <input
-                      type="text"
-                      value={merchantFilter}
-                      onChange={(e) => setMerchantFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                      placeholder="Search..."
-                    />
-                  </th>
-                  {/* Amount - No Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
-                  {/* Card Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={cardFilter}
-                      onChange={(e) => setCardFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="all">All</option>
-                      {uniqueCards.map(card => (
-                        <option key={card} value={card}>{card}</option>
-                      ))}
-                    </select>
-                  </th>
-                  {/* Status Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="all">All</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                  </th>
-                  {/* Reimbursement Filter */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={reimbursementFilter}
-                      onChange={(e) => setReimbursementFilter(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="all">All</option>
-                      <option value="required">Required</option>
-                      <option value="not-required">Not Required</option>
-                    </select>
-                  </th>
-                  {/* Entity and Zoho Filter Placeholders (Approval Users) */}
-                  {hasApprovalPermission && (
-                    <>
-                      <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
-                      <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
-                    </>
-                  )}
-                  {/* Actions Column - Sort By */}
-                  <th className="px-2 sm:px-3 lg:px-4 py-1">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-                    >
-                      <option value="default">Default</option>
-                      <option value="date-newest">Newest First</option>
-                      <option value="date-oldest">Oldest First</option>
-                      <option value="amount-highest">Highest Amount</option>
-                      <option value="amount-lowest">Lowest Amount</option>
-                      <option value="merchant-az">Merchant A-Z</option>
-                      <option value="merchant-za">Merchant Z-A</option>
-                      <option value="category-az">Category A-Z</option>
-                      <option value="category-za">Category Z-A</option>
-                    </select>
-                  </th>
-                </tr>
-                )}
+                {/* ✅ REFACTORED: Replaced 147 lines with ExpenseTableFilters component */}
+                <ExpenseTableFilters
+                  expenses={expenses}
+                  events={events}
+                  users={users}
+                  hasApprovalPermission={hasApprovalPermission}
+                  showFilters={showFilters}
+                  dateFilter={dateFilter}
+                  setDateFilter={setDateFilter}
+                  eventFilter={eventFilter}
+                  setEventFilter={setEventFilter}
+                  categoryFilter={categoryFilter}
+                  setCategoryFilter={setCategoryFilter}
+                  merchantFilter={merchantFilter}
+                  setMerchantFilter={setMerchantFilter}
+                  cardFilter={cardFilter}
+                  setCardFilter={setCardFilter}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  reimbursementFilter={reimbursementFilter}
+                  setReimbursementFilter={setReimbursementFilter}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  uniqueCategories={uniqueCategories}
+                  uniqueCards={uniqueCards}
+                />
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {finalFilteredExpenses.map((expense) => {
