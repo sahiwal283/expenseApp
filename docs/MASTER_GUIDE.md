@@ -6962,15 +6962,24 @@ This was actually **Phase 2.5** - migrating components to use shared badges:
 - `routes/devDashboard.ts`: 933 lines 🔴 (backend)
 
 **Progress on ExpenseSubmission.tsx:**
-1. ✅ Extracted `ExpenseTableFilters.tsx` (230 lines) - Filter row component
-2. 🔄 Extracting table rows (est. ~400 lines)
-3. ⏳ Extract modal (est. ~500 lines)
-4. ⏳ Extract header/actions (est. ~200 lines)
+1. ✅ Extracted `ExpenseTableFilters.tsx` (230 lines) - Inline filter row
+2. ✅ Extracted `ExpenseTableRow.tsx` (268 lines) - Complete table row with actions
+3. ⏳ Modal component (643 lines) - **TOO LARGE, needs 5+ sub-components:**
+   - ExpenseModalHeader
+   - ExpenseModalReceipt  
+   - ExpenseModalDetails
+   - ExpenseModalAuditTrail
+   - ExpenseModalEntityManagement
+4. ⏳ Header/actions bar (~200 lines)
 5. ⏳ Final orchestrator (target: ~300 lines)
 
-**Estimated Time for Full Phase 3:** 20-30 hours (original assessment)  
-**Time Spent So Far:** ~1 hour  
-**Remaining:** ~19-29 hours
+**Extracted So Far:** 498 lines (29% of 1,741)  
+**Remaining:** ~1,243 lines (71%)
+
+**Time Estimate:**  
+- **Spent:** ~2 hours  
+- **Remaining:** ~18-28 hours  
+- **Total Phase 3:** 20-30 hours (as originally estimated)
 
 **Combined Phase 2 & 3 Impact:**
 - **15 files changed**: +946 insertions, -348 deletions
