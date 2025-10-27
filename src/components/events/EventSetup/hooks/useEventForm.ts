@@ -16,8 +16,12 @@ interface EventFormData {
   venue: string;
   city: string;
   state: string;
-  startDate: string;
-  endDate: string;
+  startDate: string; // DEPRECATED
+  endDate: string; // DEPRECATED
+  showStartDate: string;
+  showEndDate: string;
+  travelStartDate: string;
+  travelEndDate: string;
   budget: string;
   participants: User[];
 }
@@ -45,8 +49,12 @@ const initialFormData: EventFormData = {
   venue: '',
   city: '',
   state: '',
-  startDate: '',
-  endDate: '',
+  startDate: '', // DEPRECATED: keeping for backward compatibility
+  endDate: '', // DEPRECATED: keeping for backward compatibility
+  showStartDate: '',
+  showEndDate: '',
+  travelStartDate: '',
+  travelEndDate: '',
   budget: '',
   participants: []
 };
@@ -74,8 +82,12 @@ export function useEventForm(): UseEventFormReturn {
       venue: formData.venue,
       city: formData.city,
       state: formData.state,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.showStartDate, // For backward compatibility
+      endDate: formData.showEndDate, // For backward compatibility
+      showStartDate: formData.showStartDate,
+      showEndDate: formData.showEndDate,
+      travelStartDate: formData.travelStartDate,
+      travelEndDate: formData.travelEndDate,
       budget: formData.budget ? parseFloat(formData.budget) : undefined,
       participants: formData.participants,
       status: 'upcoming',
@@ -90,8 +102,12 @@ export function useEventForm(): UseEventFormReturn {
             venue: eventData.venue,
             city: eventData.city,
             state: eventData.state,
-            start_date: eventData.startDate,
-            end_date: eventData.endDate,
+            start_date: eventData.showStartDate,
+            end_date: eventData.showEndDate,
+            show_start_date: eventData.showStartDate,
+            show_end_date: eventData.showEndDate,
+            travel_start_date: eventData.travelStartDate,
+            travel_end_date: eventData.travelEndDate,
             budget: eventData.budget,
             participants: eventData.participants, // Send full participant objects (includes custom participants)
             status: eventData.status || 'upcoming',
@@ -112,8 +128,12 @@ export function useEventForm(): UseEventFormReturn {
             venue: eventData.venue,
             city: eventData.city,
             state: eventData.state,
-            start_date: eventData.startDate,
-            end_date: eventData.endDate,
+            start_date: eventData.showStartDate,
+            end_date: eventData.showEndDate,
+            show_start_date: eventData.showStartDate,
+            show_end_date: eventData.showEndDate,
+            travel_start_date: eventData.travelStartDate,
+            travel_end_date: eventData.travelEndDate,
             budget: eventData.budget,
             participants: eventData.participants, // Send full participant objects (includes custom participants)
           });
@@ -136,8 +156,12 @@ export function useEventForm(): UseEventFormReturn {
       venue: event.venue,
       city: event.city,
       state: event.state,
-      startDate: formatForDateInput(event.startDate),
-      endDate: formatForDateInput(event.endDate),
+      startDate: formatForDateInput(event.showStartDate || event.startDate), // Fallback for backward compat
+      endDate: formatForDateInput(event.showEndDate || event.endDate), // Fallback for backward compat
+      showStartDate: formatForDateInput(event.showStartDate || event.startDate),
+      showEndDate: formatForDateInput(event.showEndDate || event.endDate),
+      travelStartDate: formatForDateInput(event.travelStartDate || event.startDate),
+      travelEndDate: formatForDateInput(event.travelEndDate || event.endDate),
       budget: event.budget?.toString() || '',
       participants: event.participants
     });

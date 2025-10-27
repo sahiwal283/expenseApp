@@ -40,8 +40,12 @@ export interface TradeShow {
   venue: string;
   city: string;
   state: string;
-  startDate: string;
-  endDate: string;
+  startDate: string; // DEPRECATED: Use showStartDate
+  endDate: string; // DEPRECATED: Use showEndDate
+  showStartDate: string; // Actual event/show start date
+  showEndDate: string; // Actual event/show end date
+  travelStartDate: string; // Travel start date (may be before show)
+  travelEndDate: string; // Travel end date (may be after show)
   participants: User[];
   budget?: number;
   status: 'upcoming' | 'active' | 'completed';

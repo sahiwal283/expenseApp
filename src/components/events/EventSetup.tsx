@@ -303,33 +303,79 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   />
                 </div>
                 
+                {/* Show Dates */}
+                <div className="col-span-2">
+                  <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    Show Dates
+                  </h3>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date *
+                    Show Start Date *
                   </label>
                   <input
                     type="date"
                     required
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    value={formData.showStartDate}
+                    onChange={(e) => setFormData({ ...formData, showStartDate: e.target.value, startDate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Date *
+                    Show End Date *
                   </label>
                   <input
                     type="date"
                     required
-                    value={formData.endDate}
-                    min={formData.startDate} // End date must be >= start date
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    value={formData.showEndDate}
+                    min={formData.showStartDate}
+                    onChange={(e) => setFormData({ ...formData, showEndDate: e.target.value, endDate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  {formData.startDate && formData.endDate && formData.endDate < formData.startDate && (
-                    <p className="mt-1 text-sm text-red-600">End date cannot be before start date</p>
+                  {formData.showStartDate && formData.showEndDate && formData.showEndDate < formData.showStartDate && (
+                    <p className="mt-1 text-sm text-red-600">Show end date cannot be before show start date</p>
+                  )}
+                </div>
+
+                {/* Travel Dates */}
+                <div className="col-span-2">
+                  <h3 className="text-md font-semibold text-gray-800 mb-3 mt-2 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Travel Dates
+                  </h3>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Travel Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.travelStartDate}
+                    onChange={(e) => setFormData({ ...formData, travelStartDate: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Travel End Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.travelEndDate}
+                    min={formData.travelStartDate}
+                    onChange={(e) => setFormData({ ...formData, travelEndDate: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  {formData.travelStartDate && formData.travelEndDate && formData.travelEndDate < formData.travelStartDate && (
+                    <p className="mt-1 text-sm text-red-600">Travel end date cannot be before travel start date</p>
                   )}
                 </div>
               </div>
