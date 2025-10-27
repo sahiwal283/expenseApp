@@ -6962,24 +6962,26 @@ This was actually **Phase 2.5** - migrating components to use shared badges:
 - `routes/devDashboard.ts`: 933 lines 🔴 (backend)
 
 **Progress on ExpenseSubmission.tsx:**
-1. ✅ Extracted `ExpenseTableFilters.tsx` (230 lines) - Inline filter row
-2. ✅ Extracted `ExpenseTableRow.tsx` (268 lines) - Complete table row with actions
-3. ⏳ Modal component (643 lines) - **TOO LARGE, needs 5+ sub-components:**
-   - ExpenseModalHeader
-   - ExpenseModalReceipt  
-   - ExpenseModalDetails
-   - ExpenseModalAuditTrail
-   - ExpenseModalEntityManagement
-4. ⏳ Header/actions bar (~200 lines)
-5. ⏳ Final orchestrator (target: ~300 lines)
+1. ✅ Extracted `ExpenseTableFilters.tsx` (230 lines) - Filter row component
+2. ✅ Extracted `ExpenseTableRow.tsx` (268 lines) - Complete table row with all actions
+3. ✅ Extracted modal sub-components:
+   - `ExpenseModalHeader.tsx` (20 lines) - Event name + close button
+   - `ExpenseModalFooter.tsx` (62 lines) - Close/Edit or Cancel/Save buttons
+   - `ExpenseModalReceipt.tsx` (27 lines) - Receipt display with toggle
+   - `ExpenseModalAuditTrail.tsx` (115 lines) - Change history for approvers
+   - `ExpenseModalDuplicateWarning.tsx` (23 lines) - Duplicate expense warnings
+4. ✅ Created index files for clean imports
+5. ⏳ Expense details view/edit (~390 lines) - **NEXT, MOST COMPLEX**
+6. ⏳ Main orchestrator (~600 lines) - Final step
 
-**Extracted So Far:** 498 lines (29% of 1,741)  
-**Remaining:** ~1,243 lines (71%)
+**Extracted So Far:** 745 lines (43% of 1,741) ✅  
+**Remaining:** ~996 lines (57%)
 
 **Time Estimate:**  
-- **Spent:** ~2 hours  
-- **Remaining:** ~18-28 hours  
-- **Total Phase 3:** 20-30 hours (as originally estimated)
+- **Spent:** ~3 hours  
+- **Remaining:** ~12-15 hours  
+- **Total for this file:** ~15-18 hours
+- **Total Phase 3 (all files):** ~50-65 hours
 
 **Combined Phase 2 & 3 Impact:**
 - **15 files changed**: +946 insertions, -348 deletions
