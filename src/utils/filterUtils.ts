@@ -216,19 +216,28 @@ export function getUniqueMerchants(expenses: Expense[]): string[] {
 
 /**
  * Check if any filters are active
+ * 
+ * @param filters - Filter object to check
+ * @returns true if any filter has a non-default value
+ * 
+ * @example
+ * ```typescript
+ * const filters = { date: '2024-01', status: 'pending', event: 'all' };
+ * hasActiveFilters(filters); // true (date and status are active)
+ * ```
  */
 export function hasActiveFilters(filters: ExpenseFilters): boolean {
-  return !!(
-    (filters.date && filters.date !== '') ||
-    (filters.event && filters.event !== 'all') ||
-    (filters.category && filters.category !== 'all') ||
-    (filters.merchant && filters.merchant !== '') ||
-    (filters.card && filters.card !== 'all') ||
-    (filters.status && filters.status !== 'all') ||
-    (filters.reimbursement && filters.reimbursement !== 'all') ||
-    (filters.entity && filters.entity !== 'all') ||
-    (filters.user && filters.user !== 'all') ||
-    (filters.search && filters.search !== '')
+  // Define default/empty values for each filter type
+  const isFilterActive = (key: keyof ExpenseFilters, value: any): boolean => {
+    if (value === undefined || value === null) return false;
+    if (value === '') return false;
+    if (value === 'all') return false;
+    return true;
+  };
+
+  // Check if any filter is active
+  return Object.entries(filters).some(([key, value]) => 
+    isFilterActive(key as keyof ExpenseFilters, value)
   );
 }
 
