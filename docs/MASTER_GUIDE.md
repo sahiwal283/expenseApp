@@ -6964,24 +6964,32 @@ This was actually **Phase 2.5** - migrating components to use shared badges:
 **Progress on ExpenseSubmission.tsx:**
 1. ✅ Extracted `ExpenseTableFilters.tsx` (230 lines) - Filter row component
 2. ✅ Extracted `ExpenseTableRow.tsx` (268 lines) - Complete table row with all actions
-3. ✅ Extracted modal sub-components:
+3. ✅ Extracted 8 modal sub-components (631 lines total):
    - `ExpenseModalHeader.tsx` (20 lines) - Event name + close button
    - `ExpenseModalFooter.tsx` (62 lines) - Close/Edit or Cancel/Save buttons
    - `ExpenseModalReceipt.tsx` (27 lines) - Receipt display with toggle
    - `ExpenseModalAuditTrail.tsx` (115 lines) - Change history for approvers
    - `ExpenseModalDuplicateWarning.tsx` (23 lines) - Duplicate expense warnings
-4. ✅ Created index files for clean imports
-5. ⏳ Expense details view/edit (~390 lines) - **NEXT, MOST COMPLEX**
-6. ⏳ Main orchestrator (~600 lines) - Final step
+   - `ExpenseModalDetailsView.tsx` (73 lines) - **SIMPLIFIED** read-only display
+   - `ExpenseModalDetailsEdit.tsx` (113 lines) - **SIMPLIFIED** edit form
+   - `ExpenseModalStatusManagement.tsx` (198 lines) - **SIMPLIFIED** approval workflows
+4. ✅ Created index files for clean imports (`ExpenseModal/index.ts`, `ExpenseTable/index.ts`)
+5. ⏳ **NEXT:** Integrate components into main orchestrator (reduce 1,741 → ~350 lines)
 
-**Extracted So Far:** 745 lines (43% of 1,741) ✅  
-**Remaining:** ~996 lines (57%)
+**Extracted So Far:** 1,129 lines (65% of 1,741) ✅  
+**Remaining:** ~612 lines orchestration logic
+
+**Key Simplifications Made:**
+- ✅ Separated view/edit modes (eliminated nested conditionals)
+- ✅ Extracted duplicate edit count logic (DRY principle)
+- ✅ Created reusable `DetailItem` and `EditWarning` sub-components
+- ✅ Cleaner prop interfaces for async handlers
 
 **Time Estimate:**  
-- **Spent:** ~3 hours  
-- **Remaining:** ~12-15 hours  
-- **Total for this file:** ~15-18 hours
-- **Total Phase 3 (all files):** ~50-65 hours
+- **Spent:** ~4 hours  
+- **Remaining:** ~8-10 hours (orchestrator integration + testing)  
+- **Total for this file:** ~12-14 hours
+- **Total Phase 3 (all files):** ~45-60 hours
 
 **Combined Phase 2 & 3 Impact:**
 - **15 files changed**: +946 insertions, -348 deletions
