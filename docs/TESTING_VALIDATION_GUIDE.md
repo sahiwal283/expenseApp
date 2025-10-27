@@ -26,10 +26,10 @@ This guide provides comprehensive testing and validation procedures for the Expe
 - [ ] Check browser console for errors
 
 **Test: OCR Results Display**
-- [ ] After OCR completes, verify OcrSection shows extracted fields
-- [ ] Check merchant, amount, date are populated
-- [ ] Verify confidence scores display
-- [ ] Test "Apply OCR Results" button functionality
+- [ ] After OCR completes, verify extracted fields auto-populate form
+- [ ] Check merchant, amount, date are populated in form fields
+- [ ] Verify OCR processing completes without errors
+- [ ] Test manual entry if OCR fails ("Enter Details Manually" button)
 
 **Test: Form Fields**
 - [ ] Fill out BasicFields (merchant, amount, date)
