@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.17.3 - PATCH: Fixed NPMplus proxy upload limit
+// Version: 1.19.1 - PATCH: Added event Details button
 // Date: October 27, 2025
 //
 // New Features:
