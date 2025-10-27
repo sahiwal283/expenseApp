@@ -7004,6 +7004,204 @@ ssh root@192.168.1.190 "pct exec 203 -- tail -f /var/log/nginx/access.log | grep
 
 ---
 
+## 🚨 CRITICAL: Code Organization Rules for AI Agents
+
+**⚠️ MANDATORY RULES - ALWAYS FOLLOW THESE ⚠️**
+
+### 1. Hook Usage Rules (STRICTLY ENFORCED)
+
+**✅ DO:**
+- **ALWAYS check if a hook already exists** before writing new logic
+- **ALWAYS extract repeated logic** (>3 lines) into a custom hook
+- **ALWAYS use existing shared hooks**:
+  - `useUsers()` - For fetching user data
+  - `useApiError()` - For consistent error handling
+  - `useResourceLoader<T>()` - For generic data loading
+  - `useAuditTrail()` - For audit trail management
+  - `useExpenseApprovals()` - For Zoho push workflow
+  - `useExpenseModal()` - For modal viewing/editing
+- **ALWAYS create hooks** for stateful logic >30 lines
+- **ALWAYS co-locate hooks** with components in `/hooks/` subdirectory
+- **ALWAYS use TypeScript** for hooks with proper types
+
+**❌ NEVER:**
+- ❌ Copy-paste useState/useEffect logic between components
+- ❌ Write fetch logic inline (use hooks)
+- ❌ Duplicate form state management
+- ❌ Hardcode API calls in components
+- ❌ Ignore existing hooks
+
+**Hook Naming Convention:**
+```typescript
+// Good
+useExpenseForm()      // Feature-specific
+useAuditTrail()       // Domain-specific
+useResourceLoader()   // Generic
+
+// Bad
+useData()             // Too vague
+expenseForm()         // Missing "use" prefix
+useGetExpenses()      // Redundant "get"
+```
+
+**Hook Location:**
+```
+✅ CORRECT:
+src/hooks/                          # Shared across entire app
+src/components/Feature/hooks/       # Feature-specific hooks
+
+❌ WRONG:
+src/utils/hooks/                    # Don't mix utils and hooks
+src/components/Feature/useHook.ts   # Missing /hooks/ directory
+```
+
+---
+
+### 2. Component Reusability Rules
+
+**✅ DO:**
+- **ALWAYS use shared Badge components** instead of inline styling:
+  - `<StatusBadge status={...} />`
+  - `<CategoryBadge category={...} />`
+  - `<Badge color={...} variant={...} />`
+- **ALWAYS check `src/components/common/`** for existing components
+- **ALWAYS extract components** used in 2+ places
+- **ALWAYS use shared utilities**:
+  - `filterUtils.ts` - For filtering/sorting expenses
+  - `dateUtils.ts` - For date formatting/parsing
+
+**❌ NEVER:**
+- ❌ Write inline badge styling: `className={getStatusColor(...)}`
+- ❌ Duplicate filter logic across components
+- ❌ Copy date formatting code
+- ❌ Ignore existing shared components
+
+**Before Adding New Components:**
+1. Check `src/components/common/index.ts`
+2. Check `src/hooks/` directory
+3. Check `src/utils/` directory
+4. Only create new if nothing exists
+
+---
+
+### 3. Code Duplication Prevention
+
+**Detection Rules:**
+- ⚠️ If you see similar code in 2 files → Extract to shared hook/utility
+- ⚠️ If function >30 lines → Consider splitting
+- ⚠️ If useState/useEffect pattern repeated → Extract to hook
+- ⚠️ If inline styling repeated → Use shared component
+
+**Extraction Thresholds:**
+- **2 components** using same logic → Extract to hook
+- **3+ lines** of repeated logic → Extract to utility
+- **Any API call** → Must use hook or utility
+- **Any form state** → Consider useForm hook
+
+**Example - BAD (Duplicate Code):**
+```typescript
+// ❌ Component A
+const [users, setUsers] = useState([]);
+useEffect(() => {
+  fetch('/api/users').then(r => r.json()).then(setUsers);
+}, []);
+
+// ❌ Component B  
+const [users, setUsers] = useState([]);
+useEffect(() => {
+  fetch('/api/users').then(r => r.json()).then(setUsers);
+}, []);
+```
+
+**Example - GOOD (Shared Hook):**
+```typescript
+// ✅ Both components
+const { users, loading, error } = useUsers();
+```
+
+---
+
+### 4. File Organization Rules
+
+**Directory Structure:**
+```
+src/
+├── hooks/                    # Shared hooks (app-wide)
+│   ├── useUsers.ts
+│   ├── useApiError.ts
+│   └── useResourceLoader.ts
+│
+├── components/
+│   ├── common/              # Shared UI components
+│   │   ├── StatusBadge.tsx
+│   │   ├── CategoryBadge.tsx
+│   │   └── index.ts         # Central export
+│   │
+│   └── Feature/
+│       ├── Feature.tsx      # Main component
+│       ├── FeaturePart.tsx  # Sub-component
+│       └── hooks/           # Feature-specific hooks
+│           ├── useFeatureForm.ts
+│           └── useFeatureData.ts
+│
+└── utils/                   # Pure functions, no state
+    ├── dateUtils.ts
+    ├── filterUtils.ts
+    └── api.ts
+```
+
+**File Naming:**
+- Hooks: `use*.ts` (camelCase)
+- Components: `*.tsx` (PascalCase)
+- Utilities: `*Utils.ts` (camelCase)
+- Types: `types.ts` or inline in component
+
+---
+
+### 5. Code Review Checklist for AI Agents
+
+**Before committing ANY code, verify:**
+- [ ] No duplicate hooks (checked `src/hooks/` and component `hooks/`)
+- [ ] No duplicate components (checked `src/components/common/`)
+- [ ] No inline badge styling (using `StatusBadge`/`CategoryBadge`)
+- [ ] No duplicate filter logic (using `filterUtils.ts`)
+- [ ] No duplicate date logic (using `dateUtils.ts`)
+- [ ] No inline API calls (using hooks or `api.ts`)
+- [ ] TypeScript types are defined
+- [ ] No linter errors (`npm run lint`)
+- [ ] Follows naming conventions
+- [ ] Documented in MASTER_GUIDE if significant
+
+---
+
+### 6. Refactoring Guidelines
+
+**When to Extract a Hook:**
+- Logic used in 2+ components
+- useState + useEffect combo >20 lines
+- Complex stateful logic (forms, modals, data fetching)
+- Side effects that need cleanup
+
+**When to Extract a Component:**
+- JSX block repeated 2+ times
+- Self-contained UI with props
+- Reusable across features
+
+**When to Extract a Utility:**
+- Pure function (no state)
+- Used in 2+ places
+- Logic >10 lines
+- Data transformation/formatting
+
+**Priority Order:**
+1. Check existing code first
+2. Extract to hook/component/utility
+3. Update central index.ts exports
+4. Document in MASTER_GUIDE
+5. Update dependents to use new code
+
+---
+
 ## 🚨 CRITICAL: Database Migration Rules for AI Agents
 
 **⚠️ MANDATORY RULES - NEVER VIOLATE THESE ⚠️**
