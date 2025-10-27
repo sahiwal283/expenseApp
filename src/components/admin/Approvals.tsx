@@ -28,6 +28,14 @@ import { useToast, ToastContainer } from '../common/Toast';
 import { StatusBadge, CategoryBadge } from '../common';
 import { useApprovals } from './Approvals/hooks/useApprovals';
 import { useApprovalFilters } from './Approvals/hooks/useApprovalFilters';
+// ✅ REFACTORED: Import extracted components
+import {
+  ApprovalStatsCards,
+  ApprovalTableRow,
+  ApprovalViewModal,
+  ApprovalEditModal,
+  ApprovalFilterModal
+} from './Approvals';
 
 interface ApprovalsProps {
   user: User;
@@ -310,53 +318,8 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-xl md:text-2xl font-bold text-yellow-600">{stats.pendingCount}</p>
-              <p className="text-gray-600">Pending Approval</p>
-            </div>
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600">
-            ${stats.pendingAmount.toLocaleString()} total
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-xl md:text-2xl font-bold text-orange-600">{stats.reimbursementCount}</p>
-              <p className="text-gray-600">Reimbursements</p>
-            </div>
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600">
-            Pending approval
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-xl md:text-2xl font-bold text-red-600">{stats.unassignedCount}</p>
-              <p className="text-gray-600">Unassigned Entities</p>
-            </div>
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600">
-            Need entity assignment
-          </div>
-        </div>
-      </div>
+      {/* ✅ REFACTORED: Replaced 47 lines with ApprovalStatsCards component */}
+      <ApprovalStatsCards stats={stats} />
 
       {/* Expenses Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
