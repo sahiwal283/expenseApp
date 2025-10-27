@@ -1,7 +1,7 @@
 import React from 'react';
 import { Building2, DollarSign, FileText } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
-import { getCategoryColor } from '../../constants/appConstants';
+import { CategoryBadge } from '../common';
 
 interface EntityBreakdownProps {
   expenses: Expense[];
@@ -101,9 +101,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
                   <div className="space-y-2">
                     {topCategories.map(([category, amount]) => (
                       <div key={category} className="flex items-center justify-between">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(category)}`}>
-                          {category}
-                        </span>
+                        <CategoryBadge category={category} size="sm" />
                         <span className="text-sm font-semibold text-gray-900">
                           ${amount.toLocaleString()}
                         </span>

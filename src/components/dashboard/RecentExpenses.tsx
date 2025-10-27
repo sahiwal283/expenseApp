@@ -2,7 +2,7 @@ import React from 'react';
 import { Clock, DollarSign, MapPin } from 'lucide-react';
 import { Expense } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
-import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
+import { StatusBadge, CategoryBadge } from '../common';
 
 interface RecentExpensesProps {
   onPageChange: (page: string) => void;
@@ -48,12 +48,8 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
-                  {expense.category}
-                </span>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                  {expense.status}
-                </span>
+                <CategoryBadge category={expense.category} size="sm" />
+                <StatusBadge status={expense.status} size="sm" />
                 <p className="font-semibold text-gray-900">${expense.amount.toFixed(2)}</p>
               </div>
             </div>
