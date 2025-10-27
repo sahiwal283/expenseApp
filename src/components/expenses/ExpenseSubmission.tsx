@@ -783,54 +783,24 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         </div>
       )}
 
-      {/* Expense Details Modal */}
+      {/* ✅ REFACTORED: Expense Details Modal with 8 sub-components */}
       {viewingExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold">Expense Details</h2>
-                <p className="text-sm text-purple-100">
-                  {events.find(e => e.id === viewingExpense.tradeShowId)?.name || 'N/A'}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setViewingExpense(null);
-                  setShowFullReceipt(true); // Reset to show full receipt next time
-                }}
-                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            
+            <ExpenseModalHeader
+              eventName={events.find(e => e.id === viewingExpense.tradeShowId)?.name}
+              onClose={() => {
+                setViewingExpense(null);
+                setShowFullReceipt(true);
+                setIsEditingExpense(false);
+                setEditFormData(null);
+              }}
+            />
 
             {/* Content */}
             <div className="p-6 space-y-6">
-              {/* Duplicate Check Warning */}
-              {viewingExpense.duplicateCheck && viewingExpense.duplicateCheck.length > 0 && (
-                <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-600" />
-                    <p className="font-semibold text-amber-900">⚠ Possible Duplicate Expenses</p>
-                  </div>
-                  <div className="space-y-2">
-                    {viewingExpense.duplicateCheck.map((dup, index) => {
-                      const dupDate = new Date(dup.date);
-                      const formattedDate = dupDate.toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      });
-                      return (
-                        <div key={index} className="text-sm text-amber-900 bg-white rounded p-2">
-                          ⚠ Possible duplicate: Expense #{dup.expenseId} (${dup.amount.toFixed(2)} at {dup.merchant} on {formattedDate})
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <ExpenseModalDuplicateWarning duplicateCheck={viewingExpense.duplicateCheck} />
 
               {/* Basic Info Grid - Conditional Edit Mode */}
               {!isEditingExpense ? (
