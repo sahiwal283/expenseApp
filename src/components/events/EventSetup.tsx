@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
-import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X, Loader2, Info, Users2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X, Loader2, Info, Users2, CheckCircle2, Circle, Plane, Hotel, Car, Package } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate, formatDateRange, formatLocalDate } from '../../utils/dateUtils';
 import { useEventData, useEventForm } from './EventSetup/hooks';
+
+interface ChecklistSummary {
+  booth_ordered: boolean;
+  electricity_ordered: boolean;
+  flights_booked: number;
+  flights_total: number;
+  hotels_booked: number;
+  hotels_total: number;
+  car_rentals_booked: number;
+  car_rentals_total: number;
+  booth_shipped: boolean;
+}
 
 interface EventSetupProps {
   user: User;
@@ -36,6 +48,49 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [filterMode, setFilterMode] = useState<'all' | 'my'>('all');
   const [isSaving, setIsSaving] = useState(false);
   const [viewingEvent, setViewingEvent] = useState<TradeShow | null>(null);
+  const [checklistData, setChecklistData] = useState<ChecklistSummary | null>(null);
+  const [loadingChecklist, setLoadingChecklist] = useState(false);
+
+  // Load checklist when viewing event details
+  useEffect(() => {
+    if (viewingEvent) {
+      loadChecklistSummary(viewingEvent.id);
+    } else {
+      setChecklistData(null);
+    }
+  }, [viewingEvent]);
+
+  const loadChecklistSummary = async (eventId: string) => {
+    setLoadingChecklist(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${eventId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        }
+      );
+      const data = await response.json();
+      
+      setChecklistData({
+        booth_ordered: data.booth_ordered || false,
+        electricity_ordered: data.electricity_ordered || false,
+        flights_booked: data.flights?.filter((f: any) => f.booked).length || 0,
+        flights_total: data.flights?.length || 0,
+        hotels_booked: data.hotels?.filter((h: any) => h.booked).length || 0,
+        hotels_total: data.hotels?.length || 0,
+        car_rentals_booked: data.carRentals?.filter((c: any) => c.booked).length || 0,
+        car_rentals_total: data.carRentals?.length || 0,
+        booth_shipped: data.boothShipping?.[0]?.shipped || false
+      });
+    } catch (error) {
+      console.error('[EventSetup] Error loading checklist:', error);
+      setChecklistData(null);
+    } finally {
+      setLoadingChecklist(false);
+    }
+  };
 
 
   // Wrapper functions to handle hook integration
@@ -739,6 +794,79 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                   <p className="text-gray-500 italic">No participants assigned yet</p>
                 )}
               </div>
+
+              {/* Checklist Summary */}
+              {(user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer') && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+                    Event Checklist
+                  </h3>
+                  {loadingChecklist ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : checklistData ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      {/* Booth & Electricity */}
+                      <div className="flex items-center gap-3">
+                        {checklistData.booth_ordered ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className="text-sm text-gray-700">Booth Space Ordered</span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {checklistData.electricity_ordered ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className="text-sm text-gray-700">Electricity Ordered</span>
+                      </div>
+
+                      {/* Flights */}
+                      <div className="flex items-center gap-3">
+                        <Plane className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">
+                          Flights: {checklistData.flights_booked}/{checklistData.flights_total} booked
+                        </span>
+                      </div>
+
+                      {/* Hotels */}
+                      <div className="flex items-center gap-3">
+                        <Hotel className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">
+                          Hotels: {checklistData.hotels_booked}/{checklistData.hotels_total} booked
+                        </span>
+                      </div>
+
+                      {/* Car Rentals */}
+                      {checklistData.car_rentals_total > 0 && (
+                        <div className="flex items-center gap-3">
+                          <Car className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                          <span className="text-sm text-gray-700">
+                            Car Rentals: {checklistData.car_rentals_booked}/{checklistData.car_rentals_total} booked
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Booth Shipping */}
+                      <div className="flex items-center gap-3">
+                        {checklistData.booth_shipped ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className="text-sm text-gray-700">Booth Shipped</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm italic">Checklist not available</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">

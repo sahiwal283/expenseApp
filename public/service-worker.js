@@ -1,11 +1,13 @@
 // ExpenseApp Service Worker
-// Version: 1.19.1 - PATCH: Added event Details button
+// Version: 1.20.0 - MINOR: Trade Show Checklist Feature
 // Date: October 27, 2025
 //
 // New Features:
-// - HEIC/HEIF file support for iPhone camera uploads
-// - PDF receipt support for scanned documents
-// - OCR failure recovery: "Try Again" or "Enter Manually" options
+// - Trade Show Checklist management for coordinators
+// - Flight, hotel, and car rental tracking per attendee
+// - Booth and electricity ordering checklist
+// - Booth shipping tracking (manual or carrier)
+// - Checklist summary in event details modal
 // - Mobile camera capture with environment hint
 // - 10MB max file size (increased from 5MB)
 //

@@ -17,6 +17,7 @@ import ocrTrainingRoutes from './routes/ocrTraining';
 import learningAnalyticsRoutes from './routes/learningAnalytics';
 import modelRetrainingRoutes from './routes/modelRetraining';
 import trainingSyncRoutes from './routes/trainingSync';
+import checklistRoutes from './routes/checklist';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -63,6 +64,7 @@ app.use('/api/training', authenticateToken, sessionTracker, ocrTrainingRoutes);
 app.use('/api/learning', authenticateToken, sessionTracker, learningAnalyticsRoutes);
 app.use('/api/retraining', authenticateToken, sessionTracker, modelRetrainingRoutes);
 app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRoutes);
+app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
 
 // Health check (with database connectivity test)
 app.get('/api/health', async (req, res) => {

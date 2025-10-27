@@ -423,8 +423,8 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           onAssignEntity={handleAssignEntity}
           onEdit={(exp) => {
             openEditModal(exp);
-            setViewingExpense(null);
-          }}
+                  setViewingExpense(null);
+                }}
         />
       )}
 
@@ -493,14 +493,14 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
         onReimbursementChange={setFilterReimbursement}
         onEntityChange={setFilterEntity}
         onClearAll={() => {
-          setSearchTerm('');
-          setFilterStatus('all');
-          setFilterCategory('all');
-          setFilterEvent('all');
-          setFilterUser('all');
-          setFilterReimbursement('all');
-          setFilterEntity('all');
-        }}
+                  setSearchTerm('');
+                  setFilterStatus('all');
+                  setFilterCategory('all');
+                  setFilterEvent('all');
+                  setFilterUser('all');
+                  setFilterReimbursement('all');
+                  setFilterEntity('all');
+                }}
       />
 
 

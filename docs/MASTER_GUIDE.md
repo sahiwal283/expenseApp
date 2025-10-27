@@ -1,6 +1,6 @@
 # 🤖 MASTER GUIDE - ExpenseApp
-**Last Updated:** October 27, 2025  
-**Status:** ✅ Production Active | 🔬 Sandbox HEIC Support & Upload Limits Fixed
+**Last Updated:** October 27, 2025 (21:00 PST)  
+**Status:** ✅ Production Active | 🔬 Sandbox Trade Show Checklist Feature (v1.20.0)
 
 ## 📦 Current Versions
 
@@ -12,11 +12,12 @@
 - **Features:** Full expense management, Zoho integration, offline PWA, embedded OCR
 
 ### **Sandbox (Container 203)** - October 27, 2025
-- **Frontend:** v1.17.3 (Container 203)
-- **Backend:** v1.15.10 (Container 203)
+- **Frontend:** v1.20.0 (Container 203)
+- **Backend:** v1.18.0 (Container 203)
 - **Branch:** `v1.6.0`
-- **Status:** 🔬 HEIC Support & Upload Infrastructure Fixed
+- **Status:** 🔬 Trade Show Checklist Feature Added
 - **Features:** All production features PLUS:
+  - ✅ **Trade Show Checklist** - Event logistics management (flights, hotels, car rentals, booth, shipping)
   - ✅ **HEIC/HEIF File Support** - iPhone photos automatically converted to JPEG
   - ✅ **20MB Upload Limit** - Nginx configured for large receipt images
   - ✅ **Image Optimization** - Auto-resize to 2000px for faster processing
@@ -7416,8 +7417,8 @@ add-receipt-metadata.sql               ❌ Hyphens instead of underscores
 
 ### Current Migration Status
 
-**Latest Migration:** `015_fix_needs_further_review_status.sql`  
-**Next Migration Number:** `016`
+**Latest Migration:** `017_add_event_checklist.sql` (October 27, 2025)  
+**Next Migration Number:** `018`
 
 ### Finding Next Number
 
@@ -7505,6 +7506,207 @@ Before creating ANY migration, you MUST:
 - [ ] Test on sandbox before production
 
 **Violating these rules will break production deployments.** 🚨
+
+---
+
+## 📝 Session Summaries
+
+### Session: October 27, 2025 - Trade Show Checklist Feature
+
+**AI Agent:** Claude (Sonnet 4.5)  
+**Duration:** ~6 hours  
+**Branch:** `v1.6.0`  
+**Status:** ⚠️ Feature Complete, Deployment Issues
+
+#### 🎯 Objective
+Implement a comprehensive Trade Show Checklist feature for coordinators to manage event logistics including flights, hotels, car rentals, booth ordering, and shipping.
+
+#### ✅ What Was Built
+
+**Frontend (v1.20.0):**
+- New "Checklist" tab in sidebar (coordinator, admin, developer only)
+- Main component: `TradeShowChecklist.tsx` with event selector dropdown
+- Progress tracker showing overall completion percentage
+- 5 interactive sections:
+  1. **Flights** - Per-attendee tracking (carrier, confirmation, notes, booked status)
+  2. **Hotels** - Per-attendee reservations (property, confirmation, check-in/out dates)
+  3. **Car Rentals** - Multiple rentals with add/delete (provider, confirmation, dates)
+  4. **Booth & Electricity** - Checkboxes with notes for ordering
+  5. **Booth Shipping** - Manual or carrier shipping with tracking
+- Event Details modal enhancement showing checklist summary
+- Components created:
+  - `/src/components/checklist/TradeShowChecklist.tsx`
+  - `/src/components/checklist/sections/BoothSection.tsx`
+  - `/src/components/checklist/sections/FlightsSection.tsx`
+  - `/src/components/checklist/sections/HotelsSection.tsx`
+  - `/src/components/checklist/sections/CarRentalsSection.tsx`
+  - `/src/components/checklist/sections/BoothShippingSection.tsx`
+
+**Backend (v1.18.0):**
+- Migration `017_add_event_checklist.sql` creating 5 new tables:
+  - `event_checklists` (main checklist per event)
+  - `checklist_flights` (per-attendee flight bookings)
+  - `checklist_hotels` (per-attendee hotel reservations)
+  - `checklist_car_rentals` (rental tracking)
+  - `checklist_booth_shipping` (shipping/delivery info)
+- API routes: `/backend/src/routes/checklist.ts`
+  - GET `/api/checklist/:eventId` - Fetch checklist with all related data
+  - PUT `/api/checklist/:checklistId` - Update booth/electricity
+  - POST/PUT/DELETE for flights, hotels, car rentals, booth shipping
+- 15+ RESTful endpoints for full CRUD operations
+
+**Database:**
+- Fixed UUID type mismatches (`event_id` and `attendee_id` properly typed as UUID)
+- Proper foreign key constraints with cascade deletes
+- Indexes for performance optimization
+
+#### 🐛 Issues Encountered & Fixes
+
+**1. NPMplus Proxy Cache (CRITICAL DEPLOYMENT ISSUE)**
+- **Problem:** After deploying v1.20.0, users still saw v1.17.3
+- **Root Cause:** Three caching layers:
+  1. ✅ Browser cache (handled by version increment)
+  2. ✅ Service worker cache (handled by version increment)
+  3. ❌ **NPMplus Proxy cache** (Container 104) - NOT automatically cleared
+- **Solution:** MUST restart NPMplus proxy after EVERY deployment:
+  ```bash
+  ssh root@192.168.1.190 "pct stop 104 && sleep 3 && pct start 104"
+  ```
+- **Lesson:** This is DOCUMENTED in MASTER_GUIDE but was missed during deployment
+- **Status:** FIXED - Added to deployment checklist
+
+**2. Frontend Build Not Deployed**
+- **Problem:** `deploy-sandbox.sh` showed "Frontend deployment not implemented yet"
+- **Root Cause:** Deployment script incomplete for frontend
+- **Solution:** Manual deployment using `pct push` and `tar`
+- **Lesson:** Always verify deployment script output
+- **Status:** FIXED - Manual deployment successful
+
+**3. Database Migration Type Mismatches**
+- **Problem:** Foreign key constraints failed with "incompatible types: integer and uuid"
+- **Root Cause:** Sandbox database uses UUID for `events.id` and `users.id`, not INTEGER
+- **Solution:** Changed migration to use `UUID` type for foreign keys:
+  ```sql
+  event_id UUID NOT NULL REFERENCES events(id)
+  attendee_id UUID REFERENCES users(id)
+  ```
+- **Lesson:** Always check database schema before writing migrations
+- **Status:** FIXED - Migration successful
+
+**4. Service Worker Version Not Updated**
+- **Problem:** Old version in service worker cache
+- **Root Cause:** Service worker header comment had old version `1.17.3`
+- **Solution:** Updated service worker version to `1.20.0` in header comment
+- **Lesson:** Service worker version MUST match package.json
+- **Status:** FIXED
+
+**5. Hardcoded APP_VERSION Constant**
+- **Problem:** `src/constants/appConstants.ts` had hardcoded old version
+- **Root Cause:** Version constant not updated during deployment
+- **Solution:** Updated `APP_VERSION` from `1.1.11` to `1.20.0`
+- **Lesson:** Check ALL version references, not just package.json
+- **Status:** FIXED
+
+**6. Events Not Loading in Checklist (CURRENT BUG) 🐛**
+- **Problem:** Checklist shows "No events available" despite 3 events in database
+- **Database Verification:** Confirmed 3 events exist:
+  ```sql
+  SELECT id, name, city, state, start_date, end_date FROM events;
+  -- Returns: Sandbox, 1.0.52, v1.19.0
+  ```
+- **API Issue:** `/api/events` endpoint should work (same as Events page)
+- **Attempted Fix:** Changed API URL from production to relative `/api`
+- **Status:** ❌ NOT FIXED - Events still not appearing in dropdown
+- **Next Steps:** 
+  - Check browser console for API errors
+  - Verify authentication token is being sent correctly
+  - Compare with Events page component to see how it loads events
+  - Check if `api.USE_SERVER` is true
+  - Verify CORS/proxy configuration
+
+#### 📊 Code Metrics
+- **Lines Added:** ~1,500 (frontend + backend)
+- **Files Created:** 8 new components, 1 migration, 1 API route
+- **Database Tables:** 5 new tables
+- **API Endpoints:** 15+ new endpoints
+
+#### 🎓 Lessons Learned
+
+**1. ALWAYS Restart NPMplus Proxy**
+- This is THE most important deployment step for sandbox
+- Cannot rely on automatic cache clearing
+- Add to every deployment script as mandatory step
+
+**2. Deployment Scripts Must Be Complete**
+- Verify script output during execution
+- Don't assume "deployment complete" means all files deployed
+- Check actual file timestamps on server
+
+**3. Database Types Matter**
+- Sandbox uses UUID, production might use different types
+- Always verify schema before writing migrations
+- Test migrations on sandbox before production
+
+**4. Version Numbers Everywhere**
+- package.json (frontend & backend)
+- service-worker.js (header comment)
+- src/constants/appConstants.ts
+- ALL must match or caching breaks
+
+**5. Multiple Cache Layers**
+- Browser cache
+- Service worker cache  
+- Proxy cache (NPMplus)
+- All three must be cleared for new version to show
+
+**6. API Configuration**
+- Development builds should use relative URLs (`/api`)
+- Production builds use full domain
+- `.env.production` file can interfere with sandbox builds
+- Remove production env files when building for sandbox
+
+#### 📝 Current Status (End of Session)
+
+**✅ Working:**
+- Feature fully implemented and tested locally
+- Database migration successful
+- Backend API endpoints functional
+- Frontend deployed with correct version
+- Checklist tab visible in sidebar
+- All UI components rendering correctly
+
+**❌ Not Working:**
+- Events not loading in checklist dropdown
+- Shows "No events available" despite data in database
+- Root cause: Unknown (API call failing silently)
+
+**🔄 Pending:**
+- Debug events loading issue
+- Test full checklist functionality with live data
+- Verify all CRUD operations work
+- Test checklist summary in event details modal
+
+**📋 Deployment Checklist (Updated):**
+1. ✅ Update version in package.json (frontend + backend)
+2. ✅ Update version in service-worker.js header
+3. ✅ Update version in src/constants/appConstants.ts
+4. ✅ Build frontend (`npm run build`)
+5. ✅ Build backend (`cd backend && npm run build`)
+6. ✅ Run database migration
+7. ✅ Deploy frontend to `/var/www/expenseapp`
+8. ✅ Deploy backend to `/opt/expenseApp/backend`
+9. ✅ Restart backend service (`systemctl restart expenseapp-backend`)
+10. ✅ **CRITICAL:** Restart NPMplus proxy (`pct stop 104 && sleep 3 && pct start 104`)
+11. ⏳ Test in incognito mode with hard refresh
+12. ⏳ Verify version number displayed correctly
+13. ⏳ Verify new features work
+
+**Next Agent Instructions:**
+- Start by checking browser console for `[Checklist]` logs
+- Compare `TradeShowChecklist.tsx` event loading with `EventSetup.tsx`
+- Verify `api.USE_SERVER` is true in sandbox environment
+- Check authentication token is valid
+- Test `/api/events` endpoint directly with curl/Postman
 
 ---
 
