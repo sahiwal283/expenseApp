@@ -35,6 +35,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const [viewMode, setViewMode] = useState<'active' | 'past'>('active');
   const [filterMode, setFilterMode] = useState<'all' | 'my'>('all');
   const [isSaving, setIsSaving] = useState(false);
+  const [viewingEvent, setViewingEvent] = useState<TradeShow | null>(null);
 
 
   // Wrapper functions to handle hook integration
@@ -582,6 +583,13 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                       <span className="font-medium">${event.budget.toLocaleString()}</span>
                     </div>
                   )}
+                  <button
+                    onClick={() => setViewingEvent(event)}
+                    className="px-3 py-1 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium flex items-center gap-1"
+                  >
+                    <Info className="w-4 h-4" />
+                    Details
+                  </button>
                   {canManageEvents && (
                     <>
                       <button
