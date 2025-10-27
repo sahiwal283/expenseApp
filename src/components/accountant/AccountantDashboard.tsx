@@ -13,7 +13,7 @@ import {
 import { User, TradeShow, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
-import { getStatusColor, getCategoryColor } from '../../constants/appConstants';
+import { StatusBadge, CategoryBadge } from '../common';
 
 interface AccountantDashboardProps {
   user: User;
@@ -353,9 +353,7 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
-                          {expense.category}
-                        </span>
+                        <CategoryBadge category={expense.category} size="sm" />
                         <div className="text-xs text-gray-600">{expense.cardUsed}</div>
                       </div>
                     </td>
@@ -366,9 +364,7 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                        {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                      </span>
+                      <StatusBadge status={expense.status} size="sm" />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${

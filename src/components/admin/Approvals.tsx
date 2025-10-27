@@ -23,8 +23,9 @@ import {
 import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
-import { getStatusColor, getCategoryColor, getReimbursementStatusColor } from '../../constants/appConstants';
+import { getReimbursementStatusColor } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
+import { StatusBadge, CategoryBadge } from '../common';
 import { useApprovals } from './Approvals/hooks/useApprovals';
 import { useApprovalFilters } from './Approvals/hooks/useApprovalFilters';
 
@@ -456,9 +457,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         </div>
                       </td>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
-                        <span className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
-                          {expense.category}
-                        </span>
+                        <CategoryBadge category={expense.category} size="sm" />
                       </td>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm font-semibold text-gray-900">
@@ -467,9 +466,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                         </div>
                       </td>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-[10px] sm:text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                        </span>
+                        <StatusBadge status={expense.status} size="sm" />
                       </td>
                       <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4 whitespace-nowrap">
                         <div className="space-y-1">
@@ -645,9 +642,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
 
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-xs font-medium text-gray-500 mb-1">Category</p>
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(viewingExpense.category)}`}>
-                        {viewingExpense.category}
-                      </span>
+                      <CategoryBadge category={viewingExpense.category} size="sm" />
                     </div>
 
                     <div className="bg-gray-50 rounded-lg p-3">
@@ -668,9 +663,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-gray-50 rounded-lg p-3">
                         <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
-                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
-                          {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
-                        </span>
+                        <StatusBadge status={viewingExpense.status} size="sm" />
                       </div>
                       <div className="bg-gray-50 rounded-lg p-3">
                         <p className="text-xs font-medium text-gray-500 mb-1">Reimbursement</p>
