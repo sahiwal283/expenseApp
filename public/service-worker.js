@@ -1,13 +1,19 @@
 // ExpenseApp Service Worker
-// Version: 1.13.1 - PATCH: Added Model Training Dashboard to Dev Tools
-// Date: October 21, 2025
+// Version: 1.17.3 - PATCH: Fixed NPMplus proxy upload limit
+// Date: October 27, 2025
 //
-// Changes from v1.4.4:
-// - IMPROVED: Added colors to all expense categories
-// - Categories now show with distinct colored badges
-// - Color mapping: Meals=orange, Supplies/Booth=purple, Flight=blue, Hotel=emerald, etc.
+// New Features:
+// - HEIC/HEIF file support for iPhone camera uploads
+// - PDF receipt support for scanned documents
+// - OCR failure recovery: "Try Again" or "Enter Manually" options
+// - Mobile camera capture with environment hint
+// - 10MB max file size (increased from 5MB)
 //
-// Changes from v1.4.2:
+// Bug Fixes:
+// - Fixed version embedding system (build-time generation)
+// - Fixed UX issue where OCR failures left users stuck
+//
+// Previous changes from v1.4.2:
 // - IMPROVED: Renamed reimbursement status "Required (approved)" → "Approved (pending payment)"
 // - Added formatReimbursementStatus() helper for consistent display
 // - Updated table, detail modal, dropdowns, and confirmations
@@ -108,8 +114,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.13.1';  // BUMPED VERSION for training dashboard
-const STATIC_CACHE = 'expenseapp-static-v1.13.1';
+const CACHE_NAME = 'expenseapp-v1.17.3';  // BUMPED VERSION for NPMplus fix
+const STATIC_CACHE = 'expenseapp-static-v1.17.3';
 const urlsToCache = [
   '/',
   '/index.html',

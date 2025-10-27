@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc && npm run copy-py",
+    "build": "npm run update-version && tsc && npm run copy-py",
+    "update-version": "node scripts/update-version.js",
     "copy-py": "cp src/services/ocr/*.py dist/services/ocr/",
     "migrate": "ts-node src/database/migrate.ts",
     "seed": "ts-node src/database/seed.ts"

@@ -20,10 +20,10 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     if (userRole === 'admin' || userRole === 'developer') {
       // 1. Users pending role assignment
       const pendingUsersResult = await query(
-        `SELECT id, username, name, email, registration_date 
+        `SELECT id, username, name, email, created_at 
          FROM users 
          WHERE role = 'pending' 
-         ORDER BY registration_date ASC`
+         ORDER BY created_at ASC`
       );
       
       if (pendingUsersResult.rows.length > 0) {

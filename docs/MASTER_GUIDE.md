@@ -1,6 +1,6 @@
 # 🤖 MASTER GUIDE - ExpenseApp
-**Last Updated:** October 24, 2025  
-**Status:** ✅ Production Active | 🔬 Sandbox AI Pipeline Refinement & Bug Fixes
+**Last Updated:** October 27, 2025  
+**Status:** ✅ Production Active | 🔬 Sandbox HEIC Support & Upload Limits Fixed
 
 ## 📦 Current Versions
 
@@ -11,19 +11,22 @@
 - **Status:** ✅ Stable, Live Users
 - **Features:** Full expense management, Zoho integration, offline PWA, embedded OCR
 
-### **Sandbox (Container 203)** - October 24, 2025
-- **Frontend:** v1.15.13 (Container 203)
+### **Sandbox (Container 203)** - October 27, 2025
+- **Frontend:** v1.17.3 (Container 203)
 - **Backend:** v1.15.10 (Container 203)
 - **Branch:** `v1.6.0`
-- **Status:** 🔬 AI Pipeline Testing & Refinement
+- **Status:** 🔬 HEIC Support & Upload Infrastructure Fixed
 - **Features:** All production features PLUS:
+  - ✅ **HEIC/HEIF File Support** - iPhone photos automatically converted to JPEG
+  - ✅ **20MB Upload Limit** - Nginx configured for large receipt images
+  - ✅ **Image Optimization** - Auto-resize to 2000px for faster processing
   - ✅ **External OCR Service** (192.168.1.195:8000) with LLM enhancement
   - ✅ **Data Pool Integration** (192.168.1.196:5000) with UTF-8 encoding
   - ✅ **Model Training** (192.168.1.197:5001) - v1.2.0 prompts
   - ✅ **Ollama LLM** (192.168.1.173:11434) - dolphin-llama3
   - ✅ **OCR Correction Tracking** - Linked to expenses with proper accuracy metrics
   - ✅ **Audit Trail** - Full change tracking for expenses (inline edits, status, entity)
-  - ⚡ **Performance:** 15-20s (high confidence) | 95-115s (LLM-enhanced)
+  - ⚡ **Performance:** OCR timeouts (120s+) gracefully handled with manual entry fallback
 
 ---
 
@@ -6288,6 +6291,729 @@ ssh root@192.168.1.190 "pct exec 203 -- psql ... -c 'SELECT COUNT(*) FROM ocr_co
 3. **Environment:**
    - `backend/env.sandbox.template` - OCR configuration
    - Verify `OLLAMA_API_URL`, `PYTHON_PATH`, `PROJECT_ROOT`
+
+---
+
+## 📅 Session: October 27, 2025 - HEIC Support & Upload Infrastructure Fix
+
+### Problem Statement
+
+User reported **"Failed to save expense"** when creating manual expenses with receipt attachments. Investigation revealed a cascading series of upload limit issues and file format incompatibility.
+
+**Initial Error:** `413 Request Entity Too Large`  
+**Root Cause:** Multiple Nginx layers with 1MB default upload limits  
+**Secondary Issue:** HEIC files from iPhone not supported, causing backend crashes  
+**Tertiary Issue:** OCR service timing out on large images
+
+---
+
+### Issues Discovered & Fixed
+
+#### 1. **413 Request Entity Too Large** ✅ FIXED
+
+**Problem:**
+- Users uploading receipts received 413 errors
+- Request went through 3 layers: NPMplus proxy (104) → Backend Nginx (203) → Node.js
+- EACH layer had upload limits, all needed updating
+
+**Solution:**
+```bash
+# Layer 1: Backend Nginx (Container 203)
+sed -i "/^server {/a \    client_max_body_size 20M;" /etc/nginx/sites-available/default
+systemctl restart nginx
+
+# Verification
+curl -X POST http://192.168.1.144/api/test-upload -F "file=@test_8mb.jpg"
+# Result: 404 (not 413) - upload accepted, endpoint doesn't exist
+```
+
+**NPMplus Configuration Issue:**
+- Attempted to configure NPMplus (Container 104) upload limits
+- NPMplus kept regenerating configs, overriding manual changes
+- NPMplus is used for **production** proxy (expapp.duckdns.org → 192.168.1.139)
+- Sandbox (192.168.1.144) **directly accesses Container 203**, bypassing NPMplus
+- **Resolution:** NPMplus configuration not needed for sandbox
+
+**Container Mapping:**
+- Container 201: Production Backend (Node.js, no Nginx)
+- Container 202: Production Frontend (Nginx + static files)
+- Container 203: Sandbox (Backend Node.js + Frontend Nginx)
+- Container 104: NPMplus (Reverse proxy for production ONLY)
+
+---
+
+#### 2. **HEIC File Support** ✅ IMPLEMENTED
+
+**Problem:**
+- iPhone users upload HEIC photos by default
+- Backend Sharp library lacks HEIC codec support
+- Backend crashed with: `heif: Error while loading plugin: Support for this compression format has not been built in`
+
+**Solution - Phase 1 (Failed):**
+```bash
+# Attempted Sharp rebuild with libheif
+apt install -y libheif-dev libheif1
+cd /opt/expenseApp/backend && npm rebuild sharp
+# Result: Sharp still couldn't decode HEIC
+```
+
+**Solution - Phase 2 (Successful):**
+```bash
+# Installed ImageMagick with HEIC support
+apt install -y imagemagick
+convert -version | grep heic  # Confirmed HEIC support
+```
+
+**Backend Implementation:**
+```typescript
+// backend/src/routes/ocrV2.ts
+import { exec } from 'child_process';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
+
+async function convertHEICToJPEG(filePath: string): Promise<string> {
+  const ext = path.extname(filePath).toLowerCase();
+  
+  if (ext !== '.heic' && ext !== '.heif') {
+    return filePath; // Skip non-HEIC files
+  }
+  
+  console.log(`[OCR v2] Converting HEIC to JPEG: ${filePath}`);
+  const jpegPath = filePath.replace(/\.(heic|heif)$/i, '.jpg');
+  
+  // Convert + resize to 2000px max (maintains aspect ratio)
+  // Quality 85% for optimal size/quality balance
+  await execAsync(`convert "${filePath}" -resize 2000x2000\\> -quality 85 "${jpegPath}"`);
+  
+  fs.unlinkSync(filePath); // Delete original HEIC
+  console.log(`[OCR v2] Converted to: ${jpegPath}`);
+  return jpegPath;
+}
+
+// Integrated into OCR pipeline
+async function callExternalOCR(filePath: string): Promise<any> {
+  const processedPath = await convertHEICToJPEG(filePath);
+  // ... send to OCR service
+}
+```
+
+**Frontend Updates:**
+```typescript
+// src/components/expenses/ReceiptUpload.tsx
+<input
+  type="file"
+  accept="image/*,.heic,.heif,application/pdf,.pdf"
+  capture="environment"  // Use rear camera on mobile
+  onChange={handleFiles}
+/>
+
+// src/constants/appConstants.ts
+export const FILE_UPLOAD = {
+  MAX_SIZE: 10 * 1024 * 1024, // 10MB (increased from 5MB)
+  ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'],
+  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', '.pdf'],
+};
+```
+
+---
+
+#### 3. **OCR Timeout Handling** ✅ GRACEFULLY HANDLED
+
+**Problem:**
+- External OCR service (Tesseract-based) takes 120+ seconds to process images
+- Service returns 500 after timeout
+- Frontend showed generic error with no recovery option
+
+**Analysis:**
+```
+[OCR v2] Converting HEIC to JPEG: receipt-1761582948976-726127894.heic
+[OCR v2] Converted to: receipt-1761582948976-726127894.jpg (524KB)
+[OCR Service] Processing: 4cc87f39e605.jpg (3.3MB → 524KB after resize)
+[OCR Service] ERROR - Script execution timeout (120s)
+```
+
+**Why It's Slow:**
+- Tesseract OCR is CPU-intensive
+- Even 524KB images take 120+ seconds
+- LLM enhancement adds 20-40s additional overhead
+
+**Solution - Backend:**
+```typescript
+// backend/src/routes/ocrV2.ts
+catch (error: any) {
+  console.error('[OCR v2] Processing error:', error.message);
+  
+  const isTimeout = error.message?.includes('timeout') || 
+                    error.code === 'ECONNABORTED' || 
+                    error.response?.status === 500;
+  
+  // Don't delete file - keep for manual entry
+  
+  if (isTimeout) {
+    throw new Error('OCR processing is taking too long. Please enter the receipt details manually.');
+  }
+  
+  throw error;
+}
+```
+
+**Solution - Frontend (Already Implemented):**
+```typescript
+// src/components/expenses/ReceiptUpload.tsx already had graceful failure UI
+{ocrFailed && !processing && !ocrResults && (
+  <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+    <AlertCircle />
+    <h3>OCR Processing Failed</h3>
+    <button onClick={retryOCR}>Try OCR Again</button>
+    <button onClick={enterManually}>Enter Details Manually</button>
+  </div>
+)}
+```
+
+**User Experience:**
+1. Upload HEIC receipt ✅
+2. Automatic conversion to JPEG ✅
+3. Resize to 2000px for faster processing ✅
+4. Wait ~120 seconds (OCR attempts processing)
+5. OCR times out with clear message ✅
+6. User clicks "Enter Details Manually" ✅
+7. Receipt is attached, user fills fields manually ✅
+8. Expense saves successfully ✅
+
+---
+
+#### 4. **Quick Actions Database Error** ✅ FIXED
+
+**Problem:**
+```sql
+-- backend/src/routes/quickActions.ts referenced non-existent column
+SELECT id, username, name, email, role_name, created_at 
+FROM users 
+WHERE role = 'pending';
+-- ERROR: column "role_name" does not exist
+```
+
+**Fix:**
+```typescript
+// backend/src/routes/quickActions.ts
+const pendingUsersResult = await query(
+  `SELECT id, username, name, email, created_at 
+   FROM users 
+   WHERE role = 'pending' 
+   ORDER BY created_at ASC`
+);
+```
+
+---
+
+### Technical Implementation Details
+
+#### HEIC Conversion Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Frontend Upload                                              │
+│  - User selects HEIC file from iPhone                       │
+│  - File validated: size < 10MB, type = image/heic           │
+│  - Sent to: POST /api/ocr/v2/process                        │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Backend: Multer File Upload                                 │
+│  - Saves to: /var/lib/expenseapp/uploads/receipt-XXX.heic  │
+│  - File size: ~3-8MB (typical iPhone photo)                │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│  convertHEICToJPEG()                                         │
+│  - Detects .heic extension                                  │
+│  - Executes: convert "input.heic" \                         │
+│              -resize 2000x2000> \                           │
+│              -quality 85 \                                  │
+│              "output.jpg"                                   │
+│  - Original: 3-8MB → Converted: 300-800KB                   │
+│  - Deletes original HEIC file                               │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│  callExternalOCR()                                           │
+│  - Sends JPEG to: http://192.168.1.195:8000/ocr/           │
+│  - Tesseract processes image (120+ seconds)                │
+│  - Returns: { fields, ocr, quality, categories }           │
+│  - OR times out with 500 error                             │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+          ┌────────┴────────┐
+          │                 │
+          ▼                 ▼
+   ┌───────────┐    ┌──────────────┐
+   │  Success  │    │   Timeout    │
+   │  Return   │    │   Graceful   │
+   │  OCR Data │    │   Failure    │
+   └───────────┘    └──────────────┘
+```
+
+#### Nginx Configuration Layers
+
+**Sandbox Direct Access (No NPMplus):**
+```
+User Browser (192.168.1.144)
+    ↓
+Backend Nginx (Container 203:80) ← client_max_body_size 20M ✅
+    ↓
+Node.js Express (Container 203:3000)
+```
+
+**Production Through NPMplus:**
+```
+User Browser (expapp.duckdns.org)
+    ↓
+NPMplus Proxy (Container 104:443) ← Would need config (not fixed, not needed for sandbox)
+    ↓
+Frontend Nginx (Container 202:80) ← Restored to original (accidentally modified)
+    ↓
+Backend Node.js (Container 201:3000)
+```
+
+---
+
+### Files Modified
+
+#### Backend Changes
+
+1. **`backend/src/routes/ocrV2.ts`**
+   - Added `import { exec } from 'child_process'`
+   - Added `convertHEICToJPEG()` function using ImageMagick
+   - Integrated HEIC conversion into OCR pipeline
+   - Improved timeout error messaging
+   - Preserved receipt files on error (don't delete)
+
+2. **`backend/src/routes/quickActions.ts`**
+   - Removed non-existent `role_name` column from query
+   - Fixed "Pending Users" task retrieval
+
+3. **`backend/package.json`**
+   - Version: 1.15.10 (unchanged, existing features)
+
+#### Frontend Changes
+
+4. **`src/components/expenses/ReceiptUpload.tsx`**
+   - Updated file input `accept` attribute: `image/*,.heic,.heif,application/pdf,.pdf`
+   - Added `capture="environment"` for mobile camera
+   - Graceful failure UI already present (no changes needed)
+
+5. **`src/constants/appConstants.ts`**
+   - Increased `MAX_SIZE` from 5MB to 10MB
+   - Added HEIC/HEIF to `ALLOWED_TYPES` and `ALLOWED_EXTENSIONS`
+
+6. **`package.json`**
+   - Version: 1.17.3
+
+7. **`public/service-worker.js`**
+   - Updated cache version to 1.17.3
+   - Updated version comments
+
+#### Infrastructure Changes
+
+8. **Container 203 Nginx** (`/etc/nginx/sites-available/default`)
+   ```nginx
+   server {
+       client_max_body_size 20M;  # Added
+       listen 80 default_server;
+       # ... rest of config
+   }
+   ```
+
+9. **Container 203 System Packages**
+   ```bash
+   apt install -y imagemagick libheif-dev libheif1
+   ```
+
+---
+
+### Version History This Session
+
+| Version | Type | Changes |
+|---------|------|---------|
+| v1.17.0 | MINOR | HEIC/PDF support, OCR error recovery |
+| v1.17.1 | PATCH | Quick Actions database error fix |
+| v1.17.2 | PATCH | Nginx upload limit fix (Container 203) |
+| v1.17.3 | PATCH | NPMplus investigation (not needed for sandbox) |
+
+---
+
+### Deployment Commands
+
+**Deploy Backend:**
+```bash
+cd /Users/sahilkhatri/Projects/Work/brands/Haute/expenseApp
+./deploy-sandbox.sh backend
+```
+
+**Deploy Frontend:**
+```bash
+cd /Users/sahilkhatri/Projects/Work/brands/Haute/expenseApp
+npm run build
+cd dist && tar -czf ../frontend-deploy.tar.gz --exclude='._*' .
+scp ../frontend-deploy.tar.gz root@192.168.1.190:/root/frontend.tar.gz
+ssh root@192.168.1.190 "
+  pct exec 203 -- systemctl stop nginx
+  pct push 203 /root/frontend.tar.gz /tmp/frontend.tar.gz
+  pct exec 203 -- bash -c 'cd /var/www/expenseapp && rm -rf * .??* && tar -xzf /tmp/frontend.tar.gz && chown -R www-data:www-data .'
+  pct exec 203 -- systemctl start nginx
+"
+```
+
+**Install System Dependencies:**
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- apt install -y imagemagick libheif-dev libheif1"
+```
+
+**Configure Nginx:**
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- bash -c '
+  sed -i \"/^server {/a \\    client_max_body_size 20M;\" /etc/nginx/sites-available/default
+  nginx -t && systemctl restart nginx
+'"
+```
+
+---
+
+### Known Limitations
+
+#### OCR Performance
+
+**Current State:**
+- External OCR service (Tesseract) takes 120+ seconds to process receipts
+- Timeouts are handled gracefully but user experience is suboptimal
+- Users wait 2 minutes before manual entry option appears
+
+**Why It's Slow:**
+1. Tesseract OCR is CPU-bound, not GPU-accelerated
+2. Receipt images have complex layouts (tables, logos, multiple fonts)
+3. LLM enhancement adds 20-40s overhead
+4. Container 204 (OCR host) may need more CPU allocation
+
+**Potential Solutions (Not Implemented):**
+1. **Reduce timeout** from 120s to 30s for faster failure
+2. **Switch to EasyOCR** (GPU-accelerated, 5-10x faster)
+3. **Use cloud OCR** (Google Vision, AWS Textract)
+4. **Skip OCR for HEIC** and go straight to manual entry
+5. **Increase CPU** allocation for Container 204
+
+**Current Recommendation:**
+- Accept 120s timeout as known limitation
+- Graceful failure already implemented
+- Users can successfully create expenses with manual entry
+
+---
+
+### Testing Performed
+
+#### Manual Testing - HEIC Upload
+
+```bash
+# Test 1: Small HEIC file (~2MB)
+- File accepted ✅
+- Conversion successful ✅
+- OCR timeout after 120s ✅
+- Manual entry available ✅
+- Expense saved successfully ✅
+
+# Test 2: Large HEIC file (~8MB)
+- File accepted ✅
+- Conversion successful ✅
+- Resized to ~600KB ✅
+- OCR timeout after 120s ✅
+- Manual entry available ✅
+- Expense saved successfully ✅
+```
+
+#### Manual Testing - Upload Limits
+
+```bash
+# Test 3: 5MB test file
+curl -X POST http://192.168.1.144/api/test-upload -F "file=@test_5mb.jpg"
+# Expected: 404 (not 413)
+# Actual: 404 ✅
+
+# Test 4: 15MB test file
+curl -X POST http://192.168.1.144/api/test-upload -F "file=@test_15mb.jpg"
+# Expected: 404 (not 413)
+# Actual: 404 ✅
+
+# Test 5: 25MB test file (over 20MB limit)
+curl -X POST http://192.168.1.144/api/test-upload -F "file=@test_25mb.jpg"
+# Expected: 413
+# Actual: Not tested (client-side validation prevents this)
+```
+
+#### Log Verification
+
+```bash
+# Backend logs showed successful conversion
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -n 30"
+# Output:
+[OCR v2] Converting HEIC to JPEG: receipt-1761582948976-726127894.heic
+[OCR v2] Converted to: receipt-1761582948976-726127894.jpg
+[OCR v2] Using external OCR service
+[OCR v2] Processing error: Request failed with status code 500  # Expected timeout
+
+# OCR service logs showed timeout
+ssh root@192.168.1.190 "pct exec 204 -- docker logs ocr_service --tail 20"
+# Output:
+Saved upload file: 4cc87f39e605.jpg (524737 bytes)
+Processing image: /tmp/ocr_uploads/4cc87f39e605.jpg
+ERROR - Script execution timeout (120s)  # Expected
+```
+
+---
+
+### Container Inventory
+
+| Container | IP | Role | Nginx | Upload Limit | Status |
+|-----------|-----|------|-------|--------------|--------|
+| 104 | 192.168.1.160 | NPMplus Proxy | ✅ | Not configured | ✅ Not needed for sandbox |
+| 201 | 192.168.1.201 | Production Backend | ❌ | N/A (Node.js direct) | ✅ Untouched |
+| 202 | 192.168.1.139 | Production Frontend | ✅ | Restored to original | ✅ Restored |
+| 203 | 192.168.1.144 | Sandbox (Backend + Frontend) | ✅ | **20MB ✅** | ✅ Fixed |
+| 204 | 192.168.1.195 | OCR Service | ❌ | N/A (Docker) | ✅ Working |
+
+---
+
+### Lessons Learned
+
+#### 1. **Multi-Layer Upload Limits**
+
+When dealing with proxies and reverse proxies:
+- ✅ Identify ALL layers in the request path
+- ✅ Configure upload limits at EVERY layer
+- ✅ Test with actual large files, not just code review
+- ❌ Don't assume NPMplus is in the path for direct IP access
+
+#### 2. **HEIC Support Requires System Libraries**
+
+- ❌ Node.js Sharp library doesn't include HEIC codec by default
+- ❌ `npm rebuild sharp` doesn't magically add codecs
+- ✅ ImageMagick with `libheif` is the reliable solution
+- ✅ Always verify codec support: `convert -version | grep heic`
+
+#### 3. **Image Optimization is Critical**
+
+- iPhone HEIC photos can be 3-8MB
+- Tesseract OCR is CPU-bound and slow on large images
+- ✅ Always resize images BEFORE OCR (2000px is sufficient)
+- ✅ Reduce quality to 80-85% for optimal size/speed
+
+#### 4. **Graceful Degradation**
+
+- OCR failures should NEVER block expense submission
+- ✅ Always provide manual entry as fallback
+- ✅ Keep uploaded files even if OCR fails
+- ✅ Clear error messages guide user to next steps
+
+#### 5. **Container Mapping is Critical**
+
+Wasted time troubleshooting Container 202 (production) when:
+- Sandbox runs entirely on Container 203
+- NPMplus only proxies production (`expapp.duckdns.org`)
+- Direct IP access (`192.168.1.144`) bypasses NPMplus
+
+**Always verify container mapping BEFORE infrastructure changes!**
+
+---
+
+### Current Status
+
+**✅ Working:**
+- HEIC file upload and conversion
+- Image resizing for optimal OCR performance
+- 20MB upload limit on sandbox
+- Graceful OCR failure with manual entry
+- Quick Actions pending users query
+- Complete expense submission flow
+
+**⚠️ Known Issues:**
+- OCR service timeout (120s) is slow but handled gracefully
+- Users must wait 2 minutes before manual entry appears
+- Container 202 (production) was accidentally modified then restored
+
+**🔍 Under Observation:**
+- OCR service performance on Container 204
+- Memory usage with ImageMagick conversions
+- Whether 2000px resize is sufficient for OCR accuracy
+
+---
+
+### Next Session Action Items
+
+**Priority 1: Monitor HEIC Usage**
+1. Track how many users upload HEIC files
+2. Monitor OCR timeout frequency
+3. Gather user feedback on 2-minute wait time
+
+**Priority 2: Consider OCR Timeout Reduction**
+```typescript
+// backend/src/routes/ocrV2.ts
+const OCR_TIMEOUT = parseInt(process.env.OCR_TIMEOUT || '30000'); // Reduce to 30s?
+```
+
+**Priority 3: Optional - Faster OCR**
+- Evaluate EasyOCR as replacement for Tesseract
+- Consider Google Vision API for cloud OCR
+- Benchmark EasyOCR on Container 204
+
+---
+
+### Commands for Next Session
+
+**Monitor HEIC Conversions:**
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -f | grep 'Converting HEIC'"
+```
+
+**Check ImageMagick Performance:**
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- bash -c '
+  time convert test.heic -resize 2000x2000\\> -quality 85 test.jpg
+'"
+```
+
+**Monitor OCR Service:**
+```bash
+ssh root@192.168.1.190 "pct exec 204 -- docker logs ocr_service -f | grep -E 'timeout|Processing image'"
+```
+
+**Check Upload Logs:**
+```bash
+ssh root@192.168.1.190 "pct exec 203 -- tail -f /var/log/nginx/access.log | grep POST"
+```
+
+---
+
+## 🚨 CRITICAL: Database Migration Rules for AI Agents
+
+**⚠️ MANDATORY RULES - NEVER VIOLATE THESE ⚠️**
+
+### Naming Convention (STRICTLY ENFORCED)
+
+**ALL database migrations MUST follow this format:**
+
+```
+NNN_descriptive_name.sql
+```
+
+- `NNN` = 3-digit sequential number (e.g., 016, 017, 018)
+- `descriptive_name` = Snake_case description
+- `.sql` = File extension
+
+**✅ CORRECT:**
+```
+016_add_receipt_metadata.sql
+017_create_notifications_table.sql
+```
+
+**❌ NEVER DO THIS:**
+```
+add_receipt_metadata.sql              ❌ Missing number
+16_add_receipt_metadata.sql           ❌ Not 3 digits
+add-receipt-metadata.sql               ❌ Hyphens instead of underscores
+```
+
+### Current Migration Status
+
+**Latest Migration:** `015_fix_needs_further_review_status.sql`  
+**Next Migration Number:** `016`
+
+### Finding Next Number
+
+```bash
+# Always check highest number first
+ls -1 backend/src/database/migrations/*.sql | tail -1
+# Next number = highest + 1
+```
+
+### Creating a Migration
+
+1. **Check current highest number** (above)
+2. **Create file with next sequential number:**
+   ```bash
+   touch backend/src/database/migrations/016_your_feature.sql
+   ```
+3. **Write idempotent SQL** (safe to run multiple times):
+   ```sql
+   -- Always use IF NOT EXISTS
+   CREATE TABLE IF NOT EXISTS new_table (...);
+   
+   -- Always check before ALTER
+   DO $$
+   BEGIN
+       IF NOT EXISTS (
+           SELECT 1 FROM information_schema.columns 
+           WHERE table_name = 'table' AND column_name = 'column'
+       ) THEN
+           ALTER TABLE table ADD COLUMN column TEXT;
+       END IF;
+   END $$;
+   ```
+4. **Update this section** with new highest number
+5. **Update `backend/src/database/migrations/README.md`**
+
+### Forbidden Actions
+
+**❌ NEVER create unnumbered migrations** - This breaks alphabetical execution order  
+**❌ NEVER skip sequence numbers** - Use next available number only  
+**❌ NEVER write non-idempotent migrations** - Must be safe to run twice  
+**❌ NEVER write destructive migrations** - Archive first, drop later manually
+
+### Migration Execution Order
+
+Migrations run **alphabetically** via `backend/src/database/migrate.ts`:
+
+```
+002_add_temporary_role.sql          ← Runs first
+003_create_roles_table.sql
+...
+015_fix_needs_further_review_status.sql
+016_your_migration.sql              ← Runs last
+```
+
+**This is why numbering is CRITICAL!**
+
+### Production Deployment Safety
+
+**Sandbox First (REQUIRED):**
+```bash
+# Test on Container 203 first
+ssh root@192.168.1.190 "pct exec 203 -- cd /opt/expenseApp/backend && npm run migrate"
+```
+
+**Production (BACKUP FIRST):**
+```bash
+# 1. Backup database
+ssh root@192.168.1.190 "pct exec 201 -- pg_dump expenseapp > backup_$(date +%Y%m%d).sql"
+
+# 2. Run migration
+ssh root@192.168.1.190 "pct exec 201 -- cd /opt/expenseApp/backend && npm run migrate"
+```
+
+### For AI Agents: Pre-Migration Checklist
+
+Before creating ANY migration, you MUST:
+
+- [ ] Read this section completely
+- [ ] Check current highest migration number (listed above)
+- [ ] Use next sequential number (current + 1)
+- [ ] Follow naming convention exactly
+- [ ] Write idempotent SQL (IF NOT EXISTS, conditional checks)
+- [ ] Update "Latest Migration" and "Next Migration Number" in this document
+- [ ] Update `backend/src/database/migrations/README.md`
+- [ ] Test on sandbox before production
+
+**Violating these rules will break production deployments.** 🚨
 
 ---
 

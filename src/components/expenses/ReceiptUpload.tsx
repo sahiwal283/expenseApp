@@ -21,6 +21,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResults, setOcrResults] = useState<ReceiptData | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [ocrFailed, setOcrFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Additional fields for complete expense submission
@@ -99,9 +100,15 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
   const handleFiles = (files: FileList) => {
     const file = files[0];
-    // Accept both images and PDFs
+    // Accept images (including HEIC from iPhone), PDFs
     const isImage = file && file.type.startsWith('image/');
     const isPDF = file && file.type === 'application/pdf';
+    
+    // Validate file size (10MB max)
+    if (file && file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
     
     if (file && (isImage || isPDF)) {
       setSelectedFile(file);
@@ -191,7 +198,8 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       }
     } catch (error) {
       console.error('OCR v2 Error:', error);
-      alert('Failed to process receipt with OCR v2. Please try again or enter manually.');
+      setOcrFailed(true);
+      // Don't show alert - let user choose to retry or continue manually
     } finally {
       setProcessing(false);
     }
@@ -253,7 +261,8 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf,.pdf"
+              accept="image/*,.heic,.heif,application/pdf,.pdf"
+              capture="environment"
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -581,6 +590,55 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               </div>
             )}
 
+            {/* OCR Failed State */}
+            {ocrFailed && !processing && !ocrResults && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-orange-900 mb-2">OCR Processing Failed</h3>
+                    <p className="text-sm text-orange-800 mb-4">
+                      We couldn't automatically extract data from your receipt. This might be due to image quality, file format, or service availability.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => {
+                          setOcrFailed(false);
+                          if (selectedFile) {
+                            processReceipt(selectedFile);
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+                      >
+                        <Scan className="w-4 h-4" />
+                        <span>Try OCR Again</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Create default OCR results so user can enter manually
+                          const defaultData: ReceiptData = {
+                            merchant: '',
+                            total: '',
+                            date: getTodayLocalDateString(),
+                            category: 'Other',
+                            confidence: 0,
+                            ocrText: '',
+                            file: selectedFile!
+                          };
+                          setOcrResults(defaultData);
+                          setOcrFailed(false);
+                        }}
+                        className="px-4 py-2 bg-white hover:bg-gray-50 border border-orange-300 text-orange-700 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Enter Details Manually</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">
               <button
@@ -588,6 +646,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   setUploadedImage(null);
                   setSelectedFile(null);
                   setOcrResults(null);
+                  setOcrFailed(false);
                   setProcessing(false);
                 }}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"

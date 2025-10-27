@@ -35,7 +35,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
   useEffect(() => {
     loadDashboardData();
     const interval = setInterval(() => {
-      if (activeTab === 'overview' || activeTab === 'metrics') {
+      if (activeTab === 'overview' || activeTab === 'metrics' || activeTab === 'sessions') {
         loadDashboardData(true);
       }
     }, 30000); // Refresh every 30s
@@ -581,7 +581,9 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">User</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Last Activity</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Duration</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Expires</th>
                       </tr>
@@ -601,27 +603,52 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                             </span>
                           </td>
                           <td className="px-4 py-3">
+                            {session.status === 'active' ? (
+                              <span className="flex items-center text-emerald-600 font-medium">
+                                <span className="w-2 h-2 bg-emerald-600 rounded-full mr-2 animate-pulse"></span>
+                                Active
+                              </span>
+                            ) : session.status === 'idle' ? (
+                              <span className="flex items-center text-yellow-600">
+                                <span className="w-2 h-2 bg-yellow-600 rounded-full mr-2"></span>
+                                Idle
+                              </span>
+                            ) : (
+                              <span className="flex items-center text-gray-400">
+                                <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                                Inactive
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
                             {session.last_activity ? (
                               <div>
-                                <p className="text-gray-900">
+                                <p className="text-gray-900 text-xs">
                                   {new Date(session.last_activity).toLocaleString()}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                  {session.status === 'active' ? (
-                                    <span className="text-emerald-600 font-medium">● Active</span>
-                                  ) : session.status === 'idle' ? (
-                                    <span className="text-yellow-600">○ Idle</span>
-                                  ) : (
-                                    <span className="text-gray-400">○ Inactive</span>
-                                  )}
+                                  {Math.floor((Date.now() - new Date(session.last_activity).getTime()) / 60000) === 0 
+                                    ? 'Just now' 
+                                    : `${Math.floor((Date.now() - new Date(session.last_activity).getTime()) / 60000)}m ago`}
                                 </p>
                               </div>
                             ) : (
-                              <span className="text-gray-500 italic">No recent activity</span>
+                              <span className="text-gray-500 italic text-xs">No activity</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{session.ip_address || 'N/A'}</td>
                           <td className="px-4 py-3 text-gray-600">
+                            {session.duration_minutes !== undefined ? (
+                              <span className="text-sm">
+                                {session.duration_minutes < 60 
+                                  ? `${session.duration_minutes}m` 
+                                  : `${Math.floor(session.duration_minutes / 60)}h ${session.duration_minutes % 60}m`}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-xs font-mono">{session.ip_address || 'N/A'}</td>
+                          <td className="px-4 py-3 text-gray-600 text-xs">
                             {new Date(session.expires_at).toLocaleString()}
                           </td>
                         </tr>
@@ -739,14 +766,16 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                 <div className="flex items-start space-x-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-blue-900 mb-1">Real-Time System Alerts</h4>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-1">Developer-Focused System Alerts</h4>
                     <p className="text-sm text-blue-800">
-                      These alerts are generated automatically based on current system conditions. They will clear automatically when you resolve the underlying issue:
+                      These alerts monitor technical health and performance issues in real-time:
                     </p>
                     <ul className="text-sm text-blue-800 mt-2 space-y-1 list-disc list-inside">
-                      <li><strong>Pending Expenses:</strong> Approve expenses on the Approvals page</li>
-                      <li><strong>Zoho Books Sync:</strong> Use "Push to Zoho" button on Reports page</li>
-                      <li><strong>Missing Receipts:</strong> Upload receipts when creating/editing expenses</li>
+                      <li><strong>Error Rates:</strong> Detects when API requests fail above 10% threshold</li>
+                      <li><strong>Performance:</strong> Alerts when endpoints exceed 2000ms average response time</li>
+                      <li><strong>Security:</strong> Monitors for authentication failures and potential attacks</li>
+                      <li><strong>Traffic Anomalies:</strong> Identifies unusual traffic spikes or patterns</li>
+                      <li><strong>System Health:</strong> Tracks stale sessions and repeated endpoint failures</li>
                     </ul>
                   </div>
                 </div>

@@ -13,11 +13,15 @@ import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
 import FormData from 'form-data';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
 import { FieldWarningService } from '../services/ocr/FieldWarningService';
 import { query } from '../config/database';
+
+const execAsync = promisify(exec);
 
 // External OCR Service configuration
 const EXTERNAL_OCR_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
@@ -78,11 +82,46 @@ async function checkOCRServiceHealth(): Promise<boolean> {
 }
 
 /**
+ * Convert HEIC/HEIF files to JPEG and resize for faster OCR processing
+ */
+async function convertHEICToJPEG(filePath: string): Promise<string> {
+  const ext = path.extname(filePath).toLowerCase();
+  
+  // Only convert HEIC/HEIF files
+  if (ext !== '.heic' && ext !== '.heif') {
+    return filePath;
+  }
+  
+  console.log(`[OCR v2] Converting HEIC to JPEG: ${filePath}`);
+  
+  const jpegPath = filePath.replace(/\.(heic|heif)$/i, '.jpg');
+  
+  try {
+    // Convert HEIC to JPEG using ImageMagick
+    // Resize to max 2000px width while maintaining aspect ratio for faster OCR
+    // This significantly reduces processing time while maintaining quality
+    await execAsync(`convert "${filePath}" -resize 2000x2000\\> -quality 85 "${jpegPath}"`);
+    
+    // Delete original HEIC file
+    fs.unlinkSync(filePath);
+    
+    console.log(`[OCR v2] Converted to: ${jpegPath}`);
+    return jpegPath;
+  } catch (error: any) {
+    console.error('[OCR v2] HEIC conversion failed:', error.message);
+    throw new Error('Failed to process HEIC file. Please convert to JPEG and try again.');
+  }
+}
+
+/**
  * Call external OCR service
  */
 async function callExternalOCR(filePath: string): Promise<any> {
+  // Convert HEIC to JPEG if needed
+  const processedPath = await convertHEICToJPEG(filePath);
+  
   const formData = new FormData();
-  formData.append('file', fs.createReadStream(filePath));
+  formData.append('file', fs.createReadStream(processedPath));
   
   const response = await axios.post(
     `${EXTERNAL_OCR_URL}/ocr/`,
@@ -116,7 +155,7 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     const isHealthy = await checkOCRServiceHealth();
     
     if (!isHealthy) {
-      throw new Error('OCR service is currently unavailable. Please try again later.');
+      throw new Error('OCR service is currently unavailable. Please enter details manually.');
     }
     
     console.log('[OCR v2] Using external OCR service');
@@ -153,9 +192,17 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
   } catch (error: any) {
     console.error('[OCR v2] Processing error:', error.message);
     
-    // Clean up uploaded file
-    if (fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    // Check if it's a timeout or service error
+    const isTimeout = error.message?.includes('timeout') || error.code === 'ECONNABORTED' || error.response?.status === 500;
+    
+    // Don't delete the file - keep it for manual entry
+    // if (fs.existsSync(req.file.path)) {
+    //   fs.unlinkSync(req.file.path);
+    // }
+    
+    // Return a user-friendly error message
+    if (isTimeout) {
+      throw new Error('OCR processing is taking too long. Please enter the receipt details manually.');
     }
     
     throw error;

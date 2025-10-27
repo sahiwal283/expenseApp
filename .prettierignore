@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+dist
+build
+
+# Generated files
+*.min.js
+*.min.css
+
+# Archives
+archive
+*.tar.gz
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Build outputs
+backend/dist
+frontend/dist
+
+# Coverage
+coverage
+.nyc_output
+
+# Temp
+*.tmp
+*.temp
+

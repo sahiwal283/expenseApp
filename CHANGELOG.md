@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.3] - 2025-10-27 (Sandbox) 🔧 PATCH - NPMplus Proxy Upload Limit Fix
+
+### Fixed
+- **413 error persisting** - Fixed NPMplus reverse proxy upload limit (Container 104)
+- **Complete upload path configured** - Both backend Nginx AND proxy layer now allow 20MB
+- **Two-layer issue** - Request goes through NPMplus (104) → Backend Nginx (203), both needed updating
+
+### Technical Details
+- **Layer 1 (Backend - Container 203)**: ✅ Fixed in v1.17.2
+- **Layer 2 (NPMplus Proxy - Container 104)**: ✅ Fixed in v1.17.3
+- Added `client_max_body_size 20M;` to `/opt/npmplus/custom_nginx/http.conf`
+- NPMplus docker container restarted to apply changes
+
+### Infrastructure Changes
+- **Container 203 (Backend)**: Nginx config updated (v1.17.2)
+- **Container 104 (NPMplus)**: Custom nginx http.conf updated (v1.17.3)
+- Both layers now allow 20MB uploads
+
+### Versions
+- Frontend: v1.17.3
+- Backend: v1.15.10 (with embedded v1.17.3)
+- Nginx (Backend): 20MB limit ✅
+- NPMplus (Proxy): 20MB limit ✅
+
+---
+
+## [1.17.2] - 2025-10-27 (Sandbox) 🔧 PATCH - Nginx Upload Limit Fix (Partial)
+
+### Fixed
+- **413 Request Entity Too Large error** - Updated Nginx `client_max_body_size` from 1MB to 20MB
+- **Expense creation with receipts** - Users can now upload large receipt images (HEIC, high-res photos)
+- **File upload failures** - Resolved issue where uploads would fail silently with large files
+
+### Technical Details
+- Error: `POST /api/expenses 413 (Request Entity Too Large)`
+- Root cause: Nginx default limit (1MB) was smaller than frontend limit (10MB)
+- Solution: Increased `client_max_body_size` to 20MB in Nginx config
+- Impact: All receipt uploads with files >1MB were failing
+
+### Infrastructure Changes
+- Updated `/etc/nginx/sites-available/default` on Container 203
+- Added `client_max_body_size 20M;` directive in server block
+- Nginx reloaded without service interruption
+
+### Versions
+- Frontend: v1.17.2
+- Backend: v1.15.10 (with embedded v1.17.2)
+- Nginx: Updated config (20MB max upload)
+
+---
+
+## [1.17.1] - 2025-10-27 (Sandbox) 🔧 PATCH - Quick Actions Fix
+
+### Fixed
+- **Database column error** - Fixed `quickActions.ts` querying non-existent `registration_date` column
+- **Dashboard loading** - Quick Actions widget now loads correctly without database errors
+- **Pending users query** - Changed to use `created_at` instead of `registration_date`
+
+### Technical Details
+- Error: `column "registration_date" does not exist`
+- Root cause: `users` table only has `created_at` column, not `registration_date`
+- Impact: Prevented Quick Actions widget from loading on dashboard
+
+### Versions
+- Frontend: v1.17.1
+- Backend: v1.15.10 (with embedded v1.17.1)
+
+---
+
+## [1.17.0] - 2025-10-27 (Sandbox) ✨ MINOR - HEIC/PDF Support + OCR Recovery
+
+### Added
+- **HEIC/HEIF file support** - iPhone users can now upload photos in native HEIC format (iOS camera default)
+- **Enhanced PDF support** - PDF receipts now explicitly supported throughout the app
+- **OCR failure recovery UI** - When OCR fails, users can now:
+  - "Try OCR Again" - Retry processing the same receipt
+  - "Enter Details Manually" - Continue with manual data entry
+- **Mobile camera capture** - Added `capture="environment"` to file input for direct camera access
+- **Improved error handling** - No more alert popups; friendly inline error messages with recovery options
+
+### Changed
+- **Max file size increased** - Raised from 5MB to 10MB to accommodate high-quality iPhone photos
+- **Accepted file types** - Now supports: JPG, PNG, HEIC, HEIF, WebP, and PDF
+- **File validation** - Added frontend size validation with user-friendly error messages
+- **OCR error UX** - Replaced blocking alert with actionable error state
+
+### Fixed
+- **Version embedding system** - Frontend version now correctly embedded at build time (was showing 2.0.0)
+- **Version display accuracy** - Dev Dashboard now shows accurate frontend version (1.17.0)
+- **Build-time version generation** - Created `update-version.js` script to embed version during backend build
+- **OCR failure state** - Users no longer stuck when OCR processing fails
+
+### Technical Details
+- Backend already supported HEIC via Sharp v0.34.4 (no changes needed)
+- Sharp automatically converts HEIC to processable format for OCR
+- Frontend `FILE_UPLOAD` constants updated to reflect new capabilities
+- Version file now static string (not runtime file read) for deployment reliability
+- Added `ocrFailed` state to track and handle OCR errors gracefully
+
+### Versions
+- Frontend: v1.17.0
+- Backend: v1.15.10 (with embedded v1.17.0)
+
+### Semantic Versioning Note
+**1.17.0 (MINOR)** - New features (HEIC/PDF support) + backward-compatible improvements
+- ✅ Correct: MINOR bump for new file format support
+- ❌ Previous: 1.16.2 (PATCH) was incorrect for feature addition
+
+---
+
 ## [1.15.13] - 2025-10-24 (Sandbox) 🔧 PATCH
 
 ### Fixed

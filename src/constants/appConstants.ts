@@ -118,9 +118,9 @@ export const API_CONFIG = {
 
 // ========== FILE UPLOAD ==========
 export const FILE_UPLOAD = {
-  MAX_SIZE: 5 * 1024 * 1024, // 5MB
-  ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'],
-  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.pdf'],
+  MAX_SIZE: 10 * 1024 * 1024, // 10MB (increased for HEIC files from iPhone)
+  ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'],
+  ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', '.pdf'],
 } as const;
 
 // ========== UI CONSTANTS ==========
