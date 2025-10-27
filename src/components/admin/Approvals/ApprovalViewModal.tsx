@@ -11,6 +11,7 @@ interface ApprovalViewModalProps {
   onClose: () => void;
   onToggleReceipt: () => void;
   onAssignEntity: (expense: Expense, entity: string) => void;
+  onEdit?: (expense: Expense) => void;
 }
 
 export const ApprovalViewModal: React.FC<ApprovalViewModalProps> = ({
@@ -20,6 +21,7 @@ export const ApprovalViewModal: React.FC<ApprovalViewModalProps> = ({
   onClose,
   onToggleReceipt,
   onAssignEntity,
+  onEdit,
 }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -182,13 +184,24 @@ export const ApprovalViewModal: React.FC<ApprovalViewModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end">
+        <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-end space-x-3 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
           >
             Close
           </button>
+          {onEdit && (
+            <button
+              onClick={() => {
+                onEdit(expense);
+                onClose();
+              }}
+              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+            >
+              Edit Expense
+            </button>
+          )}
         </div>
       </div>
     </div>
