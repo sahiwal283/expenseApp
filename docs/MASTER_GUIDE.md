@@ -6969,6 +6969,41 @@ ssh root@192.168.1.190 "pct exec 203 -- tail -f /var/log/nginx/access.log | grep
 
 ---
 
+#### Phase 4: Extract Hooks from Monolithic Components (🔄 IN PROGRESS)
+
+**Goal:** Break down large components by extracting stateful logic into reusable hooks.
+
+**Target Component:** `ExpenseSubmission.tsx` (1741 lines - largest component)
+
+**Hooks Extracted:**
+1. ✅ `useAuditTrail.ts` (76 lines)
+   - Manages audit trail fetching and display logic
+   - Auto-expands if changes exist beyond creation
+   - Functions: fetchAuditTrail, clearAuditTrail, toggleAuditTrail
+   
+2. ✅ `useExpenseApprovals.ts` (133 lines)
+   - Manages Zoho Books integration and push workflow
+   - Tracks pushed expenses, handles entity changes
+   - Functions: handlePushToZoho, handleEntityChange, isExpensePushed
+   
+3. ✅ `useExpenseModal.ts` (126 lines)
+   - Manages expense viewing and inline editing in modals
+   - Handles open/close, edit state, save operations
+   - Functions: openExpenseModal, startInlineEdit, saveInlineEdit
+
+**Phase 4 Impact:**
+- **3 hooks created** (335 lines total)
+- **Extracted from ExpenseSubmission.tsx** (reduces complexity)
+- **Reusable logic** for other components
+- **Ready for integration** (hooks created, not yet integrated)
+
+**Next Steps:**
+- Integrate hooks back into ExpenseSubmission.tsx
+- Extract additional hooks (form state, receipt upload)
+- Measure actual line reduction after integration
+
+---
+
 ## 🚨 CRITICAL: Database Migration Rules for AI Agents
 
 **⚠️ MANDATORY RULES - NEVER VIOLATE THESE ⚠️**
