@@ -10,4 +10,7 @@ export { ExpenseModalFooter } from './ExpenseModalFooter';
 export { ExpenseModalReceipt } from './ExpenseModalReceipt';
 export { ExpenseModalAuditTrail } from './ExpenseModalAuditTrail';
 export { ExpenseModalDuplicateWarning } from './ExpenseModalDuplicateWarning';
+export { ExpenseModalDetailsView } from './ExpenseModalDetailsView';
+export { ExpenseModalDetailsEdit } from './ExpenseModalDetailsEdit';
+export { ExpenseModalStatusManagement } from './ExpenseModalStatusManagement';
 
