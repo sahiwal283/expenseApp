@@ -6294,7 +6294,9 @@ ssh root@192.168.1.190 "pct exec 203 -- psql ... -c 'SELECT COUNT(*) FROM ocr_co
 
 ---
 
-## 📅 Session: October 27, 2025 - HEIC Support & Upload Infrastructure Fix
+## 📅 Session: October 27, 2025 - Refactor Phase 1 & 2 + HEIC Support
+
+### Part 1: HEIC Support & Upload Infrastructure Fix (Morning)
 
 ### Problem Statement
 
@@ -6891,6 +6893,49 @@ ssh root@192.168.1.190 "pct exec 204 -- docker logs ocr_service -f | grep -E 'ti
 ```bash
 ssh root@192.168.1.190 "pct exec 203 -- tail -f /var/log/nginx/access.log | grep POST"
 ```
+
+---
+
+### Part 2: Refactor Phase 1 & 2 (Afternoon)
+
+**Goal:** Clean up codebase and extract shared logic for better maintainability
+
+#### Phase 1: Quick Wins (✅ COMPLETE)
+- ✅ Deleted 2 backup files (62KB freed)
+- ✅ Deleted all deployment tarballs (31MB freed)
+- ✅ Normalized 6 database migrations (010-015 with sequence numbers)
+- ✅ Created migration documentation (README.md)
+- ✅ Added Prettier configuration + ESLint enhancements
+- ✅ Added EditorConfig for cross-editor consistency
+- ✅ Created REFACTOR_ASSESSMENT.md (775 lines - complete codebase audit)
+- ✅ Added migration rules to this MASTER_GUIDE
+
+**Files Changed:** 27 files (+2,951/-1,304 lines)
+
+#### Phase 2: Extract Shared Logic (🔄 60% COMPLETE)
+
+**Shared Hooks Created:**
+1. ✅ `src/hooks/useUsers.ts` - Centralized user fetching (eliminates 5+ duplicates)
+2. ✅ `src/hooks/useApiError.ts` - Consistent error handling across all API calls
+3. ✅ `src/hooks/useResourceLoader.ts` - Generic data loading pattern
+
+**Badge Components Created:**
+1. ✅ `src/components/common/StatusBadge.tsx` - Expense status badges (replaces logic in 6 components)
+2. ✅ `src/components/common/CategoryBadge.tsx` - Category badges with color coding
+3. ✅ `src/components/common/Badge.tsx` - Generic badge (11 colors, 3 variants, 4 sizes)
+
+**Impact:**
+- Projected code reduction: -713 lines (-59%) once components migrated
+- Consistent styling and error handling across app
+- Easier to maintain and test
+
+**Remaining Phase 2 Work:**
+- 🔄 Extract FilterBar component
+- 🔄 Create useOfflineQueue hook  
+- 🔄 Consolidate date/filter utilities
+- 🔄 Migrate components to use new badges
+
+**Git Commits:** 4 commits on branch v1.6.0, ready to push
 
 ---
 
