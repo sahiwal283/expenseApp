@@ -72,7 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           color="orange"
         />
         <StatsCard
-          title={user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
+          title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
           value={stats.activeEvents.toString()}
           icon={Calendar}
           color="emerald"

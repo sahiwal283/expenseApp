@@ -18,19 +18,24 @@ interface DashboardStatsInput {
 export function useDashboardStats({ expenses, events, users, currentUser }: DashboardStatsInput) {
   const stats = useMemo(() => {
     // Filter data based on user role
-    const isAdminOrAccountant = currentUser.role === 'admin' || 
-                                 currentUser.role === 'developer' || 
-                                 currentUser.role === 'accountant';
+    // For expenses: Only admin/accountant/developer see all expenses
+    const canSeeAllExpenses = currentUser.role === 'admin' || 
+                               currentUser.role === 'developer' || 
+                               currentUser.role === 'accountant';
     
-    // For non-admin/accountant users, only show their own expenses
-    const userExpenses = isAdminOrAccountant 
+    // For events: Admin/developer/accountant/coordinator see all events
+    const canSeeAllEvents = currentUser.role === 'admin' || 
+                            currentUser.role === 'developer' || 
+                            currentUser.role === 'accountant' ||
+                            currentUser.role === 'coordinator';
+    
+    // Filter expenses: Coordinators only see their own expenses
+    const userExpenses = canSeeAllExpenses 
       ? expenses 
       : expenses.filter(e => e.userId === currentUser.id);
     
-    // For non-admin/coordinator users, only show events they're assigned to
-    const userEvents = (currentUser.role === 'admin' || 
-                        currentUser.role === 'developer' || 
-                        currentUser.role === 'coordinator')
+    // Filter events: Coordinators see all events (for logistics management)
+    const userEvents = canSeeAllEvents
       ? events
       : events.filter(event => event.participants.some(p => p.id === currentUser.id));
     

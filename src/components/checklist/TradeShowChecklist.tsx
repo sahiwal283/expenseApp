@@ -6,7 +6,7 @@ import { BoothSection } from './sections/BoothSection';
 import { FlightsSection } from './sections/FlightsSection';
 import { HotelsSection } from './sections/HotelsSection';
 import { CarRentalsSection } from './sections/CarRentalsSection';
-import { BoothShippingSection } from './sections/BoothShippingSection';
+import { CustomItemsSection } from './sections/CustomItemsSection';
 
 export interface ChecklistData {
   id: number;
@@ -19,11 +19,12 @@ export interface ChecklistData {
   hotels: HotelData[];
   carRentals: CarRentalData[];
   boothShipping: BoothShippingData[];
+  customItems: CustomItemData[];
 }
 
 export interface FlightData {
   id?: number;
-  attendee_id: number | null;
+  attendee_id: string | null;
   attendee_name: string;
   carrier: string | null;
   confirmation_number: string | null;
@@ -33,7 +34,7 @@ export interface FlightData {
 
 export interface HotelData {
   id?: number;
-  attendee_id: number | null;
+  attendee_id: string | null;
   attendee_name: string;
   property_name: string | null;
   confirmation_number: string | null;
@@ -62,6 +63,17 @@ export interface BoothShippingData {
   delivery_date: string | null;
   notes: string | null;
   shipped: boolean;
+}
+
+export interface CustomItemData {
+  id?: number;
+  checklist_id: number;
+  title: string;
+  description: string | null;
+  completed: boolean;
+  position: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface TradeShowChecklistProps {
@@ -114,15 +126,9 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     setLoading(true);
     try {
       if (api.USE_SERVER) {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${eventId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-            }
-          }
-        );
-        const data = await response.json();
+        console.log('[Checklist] Loading checklist for event:', eventId);
+        const data = await api.checklist.getChecklist(eventId);
+        console.log('[Checklist] Checklist loaded:', data);
         setChecklist(data);
       }
     } catch (error) {
@@ -138,22 +144,12 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     setSaving(true);
     try {
       if (api.USE_SERVER) {
-        await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${checklist.id}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              boothOrdered: updates.booth_ordered ?? checklist.booth_ordered,
-              boothNotes: updates.booth_notes ?? checklist.booth_notes,
-              electricityOrdered: updates.electricity_ordered ?? checklist.electricity_ordered,
-              electricityNotes: updates.electricity_notes ?? checklist.electricity_notes
-            })
-          }
-        );
+        await api.checklist.updateChecklist(checklist.id, {
+          boothOrdered: updates.booth_ordered ?? checklist.booth_ordered,
+          boothNotes: updates.booth_notes ?? checklist.booth_notes,
+          electricityOrdered: updates.electricity_ordered ?? checklist.electricity_ordered,
+          electricityNotes: updates.electricity_notes ?? checklist.electricity_notes
+        });
         setChecklist({ ...checklist, ...updates });
       }
     } catch (error) {
@@ -271,6 +267,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
             <BoothSection 
               checklist={checklist} 
               onUpdate={updateChecklist}
+              onReload={() => loadChecklist(selectedEventId!)}
               saving={saving}
             />
             
@@ -291,9 +288,11 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
               onReload={() => loadChecklist(selectedEventId!)}
             />
             
-            <BoothShippingSection 
+            <CustomItemsSection 
               checklist={checklist}
               onReload={() => loadChecklist(selectedEventId!)}
+              canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
+              isAdmin={user.role === 'admin' || user.role === 'developer'}
             />
           </div>
         </>

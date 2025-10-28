@@ -182,7 +182,7 @@ export class SessionManager {
       console.log('[SessionManager] Refreshing authentication token');
       
       // Get API base URL from environment or use default
-      const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
       const refreshUrl = `${apiBaseUrl}/auth/refresh`;
       
       // Call refresh endpoint with proper base URL

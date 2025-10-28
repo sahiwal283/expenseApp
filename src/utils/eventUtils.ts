@@ -70,18 +70,19 @@ export function getEventDropdownRemovalDate(event: TradeShow): string {
 /**
  * Filters events to only show those where the user is a participant.
  * 
- * Admin, accountant, and developer roles can see all events regardless of participation.
- * Regular users (coordinator, salesperson) can only see events where they are listed as participants.
+ * Admin, accountant, developer, and coordinator roles can see all events regardless of participation.
+ * Regular users (salesperson) can only see events where they are listed as participants.
  * 
- * This ensures users can only submit expenses to events they're actually attending.
+ * This ensures users can only submit expenses to events they're actually attending,
+ * except coordinators who need to submit expenses for event logistics (flights, hotels, etc.).
  * 
  * @param events - Array of events to filter
  * @param user - Current logged-in user
- * @returns Filtered array of events (only user's events or all for admins/accountants/developers)
+ * @returns Filtered array of events (only user's events or all for admins/accountants/developers/coordinators)
  */
 export function filterEventsByParticipation(events: TradeShow[], user: User): TradeShow[] {
-  // Admin, accountant, and developer can see all events
-  if (user.role === 'admin' || user.role === 'accountant' || user.role === 'developer') {
+  // Admin, accountant, developer, and coordinator can see all events
+  if (user.role === 'admin' || user.role === 'accountant' || user.role === 'developer' || user.role === 'coordinator') {
     return events;
   }
   

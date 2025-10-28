@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Car, Plus, CheckCircle2, Circle, Trash2, Save } from 'lucide-react';
 import { ChecklistData, CarRentalData } from '../TradeShowChecklist';
+import { api } from '../../../utils/api';
 
 interface CarRentalsSectionProps {
   checklist: ChecklistData;
@@ -41,24 +42,14 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
     setSaving({ ...saving, [rentalId]: true });
 
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/car-rentals/${rentalId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            provider: rentalData.provider,
-            confirmationNumber: rentalData.confirmation_number,
-            pickupDate: rentalData.pickup_date,
-            returnDate: rentalData.return_date,
-            notes: rentalData.notes,
-            booked: rentalData.booked
-          })
-        }
-      );
+      await api.checklist.updateCarRental(rentalId, {
+        provider: rentalData.provider,
+        confirmationNumber: rentalData.confirmation_number,
+        pickupDate: rentalData.pickup_date,
+        returnDate: rentalData.return_date,
+        notes: rentalData.notes,
+        booked: true  // Always mark as booked when saving car rental info
+      });
 
       const newEditing = { ...editingRentals };
       delete newEditing[rentalId];
@@ -75,24 +66,14 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
   const handleAddRental = async () => {
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${checklist.id}/car-rentals`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            provider: newRental.provider,
-            confirmationNumber: newRental.confirmation_number,
-            pickupDate: newRental.pickup_date,
-            returnDate: newRental.return_date,
-            notes: newRental.notes,
-            booked: newRental.booked
-          })
-        }
-      );
+      await api.checklist.createCarRental(checklist.id, {
+        provider: newRental.provider,
+        confirmationNumber: newRental.confirmation_number,
+        pickupDate: newRental.pickup_date,
+        returnDate: newRental.return_date,
+        notes: newRental.notes,
+        booked: true  // Always mark as booked when adding car rental info
+      });
 
       setNewRental({
         provider: null,
@@ -114,15 +95,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
     if (!confirm('Delete this car rental?')) return;
 
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/car-rentals/${rentalId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
-        }
-      );
+      await api.checklist.deleteCarRental(rentalId);
       onReload();
     } catch (error) {
       console.error('[CarRentalsSection] Error deleting rental:', error);
@@ -135,24 +108,14 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
     if (!rental) return;
 
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/car-rentals/${rentalId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            provider: rental.provider,
-            confirmationNumber: rental.confirmation_number,
-            pickupDate: rental.pickup_date,
-            returnDate: rental.return_date,
-            notes: rental.notes,
-            booked: !rental.booked
-          })
-        }
-      );
+      await api.checklist.updateCarRental(rentalId, {
+        provider: rental.provider,
+        confirmationNumber: rental.confirmation_number,
+        pickupDate: rental.pickup_date,
+        returnDate: rental.return_date,
+        notes: rental.notes,
+        booked: !rental.booked
+      });
       onReload();
     } catch (error) {
       console.error('[CarRentalsSection] Error toggling rental:', error);

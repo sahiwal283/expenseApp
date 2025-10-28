@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import { pool } from '../config/database';
 import { authenticateToken } from '../middleware/auth';
 import backendPkg from '../../package.json';
@@ -926,6 +927,128 @@ router.get('/page-analytics', async (req, res) => {
   } catch (error) {
     console.error('Page analytics endpoint error:', error);
     res.status(500).json({ error: 'Failed to fetch page analytics' });
+  }
+});
+
+// GET /api/dev-dashboard/ocr-metrics
+router.get('/ocr-metrics', async (req, res) => {
+  try {
+    const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
+    
+    // Query database for OCR usage statistics
+    // Get ALL receipts with images
+    const allReceiptsResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total_receipts_processed,
+        COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as receipts_this_month,
+        COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 END) as receipts_today
+      FROM expenses
+      WHERE receipt_url IS NOT NULL
+    `);
+    
+    const allTotalReceipts = parseInt(allReceiptsResult.rows[0].total_receipts_processed) || 0;
+    const allReceiptsThisMonth = parseInt(allReceiptsResult.rows[0].receipts_this_month) || 0;
+    const allReceiptsToday = parseInt(allReceiptsResult.rows[0].receipts_today) || 0;
+    
+    // Get Google Vision specific receipts from api_requests table
+    // These are receipts processed through the external OCR service
+    const googleReceiptsResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total_receipts_processed,
+        COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as receipts_this_month,
+        COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 END) as receipts_today
+      FROM api_requests
+      WHERE endpoint LIKE '%/ocr/v2/process%'
+        AND method = 'POST'
+        AND status_code >= 200 
+        AND status_code < 300
+    `);
+    
+    const googleTotalReceipts = parseInt(googleReceiptsResult.rows[0].total_receipts_processed) || 0;
+    const googleReceiptsThisMonth = parseInt(googleReceiptsResult.rows[0].receipts_this_month) || 0;
+    const googleReceiptsToday = parseInt(googleReceiptsResult.rows[0].receipts_today) || 0;
+    
+    // Fetch OCR service health and provider info
+    let ocrServiceHealth = null;
+    let ocrProviders = null;
+    
+    try {
+      const [healthResponse, providersResponse] = await Promise.all([
+        axios.get(`${OCR_SERVICE_URL}/health/ready`, { timeout: 5000 }),
+        axios.get(`${OCR_SERVICE_URL}/ocr/providers`, { timeout: 5000 })
+      ]);
+      
+      ocrServiceHealth = healthResponse.data;
+      // Parse the nested providers structure
+      const providersData = providersResponse.data;
+      ocrProviders = {
+        primary: providersData.providers?.primary || 'unknown',
+        fallback: providersData.providers?.fallback || 'unknown',
+        availability: providersData.providers?.availability || {},
+        languages: providersData.languages || [],
+        confidenceThreshold: providersData.confidenceThreshold || 0.6
+      };
+    } catch (error) {
+      console.warn('[DevDashboard] OCR service not available:', (error as any).message);
+    }
+    
+    // Calculate estimated costs (Google Vision pricing)
+    // Free tier: first 1,000 images/month
+    // $1.50 per 1,000 images after that
+    // Only Google Vision receipts cost money
+    const freeThreshold = 1000;
+    const costPer1000 = 1.50;
+    
+    let estimatedCostThisMonth = 0;
+    if (googleReceiptsThisMonth > freeThreshold) {
+      const billedReceipts = googleReceiptsThisMonth - freeThreshold;
+      estimatedCostThisMonth = (billedReceipts / 1000) * costPer1000;
+    }
+    
+    res.json({
+      service: {
+        url: OCR_SERVICE_URL,
+        status: ocrServiceHealth ? 'healthy' : 'unavailable',
+        primary: ocrProviders?.primary || 'unknown',
+        fallback: ocrProviders?.fallback || 'unknown',
+        availability: ocrProviders?.availability || {},
+        languages: ocrProviders?.languages || [],
+        confidenceThreshold: ocrProviders?.confidenceThreshold || 0.6
+      },
+      usage: {
+        // All receipts (any OCR method)
+        all: {
+          total: allTotalReceipts,
+          thisMonth: allReceiptsThisMonth,
+          today: allReceiptsToday
+        },
+        // Google Vision specific (external OCR service)
+        googleVision: {
+          total: googleTotalReceipts,
+          thisMonth: googleReceiptsThisMonth,
+          today: googleReceiptsToday
+        },
+        freeThreshold,
+        remainingFree: Math.max(0, freeThreshold - googleReceiptsThisMonth)
+      },
+      costs: {
+        estimatedThisMonth: estimatedCostThisMonth.toFixed(2),
+        currency: 'USD',
+        pricingModel: `Free for first ${freeThreshold}/month, then $${costPer1000} per 1,000 images`,
+        projectedMonthly: ((googleReceiptsThisMonth / new Date().getDate()) * 30 > freeThreshold) 
+          ? (((googleReceiptsThisMonth / new Date().getDate()) * 30 - freeThreshold) / 1000 * costPer1000).toFixed(2)
+          : '0.00'
+      },
+      performance: {
+        provider: ocrProviders?.primary || 'unknown',
+        fallback: ocrProviders?.fallback || 'unknown',
+        expectedSpeed: ocrProviders?.primary === 'google_vision' ? '2-5 seconds' : '10-15 seconds',
+        availability: ocrProviders?.availability || {}
+      }
+    });
+  } catch (error) {
+    console.error('OCR metrics endpoint error:', error);
+    res.status(500).json({ error: 'Failed to fetch OCR metrics' });
   }
 });
 

@@ -4,8 +4,8 @@ import { authorize, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
-// Get checklist for an event
-router.get('/:eventId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+// Get checklist for an event (all authenticated users can view)
+router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accountant', 'salesperson'), async (req: AuthRequest, res: Response) => {
   try {
     const { eventId } = req.params;
 
@@ -21,16 +21,42 @@ router.get('/:eventId', authorize('admin', 'coordinator', 'developer'), async (r
         `INSERT INTO event_checklists (event_id) VALUES ($1) RETURNING *`,
         [eventId]
       );
+      
+      const checklistId = checklist.rows[0].id;
+      
+      // Auto-apply templates to new checklist
+      const templates = await query(
+        'SELECT * FROM checklist_templates WHERE is_active = true ORDER BY position, id'
+      );
+      
+      if (templates.rows.length > 0) {
+        const insertPromises = templates.rows.map((template: any) => 
+          query(
+            `INSERT INTO checklist_custom_items (checklist_id, title, description, position, completed)
+             VALUES ($1, $2, $3, $4, false)`,
+            [checklistId, template.title, template.description, template.position]
+          )
+        );
+        
+        await Promise.all(insertPromises);
+        
+        // Mark templates as applied
+        await query(
+          'UPDATE event_checklists SET templates_applied = true WHERE id = $1',
+          [checklistId]
+        );
+      }
     }
 
     const checklistId = checklist.rows[0].id;
 
     // Get all related data
-    const [flights, hotels, carRentals, boothShipping] = await Promise.all([
+    const [flights, hotels, carRentals, boothShipping, customItems] = await Promise.all([
       query('SELECT * FROM checklist_flights WHERE checklist_id = $1 ORDER BY id', [checklistId]),
       query('SELECT * FROM checklist_hotels WHERE checklist_id = $1 ORDER BY id', [checklistId]),
       query('SELECT * FROM checklist_car_rentals WHERE checklist_id = $1 ORDER BY id', [checklistId]),
-      query('SELECT * FROM checklist_booth_shipping WHERE checklist_id = $1 ORDER BY id', [checklistId])
+      query('SELECT * FROM checklist_booth_shipping WHERE checklist_id = $1 ORDER BY id', [checklistId]),
+      query('SELECT * FROM checklist_custom_items WHERE checklist_id = $1 ORDER BY position, id', [checklistId])
     ]);
 
     res.json({
@@ -38,7 +64,8 @@ router.get('/:eventId', authorize('admin', 'coordinator', 'developer'), async (r
       flights: flights.rows,
       hotels: hotels.rows,
       carRentals: carRentals.rows,
-      boothShipping: boothShipping.rows
+      boothShipping: boothShipping.rows,
+      customItems: customItems.rows
     });
   } catch (error) {
     console.error('[Checklist] Error fetching checklist:', error);
@@ -270,6 +297,225 @@ router.post('/:checklistId/booth-shipping', authorize('admin', 'coordinator', 'd
   } catch (error) {
     console.error('[Checklist] Error saving booth shipping:', error);
     res.status(500).json({ error: 'Failed to save booth shipping' });
+  }
+});
+
+// ==========================================
+// CUSTOM CHECKLIST ITEMS
+// ==========================================
+
+// Get custom items for a checklist
+router.get('/:checklistId/custom-items', authorize('admin', 'coordinator', 'developer', 'accountant', 'salesperson'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { checklistId } = req.params;
+    
+    const result = await query(
+      'SELECT * FROM checklist_custom_items WHERE checklist_id = $1 ORDER BY position, id',
+      [checklistId]
+    );
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[Checklist] Error fetching custom items:', error);
+    res.status(500).json({ error: 'Failed to fetch custom items' });
+  }
+});
+
+// Create custom item
+router.post('/:checklistId/custom-items', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { checklistId } = req.params;
+    const { title, description, position } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    
+    const result = await query(
+      `INSERT INTO checklist_custom_items (checklist_id, title, description, position)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [checklistId, title, description || null, position || 0]
+    );
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[Checklist] Error creating custom item:', error);
+    res.status(500).json({ error: 'Failed to create custom item' });
+  }
+});
+
+// Update custom item
+router.put('/custom-items/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, description, completed, position } = req.body;
+    
+    const result = await query(
+      `UPDATE checklist_custom_items 
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           completed = COALESCE($3, completed),
+           position = COALESCE($4, position)
+       WHERE id = $5
+       RETURNING *`,
+      [title, description, completed, position, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Custom item not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[Checklist] Error updating custom item:', error);
+    res.status(500).json({ error: 'Failed to update custom item' });
+  }
+});
+
+// Delete custom item
+router.delete('/custom-items/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await query(
+      'DELETE FROM checklist_custom_items WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Custom item not found' });
+    }
+    
+    res.json({ message: 'Custom item deleted successfully' });
+  } catch (error) {
+    console.error('[Checklist] Error deleting custom item:', error);
+    res.status(500).json({ error: 'Failed to delete custom item' });
+  }
+});
+
+// ==========================================
+// CHECKLIST TEMPLATES
+// ==========================================
+
+// Get all templates
+router.get('/templates', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT * FROM checklist_templates WHERE is_active = true ORDER BY position, id'
+    );
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[Checklist] Error fetching templates:', error);
+    res.status(500).json({ error: 'Failed to fetch templates' });
+  }
+});
+
+// Create template
+router.post('/templates', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, description, position } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    
+    const result = await query(
+      `INSERT INTO checklist_templates (title, description, position, is_active)
+       VALUES ($1, $2, $3, true)
+       RETURNING *`,
+      [title, description || null, position || 0]
+    );
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[Checklist] Error creating template:', error);
+    res.status(500).json({ error: 'Failed to create template' });
+  }
+});
+
+// Update template
+router.put('/templates/:id', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, description, position, is_active } = req.body;
+    
+    const result = await query(
+      `UPDATE checklist_templates 
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           position = COALESCE($3, position),
+           is_active = COALESCE($4, is_active)
+       WHERE id = $5
+       RETURNING *`,
+      [title, description, position, is_active, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[Checklist] Error updating template:', error);
+    res.status(500).json({ error: 'Failed to update template' });
+  }
+});
+
+// Delete template (soft delete)
+router.delete('/templates/:id', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await query(
+      'UPDATE checklist_templates SET is_active = false WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json({ message: 'Template deleted successfully' });
+  } catch (error) {
+    console.error('[Checklist] Error deleting template:', error);
+    res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
+
+// Apply templates to a specific checklist
+router.post('/:checklistId/apply-templates', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { checklistId } = req.params;
+    
+    // Get all active templates
+    const templates = await query(
+      'SELECT * FROM checklist_templates WHERE is_active = true ORDER BY position, id'
+    );
+    
+    // Insert each template as a custom item for this checklist
+    const insertPromises = templates.rows.map((template: any) => 
+      query(
+        `INSERT INTO checklist_custom_items (checklist_id, title, description, position, completed)
+         VALUES ($1, $2, $3, $4, false)
+         ON CONFLICT DO NOTHING`,
+        [checklistId, template.title, template.description, template.position]
+      )
+    );
+    
+    await Promise.all(insertPromises);
+    
+    // Mark templates as applied
+    await query(
+      'UPDATE event_checklists SET templates_applied = true WHERE id = $1',
+      [checklistId]
+    );
+    
+    res.json({ message: 'Templates applied successfully', count: templates.rows.length });
+  } catch (error) {
+    console.error('[Checklist] Error applying templates:', error);
+    res.status(500).json({ error: 'Failed to apply templates' });
   }
 });
 

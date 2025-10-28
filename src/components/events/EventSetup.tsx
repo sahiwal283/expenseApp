@@ -15,6 +15,35 @@ interface ChecklistSummary {
   car_rentals_booked: number;
   car_rentals_total: number;
   booth_shipped: boolean;
+  flights?: Array<{
+    id: number;
+    attendee_id: string;
+    attendee_name: string;
+    carrier: string | null;
+    confirmation_number: string | null;
+    notes: string | null;
+    booked: boolean;
+  }>;
+  hotels?: Array<{
+    id: number;
+    attendee_id: string;
+    attendee_name: string;
+    property_name: string | null;
+    confirmation_number: string | null;
+    check_in_date: string | null;
+    check_out_date: string | null;
+    notes: string | null;
+    booked: boolean;
+  }>;
+  carRentals?: Array<{
+    id: number;
+    provider: string | null;
+    confirmation_number: string | null;
+    pickup_date: string | null;
+    return_date: string | null;
+    notes: string | null;
+    booked: boolean;
+  }>;
 }
 
 interface EventSetupProps {
@@ -63,26 +92,25 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   const loadChecklistSummary = async (eventId: string) => {
     setLoadingChecklist(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${eventId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
-        }
-      );
-      const data = await response.json();
+      const data = await api.checklist.getChecklist(eventId);
+      
+      // Get participant count for the event
+      const event = events.find(e => e.id === eventId);
+      const participantCount = event?.participants?.length || 0;
       
       setChecklistData({
         booth_ordered: data.booth_ordered || false,
         electricity_ordered: data.electricity_ordered || false,
         flights_booked: data.flights?.filter((f: any) => f.booked).length || 0,
-        flights_total: data.flights?.length || 0,
+        flights_total: participantCount,  // Use participant count, not flight record count
         hotels_booked: data.hotels?.filter((h: any) => h.booked).length || 0,
-        hotels_total: data.hotels?.length || 0,
+        hotels_total: participantCount,  // Use participant count, not hotel record count
         car_rentals_booked: data.carRentals?.filter((c: any) => c.booked).length || 0,
-        car_rentals_total: data.carRentals?.length || 0,
-        booth_shipped: data.boothShipping?.[0]?.shipped || false
+        car_rentals_total: data.carRentals?.length || 0,  // Car rentals are shared, so use actual count
+        booth_shipped: data.boothShipping?.[0]?.shipped || false,
+        flights: data.flights || [],
+        hotels: data.hotels || [],
+        carRentals: data.carRentals || []
       });
     } catch (error) {
       console.error('[EventSetup] Error loading checklist:', error);
@@ -251,8 +279,8 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
           </button>
         </div>
 
-        {/* Admin, Developer & Accountant Filter Toggle */}
-        {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
+        {/* Admin, Developer, Accountant & Coordinator Filter Toggle */}
+        {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator') && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
             <button
               onClick={() => setFilterMode('all')}
@@ -795,18 +823,21 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                 )}
               </div>
 
-              {/* Checklist Summary */}
-              {(user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer') && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                    Event Checklist
-                  </h3>
-                  {loadingChecklist ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                    </div>
-                  ) : checklistData ? (
+              {/* Checklist Summary - Visible to ALL users */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+                  Event Checklist
+                </h3>
+                {loadingChecklist ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                  </div>
+                ) : checklistData ? (
+                  <div className="space-y-4">
+                    {/* Overall Checklist Status */}
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Overall Status</h4>
+                      
                       {/* Booth & Electricity */}
                       <div className="flex items-center gap-3">
                         {checklistData.booth_ordered ? (
@@ -862,11 +893,139 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                         <span className="text-sm text-gray-700">Booth Shipped</span>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm italic">Checklist not available</p>
-                  )}
-                </div>
-              )}
+
+                    {/* Personal Travel Details - Only show if user is a participant */}
+                    {(() => {
+                      const userFlight = checklistData.flights?.find(f => f.attendee_id === user.id);
+                      const userHotel = checklistData.hotels?.find(h => h.attendee_id === user.id);
+                      const carRentals = checklistData.carRentals || [];
+                      
+                      if (userFlight || userHotel || carRentals.length > 0) {
+                        return (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                            <h4 className="text-xs font-semibold text-blue-900 uppercase tracking-wide mb-2 flex items-center gap-2">
+                              <Users2 className="w-4 h-4" />
+                              Your Travel Details
+                            </h4>
+
+                            {/* User's Flight Info */}
+                            {userFlight && (
+                              <div className="bg-white rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Plane className="w-4 h-4 text-blue-600" />
+                                  <span className="font-medium text-gray-900 text-sm">Flight</span>
+                                  {userFlight.booked && (
+                                    <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
+                                  )}
+                                </div>
+                                {userFlight.carrier && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Carrier:</span>
+                                    <span className="text-gray-900 ml-2">{userFlight.carrier}</span>
+                                  </div>
+                                )}
+                                {userFlight.confirmation_number && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Confirmation:</span>
+                                    <span className="text-gray-900 ml-2 font-mono">{userFlight.confirmation_number}</span>
+                                  </div>
+                                )}
+                                {userFlight.notes && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Notes:</span>
+                                    <span className="text-gray-900 ml-2">{userFlight.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* User's Hotel Info */}
+                            {userHotel && (
+                              <div className="bg-white rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Hotel className="w-4 h-4 text-emerald-600" />
+                                  <span className="font-medium text-gray-900 text-sm">Hotel</span>
+                                  {userHotel.booked && (
+                                    <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
+                                  )}
+                                </div>
+                                {userHotel.property_name && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Property:</span>
+                                    <span className="text-gray-900 ml-2">{userHotel.property_name}</span>
+                                  </div>
+                                )}
+                                {userHotel.confirmation_number && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Confirmation:</span>
+                                    <span className="text-gray-900 ml-2 font-mono">{userHotel.confirmation_number}</span>
+                                  </div>
+                                )}
+                                {(userHotel.check_in_date || userHotel.check_out_date) && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Dates:</span>
+                                    <span className="text-gray-900 ml-2">
+                                      {userHotel.check_in_date ? formatLocalDate(userHotel.check_in_date) : '—'} to {userHotel.check_out_date ? formatLocalDate(userHotel.check_out_date) : '—'}
+                                    </span>
+                                  </div>
+                                )}
+                                {userHotel.notes && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Notes:</span>
+                                    <span className="text-gray-900 ml-2">{userHotel.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Car Rentals - Shared by all attendees */}
+                            {carRentals.map((rental) => (
+                              <div key={rental.id} className="bg-white rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Car className="w-4 h-4 text-orange-600" />
+                                  <span className="font-medium text-gray-900 text-sm">Car Rental</span>
+                                  {rental.booked && (
+                                    <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
+                                  )}
+                                </div>
+                                {rental.provider && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Provider:</span>
+                                    <span className="text-gray-900 ml-2">{rental.provider}</span>
+                                  </div>
+                                )}
+                                {rental.confirmation_number && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Confirmation:</span>
+                                    <span className="text-gray-900 ml-2 font-mono">{rental.confirmation_number}</span>
+                                  </div>
+                                )}
+                                {(rental.pickup_date || rental.return_date) && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Dates:</span>
+                                    <span className="text-gray-900 ml-2">
+                                      {rental.pickup_date ? formatLocalDate(rental.pickup_date) : '—'} to {rental.return_date ? formatLocalDate(rental.return_date) : '—'}
+                                    </span>
+                                  </div>
+                                )}
+                                {rental.notes && (
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">Notes:</span>
+                                    <span className="text-gray-900 ml-2">{rental.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm italic">Checklist not available</p>
+                )}
+              </div>
             </div>
 
             <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">

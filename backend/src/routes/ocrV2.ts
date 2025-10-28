@@ -123,6 +123,9 @@ async function callExternalOCR(filePath: string): Promise<any> {
   const formData = new FormData();
   formData.append('file', fs.createReadStream(processedPath));
   
+  console.log(`[OCR v2] Calling external OCR at: ${EXTERNAL_OCR_URL}/ocr/`);
+  const startTime = Date.now();
+  
   const response = await axios.post(
     `${EXTERNAL_OCR_URL}/ocr/`,
     formData,
@@ -133,6 +136,9 @@ async function callExternalOCR(filePath: string): Promise<any> {
       maxBodyLength: Infinity
     }
   );
+  
+  const elapsed = Date.now() - startTime;
+  console.log(`[OCR v2] External OCR completed in ${elapsed}ms (Provider: ${response.data.ocr?.provider || 'unknown'})`);
   
   return response.data;
 }

@@ -399,8 +399,8 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
 
   let receiptUrl: string | undefined = undefined;
 
-  // Validate that user is a participant of the event (unless admin/accountant/developer)
-  if (req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer') {
+  // Validate that user is a participant of the event (unless admin/accountant/developer/coordinator)
+  if (req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer' && req.user!.role !== 'coordinator') {
     const participantCheck = await query(
       `SELECT 1 FROM event_participants WHERE event_id = $1 AND user_id = $2`,
       [event_id, req.user!.id]
@@ -504,8 +504,8 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
 
   let receiptUrl = undefined;
 
-  // Validate that user is a participant if changing event (unless admin/accountant/developer)
-  if (event_id && req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer') {
+  // Validate that user is a participant if changing event (unless admin/accountant/developer/coordinator)
+  if (event_id && req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer' && req.user!.role !== 'coordinator') {
     const participantCheck = await query(
       `SELECT 1 FROM event_participants WHERE event_id = $1 AND user_id = $2`,
       [event_id, req.user!.id]

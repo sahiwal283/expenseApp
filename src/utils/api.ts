@@ -104,5 +104,67 @@ export const api = {
     resolveAlert: (id: string) => apiClient.post(`/dev-dashboard/alerts/${id}/resolve`),
     getPageAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/page-analytics', { params: { timeRange } }),
     getSummary: () => apiClient.get('/dev-dashboard/summary'),
+    getOcrMetrics: () => apiClient.get('/dev-dashboard/ocr-metrics'),
+  },
+
+  // Checklist
+  checklist: {
+    getChecklist: (eventId: string) => apiClient.get(`/checklist/${eventId}`),
+    updateChecklist: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/${checklistId}`, payload),
+    
+    // Flights
+    createFlight: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/flights`, payload),
+    updateFlight: (flightId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/flights/${flightId}`, payload),
+    deleteFlight: (flightId: number) => 
+      apiClient.delete(`/checklist/flights/${flightId}`),
+    
+    // Hotels
+    createHotel: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/hotels`, payload),
+    updateHotel: (hotelId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/hotels/${hotelId}`, payload),
+    deleteHotel: (hotelId: number) => 
+      apiClient.delete(`/checklist/hotels/${hotelId}`),
+    
+    // Car Rentals
+    createCarRental: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/car-rentals`, payload),
+    updateCarRental: (carRentalId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/car-rentals/${carRentalId}`, payload),
+    deleteCarRental: (carRentalId: number) => 
+      apiClient.delete(`/checklist/car-rentals/${carRentalId}`),
+    
+    // Booth Shipping
+    createBoothShipping: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/booth-shipping`, payload),
+    updateBoothShipping: (shippingId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/booth-shipping/${shippingId}`, payload),
+    deleteBoothShipping: (shippingId: number) => 
+      apiClient.delete(`/checklist/booth-shipping/${shippingId}`),
+    
+    // Custom Items
+    getCustomItems: (checklistId: number) => 
+      apiClient.get(`/checklist/${checklistId}/custom-items`),
+    createCustomItem: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/custom-items`, payload),
+    updateCustomItem: (itemId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/custom-items/${itemId}`, payload),
+    deleteCustomItem: (itemId: number) => 
+      apiClient.delete(`/checklist/custom-items/${itemId}`),
+    
+    // Templates
+    getTemplates: () => 
+      apiClient.get('/checklist/templates'),
+    createTemplate: (payload: Record<string, any>) => 
+      apiClient.post('/checklist/templates', payload),
+    updateTemplate: (templateId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/templates/${templateId}`, payload),
+    deleteTemplate: (templateId: number) => 
+      apiClient.delete(`/checklist/templates/${templateId}`),
+    applyTemplates: (checklistId: number) => 
+      apiClient.post(`/checklist/${checklistId}/apply-templates`, {}),
   },
 };

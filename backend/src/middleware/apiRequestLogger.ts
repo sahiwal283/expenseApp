@@ -41,7 +41,9 @@ export const apiRequestLogger = (req: AuthRequest, res: Response, next: NextFunc
     const statusCode = res.statusCode;
     const userId = req.user?.id || null;
     const method = req.method;
-    const endpoint = normalizeEndpoint(req.path);
+    // Use originalUrl to get the full path (including mounted router base path)
+    const fullPath = req.originalUrl.split('?')[0]; // Remove query params
+    const endpoint = normalizeEndpoint(fullPath);
     const ipAddress = req.ip || req.connection.remoteAddress || null;
     const userAgent = req.get('user-agent') || null;
     

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Hotel, CheckCircle2, Circle, Save } from 'lucide-react';
 import { ChecklistData, HotelData } from '../TradeShowChecklist';
 import { TradeShow } from '../../../App';
+import { api } from '../../../utils/api';
 
 interface HotelsSectionProps {
   checklist: ChecklistData;
@@ -10,8 +11,8 @@ interface HotelsSectionProps {
 }
 
 export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, onReload }) => {
-  const [editingHotels, setEditingHotels] = useState<{ [key: number]: HotelData }>({});
-  const [saving, setSaving] = useState<{ [key: number]: boolean }>({});
+  const [editingHotels, setEditingHotels] = useState<{ [key: string]: HotelData }>({});
+  const [saving, setSaving] = useState<{ [key: string]: boolean }>({});
 
   const participants = event.participants || [];
 
@@ -20,9 +21,8 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
   };
 
   const handleFieldChange = (attendeeId: string, field: keyof HotelData, value: any) => {
-    const numericId = parseInt(attendeeId);
     const existing = getHotelForAttendee(attendeeId) || {
-      attendee_id: numericId,
+      attendee_id: attendeeId,
       attendee_name: participants.find(p => p.id === attendeeId)?.name || '',
       property_name: null,
       confirmation_number: null,
@@ -34,49 +34,43 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
 
     setEditingHotels({
       ...editingHotels,
-      [numericId]: {
+      [attendeeId]: {
         ...existing,
-        ...editingHotels[numericId],
+        ...editingHotels[attendeeId],
         [field]: value
       }
     });
   };
 
   const handleSave = async (attendeeId: string) => {
-    const numericId = parseInt(attendeeId);
-    const hotelData = editingHotels[numericId];
+    const hotelData = editingHotels[attendeeId];
     if (!hotelData) return;
 
-    setSaving({ ...saving, [numericId]: true });
+    setSaving({ ...saving, [attendeeId]: true });
 
     try {
       const existingHotel = getHotelForAttendee(attendeeId);
-      const url = existingHotel
-        ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/hotels/${existingHotel.id}`
-        : `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${checklist.id}/hotels`;
+      const isNewHotel = !existingHotel || !existingHotel.id;
+      
+      const payload = {
+        attendeeId: hotelData.attendee_id,
+        attendeeName: hotelData.attendee_name,
+        propertyName: hotelData.property_name,
+        confirmationNumber: hotelData.confirmation_number,
+        checkInDate: hotelData.check_in_date,
+        checkOutDate: hotelData.check_out_date,
+        notes: hotelData.notes,
+        booked: true  // Always mark as booked when saving hotel info
+      };
 
-      const method = existingHotel ? 'PUT' : 'POST';
-
-      await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          attendeeId: hotelData.attendee_id,
-          attendeeName: hotelData.attendee_name,
-          propertyName: hotelData.property_name,
-          confirmationNumber: hotelData.confirmation_number,
-          checkInDate: hotelData.check_in_date,
-          checkOutDate: hotelData.check_out_date,
-          notes: hotelData.notes,
-          booked: hotelData.booked
-        })
-      });
+      if (existingHotel && existingHotel.id) {
+        await api.checklist.updateHotel(existingHotel.id, payload);
+      } else {
+        await api.checklist.createHotel(checklist.id, payload);
+      }
 
       const newEditing = { ...editingHotels };
-      delete newEditing[numericId];
+      delete newEditing[attendeeId];
       setEditingHotels(newEditing);
 
       onReload();
@@ -84,7 +78,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
       console.error('[HotelsSection] Error saving hotel:', error);
       alert('Failed to save hotel information');
     } finally {
-      setSaving({ ...saving, [numericId]: false });
+      setSaving({ ...saving, [attendeeId]: false });
     }
   };
 
@@ -93,24 +87,14 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
     if (!hotel || !hotel.id) return;
 
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/hotels/${hotel.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            propertyName: hotel.property_name,
-            confirmationNumber: hotel.confirmation_number,
-            checkInDate: hotel.check_in_date,
-            checkOutDate: hotel.check_out_date,
-            notes: hotel.notes,
-            booked: !hotel.booked
-          })
-        }
-      );
+      await api.checklist.updateHotel(hotel.id, {
+        propertyName: hotel.property_name,
+        confirmationNumber: hotel.confirmation_number,
+        checkInDate: hotel.check_in_date,
+        checkOutDate: hotel.check_out_date,
+        notes: hotel.notes,
+        booked: !hotel.booked
+      });
       onReload();
     } catch (error) {
       console.error('[HotelsSection] Error toggling hotel:', error);
@@ -130,7 +114,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
         <div className="space-y-3">
           {participants.map(participant => {
             const hotel = getHotelForAttendee(participant.id);
-            const editing = editingHotels[parseInt(participant.id)];
+            const editing = editingHotels[participant.id];
             const currentData = editing || hotel;
             const isModified = !!editing;
 
@@ -161,7 +145,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
                   {isModified && (
                     <button
                       onClick={() => handleSave(participant.id)}
-                      disabled={saving[parseInt(participant.id)]}
+                      disabled={saving[participant.id]}
                       className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors text-sm disabled:opacity-50"
                     >
                       <Save className="w-4 h-4" />

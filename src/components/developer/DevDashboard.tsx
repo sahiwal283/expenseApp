@@ -6,6 +6,7 @@ import { DashboardSummaryCards } from './DevDashboard/DashboardSummaryCards';
 import { DashboardTabNavigation } from './DevDashboard/DashboardTabNavigation';
 import { OverviewTab } from './DevDashboard/OverviewTab';
 import { MetricsTab } from './DevDashboard/MetricsTab';
+import { OcrTab } from './DevDashboard/OcrTab';
 import { ModelTrainingTab } from './DevDashboard/ModelTrainingTab';
 import { AuditLogsTab } from './DevDashboard/AuditLogsTab';
 import { SessionsTab } from './DevDashboard/SessionsTab';
@@ -32,6 +33,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [pageAnalytics, setPageAnalytics] = useState<any>(null);
   const [versionInfo, setVersionInfo] = useState<any>(null);
+  const [ocrMetrics, setOcrMetrics] = useState<any>(null);
   
   // Filters
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
@@ -54,15 +56,17 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
     else setRefreshing(true);
 
     try {
-      const [summaryData, metricsData, versionData] = await Promise.all([
+      const [summaryData, metricsData, versionData, ocrData] = await Promise.all([
         api.devDashboard.getSummary(),
         api.devDashboard.getMetrics(timeRange),
         api.devDashboard.getVersion(),
+        api.devDashboard.getOcrMetrics().catch(() => null), // Graceful fallback if OCR service unavailable
       ]);
 
       setSummary(summaryData);
       setMetrics(metricsData);
       setVersionInfo(versionData);
+      setOcrMetrics(ocrData);
 
       if (activeTab === 'logs') {
         const logsData = await api.devDashboard.getAuditLogs({
@@ -189,6 +193,12 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
               formatUptime={formatUptime}
               formatBytes={formatBytes}
             />
+          )}
+
+          {activeTab === 'ocr' && (
+            <div>
+              <OcrTab ocrMetrics={ocrMetrics} />
+            </div>
           )}
 
           {activeTab === 'training' && <ModelTrainingTab user={user} />}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plane, Plus, CheckCircle2, Circle, Trash2, Save } from 'lucide-react';
 import { ChecklistData, FlightData } from '../TradeShowChecklist';
 import { TradeShow } from '../../../App';
+import { api } from '../../../utils/api';
 
 interface FlightsSectionProps {
   checklist: ChecklistData;
@@ -10,8 +11,8 @@ interface FlightsSectionProps {
 }
 
 export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event, onReload }) => {
-  const [editingFlights, setEditingFlights] = useState<{ [key: number]: FlightData }>({});
-  const [saving, setSaving] = useState<{ [key: number]: boolean }>({});
+  const [editingFlights, setEditingFlights] = useState<{ [key: string]: FlightData }>({});
+  const [saving, setSaving] = useState<{ [key: string]: boolean }>({});
 
   const participants = event.participants || [];
 
@@ -20,9 +21,8 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event
   };
 
   const handleFieldChange = (attendeeId: string, field: keyof FlightData, value: any) => {
-    const numericId = parseInt(attendeeId);
     const existing = getFlightForAttendee(attendeeId) || {
-      attendee_id: numericId,
+      attendee_id: attendeeId,
       attendee_name: participants.find(p => p.id === attendeeId)?.name || '',
       carrier: null,
       confirmation_number: null,
@@ -32,48 +32,42 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event
 
     setEditingFlights({
       ...editingFlights,
-      [numericId]: {
+      [attendeeId]: {
         ...existing,
-        ...editingFlights[numericId],
+        ...editingFlights[attendeeId],
         [field]: value
       }
     });
   };
 
   const handleSave = async (attendeeId: string) => {
-    const numericId = parseInt(attendeeId);
-    const flightData = editingFlights[numericId];
+    const flightData = editingFlights[attendeeId];
     if (!flightData) return;
 
-    setSaving({ ...saving, [numericId]: true });
+    setSaving({ ...saving, [attendeeId]: true });
 
     try {
       const existingFlight = getFlightForAttendee(attendeeId);
-      const url = existingFlight
-        ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/flights/${existingFlight.id}`
-        : `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/${checklist.id}/flights`;
+      const isNewFlight = !existingFlight || !existingFlight.id;
+      
+      const payload = {
+        attendeeId: flightData.attendee_id,
+        attendeeName: flightData.attendee_name,
+        carrier: flightData.carrier,
+        confirmationNumber: flightData.confirmation_number,
+        notes: flightData.notes,
+        booked: true  // Always mark as booked when saving flight info
+      };
 
-      const method = existingFlight ? 'PUT' : 'POST';
-
-      await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          attendeeId: flightData.attendee_id,
-          attendeeName: flightData.attendee_name,
-          carrier: flightData.carrier,
-          confirmationNumber: flightData.confirmation_number,
-          notes: flightData.notes,
-          booked: flightData.booked
-        })
-      });
+      if (existingFlight && existingFlight.id) {
+        await api.checklist.updateFlight(existingFlight.id, payload);
+      } else {
+        await api.checklist.createFlight(checklist.id, payload);
+      }
 
       // Clear editing state
       const newEditing = { ...editingFlights };
-      delete newEditing[numericId];
+      delete newEditing[attendeeId];
       setEditingFlights(newEditing);
 
       onReload();
@@ -81,7 +75,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event
       console.error('[FlightsSection] Error saving flight:', error);
       alert('Failed to save flight information');
     } finally {
-      setSaving({ ...saving, [numericId]: false });
+      setSaving({ ...saving, [attendeeId]: false });
     }
   };
 
@@ -90,22 +84,12 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event
     if (!flight || !flight.id) return;
 
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/checklist/flights/${flight.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            carrier: flight.carrier,
-            confirmationNumber: flight.confirmation_number,
-            notes: flight.notes,
-            booked: !flight.booked
-          })
-        }
-      );
+      await api.checklist.updateFlight(flight.id, {
+        carrier: flight.carrier,
+        confirmationNumber: flight.confirmation_number,
+        notes: flight.notes,
+        booked: !flight.booked
+      });
       onReload();
     } catch (error) {
       console.error('[FlightsSection] Error toggling flight:', error);
@@ -125,7 +109,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event
         <div className="space-y-3">
           {participants.map(participant => {
             const flight = getFlightForAttendee(participant.id);
-            const editing = editingFlights[parseInt(participant.id)];
+            const editing = editingFlights[participant.id];
             const currentData = editing || flight;
             const isModified = !!editing;
 
@@ -156,7 +140,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, event
                   {isModified && (
                     <button
                       onClick={() => handleSave(participant.id)}
-                      disabled={saving[parseInt(participant.id)]}
+                      disabled={saving[participant.id]}
                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm disabled:opacity-50"
                     >
                       <Save className="w-4 h-4" />
