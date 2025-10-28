@@ -88,21 +88,20 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   const loadEvents = async () => {
     try {
       if (api.USE_SERVER) {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/events`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
-        });
+        console.log('[Checklist] Fetching events...');
+        const data = await api.getEvents();
+        console.log('[Checklist] API response:', data);
         
-        if (!response.ok) {
-          console.error('[Checklist] Events API error:', response.status, response.statusText);
+        if (!data) {
+          console.error('[Checklist] API returned null/undefined');
           return;
         }
         
-        const data = await response.json();
         console.log('[Checklist] Loaded events:', data.length, 'events');
-        setEvents(data);
+        setEvents(data || []);
+        
         if (data.length > 0 && !selectedEventId) {
+          console.log('[Checklist] Auto-selecting first event:', data[0].id);
           setSelectedEventId(data[0].id);
         }
       }

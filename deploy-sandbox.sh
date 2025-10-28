@@ -105,11 +105,72 @@ fi
 # Deploy Frontend
 if [ "$DEPLOY_FRONTEND" = true ]; then
     echo ""
-    echo "📦 Building frontend..."
-    npm run build
+    echo "📦 Building frontend for SANDBOX..."
     
-    echo "🚀 Frontend deployment not implemented yet"
-    echo "   Would deploy to: $SANDBOX_FRONTEND_PATH"
+    # CRITICAL: Remove .env.production to prevent using production API URLs
+    if [ -f ".env.production" ]; then
+        echo -e "${YELLOW}⚠️  Temporarily renaming .env.production${NC}"
+        mv .env.production .env.production.temp
+        RESTORE_ENV=true
+    else
+        RESTORE_ENV=false
+    fi
+    
+    # Build with development mode (uses relative /api URLs, not production URLs)
+    npm run build:sandbox
+    
+    # Restore .env.production if it existed
+    if [ "$RESTORE_ENV" = true ]; then
+        mv .env.production.temp .env.production
+        echo "✓ Restored .env.production"
+    fi
+    
+    # Get version and add build ID
+    VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+    BUILD_ID=$(date +%Y%m%d_%H%M%S)
+    echo "<!-- Build: ${BUILD_ID} -->" >> dist/index.html
+    echo "Version: $VERSION (Build: $BUILD_ID)"
+    
+    # Package
+    PACKAGE_NAME="frontend-v${VERSION}-${BUILD_ID}.tar.gz"
+    tar -czf "$PACKAGE_NAME" -C dist .
+    echo "✓ Packaged: $PACKAGE_NAME"
+    
+    # Upload
+    echo "📤 Uploading to Proxmox..."
+    scp "$PACKAGE_NAME" root@$PROXMOX_IP:/tmp/frontend-deploy.tar.gz
+    
+    # Deploy
+    echo "🚀 Deploying to Container $SANDBOX_CONTAINER..."
+    echo -e "${YELLOW}   Deploying to: $SANDBOX_FRONTEND_PATH${NC}"
+    ssh root@$PROXMOX_IP "
+        pct push $SANDBOX_CONTAINER /tmp/frontend-deploy.tar.gz /tmp/frontend-deploy.tar.gz
+        pct exec $SANDBOX_CONTAINER -- bash -c '
+            cd $SANDBOX_FRONTEND_PATH || exit 1
+            rm -rf *
+            tar -xzf /tmp/frontend-deploy.tar.gz
+            systemctl restart nginx
+            echo \"✓ Frontend deployed\"
+        '
+    "
+    
+    # CRITICAL: Restart NPMplus proxy to clear cache
+    echo ""
+    echo -e "${YELLOW}⚠️  CRITICAL: Restarting NPMplus proxy to clear cache...${NC}"
+    ssh root@$PROXMOX_IP "pct stop 104 && sleep 3 && pct start 104 && sleep 2"
+    echo -e "${GREEN}✓ NPMplus proxy restarted${NC}"
+    
+    # Verify deployment
+    echo ""
+    echo "🔍 Verifying frontend deployment..."
+    ssh root@$PROXMOX_IP "pct exec $SANDBOX_CONTAINER -- bash -c '
+        echo \"Service Worker Version:\"
+        head -3 $SANDBOX_FRONTEND_PATH/service-worker.js | grep Version
+        echo \"Build ID:\"
+        grep \"Build:\" $SANDBOX_FRONTEND_PATH/index.html
+    '"
+    
+    echo -e "${GREEN}✅ Frontend deployed successfully!${NC}"
 fi
 
 echo ""
