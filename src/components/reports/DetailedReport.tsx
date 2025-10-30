@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { FileText, Calendar, MapPin, User, DollarSign, Eye, X } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
-import { getStatusColor, getCategoryColor, CATEGORY_COLORS } from '../../constants/appConstants';
+import { CATEGORY_COLORS } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
+import { StatusBadge, CategoryBadge } from '../common';
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -172,9 +173,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
-                      {expense.category}
-                    </span>
+                    <CategoryBadge category={expense.category} size="sm" />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {expense.cardUsed}
@@ -186,9 +185,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                      {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                    </span>
+                    <StatusBadge status={expense.status} size="sm" />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -391,9 +388,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               <div className="flex flex-wrap gap-3">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Status</p>
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(viewingExpense.status)}`}>
-                    {viewingExpense.status.charAt(0).toUpperCase() + viewingExpense.status.slice(1)}
-                  </span>
+                  <StatusBadge status={viewingExpense.status} size="md" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Reimbursement</p>

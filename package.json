@@ -1,12 +1,17 @@
 {
   "name": "trade-show-expense-app",
   "private": true,
-  "version": "1.4.13",
+  "version": "1.27.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:sandbox": "vite build --mode development",
+    "build:production": "vite build --mode production",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "preview": "vite preview",
     "start:backend": "cd backend && npm run dev",
     "start:all": "concurrently \"npm run start:backend\" \"npm run dev\" --names \"backend,frontend\" --prefix-colors \"blue,green\""

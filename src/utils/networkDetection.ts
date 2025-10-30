@@ -395,8 +395,8 @@ export class NetworkMonitor {
 // ========== SINGLETON INSTANCE ==========
 
 export const networkMonitor = new NetworkMonitor(
-  import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/health`
+  import.meta.env.VITE_API_BASE_URL 
+    ? `${import.meta.env.VITE_API_BASE_URL}/health`
     : '/api/health'
 );
 

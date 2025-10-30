@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LoginForm } from './components/auth/LoginForm';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { EventSetup } from './components/events/EventSetup';
+import { TradeShowChecklist } from './components/checklist/TradeShowChecklist';
 import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
 import { AdminSettings } from './components/admin/AdminSettings';
 import { DevDashboard } from './components/developer/DevDashboard';
@@ -40,8 +41,12 @@ export interface TradeShow {
   venue: string;
   city: string;
   state: string;
-  startDate: string;
-  endDate: string;
+  startDate: string; // DEPRECATED: Use showStartDate
+  endDate: string; // DEPRECATED: Use showEndDate
+  showStartDate: string; // Actual event/show start date
+  showEndDate: string; // Actual event/show end date
+  travelStartDate: string; // Travel start date (may be before show)
+  travelEndDate: string; // Travel end date (may be after show)
   participants: User[];
   budget?: number;
   status: 'upcoming' | 'active' | 'completed';
@@ -317,9 +322,10 @@ function App() {
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
         
-        <main className="flex-1 p-3 sm:p-4 md:p-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 bg-gray-50">
           {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
           {currentPage === 'events' && <EventSetup user={user} />}
+          {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
           {/* REMOVED in v1.3.0: Approvals page - approval workflows now integrated into Expenses page */}
           {/* {currentPage === 'approvals' && <Approvals user={user} />} */}

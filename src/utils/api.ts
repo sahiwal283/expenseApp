@@ -81,6 +81,33 @@ export const api = {
   getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 
+  // OCR
+  processReceiptWithOCR: async (formData: FormData) => {
+    const token = TokenManager.getToken();
+    if (!token) {
+      throw new Error('Authentication required. Please log in again.');
+    }
+
+    const response = await fetch(`${apiClient.getBaseURL()}/ocr/v2/process`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[OCR] Processing failed:', errorText);
+      throw new Error('OCR processing failed');
+    }
+
+    return await response.json();
+  },
+
+  // Helper to get base URL
+  getBaseURL: () => apiClient.getBaseURL(),
+
   // Authentication & Registration
   register: (data: { name: string; email: string; username: string; password: string }) =>
     apiClient.post('/auth/register', data),
@@ -104,5 +131,91 @@ export const api = {
     resolveAlert: (id: string) => apiClient.post(`/dev-dashboard/alerts/${id}/resolve`),
     getPageAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/page-analytics', { params: { timeRange } }),
     getSummary: () => apiClient.get('/dev-dashboard/summary'),
+    getOcrMetrics: () => apiClient.get('/dev-dashboard/ocr-metrics'),
+  },
+
+  // Checklist
+  checklist: {
+    getChecklist: (eventId: string) => apiClient.get(`/checklist/${eventId}`),
+    updateChecklist: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/${checklistId}`, payload),
+    uploadBoothMap: async (checklistId: number, file: File) => {
+      const formData = new FormData();
+      formData.append('boothMap', file);
+      
+      // Use fetch directly because apiClient.post() sets Content-Type: application/json
+      const token = TokenManager.getToken();
+      const response = await fetch(`${apiClient.getBaseURL()}/checklist/${checklistId}/booth-map`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type - let browser set it with boundary for FormData
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to upload booth map');
+      }
+      
+      return await response.json();
+    },
+    deleteBoothMap: (checklistId: number) => 
+      apiClient.delete(`/checklist/${checklistId}/booth-map`),
+    
+    // Flights
+    createFlight: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/flights`, payload),
+    updateFlight: (flightId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/flights/${flightId}`, payload),
+    deleteFlight: (flightId: number) => 
+      apiClient.delete(`/checklist/flights/${flightId}`),
+    
+    // Hotels
+    createHotel: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/hotels`, payload),
+    updateHotel: (hotelId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/hotels/${hotelId}`, payload),
+    deleteHotel: (hotelId: number) => 
+      apiClient.delete(`/checklist/hotels/${hotelId}`),
+    
+    // Car Rentals
+    createCarRental: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/car-rentals`, payload),
+    updateCarRental: (carRentalId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/car-rentals/${carRentalId}`, payload),
+    deleteCarRental: (carRentalId: number) => 
+      apiClient.delete(`/checklist/car-rentals/${carRentalId}`),
+    
+    // Booth Shipping
+    createBoothShipping: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/booth-shipping`, payload),
+    updateBoothShipping: (shippingId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/booth-shipping/${shippingId}`, payload),
+    deleteBoothShipping: (shippingId: number) => 
+      apiClient.delete(`/checklist/booth-shipping/${shippingId}`),
+    
+    // Custom Items
+    getCustomItems: (checklistId: number) => 
+      apiClient.get(`/checklist/${checklistId}/custom-items`),
+    createCustomItem: (checklistId: number, payload: Record<string, any>) => 
+      apiClient.post(`/checklist/${checklistId}/custom-items`, payload),
+    updateCustomItem: (itemId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/custom-items/${itemId}`, payload),
+    deleteCustomItem: (itemId: number) => 
+      apiClient.delete(`/checklist/custom-items/${itemId}`),
+    
+    // Templates
+    getTemplates: () => 
+      apiClient.get('/checklist/templates'),
+    createTemplate: (payload: Record<string, any>) => 
+      apiClient.post('/checklist/templates', payload),
+    updateTemplate: (templateId: number, payload: Record<string, any>) => 
+      apiClient.put(`/checklist/templates/${templateId}`, payload),
+    deleteTemplate: (templateId: number) => 
+      apiClient.delete(`/checklist/templates/${templateId}`),
+    applyTemplates: (checklistId: number) => 
+      apiClient.post(`/checklist/${checklistId}/apply-templates`, {}),
   },
 };

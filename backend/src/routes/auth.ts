@@ -2,6 +2,9 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database';
+import { createSession, deleteSession } from '../middleware/sessionTracker';
+import { AuthRequest } from '../middleware/auth';
+import { logAuth } from '../utils/auditLogger';
 
 const router = Router();
 
@@ -26,6 +29,8 @@ router.post('/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
+      // Log failed login attempt
+      await logAuth('login_failed', { username }, req.ip, 'Invalid password');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -42,6 +47,22 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
       { expiresIn: '20m' } // 20 minutes - aligns with 15min inactivity + 5min buffer
     );
+
+    // Create session record for tracking
+    try {
+      await createSession(user.id, token, req as AuthRequest, 1200); // 20 minutes in seconds
+    } catch (sessionError) {
+      console.error('[Auth] Failed to create session record:', sessionError);
+      // Don't fail login if session creation fails
+    }
+
+    // Log successful login
+    await logAuth('login_success', { 
+      id: user.id, 
+      username: user.username, 
+      email: user.email, 
+      role: user.role 
+    }, req.ip);
 
     res.json({
       token,
@@ -160,6 +181,14 @@ router.post('/register', async (req, res) => {
 
     // Log the new registration
     console.log(`[REGISTRATION] New user registered: ${username} (${email}) from IP: ${clientIp}`);
+    
+    // Log registration to audit log
+    await logAuth('login_success', {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: 'pending'
+    }, req.ip);
 
     // Return success WITHOUT auto-login (user needs admin to assign role first)
     res.status(201).json({
@@ -178,6 +207,38 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Username or email already exists' });
     }
     console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Logout endpoint
+router.post('/logout', async (req: AuthRequest, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      try {
+        await deleteSession(token);
+        console.log('[Auth] Session deleted on logout');
+      } catch (sessionError) {
+        console.error('[Auth] Failed to delete session on logout:', sessionError);
+        // Don't fail logout if session deletion fails
+      }
+    }
+
+    // Log logout event
+    if (req.user) {
+      await logAuth('logout', {
+        id: req.user.id,
+        username: req.user.username,
+        role: req.user.role
+      }, req.ip);
+    }
+
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('[Auth] Logout error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -218,6 +279,21 @@ router.post('/refresh', async (req, res) => {
         process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
         { expiresIn: '20m' }
       );
+
+      // Delete old session and create new one
+      try {
+        await deleteSession(token);
+        await createSession(user.id, newToken, req as AuthRequest, 1200);
+      } catch (sessionError) {
+        console.error('[Auth] Failed to update session on refresh:', sessionError);
+      }
+
+      // Log token refresh
+      await logAuth('token_refresh', {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      }, req.ip);
 
       console.log(`[Auth] Token refreshed for user: ${user.username}`);
 

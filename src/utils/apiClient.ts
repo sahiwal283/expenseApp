@@ -61,6 +61,13 @@ class ApiClient {
   }
 
   /**
+   * Get the base URL for API requests
+   */
+  getBaseURL(): string {
+    return this.baseURL;
+  }
+
+  /**
    * Set callback for unauthorized (401/403) responses
    */
   setUnauthorizedCallback(callback: () => void): void {

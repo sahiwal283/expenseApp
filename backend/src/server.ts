@@ -12,8 +12,17 @@ import settingsRoutes from './routes/settings';
 import devDashboardRoutes from './routes/devDashboard';
 import quickActionsRoutes from './routes/quickActions';
 import syncRoutes from './routes/sync';
+import ocrV2Routes from './routes/ocrV2';
+import ocrTrainingRoutes from './routes/ocrTraining';
+import learningAnalyticsRoutes from './routes/learningAnalytics';
+import modelRetrainingRoutes from './routes/modelRetraining';
+import trainingSyncRoutes from './routes/trainingSync';
+import checklistRoutes from './routes/checklist';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { authenticateToken } from './middleware/auth';
+import { sessionTracker } from './middleware/sessionTracker';
+import { apiRequestLogger } from './middleware/apiRequestLogger';
 
 dotenv.config();
 
@@ -31,21 +40,31 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(requestLogger);
+app.use(apiRequestLogger); // Log all API requests for analytics
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 
-// Routes
+// Routes - Auth routes FIRST (no authentication required)
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/roles', roleRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/dev-dashboard', devDashboardRoutes);
-app.use('/api/quick-actions', quickActionsRoutes);
-app.use('/api/sync', syncRoutes);
+
+// Authenticated routes with session tracking
+// Session tracking updates last_activity on every API request for real-time monitoring
+app.use('/api/users', authenticateToken, sessionTracker, userRoutes);
+app.use('/api/roles', authenticateToken, sessionTracker, roleRoutes);
+app.use('/api/events', authenticateToken, sessionTracker, eventRoutes);
+app.use('/api/expenses', authenticateToken, sessionTracker, expenseRoutes);
+app.use('/api/settings', authenticateToken, sessionTracker, settingsRoutes);
+app.use('/api/dev-dashboard', authenticateToken, sessionTracker, devDashboardRoutes);
+app.use('/api/quick-actions', authenticateToken, sessionTracker, quickActionsRoutes);
+app.use('/api/sync', authenticateToken, sessionTracker, syncRoutes);
+app.use('/api/ocr/v2', authenticateToken, sessionTracker, ocrV2Routes);
+app.use('/api/training', authenticateToken, sessionTracker, ocrTrainingRoutes);
+app.use('/api/learning', authenticateToken, sessionTracker, learningAnalyticsRoutes);
+app.use('/api/retraining', authenticateToken, sessionTracker, modelRetrainingRoutes);
+app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRoutes);
+app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
 
 // Health check (with database connectivity test)
 app.get('/api/health', async (req, res) => {

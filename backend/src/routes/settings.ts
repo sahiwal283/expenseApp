@@ -24,8 +24,8 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
-// Update settings (admin only)
-router.put('/', authorize('admin'), async (req: AuthRequest, res) => {
+// Update settings (admin, accountant, developer)
+router.put('/', authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
     const updates = req.body;
 

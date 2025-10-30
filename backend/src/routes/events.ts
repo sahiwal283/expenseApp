@@ -10,6 +10,10 @@ function convertEventTypes(event: any) {
     ...event,
     startDate: event.start_date,
     endDate: event.end_date,
+    showStartDate: event.show_start_date || event.start_date, // Fallback for backward compat
+    showEndDate: event.show_end_date || event.end_date, // Fallback for backward compat
+    travelStartDate: event.travel_start_date || event.start_date, // Fallback for backward compat
+    travelEndDate: event.travel_end_date || event.end_date, // Fallback for backward compat
     budget: event.budget ? parseFloat(event.budget) : undefined,
     coordinatorId: event.coordinator_id,
     participants: event.participants || [],
@@ -79,7 +83,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 // Create event
 router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
   try {
-    const { name, venue, city, state, start_date, end_date, budget, participant_ids, participants } = req.body;
+    const { name, venue, city, state, start_date, end_date, show_start_date, show_end_date, travel_start_date, travel_end_date, budget, participant_ids, participants } = req.body;
 
     if (!name || !venue || !city || !state || !start_date || !end_date) {
       return res.status(400).json({ error: 'Required fields missing' });
@@ -87,10 +91,10 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
 
     // Insert event (critical - must succeed)
     const result = await query(
-      `INSERT INTO events (name, venue, city, state, start_date, end_date, budget, coordinator_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      `INSERT INTO events (name, venue, city, state, start_date, end_date, show_start_date, show_end_date, travel_start_date, travel_end_date, budget, coordinator_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
        RETURNING *`,
-      [name, venue, city, state, start_date, end_date, budget, req.user?.id]
+      [name, venue, city, state, start_date, end_date, show_start_date || start_date, show_end_date || end_date, travel_start_date || start_date, travel_end_date || end_date, budget, req.user?.id]
     );
 
     const event = result.rows[0];
@@ -177,7 +181,7 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
   
   try {
     const { id } = req.params;
-    const { name, venue, city, state, start_date, end_date, budget, status, participant_ids, participants } = req.body;
+    const { name, venue, city, state, start_date, end_date, show_start_date, show_end_date, travel_start_date, travel_end_date, budget, status, participant_ids, participants } = req.body;
 
     // Start transaction
     await client.query('BEGIN');
@@ -186,10 +190,11 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
     const result = await client.query(
       `UPDATE events 
        SET name = $1, venue = $2, city = $3, state = $4, start_date = $5, end_date = $6, 
-           budget = $7, status = $8, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $9 
+           show_start_date = $7, show_end_date = $8, travel_start_date = $9, travel_end_date = $10,
+           budget = $11, status = $12, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $13 
        RETURNING *`,
-      [name, venue, city, state, start_date, end_date, budget, status, id]
+      [name, venue, city, state, start_date, end_date, show_start_date || start_date, show_end_date || end_date, travel_start_date || start_date, travel_end_date || end_date, budget, status, id]
     );
 
     if (result.rows.length === 0) {

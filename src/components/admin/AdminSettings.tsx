@@ -12,6 +12,7 @@ interface AdminSettingsProps {
 interface CardOption {
   name: string;
   lastFour: string;
+  entity?: string | null;
 }
 
 interface AppSettings {
@@ -68,12 +69,18 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
   const [newCardName, setNewCardName] = useState('');
   const [newCardLastFour, setNewCardLastFour] = useState('');
+  const [newCardEntity, setNewCardEntity] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
   const [newCategoryOption, setNewCategoryOption] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editCardName, setEditCardName] = useState('');
   const [editCardLastFour, setEditCardLastFour] = useState('');
+  const [editCardEntity, setEditCardEntity] = useState('');
+  const [editingEntityIndex, setEditingEntityIndex] = useState<number | null>(null);
+  const [editEntityValue, setEditEntityValue] = useState('');
+  const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
+  const [editCategoryValue, setEditCategoryValue] = useState('');
 
   // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
@@ -154,11 +161,16 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       if (!isDuplicate) {
         const updatedSettings = {
           ...settings,
-          cardOptions: [...settings.cardOptions, { name: newCardName, lastFour: newCardLastFour }]
+          cardOptions: [...settings.cardOptions, { 
+            name: newCardName, 
+            lastFour: newCardLastFour,
+            entity: newCardEntity || null  // Store entity assignment (null for personal cards)
+          }]
         };
         setSettings(updatedSettings);
         setNewCardName('');
         setNewCardLastFour('');
+        setNewCardEntity('');
         await saveSettings(updatedSettings);
       } else {
         alert('This card already exists.');
@@ -183,18 +195,24 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     setEditingCardIndex(index);
     setEditCardName(settings.cardOptions[index].name);
     setEditCardLastFour(settings.cardOptions[index].lastFour);
+    setEditCardEntity(settings.cardOptions[index].entity || '');
   };
 
   const cancelEditCard = () => {
     setEditingCardIndex(null);
     setEditCardName('');
     setEditCardLastFour('');
+    setEditCardEntity('');
   };
 
   const saveEditCard = async (index: number) => {
     if (editCardName && editCardLastFour && editCardLastFour.length === 4) {
       const updatedCards = [...settings.cardOptions];
-      updatedCards[index] = { name: editCardName, lastFour: editCardLastFour };
+      updatedCards[index] = { 
+        name: editCardName, 
+        lastFour: editCardLastFour,
+        entity: editCardEntity || null
+      };
       const updatedSettings = {
         ...settings,
         cardOptions: updatedCards
@@ -203,6 +221,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       setEditingCardIndex(null);
       setEditCardName('');
       setEditCardLastFour('');
+      setEditCardEntity('');
       await saveSettings(updatedSettings);
     } else if (editCardLastFour && editCardLastFour.length !== 4) {
       alert('Last 4 digits must be exactly 4 characters.');
@@ -230,6 +249,31 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     await saveSettings(updatedSettings);
   };
 
+  const startEditEntity = (index: number) => {
+    setEditingEntityIndex(index);
+    setEditEntityValue(settings.entityOptions[index]);
+  };
+
+  const cancelEditEntity = () => {
+    setEditingEntityIndex(null);
+    setEditEntityValue('');
+  };
+
+  const saveEditEntity = async (index: number) => {
+    if (editEntityValue && editEntityValue.trim()) {
+      const updatedEntities = [...settings.entityOptions];
+      updatedEntities[index] = editEntityValue.trim();
+      const updatedSettings = {
+        ...settings,
+        entityOptions: updatedEntities
+      };
+      setSettings(updatedSettings);
+      setEditingEntityIndex(null);
+      setEditEntityValue('');
+      await saveSettings(updatedSettings);
+    }
+  };
+
   const addCategoryOption = async () => {
     if (newCategoryOption && !settings.categoryOptions.includes(newCategoryOption)) {
       const updatedSettings = {
@@ -249,6 +293,31 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     };
     setSettings(updatedSettings);
     await saveSettings(updatedSettings);
+  };
+
+  const startEditCategory = (index: number) => {
+    setEditingCategoryIndex(index);
+    setEditCategoryValue(settings.categoryOptions[index]);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryIndex(null);
+    setEditCategoryValue('');
+  };
+
+  const saveEditCategory = async (index: number) => {
+    if (editCategoryValue && editCategoryValue.trim()) {
+      const updatedCategories = [...settings.categoryOptions];
+      updatedCategories[index] = editCategoryValue.trim();
+      const updatedSettings = {
+        ...settings,
+        categoryOptions: updatedCategories
+      };
+      setSettings(updatedSettings);
+      setEditingCategoryIndex(null);
+      setEditCategoryValue('');
+      await saveSettings(updatedSettings);
+    }
   };
 
   return (
@@ -340,43 +409,58 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           </div>
 
           <div className="space-y-4">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newCardName}
-                onChange={(e) => setNewCardName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addCardOption()}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Card name (e.g., Haute Inc USD Amex)"
-              />
-              <input
-                type="text"
-                value={newCardLastFour}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                  setNewCardLastFour(value);
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && addCardOption()}
-                className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Last 4"
-                maxLength={4}
-              />
-              <button
-                onClick={addCardOption}
-                disabled={!newCardName || !newCardLastFour || newCardLastFour.length !== 4 || isSaving}
-                className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Add</span>
-              </button>
+            <div className="space-y-3">
+              {/* Card Name and Last 4 */}
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={newCardName}
+                  onChange={(e) => setNewCardName(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Card name (e.g., Haute Inc USD Amex)"
+                />
+                <input
+                  type="text"
+                  value={newCardLastFour}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setNewCardLastFour(value);
+                  }}
+                  className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Last 4"
+                  maxLength={4}
+                />
+              </div>
+              
+              {/* Entity Selection and Add Button */}
+              <div className="flex gap-3">
+                <select
+                  value={newCardEntity}
+                  onChange={(e) => setNewCardEntity(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">Personal Card (No Entity)</option>
+                  {settings.entityOptions.map((entity, idx) => (
+                    <option key={idx} value={entity}>{entity}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={addCardOption}
+                  disabled={!newCardName || !newCardLastFour || newCardLastFour.length !== 4 || isSaving}
+                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 whitespace-nowrap"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Add</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">
               {settings.cardOptions.map((option, index) => (
                 <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
                   {editingCardIndex === index ? (
-                    <>
-                      <div className="flex-1 flex gap-2">
+                    <div className="w-full space-y-2">
+                      <div className="flex gap-2">
                         <input
                           type="text"
                           value={editCardName}
@@ -397,6 +481,16 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                         />
                       </div>
                       <div className="flex gap-2">
+                        <select
+                          value={editCardEntity}
+                          onChange={(e) => setEditCardEntity(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">Personal Card (No Entity)</option>
+                          {settings.entityOptions.map((entity, idx) => (
+                            <option key={idx} value={entity}>{entity}</option>
+                          ))}
+                        </select>
                         <button
                           onClick={() => saveEditCard(index)}
                           disabled={isSaving || !editCardName || !editCardLastFour || editCardLastFour.length !== 4}
@@ -414,10 +508,19 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
                           <X className="w-4 h-4" />
                         </button>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <>
-                      <span className="text-gray-900">{option.name} | {option.lastFour}</span>
+                      <div className="flex-1">
+                        <div className="text-gray-900 font-medium">{option.name} | {option.lastFour}</div>
+                        <div className="text-sm mt-0.5">
+                          {option.entity ? (
+                            <span className="text-blue-600 font-medium">{option.entity}</span>
+                          ) : (
+                            <span className="text-gray-500">Personal Card</span>
+                          )}
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => startEditCard(index)}
@@ -481,15 +584,58 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
             <div className="space-y-2">
               {settings.entityOptions.map((option, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 p-3 rounded-lg">
-                  <span className="text-gray-900">{option}</span>
-                  <button
-                    onClick={() => removeEntityOption(option)}
-                    disabled={isSaving}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
+                  {editingEntityIndex === index ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editEntityValue}
+                        onChange={(e) => setEditEntityValue(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Entity name"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEditEntity(index)}
+                          disabled={isSaving || !editEntityValue.trim()}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Save"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditEntity}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                          title="Cancel"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-gray-900">{option}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEditEntity(index)}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => removeEntityOption(option)}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -533,15 +679,58 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {settings.categoryOptions.map((option, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 p-3 rounded-lg">
-                  <span className="text-gray-900">{option}</span>
-                  <button
-                    onClick={() => removeCategoryOption(option)}
-                    disabled={isSaving}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
+                  {editingCategoryIndex === index ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editCategoryValue}
+                        onChange={(e) => setEditCategoryValue(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Category name"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEditCategory(index)}
+                          disabled={isSaving || !editCategoryValue.trim()}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Save"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditCategory}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                          title="Cancel"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-gray-900">{option}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEditCategory(index)}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => removeCategoryOption(option)}
+                          disabled={isSaving}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>

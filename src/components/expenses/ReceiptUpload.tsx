@@ -1,22 +1,83 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, ArrowLeft, Camera, FileImage, Scan, CheckCircle, AlertCircle } from 'lucide-react';
-import { api } from '../../utils/api';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, X, ArrowLeft, Camera, FileImage, FileText, Scan, CheckCircle, AlertCircle, CreditCard, Building2 } from 'lucide-react';
+import { api, TokenManager } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
+import { TradeShow, User } from '../../App';
+import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 
 interface ReceiptUploadProps {
   onReceiptProcessed: (data: ReceiptData, file: File) => void;
   onCancel: () => void;
+  user: User;
+  events: TradeShow[];
+  isSaving?: boolean;
 }
 
-export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel }) => {
+export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel, user, events, isSaving = false }) => {
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResults, setOcrResults] = useState<ReceiptData | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [ocrFailed, setOcrFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Additional fields for complete expense submission
+  const [selectedEvent, setSelectedEvent] = useState('');
+  const [selectedCard, setSelectedCard] = useState('');
+  const [selectedEntity, setSelectedEntity] = useState('');
+  const [description, setDescription] = useState('');
+  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [fieldWarnings, setFieldWarnings] = useState<Array<{field: string; reason: string; severity: string; suggestedAction?: string}>>([]);
+  
+  // Filter events
+  const activeEvents = filterActiveEvents(events);
+  const userEvents = filterEventsByParticipation(activeEvents, user);
+  
+  // Helper: Get warnings for a specific field
+  const getFieldWarnings = (fieldName: string) => {
+    return fieldWarnings.filter(w => w.field === fieldName);
+  };
+  
+  // Load card options and categories
+  useEffect(() => {
+    (async () => {
+      const defaultCategories = [
+        'Booth / Marketing / Tools',
+        'Travel - Flight',
+        'Accommodation - Hotel',
+        'Transportation - Uber / Lyft / Others',
+        'Parking Fees',
+        'Rental - Car / U-haul',
+        'Meal and Entertainment',
+        'Gas / Fuel',
+        'Show Allowances - Per Diem',
+        'Model',
+        'Shipping Charges',
+        'Other'
+      ];
+      
+      if (api.USE_SERVER) {
+        try {
+          const settings = await api.getSettings();
+          setCardOptions(settings.cardOptions || []);
+          setCategories(settings.categoryOptions || defaultCategories);
+          console.log('[ReceiptUpload] Loaded categories:', settings.categoryOptions?.length || defaultCategories.length);
+        } catch (error) {
+          console.error('[ReceiptUpload] Failed to load settings:', error);
+          setCardOptions([]);
+          setCategories(defaultCategories);
+        }
+      } else {
+        const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+        setCardOptions(settings.cardOptions || []);
+        setCategories(settings.categoryOptions || defaultCategories);
+      }
+    })();
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -40,7 +101,17 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
   const handleFiles = (files: FileList) => {
     const file = files[0];
-    if (file && file.type.startsWith('image/')) {
+    // Accept images (including HEIC from iPhone), PDFs
+    const isImage = file && file.type.startsWith('image/');
+    const isPDF = file && file.type === 'application/pdf';
+    
+    // Validate file size (10MB max)
+    if (file && file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+    
+    if (file && (isImage || isPDF)) {
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -55,49 +126,103 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     setProcessing(true);
     
     try {
-      // Call backend OCR API
+      // Call NEW OCR v2 API (PaddleOCR + Ollama LLM)
       const formData = new FormData();
       formData.append('receipt', file);
       
-      const response = await fetch(`${api.API_BASE || '/api'}/expenses/ocr`, {
+      const token = TokenManager.getToken();
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      const response = await fetch('/api/ocr/v2/process', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OCR v2 failed:', errorText);
         throw new Error('OCR processing failed');
       }
 
       const result = await response.json();
       
-      // Transform backend response to match expected format
+      console.log('[OCR v2] Response:', result);
+      
+      // Store field warnings
+      if (result.warnings && result.warnings.length > 0) {
+        console.log('[OCR v2] Field warnings:', result.warnings);
+        setFieldWarnings(result.warnings);
+      } else {
+        setFieldWarnings([]);
+      }
+      
+      // Transform OCR v2 response to match expected format
+      // Backend returns 'fields' (not 'inference')
+      const fields = result.fields || {};
       const ocrData = {
         file: file,
-        total: result.amount || 0,
-        merchant: result.merchant || 'Unknown Merchant',
-        date: result.date || getTodayLocalDateString(),
-        location: result.location || 'Unknown Location',
-        category: result.category || 'Other',
-        ocrText: result.text || '',
-        confidence: result.confidence || 0,
-        receiptFile: file
+        total: parseFloat(fields.amount?.value) || 0,
+        merchant: fields.merchant?.value || 'Unknown Merchant',
+        date: fields.date?.value || getTodayLocalDateString(),
+        location: fields.location?.value || 'Unknown Location',
+        category: fields.category?.value || result.categories?.[0]?.category || 'Other',
+        ocrText: result.ocr?.text || '',
+        confidence: result.quality?.overallConfidence || result.ocr?.confidence || 0,
+        receiptFile: file,
+        // Store enhanced OCR v2 data for corrections
+        ocrV2Data: {
+          inference: fields, // Store as 'inference' for correction tracking
+          categories: result.categories || [],
+          needsReview: result.quality?.needsReview,
+          reviewReasons: result.quality?.reviewReasons || [],
+          ocrProvider: result.ocr?.provider
+        }
       };
 
       setOcrResults(ocrData);
+      
+      // Auto-match card if last 4 digits extracted
+      if (fields.cardLastFour?.value && cardOptions.length > 0) {
+        const lastFour = fields.cardLastFour.value;
+        const matchingCard = cardOptions.find(card => card.lastFour === lastFour);
+        if (matchingCard) {
+          setSelectedCard(`${matchingCard.name} (...${matchingCard.lastFour})`);
+          console.log(`[ReceiptUpload] Auto-matched card: ${matchingCard.name} (...${lastFour})`);
+        } else {
+          console.log(`[ReceiptUpload] Card last 4 extracted (...${lastFour}) but no matching card found in options`);
+        }
+      }
     } catch (error) {
-      console.error('OCR Error:', error);
-      alert('Failed to process receipt. Please try again or enter manually.');
+      console.error('OCR v2 Error:', error);
+      setOcrFailed(true);
+      // Don't show alert - let user choose to retry or continue manually
     } finally {
       setProcessing(false);
     }
   };
 
   const handleConfirm = () => {
+    // Validate required fields
+    if (!selectedEvent) {
+      alert('Please select an event for this expense.');
+      return;
+    }
+    
     if (ocrResults) {
-      onReceiptProcessed(ocrResults, selectedFile!);
+      // Include additional fields in the data
+      const completeData = {
+        ...ocrResults,
+        tradeShowId: selectedEvent,
+        cardUsed: selectedCard,
+        zohoEntity: selectedEntity || undefined,  // Auto-populated from card selection
+        description: description,
+      };
+      onReceiptProcessed(completeData as ReceiptData, selectedFile!);
     }
   };
 
@@ -138,7 +263,8 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif,application/pdf,.pdf"
+              capture="environment"
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -155,7 +281,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   Drop your receipt here, or click to browse
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  Supports JPG and PNG files. Our OCR will automatically extract expense details.
+                  Supports images (JPG, PNG, HEIC, WebP) and PDF files. Our OCR will automatically extract expense details.
                 </p>
               </div>
 
@@ -163,22 +289,22 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 <div className="flex items-center space-x-3">
                   <Camera className="w-8 h-8 text-blue-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Smart Scanning</h4>
-                    <p className="text-sm text-gray-600">Tesseract OCR powered</p>
+                    <h4 className="font-medium text-gray-900">EasyOCR Engine</h4>
+                    <p className="text-sm text-gray-600">High-accuracy AI OCR</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <FileImage className="w-8 h-8 text-emerald-600" />
+                  <FileText className="w-8 h-8 text-emerald-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Image Enhancement</h4>
-                    <p className="text-sm text-gray-600">Auto-processed for clarity</p>
+                    <h4 className="font-medium text-gray-900">PDF Support</h4>
+                    <p className="text-sm text-gray-600">Multi-page PDFs supported</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Scan className="w-8 h-8 text-purple-600" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Auto Extract</h4>
-                    <p className="text-sm text-gray-600">Amount, date, merchant</p>
+                    <h4 className="font-medium text-gray-900">Smart Fields</h4>
+                    <p className="text-sm text-gray-600">Amount, date, merchant & more</p>
                   </div>
                 </div>
               </div>
@@ -225,47 +351,297 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-6 h-6 text-emerald-600" />
                     <h3 className="text-lg font-semibold text-gray-900">Extracted Data</h3>
-                    <span className="bg-emerald-100 text-emerald-800 px-2 py-1 text-xs font-medium rounded-full">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      ocrResults.confidence >= 0.7 ? 'bg-emerald-100 text-emerald-800' :
+                      ocrResults.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
                       {Math.round(ocrResults.confidence * 100)}% confidence
                     </span>
+                    {ocrResults.ocrV2Data?.ocrProvider && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium rounded-full">
+                        {ocrResults.ocrV2Data.ocrProvider}
+                      </span>
+                    )}
                   </div>
-                  {ocrResults.confidence < 0.5 && (
-                    <div className="flex items-center text-orange-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      Please verify extracted data
-                    </div>
-                  )}
+                  <div className={`flex items-center text-sm ${
+                    ocrResults.ocrV2Data?.needsReview ? 'text-orange-600 font-medium' : 'text-blue-600'
+                  }`}>
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <span>
+                      {ocrResults.ocrV2Data?.needsReview 
+                        ? `⚠️ Review: ${ocrResults.ocrV2Data.reviewReasons?.join(', ') || 'Low confidence fields'}`
+                        : '✓ Please verify all fields before submitting'
+                      }
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Merchant</label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.merchant}</div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Merchant
+                        {ocrResults.ocrV2Data?.inference?.merchant && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.merchant.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.merchant.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.merchant.confidence * 100)}%)
+                          </span>
+                        )}
+                        {getFieldWarnings('merchant').length > 0 && (
+                          <span className="ml-2 text-orange-600">
+                            ⚠️
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="text"
+                        value={ocrResults.merchant}
+                        onChange={(e) => setOcrResults({ ...ocrResults, merchant: e.target.value })}
+                        className={`w-full bg-white px-3 py-2 rounded-lg border ${
+                          getFieldWarnings('merchant').some(w => w.severity === 'high') 
+                            ? 'border-orange-400 focus:ring-orange-500' 
+                            : 'border-gray-300 focus:ring-blue-500'
+                        } focus:ring-2 focus:border-blue-500`}
+                        placeholder="Merchant name"
+                      />
+                      {getFieldWarnings('merchant').map((warning, idx) => (
+                        <div key={idx} className={`mt-1 text-xs ${
+                          warning.severity === 'high' ? 'text-orange-600' :
+                          warning.severity === 'medium' ? 'text-yellow-600' :
+                          'text-blue-600'
+                        }`}>
+                          <span className="font-medium">⚠️ {warning.reason}</span>
+                          {warning.suggestedAction && (
+                            <div className="ml-4 mt-0.5 text-gray-600 italic">
+                              → {warning.suggestedAction}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
-                      <div className="bg-white px-3 py-2 rounded-lg border font-semibold text-emerald-600">
-                        ${ocrResults.total.toFixed(2)}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.date}</div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Total Amount
+                        {ocrResults.ocrV2Data?.inference?.amount && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.amount.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.amount.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.amount.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={ocrResults.total || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Remove leading zeros except for "0."
+                          const cleaned = value.replace(/^0+(?=\d)/, '');
+                          setOcrResults({ ...ocrResults, total: parseFloat(cleaned) || 0 });
+                        }}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-emerald-600"
+                        placeholder="0.00"
+                      />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 text-sm font-medium rounded-full">
-                          {ocrResults.category}
-                        </span>
-                      </div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date
+                        {ocrResults.ocrV2Data?.inference?.date && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.date.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.date.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.date.confidence * 100)}%)
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="date"
+                        value={ocrResults.date}
+                        onChange={(e) => setOcrResults({ ...ocrResults, date: e.target.value })}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <div className="bg-white px-3 py-2 rounded-lg border">{ocrResults.location}</div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                        {ocrResults.ocrV2Data?.inference?.category && (
+                          <span className={`ml-2 text-xs ${
+                            ocrResults.ocrV2Data.inference.category.confidence >= 0.7 ? 'text-emerald-600' :
+                            ocrResults.ocrV2Data.inference.category.confidence >= 0.5 ? 'text-yellow-600' :
+                            'text-orange-600'
+                          }`}>
+                            ({Math.round(ocrResults.ocrV2Data.inference.category.confidence * 100)}% confidence)
+                          </span>
+                        )}
+                      </label>
+                      <select
+                        value={ocrResults.category || ''}
+                        onChange={(e) => {
+                          console.log('[ReceiptUpload] Category changed to:', e.target.value);
+                          setOcrResults({ ...ocrResults, category: e.target.value });
+                        }}
+                        className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select category...</option>
+                        {categories.length > 0 ? (
+                          categories.map((cat, idx) => (
+                            <option key={idx} value={cat}>
+                              {cat}
+                            </option>
+                          ))
+                        ) : (
+                          <option disabled>Loading categories...</option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review Reasons */}
+                {ocrResults.ocrV2Data?.reviewReasons && ocrResults.ocrV2Data.reviewReasons.length > 0 && (
+                  <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-orange-900">Please Review:</p>
+                        <ul className="text-sm text-orange-700 mt-1 space-y-1">
+                          {ocrResults.ocrV2Data.reviewReasons.map((reason: string, idx: number) => (
+                            <li key={idx}>• {reason}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event and Card Selection - Side by Side */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Trade Show Event *
+                    </label>
+                    <select
+                      value={selectedEvent}
+                      onChange={(e) => setSelectedEvent(e.target.value)}
+                      className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="">Select an event</option>
+                      {userEvents.map(event => (
+                        <option key={event.id} value={event.id}>
+                          {event.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Card Used */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <CreditCard className="w-4 h-4 inline mr-1" />
+                      Card Used
+                      {ocrResults?.ocrV2Data?.inference?.cardLastFour && (
+                        <span className={`ml-2 text-xs ${
+                          ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.7 ? 'text-emerald-600' :
+                          ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.5 ? 'text-yellow-600' :
+                          'text-orange-600'
+                        }`}>
+                          ({Math.round(ocrResults.ocrV2Data.inference.cardLastFour.confidence * 100)}% - OCR found ...{ocrResults.ocrV2Data.inference.cardLastFour.value})
+                        </span>
+                      )}
+                    </label>
+                    <select
+                      value={selectedCard}
+                      onChange={(e) => {
+                        const cardValue = e.target.value;
+                        // Find the selected card and auto-select its entity
+                        const selectedCardOption = cardOptions.find(card => `${card.name} (...${card.lastFour})` === cardValue);
+                        setSelectedCard(cardValue);
+                        // Auto-select entity if card has one, otherwise clear it (for personal cards)
+                        setSelectedEntity(selectedCardOption?.entity || '');
+                      }}
+                      className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select card...</option>
+                      {cardOptions.map((card, idx) => (
+                        <option key={idx} value={`${card.name} (...${card.lastFour})`}>
+                          {card.name} (...{card.lastFour})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Description / Notes */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description / Notes
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full max-w-2xl bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    placeholder="Optional: Add any additional notes or details..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* OCR Failed State */}
+            {ocrFailed && !processing && !ocrResults && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-orange-900 mb-2">OCR Processing Failed</h3>
+                    <p className="text-sm text-orange-800 mb-4">
+                      We couldn't automatically extract data from your receipt. This might be due to image quality, file format, or service availability.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => {
+                          setOcrFailed(false);
+                          if (selectedFile) {
+                            processReceipt(selectedFile);
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+                      >
+                        <Scan className="w-4 h-4" />
+                        <span>Try OCR Again</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Create default OCR results so user can enter manually
+                          const defaultData: ReceiptData = {
+                            merchant: '',
+                            total: '',
+                            date: getTodayLocalDateString(),
+                            category: 'Other',
+                            confidence: 0,
+                            ocrText: '',
+                            file: selectedFile!
+                          };
+                          setOcrResults(defaultData);
+                          setOcrFailed(false);
+                        }}
+                        className="px-4 py-2 bg-white hover:bg-gray-50 border border-orange-300 text-orange-700 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Enter Details Manually</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -279,6 +655,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   setUploadedImage(null);
                   setSelectedFile(null);
                   setOcrResults(null);
+                  setOcrFailed(false);
                   setProcessing(false);
                 }}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
@@ -289,10 +666,24 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               {ocrResults && (
                 <button
                   onClick={handleConfirm}
-                  className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+                  disabled={isSaving}
+                  className={`${
+                    isSaving 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600'
+                  } text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2`}
                 >
-                  <CheckCircle className="w-5 h-5" />
-                  <span>Create Expense</span>
+                  {isSaving ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Create Expense</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>

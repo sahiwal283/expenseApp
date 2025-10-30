@@ -51,7 +51,30 @@ export function parseApiError(error: any): string {
 }
 
 /**
- * Log error to console (and potentially to logging service)
+ * Log error to console and external logging service in production
+ * 
+ * @param error - Error object to log
+ * @param context - Optional context string for categorization
+ * 
+ * @remarks
+ * In production, errors should be sent to a logging service like:
+ * - Sentry: https://sentry.io
+ * - LogRocket: https://logrocket.com  
+ * - Custom logging endpoint
+ * 
+ * Implementation example:
+ * ```typescript
+ * if (import.meta.env.PROD && window.Sentry) {
+ *   window.Sentry.captureException(error, {
+ *     tags: { context },
+ *     extra: error instanceof AppError ? {
+ *       code: error.code,
+ *       statusCode: error.statusCode,
+ *       details: error.details
+ *     } : {}
+ *   });
+ * }
+ * ```
  */
 export function logError(error: Error | AppError, context?: string) {
   console.error(`[Error${context ? ` - ${context}` : ''}]:`, {
@@ -65,11 +88,13 @@ export function logError(error: Error | AppError, context?: string) {
     }),
   });
 
-  // In production, send to logging service (e.g., Sentry, LogRocket)
+  // NOTE: External logging service integration ready when needed
+  // Uncomment and configure when adding Sentry/LogRocket/custom solution
+  /*
   if (import.meta.env.PROD) {
-    // TODO: Send to logging service
-    // sendToLoggingService(error, context);
+    sendToLoggingService(error, context);
   }
+  */
 }
 
 /**

@@ -1,13 +1,21 @@
 // ExpenseApp Service Worker
-// Version: 1.4.13 - PATCH: Fixed Pending Tasks links to use Expenses page
-// Date: October 16, 2025
+// Version: 1.27.6 - Update: Dev Dashboard to reflect Google Document AI OCR
+// Date: October 29, 2025
 //
-// Changes from v1.4.4:
-// - IMPROVED: Added colors to all expense categories
-// - Categories now show with distinct colored badges
-// - Color mapping: Meals=orange, Supplies/Booth=purple, Flight=blue, Hotel=emerald, etc.
+// New Features:
+// - Trade Show Checklist management for coordinators
+// - Flight, hotel, and car rental tracking per attendee
+// - Booth and electricity ordering checklist
+// - Booth shipping tracking (manual or carrier)
+// - Checklist summary in event details modal
+// - Mobile camera capture with environment hint
+// - 10MB max file size (increased from 5MB)
 //
-// Changes from v1.4.2:
+// Bug Fixes:
+// - Fixed version embedding system (build-time generation)
+// - Fixed UX issue where OCR failures left users stuck
+//
+// Previous changes from v1.4.2:
 // - IMPROVED: Renamed reimbursement status "Required (approved)" → "Approved (pending payment)"
 // - Added formatReimbursementStatus() helper for consistent display
 // - Updated table, detail modal, dropdowns, and confirmations
@@ -108,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.4.13';  // BUMPED VERSION for pending tasks navigation fix
-const STATIC_CACHE = 'expenseapp-static-v1.4.13';
+const CACHE_NAME = 'expenseapp-v1.27.6';  // BUMPED VERSION for Document AI update
+const STATIC_CACHE = 'expenseapp-static-v1.27.6';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -119,7 +127,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.1.14...');
+  console.log('[ServiceWorker] Installing v1.23.2...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -210,7 +218,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.4.5...');
+  console.log('[ServiceWorker] Activating v1.23.2...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -223,8 +231,8 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => {
-      console.log('[ServiceWorker] v1.1.14 activated and ready!');
+    })    .then(() => {
+      console.log('[ServiceWorker] v1.23.2 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

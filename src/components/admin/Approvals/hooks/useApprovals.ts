@@ -27,6 +27,23 @@ export function useApprovals() {
       try {
         const ex = await api.getExpenses();
         console.log('[Approvals] Loaded expenses:', ex?.length || 0);
+        
+        // Debug: Check for duplicateCheck field
+        const expensesWithDups = ex.filter((e: any) => e.duplicateCheck);
+        if (expensesWithDups.length > 0) {
+          console.log('[Approvals] Expenses with duplicateCheck:', expensesWithDups.map((e: any) => ({
+            id: e.id.substring(0, 8),
+            merchant: e.merchant,
+            dupCount: e.duplicateCheck?.length
+          })));
+        } else {
+          console.log('[Approvals] NO expenses have duplicateCheck field');
+          // Sample first expense to see what fields it has
+          if (ex.length > 0) {
+            console.log('[Approvals] Sample expense keys:', Object.keys(ex[0]));
+          }
+        }
+        
         setExpenses(ex || []);
       } catch (error) {
         console.error('[Approvals] Error loading expenses:', error);

@@ -1,8 +1,21 @@
 # Trade Show Expense App - Architecture Documentation
 
-**Version:** 1.1.11 (Frontend) / 1.1.5 (Backend)  
-**Last Updated:** October 16, 2025  
-**Status:** Production Active
+**Last Updated:** October 24, 2025  
+**Status:** Production Active | Sandbox AI Pipeline Refinement & Bug Fixes
+
+## 📦 Current Versions
+
+### **Production (Containers 201 & 202)**
+- **Frontend:** v1.4.13 (Container 202) - October 16, 2025
+- **Backend:** v1.5.1 (Container 201) - October 16, 2025
+- **Branch:** `main`
+- **URL:** http://192.168.1.138
+
+### **Sandbox (Container 203)**
+- **Frontend:** v1.15.13 (Container 203) - October 24, 2025
+- **Backend:** v1.15.10 (Container 203) - October 24, 2025
+- **Branch:** `v1.6.0`
+- **URL:** http://192.168.1.144
 
 ---
 
@@ -11,8 +24,8 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     TRADE SHOW EXPENSE APP                          │
-│         Frontend v1.1.11 / Backend v1.1.5                           │
-│                    PRODUCTION + SANDBOX                             │
+│    PRODUCTION: Frontend v1.4.13 / Backend v1.5.1                    │
+│    SANDBOX: Frontend v1.13.4 / Backend v1.13.4                      │
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -35,8 +48,9 @@
           ┌──────────────────┴──────────────────┐
           │                                     │
    ┌──────▼──────────┐              ┌──────────▼──────────┐
-   │  Sandbox (203)  │              │  Production (???)   │
+   │  Sandbox (203)  │              │  Production (201)   │
    │ 192.168.1.144   │              │  192.168.1.138      │
+   │ v1.13.4 / v1.13.4│             │ v1.4.13 / v1.5.1    │
    └─────────────────┘              └─────────────────────┘
 
 Each Environment Contains:
@@ -58,6 +72,664 @@ Each Environment Contains:
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## AI-Powered OCR Pipeline Architecture (v1.13.4 - Sandbox)
+
+**Status:** ✅ Operational in Sandbox (Container 203)  
+**Deployment Date:** October 23, 2025
+
+### Microservices Architecture
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│                  AI-POWERED OCR FEEDBACK LOOP                         │
+│          3-Microservice Architecture (Sandbox Only)                   │
+└───────────────────────────────────────────────────────────────────────┘
+
+                        ┌──────────────────┐
+                        │   User Uploads   │
+                        │     Receipt      │
+                        └────────┬─────────┘
+                                 │
+                   ┌─────────────▼──────────────┐
+                   │    Expense App (203)       │
+                   │   192.168.1.144            │
+                   │ ┌────────────────────────┐ │
+                   │ │  Frontend (React)      │ │
+                   │ │  - Receipt upload      │ │
+                   │ │  - Correction tracking │ │
+                   │ └───────┬────────────────┘ │
+                   │         │                  │
+                   │ ┌───────▼────────────────┐ │
+                   │ │  Backend (Node/Express)│ │
+                   │ │  - ocrV2 routes        │ │
+                   │ │  - UserCorrectionSvc   │ │
+                   │ └───────┬────────────────┘ │
+                   └─────────┼──────────────────┘
+                             │ HTTP POST (multipart/form-data)
+                             │ Timeout: 180s
+                   ┌─────────▼──────────────┐
+                   │  OCR Service (202)     │
+                   │  192.168.1.195:8000    │
+                   │ ┌────────────────────┐ │
+                   │ │  Tesseract OCR     │ │
+                   │ │  Processing: 15-20s│ │
+                   │ │  Confidence: 0-1.0 │ │
+                   │ └───────┬────────────┘ │
+                   │         │              │
+                   │    Is confidence < 0.70?
+                   │         │              │
+                   │    YES  ▼              │
+                   │ ┌────────────────────┐ │
+                   │ │ LLM Enhancement    │ │
+                   │ │ (Ollama dolphin)   │ │
+                   │ │ Processing: 95-115s│ │
+                   │ │ @ 192.168.1.173    │ │
+                   │ └───────┬────────────┘ │
+                   └─────────┼──────────────┘
+                             │
+                   ┌─────────▼──────────────┐
+                   │  Extracted Fields      │
+                   │  - merchant            │
+                   │  - amount              │
+                   │  - date                │
+                   │  - category            │
+                   │  - card last four      │
+                   │  + confidence scores   │
+                   └───────┬────────────────┘
+                           │
+                   ┌───────▼────────────────┐
+                   │  User Reviews/Corrects │
+                   └───────┬────────────────┘
+                           │
+            ┌──────────────┴──────────────┐
+            │                             │
+    ┌───────▼──────────┐          ┌──────▼──────────┐
+    │ Local Storage    │          │  Data Pool (205)│
+    │ (ocr_corrections)│          │  192.168.1.196  │
+    │ Immediate save   │          │  :5000          │
+    └──────────────────┘          │ ┌─────────────┐ │
+                                  │ │ PostgreSQL  │ │
+                                  │ │ UTF-8 DB    │ │
+                                  │ └─────┬───────┘ │
+                                  │       │         │
+                                  │ ┌─────▼───────┐ │
+                                  │ │Quality Score│ │
+                                  │ │Calculation  │ │
+                                  │ │(76-86% avg) │ │
+                                  │ └─────┬───────┘ │
+                                  └───────┼─────────┘
+                                          │
+                                  ┌───────▼─────────┐
+                                  │ Model Training  │
+                                  │    (206)        │
+                                  │ 192.168.1.197   │
+                                  │     :5001       │
+                                  │ ┌─────────────┐ │
+                                  │ │Pattern      │ │
+                                  │ │Analysis     │ │
+                                  │ └─────┬───────┘ │
+                                  │       │         │
+                                  │ ┌─────▼───────┐ │
+                                  │ │Improved     │ │
+                                  │ │Prompts      │ │
+                                  │ │(v1.2.0)     │ │
+                                  │ └─────┬───────┘ │
+                                  └───────┼─────────┘
+                                          │
+                                          │ GET /models/latest
+                                          │
+                              ┌───────────▼────────────┐
+                              │  Back to OCR Service   │
+                              │  Enhanced Prompts      │
+                              │  Better Accuracy       │
+                              └────────────────────────┘
+```
+
+### Service Endpoints
+
+| Service | Container | URL | Purpose |
+|---------|-----------|-----|---------|
+| **Expense App** | 203 | http://192.168.1.144 | Main application, receipt upload, corrections |
+| **OCR Service** | 202 | http://192.168.1.195:8000 | Tesseract + LLM enhancement |
+| **Data Pool** | 205 | http://192.168.1.196:5000 | Correction storage, quality scoring |
+| **Model Training** | 206 | http://192.168.1.197:5001 | Pattern analysis, prompt improvement |
+| **Ollama (LLM)** | 191 | http://192.168.1.173:11434 | AI model inference (dolphin-llama3) |
+
+### Timeout Chain
+
+```
+User Browser
+    │ No timeout (waits for response)
+    ▼
+Nginx (Container 203)
+    │ proxy_read_timeout: 180s
+    │ proxy_send_timeout: 180s
+    │ proxy_connect_timeout: 180s
+    ▼
+Backend (Container 203)
+    │ OCR_TIMEOUT: 180000ms (180s)
+    ▼
+OCR Service (Container 202)
+    │ httpx timeout: 120s
+    │ Processing: 15-115s actual
+    ▼
+Ollama (Container 191)
+    │ Model inference: 80-100s
+    └─> dolphin-llama3 (8B parameters)
+```
+
+### Data Flow: Receipt Processing
+
+1. **Upload** (Expense App Frontend)
+   - User selects receipt image
+   - Multipart form upload to `/api/ocr/v2/process`
+
+2. **Health Check** (Expense App Backend)
+   - Check OCR Service: `GET /health/ready`
+   - Fail fast if unavailable (5s timeout)
+
+3. **OCR Processing** (External OCR Service)
+   - Receive file via HTTP POST
+   - Run Tesseract OCR (15-20s)
+   - Calculate confidence scores
+   - If confidence < 0.70 → trigger LLM enhancement
+
+4. **LLM Enhancement** (Optional, Ollama)
+   - Fetch prompts from Model Training
+   - Call Ollama with receipt text + prompts
+   - Process with dolphin-llama3 (95-115s)
+   - Enhance low-confidence fields
+
+5. **Field Extraction Response**
+   ```json
+   {
+     "fields": {
+       "merchant": { "value": "Uber", "confidence": 0.82, "source": "inference" },
+       "amount": { "value": 22.98, "confidence": 0.95, "source": "ocr" },
+       "date": { "value": "2025-10-23", "confidence": 0.78, "source": "inference" },
+       "category": { "value": "Transportation", "confidence": 0.65, "source": "llm" }
+     },
+     "quality": {
+       "overallConfidence": 0.80,
+       "needsReview": false
+     }
+   }
+   ```
+
+6. **User Correction** (Frontend)
+   - User reviews extracted fields
+   - Changes incorrect values
+   - Frontend detects differences: `detectCorrections()`
+
+7. **Correction Storage** (Backend)
+   - Store locally: `INSERT INTO ocr_corrections`
+   - Response: Success (doesn't block on external services)
+
+8. **Data Pool Sync** (Async, Non-Blocking)
+   - Health check Data Pool: `GET /health`
+   - POST correction to `/corrections/ingest`
+   - Include: original OCR, corrected values, quality score
+   - API Key: `Bearer dp_live_edb8db992bc7bdb3f4b895c976df4acf`
+
+9. **Quality Scoring** (Data Pool)
+   - Calculate correction quality (76-86% average)
+   - Store with UTF-8 encoding
+   - Make available for training
+
+10. **Model Training** (Background Process)
+    - Pull corrections: `GET /corrections/export`
+    - Analyze patterns (merchant extraction issues)
+    - Generate improved prompts (v1.2.0)
+    - Notify OCR Service of new version
+
+### Configuration
+
+**Expense App Backend** (`backend/.env`):
+```bash
+# External OCR Service
+OCR_SERVICE_URL=http://192.168.1.195:8000
+OCR_TIMEOUT=180000
+
+# Data Pool Integration
+DATA_POOL_URL=http://192.168.1.196:5000
+DATA_POOL_API_KEY=dp_live_edb8db992bc7bdb3f4b895c976df4acf
+SEND_TO_DATA_POOL=true
+```
+
+**Nginx** (`/etc/nginx/sites-enabled/expenseapp`):
+```nginx
+location /api/ {
+    proxy_pass http://127.0.0.1:3000/api/;
+    proxy_connect_timeout 180s;
+    proxy_send_timeout 180s;
+    proxy_read_timeout 180s;
+}
+```
+
+### Performance Metrics
+
+| Scenario | Processing Time | Frequency | UX Impact |
+|----------|----------------|-----------|-----------|
+| High confidence receipt (≥0.70) | 15-20 seconds | ~80% of receipts | ⚡ Fast |
+| Low confidence receipt (<0.70) | 95-115 seconds | ~20% of receipts | 🐢 Slow but accurate |
+| Data Pool sync | 200-500ms | Every correction | Non-blocking |
+| Model training | Daily/on-demand | Background | No impact |
+
+### Key Features
+
+✅ **Non-Blocking Integration**
+- User workflow never depends on external services
+- Corrections saved locally first
+- Data Pool sync happens asynchronously
+
+✅ **Health Checks**
+- Quick 5s health checks before heavy operations
+- Fail fast with clear error messages
+- Graceful degradation
+
+✅ **Progressive Timeouts**
+- Each layer has appropriate timeout
+- Buffers prevent cascade failures
+- 180s > 120s allows network overhead
+
+✅ **UTF-8 Support**
+- Database recreated with UTF-8 encoding
+- Supports Unicode characters (™, ®, ©)
+- International text and emojis
+
+✅ **Quality Scoring**
+- Automatic quality calculation
+- Tracks correction accuracy
+- Feeds model training
+
+### Files Modified for Integration
+
+| File | Purpose | Changes |
+|------|---------|---------|
+| `backend/src/routes/ocrV2.ts` | OCR integration | HTTP calls to external service, health checks |
+| `backend/src/services/ocr/UserCorrectionService.ts` | Data Pool sync | Async POST to Data Pool, quality scoring |
+| `src/utils/ocrCorrections.ts` | Frontend tracking | Correction detection, API calls |
+| `backend/.env` | Configuration | Service URLs, API keys, timeouts |
+| `/etc/nginx/sites-enabled/expenseapp` | Nginx config | Timeout settings (180s) |
+
+---
+
+## 📋 Application Features
+
+### Trade Show Event Management
+
+**Purpose:** Organize and track trade show events with participants and budgets
+
+**Features:**
+- **Create Events** (Admin, Coordinator, Developer)
+  - Event name and location
+  - Start and end dates
+  - Budget allocation (admin-only visibility)
+  - Created by tracking
+
+- **Manage Participants** (Event Setup page)
+  - Add existing users to events
+  - Assign role for each participant (salesperson, coordinator, etc.)
+  - Create temporary attendees on-the-fly
+  - Remove participants
+
+- **Event List View**
+  - Cards showing all events
+  - Status indicators (upcoming, in progress, completed)
+  - Days until/since event
+  - Participant count
+  - Quick actions (edit, view details)
+
+- **Event Filtering**
+  - Filter by status (upcoming, in progress, past)
+  - Search by name or location
+  - Sort by date
+
+**Database Tables:** `events`, `event_participants`
+
+---
+
+### Expense Management & Workflows
+
+**Purpose:** Submit, track, approve, and sync expenses with receipts
+
+#### **Expense Submission** (All Roles except Accountant)
+
+1. **Upload Receipt**
+   - Support formats: JPEG, PNG, PDF, HEIC, HEIF, WebP
+   - Max file size: 10MB (phone camera images supported)
+   - File validation on frontend and backend
+
+2. **OCR Processing**
+   - **Production:** Embedded Tesseract OCR (local processing)
+   - **Sandbox v1.13.4:** External OCR Service with LLM enhancement
+   - Extracts: merchant, amount, date, category, card last 4
+   - User can review and correct extracted fields
+
+3. **Fill Expense Form**
+   - Event selection (dropdown of user's events)
+   - Category (predefined list with colors)
+   - Amount (auto-filled from OCR)
+   - Merchant (auto-filled from OCR)
+   - Date (auto-filled from OCR, defaults to today)
+   - Card type (Haute CC, Alpha CC, Beta CC, Gamma CC, Delta CC, Personal)
+   - Description (optional)
+
+4. **Submit**
+   - Validate all required fields
+   - Save to database with `pending` status
+   - Store receipt in `uploads/` directory
+   - Show success notification
+   - **Offline Support:** Queue in IndexedDB if offline, sync when online
+
+#### **Automated Approval Workflows** (v1.4.0+)
+
+**3-Rule Logic:**
+1. **Regression Detection** → "needs further review"
+   - If entity or reimbursement status is set back to null/pending
+   - Requires accountant/admin to re-review
+
+2. **Auto-Approve on Action**
+   - Assigning entity → status becomes `approved`
+   - Setting reimbursement (approved/rejected) → status becomes `approved`
+
+3. **No-Op** → Keep current status
+   - Any other changes don't affect status
+
+**Manual Override:** Accountants/admins can manually set status in detail modal
+
+#### **Expense Approval** (Admin, Accountant, Developer)
+
+**Approval Cards** (top of Expenses page):
+- **Pending Approval** - Count of expenses awaiting review
+- **Pending Reimbursement** - Count of approved reimbursements not yet paid
+- **Unassigned Entities** - Count of expenses without Zoho entity
+
+**Approval Actions:**
+1. **Assign Entity** (inline dropdown in table)
+   - Select: Haute Brands, Alpha, Beta, Gamma, Delta
+   - Automatically approves expense
+   - Clears `zoho_expense_id` if entity changes (allows re-push)
+
+2. **Review Reimbursement** (inline buttons)
+   - Approve (✓) or Reject (✗) reimbursement requests
+   - Automatically approves expense
+   - Shows confirmation dialog
+
+3. **Mark as Paid** ($ icon button)
+   - For approved reimbursements
+   - Changes status to `paid`
+   - Confirmation dialog
+
+4. **Manual Status Change** (detail modal)
+   - Override automated logic if needed
+   - Options: pending, approved, rejected, needs further review
+
+**Filters:**
+- Date range
+- Merchant (search)
+- Category (multiselect)
+- Status (multiselect)
+- Entity (multiselect)
+- Reimbursement status (multiselect)
+- Collapsible inline filter panel
+
+#### **Reimbursement Tracking**
+
+**Reimbursement Flow:**
+1. User submits expense with `reimbursement_required: true`
+2. Status starts as `pending review`
+3. Accountant/admin approves → `approved (pending payment)`
+4. Accountant/admin marks as paid → `paid`
+5. Alternative: Reject → `rejected`
+
+**Reimbursement Columns in Table:**
+- Reimbursement checkbox (read-only)
+- Reimbursement status badge (color-coded)
+- Quick action buttons (approve, reject, mark paid)
+
+**Database Fields:** `reimbursement_required`, `reimbursement_status`
+
+---
+
+### Zoho Books Integration
+
+**Purpose:** Sync approved expenses to Zoho Books for accounting
+
+#### **Entity Management**
+
+**5 Zoho Organizations (Entities):**
+- **Haute Brands** (main entity)
+- **Alpha** (sub-brand)
+- **Beta** (sub-brand)
+- **Gamma** (sub-brand)
+- **Delta** (sub-brand)
+
+**Entity Assignment:**
+- Required before pushing to Zoho
+- Determines which Zoho organization receives the expense
+- Can be reassigned (clears `zoho_expense_id` to allow re-push)
+
+#### **Push to Zoho Workflow**
+
+1. **Prerequisites:**
+   - Expense must have entity assigned
+   - Receipt file must exist
+
+2. **Push Process:**
+   - Click "Push to Zoho" button (in table or detail modal)
+   - Backend validates expense
+   - Check for duplicate (`zoho_expense_id` already exists)
+   - POST to Zoho Books API with expense data
+   - Upload receipt attachment to Zoho
+   - Receive `zoho_expense_id` from Zoho
+   - Save `zoho_expense_id` in database
+
+3. **Success Indicators:**
+   - Green checkmark (✓) in Zoho Pushed column
+   - Zoho ID displayed in detail modal
+   - Button changes to "View in Zoho" (coming soon)
+
+4. **Error Handling:**
+   - Failed requests show error notification
+   - Logs error details for debugging
+   - Expense remains local, can retry
+
+**Duplicate Prevention:**
+- Check `zoho_expense_id` before pushing
+- In-memory Set tracks recent pushes (session-only)
+- Future: Database-based duplicate check
+
+**Authentication:**
+- OAuth 2.0 with Zoho
+- Automatic token refresh
+- Separate credentials for sandbox/production
+
+**Database Fields:** `zoho_entity`, `zoho_expense_id`
+
+---
+
+### Dashboard & Quick Actions
+
+**Purpose:** Provide at-a-glance overview and quick access to tasks
+
+#### **Dashboard Widgets** (role-based)
+
+**For All Users:**
+- **Upcoming Events** - Next 3 events with days until
+- **Recent Expenses** - Last 5 expenses submitted by user
+- **Active Events** - Events currently in progress
+
+**For Admin/Accountant/Developer:**
+- **Pending Approvals** - Count with link to Expenses page
+- **Unassigned Entities** - Count with link to Expenses page
+- **Pending Reimbursements** - Count with link to Expenses page
+- **Push to Zoho Tasks** - Count of approved expenses not yet synced
+
+**Quick Action Links:**
+- "View Pending Approvals" → `/expenses` with status filter
+- "Assign Entities" → `/expenses` with entity filter
+- "Push to Zoho" → `/expenses` with Zoho filter
+- "Process Reimbursements" → `/expenses` with reimbursement filter
+
+**API Endpoint:** `GET /api/quick-actions` (returns counts)
+
+---
+
+### Reports & Analytics
+
+**Purpose:** Generate financial reports filtered by event and date
+
+#### **Report Types**
+
+**Detailed Report:**
+- Expense list with all details
+- Filterable by:
+  - Event (dropdown)
+  - Date range
+  - Category
+  - Entity
+  - Status
+- Sortable columns
+- Total amount calculation
+- Receipt thumbnails
+
+**Summary Report:** (coming soon)
+- Aggregated totals by category
+- Budget vs actual
+- Entity breakdown
+- Charts and graphs
+
+**Export Options:** (coming soon)
+- CSV export
+- PDF export
+- Excel export
+
+**Zoho Sync from Reports:**
+- "Push to Zoho" button at top
+- Pushes all approved, unsynced expenses for selected event
+- Smart navigation (goes to event with most unsynced items)
+
+**Database:** Queries `expenses` table with JOIN to `events`, `users`
+
+---
+
+### User & Role Management
+
+#### **User Management** (Admin, Developer)
+
+**Features:**
+- **View All Users** - Table with name, username, email, role
+- **Create User** 
+  - Username (unique, lowercase)
+  - Name (display name)
+  - Email
+  - Password (hashed with bcrypt)
+  - Role (dropdown from `roles` table)
+- **Edit User**
+  - Update any field except username
+  - Change role
+  - Change password
+- **Delete User**
+  - Confirmation dialog
+  - "admin" user cannot be deleted (protected)
+  - Soft delete (future enhancement)
+
+**Database Table:** `users`
+
+#### **Dynamic Role Management** (v1.0.54+) (Admin, Developer)
+
+**System Roles** (protected, cannot be deleted):
+- `admin` - Full system access
+- `developer` - Admin + Dev Dashboard
+- `accountant` - Approve, Zoho, Reports
+- `coordinator` - Events, Expenses
+- `salesperson` - Submit expenses only
+- `temporary` - Limited event participation
+- `pending` - New registrations
+
+**Custom Roles:**
+- Create from UI with custom label, description, color
+- 10 color options (badges in UI)
+- Can be edited or deleted
+- Stored in database with `is_system: false`
+
+**Role Properties:**
+- `name` - Internal identifier (lowercase, unique)
+- `label` - Display name (e.g., "Event Coordinator")
+- `description` - Role purpose
+- `color` - Tailwind CSS classes for badges
+- `is_system` - Protected flag (true = cannot delete)
+- `is_active` - Soft delete flag
+
+**Database Table:** `roles` (NEW in v1.0.54)
+
+**UI Location:** Admin Settings → User Management → Role Management (collapsible)
+
+---
+
+### Settings & Configuration
+
+**Purpose:** Application-wide configuration management
+
+#### **Settings Page** (Admin, Developer, Accountant)
+
+**Current Settings:**
+- **App Version** - Display only (from package.json)
+- **Environment** - Production / Sandbox
+- **Database Connection** - Status indicator
+- **OCR Configuration** (Developer only)
+  - OCR provider (embedded vs external)
+  - Timeout settings
+  - Data Pool integration status
+
+**Future Settings:**
+- Email notifications toggle
+- Default expense categories
+- File upload limits
+- Session timeout duration
+- Timezone settings
+
+**Database Table:** `settings` (key-value store)
+
+---
+
+### Developer Dashboard
+
+**Purpose:** Debugging and diagnostics for developers
+
+**Access:** Developer role only (not available to admins)
+
+**Features:**
+- **System Info**
+  - Node version
+  - Database connection status
+  - Uptime
+  - Memory usage
+
+- **Cache Management**
+  - View cache entries
+  - Clear specific caches
+  - Clear all caches
+
+- **API Health Checks**
+  - Test database connection
+  - Test external services (OCR, Data Pool)
+  - View API response times
+
+- **Environment Variables** (masked)
+  - View non-sensitive env vars
+  - Verify configuration
+
+- **Logs** (future)
+  - View recent error logs
+  - Search logs
+  - Download logs
+
+**UI Location:** Sidebar → Dev Dashboard (appears only for developer role)
 
 ---
 
@@ -175,6 +847,21 @@ App.tsx (Root)
           │ created_at  │
           │ updated_at  │
           └─────────────┘
+                 │
+                 │  ┌──────────────────┐
+                 └──┤ ocr_corrections  │  (NEW in v1.11.0+)
+                    ├──────────────────┤
+                    │ id               │
+                    │ user_id          │
+                    │ expense_id       │  (optional)
+                    │ original_ocr_text│
+                    │ original_inference│ (JSON)
+                    │ corrected_fields │  (JSON)
+                    │ ocr_confidence   │
+                    │ environment      │  (sandbox/production)
+                    │ receipt_image    │
+                    │ created_at       │
+                    └──────────────────┘
 
 ┌─────────────┐
 │  settings   │
@@ -331,6 +1018,13 @@ Notes:
 │   ├── POST /:id/zoho                 (admin, accountant, developer)
 │   └── DELETE /:id                    (admin, developer)
 │
+├── /ocr/v2                            (authenticated - v1.13.4 Sandbox)
+│   ├── POST /process                  (upload receipt for OCR)
+│   │   └── External OCR Service call
+│   ├── POST /corrections              (store user corrections)
+│   │   └── Sends to Data Pool async
+│   └── GET /config                    (developer only)
+│
 └── /settings                           (authenticated)
     ├── GET /                          (all roles)
     └── PUT /                          (admin, developer)
@@ -353,8 +1047,9 @@ Middleware:
 
 Service Worker (public/service-worker.js)
 ├── Cache Management
-│   ├── CACHE_NAME: expenseapp-v1.0.58
-│   ├── STATIC_CACHE: expenseapp-static-v1.0.58
+│   ├── CACHE_NAME: expenseapp-v{version}
+│   ├── STATIC_CACHE: expenseapp-static-v{version}
+│   ├── Current: v1.4.13 (Production) / v1.13.4 (Sandbox)
 │   └── Version-based cache invalidation
 │
 ├── Caching Strategy
@@ -397,31 +1092,46 @@ Proxmox Host (192.168.1.190)
 │   ├── Debian 12
 │   ├── Node.js 18
 │   ├── PostgreSQL 15 (expense_app_sandbox database)
-│   ├── Nginx (frontend on :80)
-│   ├── PM2 (backend on :3000)
-│   └── /opt/expenseApp/ (application root)
+│   ├── Nginx (frontend on :80, root: /var/www/expenseapp)
+│   ├── PM2 (backend on :3000, path: /opt/expenseApp/backend)
+│   ├── Version: Frontend v1.13.4 / Backend v1.13.4
+│   └── Features: Production + AI Pipeline (OCR, Data Pool, Model Training)
 │
-└── LXC ???: Production Environment (192.168.1.138)
-    ├── Same stack as sandbox
-    └── PostgreSQL (expense_app_production database)
+├── LXC 201: Production Backend (192.168.1.138)
+│   ├── Node.js 18
+│   ├── PostgreSQL 15 (expense_app_production database)
+│   ├── PM2 (backend on :3000, path: /opt/expenseApp/backend)
+│   └── Version: Backend v1.5.1
+│
+└── LXC 202: Production Frontend (192.168.1.138)
+    ├── Nginx (frontend on :80)
+    ├── Path: /var/www/expenseapp/current
+    └── Version: Frontend v1.4.13
 
-Deployment Process:
-1. Build frontend: npm run build
-2. Add build ID to dist/index.html
-3. Create tarball: tar -czf frontend-v1.0.X.tar.gz -C dist .
-4. SCP to Proxmox host
-5. Push to LXC container
-6. Extract to /var/www/expenseapp
-7. Restart nginx
-8. ⚠️ CRITICAL: Restart NPMplus proxy (LXC 104) to clear cache!
+Deployment Process (Sandbox - Automated via deploy-sandbox.sh):
+1. Update version in package.json (frontend & backend)
+2. Build frontend: npm run build
+3. Build backend: cd backend && npm run build
+4. Create tarballs with version and timestamp
+5. SCP to Proxmox host
+6. Push to LXC 203 container
+7. Extract frontend to /var/www/expenseapp
+8. Extract backend to /opt/expenseApp/backend
+9. Restart services: nginx, expenseapp-backend
+10. ⚠️ CRITICAL: Restart NPMplus proxy (LXC 104) to clear cache!
 
-Backend Deployment:
-1. Build: npm run build (TypeScript → JavaScript)
-2. Create tarball: tar -czf backend-v1.0.X.tar.gz -C dist .
-3. SCP to Proxmox host
-4. Push to LXC container
-5. Extract to /opt/expenseApp/backend/dist
-6. Restart via systemd: systemctl restart expenseapp-backend
+Deployment Process (Production - Manual):
+1. Test thoroughly in sandbox first!
+2. Tag release in git
+3. Deploy frontend to LXC 202: /var/www/expenseapp/current
+4. Deploy backend to LXC 201: /opt/expenseApp/backend
+5. Run database migrations if needed
+6. Restart services
+7. Verify health endpoints
+
+Current Scripts:
+- deploy-sandbox.sh - Automated sandbox deployment
+- DEPLOY_TO_PRODUCTION.sh - Production deployment (use with caution!)
 ```
 
 ---
@@ -468,14 +1178,24 @@ File Upload Security
 
 ## Version History
 
-- **v1.0.58** (Oct 15, 2025) - Fixed role display to use dynamic data
-- **v1.0.57** - Improved Role Management readability
-- **v1.0.56** - Developer permissions + dynamic role loading
-- **v1.0.55** - Collapsible Role Management
-- **v1.0.54** - Dynamic Role Management System
-- **v1.0.23** (Backend) - Developer authorization in users/roles routes
+### **Production**
+- **Frontend v1.4.13** (Oct 16, 2025) - Stable production release
+- **Backend v1.5.1** (Oct 16, 2025) - Stable production release
 
-See [CHANGELOG.md](../CHANGELOG.md) for complete history.
+### **Sandbox (AI Pipeline Development)**
+- **v1.13.4** (Oct 23, 2025) - External OCR + Data Pool + Model Training integration
+- **v1.13.3** (Oct 23, 2025) - Fixed frontend correction tracking (404 error)
+- **v1.13.2** (Oct 23, 2025) - Data Pool schema compliance (nested corrected_fields)
+- **v1.13.1** (Oct 23, 2025) - Initial external OCR integration
+- **v1.11.0+** - OCR correction tracking system
+
+### **Historical Production Releases**
+- **v1.4.13** (Oct 16, 2025) - Latest stable production
+- **v1.1.11** (Oct 16, 2025) - Entity change warnings, Zoho improvements
+- **v1.0.58** (Oct 15, 2025) - Fixed role display to use dynamic data
+- **v1.0.54** - Dynamic Role Management System
+
+See [CHANGELOG.md](../CHANGELOG.md) for complete version history.
 
 ---
 
@@ -509,10 +1229,36 @@ See [CHANGELOG.md](../CHANGELOG.md) for complete history.
 **Solution Needed:** Check database `zoho_expense_id` instead of in-memory Set  
 **Workaround:** Restart backend to clear Set
 
+### AI Pipeline Issues (v1.13.4 Sandbox)
+**Session Timeout During OCR Processing**  
+**Problem:** JWT token expires if OCR takes too long (95-115s for LLM enhancement)  
+**Status:** NEEDS FIX  
+**Solution:** Implement token refresh mechanism or extend token expiry  
+**Workaround:** Save expenses quickly after OCR processing
+
+**LLM Processing Slow (95-115 seconds)**  
+**Problem:** dolphin-llama3 model is slow for low-confidence receipts  
+**Status:** Acceptable for now (only 20% of receipts)  
+**Future:** Switch to faster model (tinyllama, phi-2) or GPU acceleration
+
+**OCR Service Single Point of Failure**  
+**Problem:** No fallback if external OCR service is down  
+**Status:** Embedded OCR removed per user request  
+**Mitigation:** Health checks provide fast failure, local corrections stored first
+
 ### Recent Fixes (v1.1.0 - v1.1.11)
 - ✅ **Session timeout blank dashboard** - Backend now returns 401 (not 403) for expired tokens
 - ✅ **Push to Zoho force logout** - Distinguish 401 (auth failed) from 403 (permission denied)
 - ✅ **Phone camera images rejected** - Accept any `image/*` MIME type (HEIC, HEIF, WebP)
+
+### Recent Fixes (v1.13.1 - v1.13.4 Sandbox AI Pipeline)
+- ✅ **OCR Service 500 errors** - Fixed Tesseract language code ("en" → "eng")
+- ✅ **Frontend 404 on corrections** - Fixed double `/api/api/` URL path
+- ✅ **Data Pool 422 validation** - Nested corrected_fields in request body
+- ✅ **Data Pool UTF-8 errors** - Recreated database with UTF-8 encoding
+- ✅ **Nginx 404 on frontend** - Corrected root directive path
+- ✅ **504 Gateway Timeout** - Increased timeouts to 180s across all layers
+- ✅ **Random LLM sampling slow** - Disabled 10% sampling on high-confidence receipts
 - ✅ **Navigation failures** - Use sessionStorage instead of URL hash for reliable navigation
 - ✅ **Missing useEffect import** - Production-breaking bug fixed in v1.1.9
 - ✅ **Admin protection** - Only "admin" user undeletable (frontend + backend enforcement)
