@@ -951,7 +951,8 @@ router.get('/ocr-metrics', async (req, res) => {
     const allReceiptsToday = parseInt(allReceiptsResult.rows[0].receipts_today) || 0;
     
     // Get Google Vision specific receipts from api_requests table
-    // These are receipts processed through the external OCR service
+    // These are receipts processed through the external OCR service using Google Vision
+    // Filter by metadata->>'ocrProvider' = 'google_vision' to exclude Tesseract fallback
     const googleReceiptsResult = await pool.query(`
       SELECT 
         COUNT(*) as total_receipts_processed,
@@ -962,6 +963,7 @@ router.get('/ocr-metrics', async (req, res) => {
         AND method = 'POST'
         AND status_code >= 200 
         AND status_code < 300
+        AND metadata->>'ocrProvider' = 'google_vision'
     `);
     
     const googleTotalReceipts = parseInt(googleReceiptsResult.rows[0].total_receipts_processed) || 0;

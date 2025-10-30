@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
-import { Building2, Zap, CheckCircle2, Circle, Package, Save } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Building2, Zap, CheckCircle2, Circle, Package, Save, Receipt, Upload, X, FileImage, Map, Eye } from 'lucide-react';
 import { ChecklistData, BoothShippingData } from '../TradeShowChecklist';
 import { api } from '../../../utils/api';
+import { User, TradeShow } from '../../../App';
+import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 
 interface BoothSectionProps {
   checklist: ChecklistData;
+  user: User;
+  event: TradeShow;
   onUpdate: (updates: Partial<ChecklistData>) => Promise<void>;
   onReload: () => void;
   saving: boolean;
 }
 
-export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate, onReload, saving }) => {
+interface ReceiptStatus {
+  booth: any[];
+  electricity: any[];
+  booth_shipping: any[];
+}
+
+export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, event, onUpdate, onReload, saving }) => {
   const [boothNotes, setBoothNotes] = useState(checklist.booth_notes || '');
   const [electricityNotes, setElectricityNotes] = useState(checklist.electricity_notes || '');
+  const [showReceiptUpload, setShowReceiptUpload] = useState<'booth' | 'electricity' | 'booth_shipping' | null>(null);
+  const [uploadingMap, setUploadingMap] = useState(false);
+  const [receiptStatus, setReceiptStatus] = useState<ReceiptStatus>({
+    booth: [],
+    electricity: [],
+    booth_shipping: []
+  });
+  const [loadingReceipts, setLoadingReceipts] = useState(true);
+  const boothMapInputRef = useRef<HTMLInputElement>(null);
   
   // Booth shipping state
   const existingShipping = checklist.boothShipping.length > 0 ? checklist.boothShipping[0] : null;
@@ -27,6 +46,38 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
   });
   const [isShippingModified, setIsShippingModified] = useState(false);
   const [savingShipping, setSavingShipping] = useState(false);
+
+  // Load receipts for this event
+  // Load receipts for this event
+  const loadReceipts = async () => {
+    try {
+      setLoadingReceipts(true);
+      const expenses = await api.getExpenses({ event_id: event.id });
+      
+      // Categorize expenses by checklist section
+      const categorizedReceipts: ReceiptStatus = {
+        booth: expenses.filter((e: any) => e.category === 'Booth / Marketing / Tools'),
+        electricity: expenses.filter((e: any) => e.category === 'Utilities'),
+        booth_shipping: expenses.filter((e: any) => e.category === 'Shipping Charges')
+      };
+      
+      setReceiptStatus(categorizedReceipts);
+    } catch (error) {
+      console.error('[BoothSection] Error loading receipts:', error);
+    } finally {
+      setLoadingReceipts(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReceipts();
+  }, [event.id]);
+
+  const handleReceiptCreated = () => {
+    setShowReceiptUpload(null);
+    onReload();
+    loadReceipts(); // Reload receipt status
+  };
 
   const handleBoothToggle = async () => {
     await onUpdate({ booth_ordered: !checklist.booth_ordered });
@@ -45,6 +96,50 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
   const handleElectricityNotesBlur = async () => {
     if (electricityNotes !== checklist.electricity_notes) {
       await onUpdate({ electricity_notes: electricityNotes });
+    }
+  };
+
+  const handleBoothMapUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload an image file (JPEG, PNG, GIF) or PDF');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadingMap(true);
+    try {
+      await api.checklist.uploadBoothMap(checklist.id, file);
+      onReload();
+    } catch (error) {
+      console.error('[BoothSection] Error uploading booth map:', error);
+      alert('Failed to upload booth map');
+    } finally {
+      setUploadingMap(false);
+      if (boothMapInputRef.current) {
+        boothMapInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteBoothMap = async () => {
+    if (!confirm('Are you sure you want to delete the booth map?')) return;
+
+    try {
+      await api.checklist.deleteBoothMap(checklist.id);
+      onReload();
+    } catch (error) {
+      console.error('[BoothSection] Error deleting booth map:', error);
+      alert('Failed to delete booth map');
     }
   };
 
@@ -102,6 +197,7 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
   };
 
   return (
+    <>
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Building2 className="w-5 h-5 text-purple-600" />
@@ -129,7 +225,7 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
             </div>
           </button>
 
-          <div className="mt-3 ml-9">
+          <div className="mt-3 ml-9 space-y-2">
             <textarea
               value={boothNotes}
               onChange={(e) => setBoothNotes(e.target.value)}
@@ -138,6 +234,105 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
               rows={2}
             />
+            
+            {/* Booth Map Upload/Display */}
+            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                  <Map className="w-4 h-4" />
+                  Booth Floor Plan
+                </label>
+                {checklist.booth_map_url && (
+                  <button
+                    onClick={handleDeleteBoothMap}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Delete map"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              
+              {checklist.booth_map_url ? (
+                <div className="relative group">
+                  <img
+                    src={`${import.meta.env.VITE_API_BASE_URL || '/api'}${checklist.booth_map_url}`}
+                    alt="Booth Map"
+                    className="w-full h-32 object-contain bg-white rounded border border-gray-200"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity rounded flex items-center justify-center">
+                    <button
+                      onClick={() => boothMapInputRef.current?.click()}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1.5 bg-white text-gray-700 rounded-lg shadow-lg text-sm flex items-center gap-1"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Replace
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => boothMapInputRef.current?.click()}
+                  disabled={uploadingMap}
+                  className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm text-gray-600 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {uploadingMap ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload Floor Plan
+                    </>
+                  )}
+                </button>
+              )}
+              
+              <input
+                ref={boothMapInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleBoothMapUpload}
+                className="hidden"
+              />
+              
+              <p className="text-xs text-gray-500 mt-1">
+                Upload booth layout/map (JPG, PNG, GIF, PDF • Max 10MB)
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {receiptStatus.booth.length > 0 && (
+                <>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {receiptStatus.booth.length} Receipt{receiptStatus.booth.length !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const expense = receiptStatus.booth[0];
+                      if (expense.receiptUrl) {
+                        window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${expense.receiptUrl}`, '_blank');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View receipt"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setShowReceiptUpload('booth')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              >
+                <Receipt className="w-4 h-4" />
+                {receiptStatus.booth.length > 0 ? 'Add Another' : 'Upload Receipt'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -164,7 +359,7 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
             </div>
           </button>
 
-          <div className="mt-3 ml-9">
+          <div className="mt-3 ml-9 space-y-2">
             <textarea
               value={electricityNotes}
               onChange={(e) => setElectricityNotes(e.target.value)}
@@ -173,6 +368,36 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm resize-none"
               rows={2}
             />
+            <div className="flex items-center gap-2">
+              {receiptStatus.electricity.length > 0 && (
+                <>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {receiptStatus.electricity.length} Receipt{receiptStatus.electricity.length !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const expense = receiptStatus.electricity[0];
+                      if (expense.receiptUrl) {
+                        window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${expense.receiptUrl}`, '_blank');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View receipt"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setShowReceiptUpload('electricity')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              >
+                <Receipt className="w-4 h-4" />
+                {receiptStatus.electricity.length > 0 ? 'Add Another' : 'Upload Receipt'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -321,10 +546,54 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, onUpdate,
                 rows={3}
               />
             </div>
+
+            {/* Receipt Upload Button */}
+            <div className="flex items-center gap-2">
+              {receiptStatus.booth_shipping.length > 0 && (
+                <>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {receiptStatus.booth_shipping.length} Receipt{receiptStatus.booth_shipping.length !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const expense = receiptStatus.booth_shipping[0];
+                      if (expense.receiptUrl) {
+                        window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${expense.receiptUrl}`, '_blank');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View receipt"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setShowReceiptUpload('booth_shipping')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              >
+                <Receipt className="w-4 h-4" />
+                {receiptStatus.booth_shipping.length > 0 ? 'Add Another' : 'Upload Receipt'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    {/* Receipt Upload Modal */}
+    {showReceiptUpload && (
+      <ChecklistReceiptUpload
+        user={user}
+        event={event}
+        section={showReceiptUpload}
+        onClose={() => setShowReceiptUpload(null)}
+        onExpenseCreated={handleReceiptCreated}
+      />
+    )}
+    </>
   );
 };
 

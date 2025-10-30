@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
-import { Hotel, CheckCircle2, Circle, Save } from 'lucide-react';
+import { Hotel, CheckCircle2, Circle, Save, Receipt } from 'lucide-react';
 import { ChecklistData, HotelData } from '../TradeShowChecklist';
-import { TradeShow } from '../../../App';
+import { TradeShow, User } from '../../../App';
 import { api } from '../../../utils/api';
+import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 
 interface HotelsSectionProps {
   checklist: ChecklistData;
+  user: User;
   event: TradeShow;
   onReload: () => void;
 }
 
-export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, onReload }) => {
+export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, event, onReload }) => {
   const [editingHotels, setEditingHotels] = useState<{ [key: string]: HotelData }>({});
   const [saving, setSaving] = useState<{ [key: string]: boolean }>({});
+  const [showReceiptUpload, setShowReceiptUpload] = useState<{attendeeId: string; attendeeName: string} | null>(null);
 
   const participants = event.participants || [];
 
@@ -102,6 +105,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
   };
 
   return (
+    <>
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Hotel className="w-5 h-5 text-emerald-600" />
@@ -218,6 +222,16 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
                       rows={2}
                     />
                   </div>
+                  
+                  <div className="md:col-span-2">
+                    <button
+                      onClick={() => setShowReceiptUpload({ attendeeId: participant.id, attendeeName: participant.name })}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      Upload Receipt
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -225,6 +239,22 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, event, 
         </div>
       )}
     </div>
+
+    {/* Receipt Upload Modal */}
+    {showReceiptUpload && (
+      <ChecklistReceiptUpload
+        user={user}
+        event={event}
+        section="hotel"
+        attendeeName={showReceiptUpload.attendeeName}
+        onClose={() => setShowReceiptUpload(null)}
+        onExpenseCreated={() => {
+          setShowReceiptUpload(null);
+          onReload();
+        }}
+      />
+    )}
+    </>
   );
 };
 

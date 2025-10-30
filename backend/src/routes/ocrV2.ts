@@ -192,8 +192,17 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     
     console.log(`[OCR v2] External OCR success - Overall confidence: ${result.quality?.overallConfidence?.toFixed(2) || 'N/A'}`);
     
-    // Return external service response directly (already in correct format)
-    res.json(result);
+    // Add OCR provider to response headers for logging/tracking
+    // This allows the API logger to differentiate between Google Vision and Tesseract
+    const ocrProvider = result.ocr?.provider || 'unknown';
+    res.setHeader('X-OCR-Provider', ocrProvider);
+    console.log(`[OCR v2] OCR Provider used: ${ocrProvider}`);
+    
+    // Return external service response with receipt URL
+    res.json({
+      ...result,
+      receiptUrl: `/uploads/${req.file.filename}` // Include receipt URL for frontend
+    });
     
   } catch (error: any) {
     console.error('[OCR v2] Processing error:', error.message);

@@ -55,12 +55,19 @@ export const apiRequestLogger = (req: AuthRequest, res: Response, next: NextFunc
         : JSON.stringify(responseBody.error);
     }
     
+    // Capture metadata (e.g., OCR provider for /ocr/v2/process requests)
+    let metadata: any = null;
+    const ocrProvider = res.getHeader('X-OCR-Provider');
+    if (ocrProvider) {
+      metadata = { ocrProvider };
+    }
+    
     // Log to database asynchronously (don't block response)
     query(
       `INSERT INTO api_requests 
-        (user_id, method, endpoint, status_code, response_time_ms, ip_address, user_agent, error_message)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [userId, method, endpoint, statusCode, responseTime, ipAddress, userAgent, errorMessage]
+        (user_id, method, endpoint, status_code, response_time_ms, ip_address, user_agent, error_message, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [userId, method, endpoint, statusCode, responseTime, ipAddress, userAgent, errorMessage, metadata ? JSON.stringify(metadata) : null]
     ).catch(err => {
       console.error('[APIRequestLogger] Failed to log request:', err);
     });

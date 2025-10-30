@@ -163,15 +163,15 @@ export const OcrTab: React.FC<OcrTabProps> = ({ ocrMetrics }) => {
           Usage Statistics
         </h3>
 
-        {/* Google Vision Receipts (Billable) */}
+        {/* Google Document AI Receipts (Billable) */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-lg font-semibold text-purple-700 flex items-center gap-2">
               <Eye className="w-5 h-5" />
-              Google Vision Receipts (Billable)
+              Google Document AI Receipts (Billable)
             </h4>
             <span className="text-xs text-purple-600 bg-purple-100 px-3 py-1 rounded-full font-medium">
-              Counts toward free tier
+              $1.50 per 1,000 receipts
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -189,31 +189,31 @@ export const OcrTab: React.FC<OcrTabProps> = ({ ocrMetrics }) => {
             </div>
           </div>
 
-          {/* Free Tier Progress */}
+          {/* Cost Summary */}
           <div className="bg-white rounded-lg p-5 border border-purple-200">
             <div className="flex justify-between items-center mb-3">
-              <h4 className="font-medium text-gray-900">Free Tier Usage (Google Vision only)</h4>
+              <h4 className="font-medium text-gray-900">Cost Summary</h4>
               <span className="text-sm text-gray-600">
-                {usage?.remainingFree || 0} / {usage?.freeThreshold || 1000} remaining
+                {usage?.googleVision?.thisMonth || 0} receipts this month
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-              <div
-                className={`h-4 rounded-full transition-all ${
-                  ((usage?.freeThreshold || 1000) - (usage?.remainingFree || 0)) / (usage?.freeThreshold || 1000) > 0.9
-                    ? 'bg-red-500'
-                    : ((usage?.freeThreshold || 1000) - (usage?.remainingFree || 0)) / (usage?.freeThreshold || 1000) > 0.7
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                }`}
-                style={{
-                  width: `${(((usage?.freeThreshold || 1000) - (usage?.remainingFree || 0)) / (usage?.freeThreshold || 1000)) * 100}%`
-                }}
-              />
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Rate:</span>
+                <span className="text-sm font-medium text-gray-900">$1.50 / 1,000 receipts</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Estimated Cost:</span>
+                <span className="text-lg font-bold text-purple-600">
+                  ${((usage?.googleVision?.thisMonth || 0) * 1.50 / 1000).toFixed(2)}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Google Document AI charges $1.50 per 1,000 receipts processed (no free tier)
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500">
-              {((((usage?.freeThreshold || 1000) - (usage?.remainingFree || 0)) / (usage?.freeThreshold || 1000)) * 100).toFixed(1)}% of free tier used
-            </p>
           </div>
         </div>
 
@@ -270,9 +270,14 @@ export const OcrTab: React.FC<OcrTabProps> = ({ ocrMetrics }) => {
 
           <div className="bg-white rounded-lg p-5 border border-emerald-100">
             <h4 className="font-medium text-gray-900 mb-3">Pricing Model</h4>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {costs?.pricingModel || 'Free for first 1,000/month, then $1.50 per 1,000 images'}
+            <p className="text-sm text-gray-600 leading-relaxed mb-2">
+              {costs?.pricingModel || 'Google Document AI: $1.50 per 1,000 receipts'}
             </p>
+            <div className="mt-3 pt-3 border-t border-emerald-100">
+              <p className="text-xs text-gray-500 mb-1">✓ 4-8 second processing time</p>
+              <p className="text-xs text-gray-500 mb-1">✓ 95%+ confidence on clean receipts</p>
+              <p className="text-xs text-gray-500">✓ Tesseract fallback included</p>
+            </div>
           </div>
         </div>
       </div>

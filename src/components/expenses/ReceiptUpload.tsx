@@ -27,8 +27,9 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   // Additional fields for complete expense submission
   const [selectedEvent, setSelectedEvent] = useState('');
   const [selectedCard, setSelectedCard] = useState('');
+  const [selectedEntity, setSelectedEntity] = useState('');
   const [description, setDescription] = useState('');
-  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string}>>([]);
+  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [fieldWarnings, setFieldWarnings] = useState<Array<{field: string; reason: string; severity: string; suggestedAction?: string}>>([]);
   
@@ -218,6 +219,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
         ...ocrResults,
         tradeShowId: selectedEvent,
         cardUsed: selectedCard,
+        zohoEntity: selectedEntity || undefined,  // Auto-populated from card selection
         description: description,
       };
       onReceiptProcessed(completeData as ReceiptData, selectedFile!);
@@ -561,7 +563,14 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                     </label>
                     <select
                       value={selectedCard}
-                      onChange={(e) => setSelectedCard(e.target.value)}
+                      onChange={(e) => {
+                        const cardValue = e.target.value;
+                        // Find the selected card and auto-select its entity
+                        const selectedCardOption = cardOptions.find(card => `${card.name} (...${card.lastFour})` === cardValue);
+                        setSelectedCard(cardValue);
+                        // Auto-select entity if card has one, otherwise clear it (for personal cards)
+                        setSelectedEntity(selectedCardOption?.entity || '');
+                      }}
                       className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Select card...</option>

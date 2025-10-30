@@ -81,6 +81,33 @@ export const api = {
   getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 
+  // OCR
+  processReceiptWithOCR: async (formData: FormData) => {
+    const token = TokenManager.getToken();
+    if (!token) {
+      throw new Error('Authentication required. Please log in again.');
+    }
+
+    const response = await fetch(`${apiClient.getBaseURL()}/ocr/v2/process`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[OCR] Processing failed:', errorText);
+      throw new Error('OCR processing failed');
+    }
+
+    return await response.json();
+  },
+
+  // Helper to get base URL
+  getBaseURL: () => apiClient.getBaseURL(),
+
   // Authentication & Registration
   register: (data: { name: string; email: string; username: string; password: string }) =>
     apiClient.post('/auth/register', data),
@@ -112,6 +139,30 @@ export const api = {
     getChecklist: (eventId: string) => apiClient.get(`/checklist/${eventId}`),
     updateChecklist: (checklistId: number, payload: Record<string, any>) => 
       apiClient.put(`/checklist/${checklistId}`, payload),
+    uploadBoothMap: async (checklistId: number, file: File) => {
+      const formData = new FormData();
+      formData.append('boothMap', file);
+      
+      // Use fetch directly because apiClient.post() sets Content-Type: application/json
+      const token = TokenManager.getToken();
+      const response = await fetch(`${apiClient.getBaseURL()}/checklist/${checklistId}/booth-map`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Don't set Content-Type - let browser set it with boundary for FormData
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to upload booth map');
+      }
+      
+      return await response.json();
+    },
+    deleteBoothMap: (checklistId: number) => 
+      apiClient.delete(`/checklist/${checklistId}/booth-map`),
     
     // Flights
     createFlight: (checklistId: number, payload: Record<string, any>) => 

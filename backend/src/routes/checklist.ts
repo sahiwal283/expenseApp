@@ -1,8 +1,43 @@
 import express, { Response } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { query } from '../config/database';
 import { authorize, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
+
+// Configure multer for booth map uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/booth-maps';
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'booth-map-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadBoothMap = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPEG, PNG, GIF) and PDF are allowed'));
+    }
+  }
+});
 
 // Get checklist for an event (all authenticated users can view)
 router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accountant', 'salesperson'), async (req: AuthRequest, res: Response) => {
@@ -92,6 +127,62 @@ router.put('/:checklistId', authorize('admin', 'coordinator', 'developer'), asyn
   } catch (error) {
     console.error('[Checklist] Error updating checklist:', error);
     res.status(500).json({ error: 'Failed to update checklist' });
+  }
+});
+
+// Upload booth map
+router.post('/:checklistId/booth-map', authorize('admin', 'coordinator', 'developer'), uploadBoothMap.single('boothMap'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { checklistId } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const mapUrl = `/uploads/booth-maps/${req.file.filename}`;
+
+    const result = await query(
+      `UPDATE event_checklists 
+       SET booth_map_url = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [mapUrl, checklistId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+
+    console.log(`[Checklist] Booth map uploaded for checklist ${checklistId}: ${mapUrl}`);
+    res.json({ mapUrl: result.rows[0].booth_map_url });
+  } catch (error) {
+    console.error('[Checklist] Error uploading booth map:', error);
+    res.status(500).json({ error: 'Failed to upload booth map' });
+  }
+});
+
+// Delete booth map
+router.delete('/:checklistId/booth-map', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { checklistId } = req.params;
+
+    const result = await query(
+      `UPDATE event_checklists 
+       SET booth_map_url = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [checklistId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
+
+    console.log(`[Checklist] Booth map deleted for checklist ${checklistId}`);
+    res.json({ message: 'Booth map deleted successfully' });
+  } catch (error) {
+    console.error('[Checklist] Error deleting booth map:', error);
+    res.status(500).json({ error: 'Failed to delete booth map' });
   }
 });
 
@@ -208,14 +299,14 @@ router.delete('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer')
 router.post('/:checklistId/car-rentals', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { checklistId } = req.params;
-    const { provider, confirmationNumber, pickupDate, returnDate, notes, booked } = req.body;
+    const { provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType, assignedToId, assignedToName } = req.body;
 
     const result = await query(
       `INSERT INTO checklist_car_rentals 
-       (checklist_id, provider, confirmation_number, pickup_date, return_date, notes, booked)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       (checklist_id, provider, confirmation_number, pickup_date, return_date, notes, booked, rental_type, assigned_to_id, assigned_to_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [checklistId, provider, confirmationNumber, pickupDate, returnDate, notes, booked || false]
+      [checklistId, provider, confirmationNumber, pickupDate, returnDate, notes, booked || false, rentalType || 'group', assignedToId || null, assignedToName || null]
     );
 
     res.json(result.rows[0]);
@@ -229,15 +320,16 @@ router.post('/:checklistId/car-rentals', authorize('admin', 'coordinator', 'deve
 router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rentalId } = req.params;
-    const { provider, confirmationNumber, pickupDate, returnDate, notes, booked } = req.body;
+    const { provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType, assignedToId, assignedToName } = req.body;
 
     const result = await query(
       `UPDATE checklist_car_rentals 
        SET provider = $1, confirmation_number = $2, pickup_date = $3, return_date = $4, 
-           notes = $5, booked = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+           notes = $5, booked = $6, rental_type = $7, assigned_to_id = $8, assigned_to_name = $9, 
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $10
        RETURNING *`,
-      [provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalId]
+      [provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType || 'group', assignedToId || null, assignedToName || null, rentalId]
     );
 
     res.json(result.rows[0]);

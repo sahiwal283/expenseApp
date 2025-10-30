@@ -13,6 +13,7 @@ export interface ChecklistData {
   event_id: number;
   booth_ordered: boolean;
   booth_notes: string | null;
+  booth_map_url: string | null;
   electricity_ordered: boolean;
   electricity_notes: string | null;
   flights: FlightData[];
@@ -52,6 +53,9 @@ export interface CarRentalData {
   return_date: string | null;
   notes: string | null;
   booked: boolean;
+  rental_type?: 'individual' | 'group';
+  assigned_to_id?: string | null;
+  assigned_to_name?: string | null;
 }
 
 export interface BoothShippingData {
@@ -266,6 +270,8 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
           <div className="space-y-4">
             <BoothSection 
               checklist={checklist} 
+              user={user}
+              event={selectedEvent}
               onUpdate={updateChecklist}
               onReload={() => loadChecklist(selectedEventId!)}
               saving={saving}
@@ -273,18 +279,22 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
             
             <FlightsSection 
               checklist={checklist}
+              user={user}
               event={selectedEvent}
               onReload={() => loadChecklist(selectedEventId!)}
             />
             
             <HotelsSection 
               checklist={checklist}
+              user={user}
               event={selectedEvent}
               onReload={() => loadChecklist(selectedEventId!)}
             />
             
             <CarRentalsSection 
               checklist={checklist}
+              user={user}
+              event={selectedEvent}
               onReload={() => loadChecklist(selectedEventId!)}
             />
             

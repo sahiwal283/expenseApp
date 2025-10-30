@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X, Loader2, Info, Users2, CheckCircle2, Circle, Plane, Hotel, Car, Package } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, DollarSign, Trash2, X, Loader2, Info, Users2, CheckCircle2, Circle, Plane, Hotel, Car, Package, Map } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate, formatDateRange, formatLocalDate } from '../../utils/dateUtils';
@@ -7,6 +7,7 @@ import { useEventData, useEventForm } from './EventSetup/hooks';
 
 interface ChecklistSummary {
   booth_ordered: boolean;
+  booth_map_url: string | null;
   electricity_ordered: boolean;
   flights_booked: number;
   flights_total: number;
@@ -847,6 +848,24 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
                         )}
                         <span className="text-sm text-gray-700">Booth Space Ordered</span>
                       </div>
+
+                      {/* Booth Map Preview */}
+                      {checklistData.booth_map_url && (
+                        <div className="border border-gray-200 rounded-lg p-3 bg-white">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Map className="w-4 h-4 text-purple-600" />
+                            <span className="text-xs font-medium text-gray-700">Booth Floor Plan</span>
+                          </div>
+                          <img
+                            src={`${import.meta.env.VITE_API_BASE_URL || '/api'}${checklistData.booth_map_url}`}
+                            alt="Booth Map"
+                            className="w-full h-48 object-contain bg-gray-50 rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${checklistData.booth_map_url}`, '_blank')}
+                            title="Click to view full size"
+                          />
+                          <p className="text-xs text-gray-500 mt-1 text-center">Click image to view full size</p>
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-3">
                         {checklistData.electricity_ordered ? (

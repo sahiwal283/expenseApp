@@ -174,6 +174,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             card_used: expenseData.cardUsed,
             reimbursement_required: expenseData.reimbursementRequired,
             location: expenseData.location,
+            zoho_entity: expenseData.zohoEntity || undefined,  // Auto-populated from card selection
           }, file || pendingReceiptFile || undefined);
           expenseId = newExpense.id;
           console.log('[ExpenseSubmission] Expense created successfully with ID:', expenseId);
@@ -426,7 +427,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       status: 'pending',
       location: receiptData.location || '',
       ocrText: receiptData.ocrText || '',
-      extractedData: receiptData
+      extractedData: receiptData,
+      zohoEntity: receiptData.zohoEntity || undefined  // Auto-populated from card selection
     };
 
     // Save and wait for completion before closing - pass OCR data directly

@@ -394,10 +394,11 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
     card_used,
     reimbursement_required,
     location,
-    zoho_entity
+    zoho_entity,
+    receipt_url // Accept pre-uploaded receipt URL (from OCR v2)
   } = req.body;
 
-  let receiptUrl: string | undefined = undefined;
+  let receiptUrl: string | undefined = receipt_url || undefined;
 
   // Validate that user is a participant of the event (unless admin/accountant/developer/coordinator)
   if (req.user!.role !== 'admin' && req.user!.role !== 'accountant' && req.user!.role !== 'developer' && req.user!.role !== 'coordinator') {
@@ -411,8 +412,8 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
     }
   }
 
-  // Process uploaded receipt with OCR
-  if (req.file) {
+  // Process uploaded receipt with OCR (only if file is provided and no receipt_url)
+  if (req.file && !receipt_url) {
     receiptUrl = `/uploads/${req.file.filename}`;
     
     // Perform OCR

@@ -88,6 +88,7 @@ export interface ReceiptData {
   file?: File;
   tradeShowId?: string;
   cardUsed?: string;
+  zohoEntity?: string;  // Added: Entity auto-populated from card selection
   description?: string;
   ocrV2Data?: {
     inference?: any;
