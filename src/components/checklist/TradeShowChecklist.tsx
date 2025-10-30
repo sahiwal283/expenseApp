@@ -250,7 +250,30 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         </div>
       )}
 
-      {selectedEvent && checklist && (
+      {selectedEvent && loading && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <div className="flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Loading checklist...</p>
+          </div>
+        </div>
+      )}
+
+      {selectedEvent && !loading && !checklist && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-red-900">Failed to Load Checklist</p>
+              <p className="text-sm text-red-700 mt-1">
+                Unable to load the checklist data. Please try refreshing the page or contact support if the issue persists.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEvent && !loading && checklist && (
         <>
           {/* Progress Bar */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

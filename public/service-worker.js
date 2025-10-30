@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.27.6 - Update: Dev Dashboard to reflect Google Document AI OCR
-// Date: October 29, 2025
+// Version: 1.27.7 - Fix: Checklist loading states and API request logging
+// Date: October 30, 2025
 //
 // New Features:
 // - Trade Show Checklist management for coordinators
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.27.6';  // BUMPED VERSION for Document AI update
-const STATIC_CACHE = 'expenseapp-static-v1.27.6';
+const CACHE_NAME = 'expenseapp-v1.27.7';  // BUMPED VERSION for checklist loading fix
+const STATIC_CACHE = 'expenseapp-static-v1.27.7';
 const urlsToCache = [
   '/',
   '/index.html',
