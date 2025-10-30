@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.27.8 - Fix: Dev Dashboard error handling and display
+// Version: 1.27.9 - Perf: Optimized dev dashboard tab switching
 // Date: October 30, 2025
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.27.8';  // BUMPED VERSION for dev dashboard fix
-const STATIC_CACHE = 'expenseapp-static-v1.27.8';
+const CACHE_NAME = 'expenseapp-v1.27.9';  // BUMPED VERSION for performance optimization
+const STATIC_CACHE = 'expenseapp-static-v1.27.9';
 const urlsToCache = [
   '/',
   '/index.html',

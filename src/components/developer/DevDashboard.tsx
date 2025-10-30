@@ -51,11 +51,12 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
     return () => clearInterval(interval);
   }, [activeTab, timeRange]);
 
-  const loadDashboardData = async (silent = false) => {
+  const loadDashboardData = async (silent = false, includeTabData = true) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
 
     try {
+      // Always load core dashboard data (summary, metrics, version, OCR)
       const [summaryData, metricsData, versionData, ocrData] = await Promise.all([
         api.devDashboard.getSummary(),
         api.devDashboard.getMetrics(timeRange),
@@ -68,33 +69,9 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
       setVersionInfo(versionData);
       setOcrMetrics(ocrData);
 
-      if (activeTab === 'logs') {
-        const logsData = await api.devDashboard.getAuditLogs({
-          limit: 50,
-          action: auditAction !== 'all' ? auditAction : undefined,
-          search: auditSearchTerm || undefined,
-        });
-        setAuditLogs(logsData.logs || []);
-      }
-
-      if (activeTab === 'sessions') {
-        const sessionsData = await api.devDashboard.getSessions();
-        setSessions(sessionsData.sessions || []);
-      }
-
-      if (activeTab === 'api') {
-        const analyticsData = await api.devDashboard.getApiAnalytics(timeRange);
-        setApiAnalytics(analyticsData);
-      }
-
-      if (activeTab === 'alerts') {
-        const alertsData = await api.devDashboard.getAlerts(alertStatus);
-        setAlerts(alertsData.alerts || []);
-      }
-
-      if (activeTab === 'analytics') {
-        const pageData = await api.devDashboard.getPageAnalytics(timeRange);
-        setPageAnalytics(pageData);
+      // Only load tab-specific data on initial load or explicit refresh
+      if (includeTabData) {
+        await loadTabData(activeTab);
       }
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
@@ -126,12 +103,47 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
-    loadDashboardData();
+    // Only load tab-specific data, not everything
+    loadTabData(tabId);
   };
 
-  const handleAlertStatusChange = (status: string) => {
+  const loadTabData = async (tabId: string) => {
+    try {
+      if (tabId === 'logs') {
+        const logsData = await api.devDashboard.getAuditLogs({
+          limit: 50,
+          action: auditAction !== 'all' ? auditAction : undefined,
+          search: auditSearchTerm || undefined,
+        });
+        setAuditLogs(logsData.logs || []);
+      } else if (tabId === 'sessions') {
+        const sessionsData = await api.devDashboard.getSessions();
+        setSessions(sessionsData.sessions || []);
+      } else if (tabId === 'api') {
+        const analyticsData = await api.devDashboard.getApiAnalytics(timeRange);
+        setApiAnalytics(analyticsData);
+      } else if (tabId === 'alerts') {
+        const alertsData = await api.devDashboard.getAlerts(alertStatus);
+        setAlerts(alertsData.alerts || []);
+      } else if (tabId === 'analytics') {
+        const pageData = await api.devDashboard.getPageAnalytics(timeRange);
+        setPageAnalytics(pageData);
+      }
+      // overview, metrics, ocr, training tabs use data already loaded
+    } catch (error: any) {
+      console.error('Failed to load tab data:', error);
+    }
+  };
+
+  const handleAlertStatusChange = async (status: string) => {
     setAlertStatus(status);
-    loadDashboardData();
+    // Only reload alerts, not entire dashboard
+    try {
+      const alertsData = await api.devDashboard.getAlerts(status);
+      setAlerts(alertsData.alerts || []);
+    } catch (error) {
+      console.error('Failed to load alerts:', error);
+    }
   };
 
   if (loading) {
@@ -243,7 +255,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
               auditAction={auditAction}
               onSearchChange={setAuditSearchTerm}
               onActionChange={setAuditAction}
-              onApplyFilters={() => loadDashboardData()}
+              onApplyFilters={() => loadTabData('logs')}
             />
           )}
 
