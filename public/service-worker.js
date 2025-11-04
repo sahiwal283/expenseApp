@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.27.13 - Multiple Booth Shipments
+// Version: 1.27.14 - Collapsible Checklist Sections
 // Date: November 4, 2025
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.27.13';  // BUMPED VERSION for multiple booth shipments
-const STATIC_CACHE = 'expenseapp-static-v1.27.13';
+const CACHE_NAME = 'expenseapp-v1.27.14';  // BUMPED VERSION for collapsible checklist sections
+const STATIC_CACHE = 'expenseapp-static-v1.27.14';
 const urlsToCache = [
   '/',
   '/index.html',
