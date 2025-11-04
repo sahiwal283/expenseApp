@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.27.11 - Debug: Add entity assignment logging
-// Date: October 30, 2025
+// Version: 1.27.13 - Multiple Booth Shipments
+// Date: November 4, 2025
 //
 // New Features:
 // - Trade Show Checklist management for coordinators
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.27.11';  // BUMPED VERSION for entity assignment debug logging
-const STATIC_CACHE = 'expenseapp-static-v1.27.11';
+const CACHE_NAME = 'expenseapp-v1.27.13';  // BUMPED VERSION for multiple booth shipments
+const STATIC_CACHE = 'expenseapp-static-v1.27.13';
 const urlsToCache = [
   '/',
   '/index.html',
