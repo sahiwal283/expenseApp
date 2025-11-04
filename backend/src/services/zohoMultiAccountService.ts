@@ -68,6 +68,12 @@ class ZohoAccountHandler {
       this.apiClient.interceptors.request.use(
         async (config) => {
           const token = await this.getValidAccessToken();
+          console.log(`[Zoho:${this.config.entityName}:DEBUG] Access token type:`, typeof token);
+          console.log(`[Zoho:${this.config.entityName}:DEBUG] Access token value:`, token ? `${token.substring(0, 20)}...${token.substring(token.length - 10)}` : 'UNDEFINED');
+          console.log(`[Zoho:${this.config.entityName}:DEBUG] Organization ID: ${this.config.organizationId}`);
+          if (!token) {
+            throw new Error('Access token is undefined - token refresh may have failed');
+          }
           config.headers.Authorization = `Zoho-oauthtoken ${token}`;
           config.params = {
             ...config.params,
@@ -97,6 +103,7 @@ class ZohoAccountHandler {
   private async refreshAccessToken(): Promise<string> {
     try {
       console.log(`[Zoho:${this.config.entityName}] Refreshing access token...`);
+      console.log(`[Zoho:${this.config.entityName}:DEBUG] Refresh token: ${this.config.refreshToken?.substring(0, 20)}...`);
 
       const response = await axios.post(
         `${this.config.accountsBaseUrl}/token`,
@@ -111,13 +118,19 @@ class ZohoAccountHandler {
         }
       );
 
+      console.log(`[Zoho:${this.config.entityName}:DEBUG] Refresh response:`, response.data);
+      
       const { access_token, expires_in } = response.data;
+      console.log(`[Zoho:${this.config.entityName}:DEBUG] Extracted access_token: ${access_token ? access_token.substring(0, 20) + '...' : 'UNDEFINED'}`);
+      console.log(`[Zoho:${this.config.entityName}:DEBUG] Extracted expires_in: ${expires_in}`);
+      
       this.tokens = {
         accessToken: access_token,
         expiresAt: Date.now() + (expires_in - 300) * 1000,
       };
 
       console.log(`[Zoho:${this.config.entityName}] Access token refreshed successfully`);
+      console.log(`[Zoho:${this.config.entityName}:DEBUG] Returning token: ${access_token ? access_token.substring(0, 20) + '...' : 'UNDEFINED'}`);
       return access_token;
     } catch (error) {
       console.error(`[Zoho:${this.config.entityName}] Failed to refresh token:`, error);

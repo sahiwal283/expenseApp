@@ -33,19 +33,18 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
   const [loadingReceipts, setLoadingReceipts] = useState(true);
   const boothMapInputRef = useRef<HTMLInputElement>(null);
   
-  // Booth shipping state
-  const existingShipping = checklist.boothShipping.length > 0 ? checklist.boothShipping[0] : null;
-  const [shippingData, setShippingData] = useState<BoothShippingData>(existingShipping || {
+  // Booth shipping state - support multiple shipments
+  const [showAddShipmentForm, setShowAddShipmentForm] = useState(false);
+  const [editingShipmentId, setEditingShipmentId] = useState<string | null>(null);
+  const [newShipmentData, setNewShipmentData] = useState<Omit<BoothShippingData, 'id' | 'shipped'>>({
     shipping_method: 'carrier',
     carrier_name: null,
     tracking_number: null,
     shipping_date: null,
     delivery_date: null,
-    notes: null,
-    shipped: false
+    notes: null
   });
-  const [isShippingModified, setIsShippingModified] = useState(false);
-  const [savingShipping, setSavingShipping] = useState(false);
+  const [savingShipment, setSavingShipment] = useState(false);
 
   // Load receipts for this event
   // Load receipts for this event
@@ -143,52 +142,68 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
     }
   };
 
-  const handleShippingFieldChange = (field: keyof BoothShippingData, value: any) => {
-    setShippingData({ ...shippingData, [field]: value });
-    setIsShippingModified(true);
+  const handleNewShipmentFieldChange = (field: keyof typeof newShipmentData, value: any) => {
+    setNewShipmentData({ ...newShipmentData, [field]: value });
   };
 
-  const handleSaveShipping = async () => {
-    setSavingShipping(true);
+  const handleAddShipment = async () => {
+    setSavingShipment(true);
     try {
       const payload = {
-        shippingMethod: shippingData.shipping_method,
-        carrierName: shippingData.carrier_name,
-        trackingNumber: shippingData.tracking_number,
-        shippingDate: shippingData.shipping_date,
-        deliveryDate: shippingData.delivery_date,
-        notes: shippingData.notes,
-        shipped: shippingData.shipped
+        shippingMethod: newShipmentData.shipping_method,
+        carrierName: newShipmentData.carrier_name,
+        trackingNumber: newShipmentData.tracking_number,
+        shippingDate: newShipmentData.shipping_date,
+        deliveryDate: newShipmentData.delivery_date,
+        notes: newShipmentData.notes,
+        shipped: false
       };
 
-      if (existingShipping && existingShipping.id) {
-        await api.checklist.updateBoothShipping(existingShipping.id, payload);
-      } else {
-        await api.checklist.createBoothShipping(checklist.id, payload);
-      }
-
-      setIsShippingModified(false);
+      await api.checklist.createBoothShipping(checklist.id, payload);
+      
+      // Reset form
+      setNewShipmentData({
+        shipping_method: 'carrier',
+        carrier_name: null,
+        tracking_number: null,
+        shipping_date: null,
+        delivery_date: null,
+        notes: null
+      });
+      setShowAddShipmentForm(false);
       onReload();
     } catch (error) {
-      console.error('[BoothSection] Error saving shipping:', error);
-      alert('Failed to save booth shipping information');
+      console.error('[BoothSection] Error adding shipment:', error);
+      alert('Failed to add booth shipment');
     } finally {
-      setSavingShipping(false);
+      setSavingShipment(false);
     }
   };
 
-  const toggleShipped = async () => {
-    if (!existingShipping || !existingShipping.id) return;
+  const handleDeleteShipment = async (shipmentId: string) => {
+    if (!confirm('Are you sure you want to delete this shipment?')) return;
 
     try {
-      await api.checklist.updateBoothShipping(existingShipping.id, {
-        shippingMethod: existingShipping.shipping_method,
-        carrierName: existingShipping.carrier_name,
-        trackingNumber: existingShipping.tracking_number,
-        shippingDate: existingShipping.shipping_date,
-        deliveryDate: existingShipping.delivery_date,
-        notes: existingShipping.notes,
-        shipped: !existingShipping.shipped
+      await api.checklist.deleteBoothShipping(shipmentId);
+      onReload();
+    } catch (error) {
+      console.error('[BoothSection] Error deleting shipment:', error);
+      alert('Failed to delete shipment');
+    }
+  };
+
+  const toggleShipped = async (shipment: BoothShippingData) => {
+    if (!shipment.id) return;
+
+    try {
+      await api.checklist.updateBoothShipping(shipment.id, {
+        shippingMethod: shipment.shipping_method,
+        carrierName: shipment.carrier_name,
+        trackingNumber: shipment.tracking_number,
+        shippingDate: shipment.shipping_date,
+        deliveryDate: shipment.delivery_date,
+        notes: shipment.notes,
+        shipped: !shipment.shipped
       });
       onReload();
     } catch (error) {
@@ -407,148 +422,219 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
             <div className="flex items-center gap-2">
               <Package className="w-5 h-5 text-purple-600" />
               <h4 className="font-medium text-gray-900">Booth Shipping</h4>
+              {checklist.boothShipping.length > 0 && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium">
+                  {checklist.boothShipping.length} Shipment{checklist.boothShipping.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
             
-            {isShippingModified && (
-              <button
-                onClick={handleSaveShipping}
-                disabled={savingShipping}
-                className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                Save
-              </button>
-            )}
+            <button
+              onClick={() => setShowAddShipmentForm(!showAddShipmentForm)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+            >
+              <Package className="w-4 h-4" />
+              {showAddShipmentForm ? 'Cancel' : 'Add Shipment'}
+            </button>
           </div>
 
-          <div className="space-y-4">
-            {/* Shipped Checkbox */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleShipped}
-                disabled={!existingShipping}
-                className="disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {existingShipping?.shipped ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
-                ) : (
-                  <Circle className="w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors" />
+          <div className="space-y-3">
+            {/* Existing Shipments List */}
+            {checklist.boothShipping.map((shipment) => (
+              <div key={shipment.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                <div className="flex items-start justify-between gap-3">
+                  <button
+                    onClick={() => toggleShipped(shipment)}
+                    className="flex-shrink-0 mt-0.5"
+                  >
+                    {shipment.shipped ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 hover:scale-110 transition-transform" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                    )}
+                  </button>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        shipment.shipping_method === 'carrier' 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {shipment.shipping_method === 'carrier' ? 'Carrier' : 'Manual'}
+                      </span>
+                      {shipment.shipped && (
+                        <span className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                          Shipped
+                        </span>
+                      )}
+                    </div>
+                    
+                    {shipment.shipping_method === 'carrier' && (
+                      <div className="space-y-1 text-sm">
+                        {shipment.carrier_name && (
+                          <p className="text-gray-700">
+                            <span className="font-medium">Carrier:</span> {shipment.carrier_name}
+                          </p>
+                        )}
+                        {shipment.tracking_number && (
+                          <p className="text-gray-700">
+                            <span className="font-medium">Tracking:</span> {shipment.tracking_number}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-4 text-xs text-gray-600 mt-2">
+                      {shipment.shipping_date && (
+                        <span>Shipped: {new Date(shipment.shipping_date).toLocaleDateString()}</span>
+                      )}
+                      {shipment.delivery_date && (
+                        <span>Delivery: {new Date(shipment.delivery_date).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                    
+                    {shipment.notes && (
+                      <p className="text-xs text-gray-600 mt-2 italic">{shipment.notes}</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => handleDeleteShipment(shipment.id!)}
+                    className="flex-shrink-0 p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Delete shipment"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Add New Shipment Form */}
+            {showAddShipmentForm && (
+              <div className="border border-purple-300 rounded-lg p-4 bg-purple-50">
+                <h5 className="font-medium text-gray-900 mb-3 text-sm">New Shipment</h5>
+                
+                {/* Shipping Method */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Shipping Method
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="carrier"
+                        checked={newShipmentData.shipping_method === 'carrier'}
+                        onChange={(e) => handleNewShipmentFieldChange('shipping_method', e.target.value)}
+                        className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700">Carrier Shipping</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="manual"
+                        checked={newShipmentData.shipping_method === 'manual'}
+                        onChange={(e) => handleNewShipmentFieldChange('shipping_method', e.target.value)}
+                        className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700">Manual Delivery</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Carrier Fields */}
+                {newShipmentData.shipping_method === 'carrier' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Carrier Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newShipmentData.carrier_name || ''}
+                        onChange={(e) => handleNewShipmentFieldChange('carrier_name', e.target.value)}
+                        placeholder="e.g., FedEx, UPS, Road Runner"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Tracking Number
+                      </label>
+                      <input
+                        type="text"
+                        value={newShipmentData.tracking_number || ''}
+                        onChange={(e) => handleNewShipmentFieldChange('tracking_number', e.target.value)}
+                        placeholder="Tracking/shipment number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                  </div>
                 )}
-              </button>
-              <div>
-                <p className="font-medium text-gray-900">Booth Shipped</p>
-                <p className="text-xs text-gray-500">Mark as shipped when booth materials are sent</p>
-              </div>
-            </div>
 
-            {/* Shipping Method Radio */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Shipping Method
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="carrier"
-                    checked={shippingData.shipping_method === 'carrier'}
-                    onChange={(e) => handleShippingFieldChange('shipping_method', e.target.value)}
-                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className="text-sm text-gray-700">Carrier Shipping</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="manual"
-                    checked={shippingData.shipping_method === 'manual'}
-                    onChange={(e) => handleShippingFieldChange('shipping_method', e.target.value)}
-                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className="text-sm text-gray-700">Manual Delivery</span>
-                </label>
-              </div>
-            </div>
+                {/* Date Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Shipping Date
+                    </label>
+                    <input
+                      type="date"
+                      value={newShipmentData.shipping_date || ''}
+                      onChange={(e) => handleNewShipmentFieldChange('shipping_date', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                  </div>
 
-            {/* Carrier Fields (only show if carrier method) */}
-            {shippingData.shipping_method === 'carrier' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Expected Delivery
+                    </label>
+                    <input
+                      type="date"
+                      value={newShipmentData.delivery_date || ''}
+                      onChange={(e) => handleNewShipmentFieldChange('delivery_date', e.target.value)}
+                      min={newShipmentData.shipping_date || ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="mb-3">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Carrier Name
+                    Notes
                   </label>
-                  <input
-                    type="text"
-                    value={shippingData.carrier_name || ''}
-                    onChange={(e) => handleShippingFieldChange('carrier_name', e.target.value)}
-                    placeholder="e.g., FedEx, UPS"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  <textarea
+                    value={newShipmentData.notes || ''}
+                    onChange={(e) => handleNewShipmentFieldChange('notes', e.target.value)}
+                    placeholder="Shipment details, special instructions, contact info, etc."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
+                    rows={2}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Tracking Number
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingData.tracking_number || ''}
-                    onChange={(e) => handleShippingFieldChange('tracking_number', e.target.value)}
-                    placeholder="Tracking/shipment number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  />
-                </div>
+                <button
+                  onClick={handleAddShipment}
+                  disabled={savingShipment}
+                  className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  {savingShipment ? 'Adding...' : 'Add Shipment'}
+                </button>
               </div>
             )}
 
-            {/* Date Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  {shippingData.shipping_method === 'carrier' ? 'Shipping Date' : 'Departure Date'}
-                </label>
-                <input
-                  type="date"
-                  value={shippingData.shipping_date || ''}
-                  onChange={(e) => handleShippingFieldChange('shipping_date', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  {shippingData.shipping_method === 'carrier' ? 'Expected Delivery' : 'Arrival Date'}
-                </label>
-                <input
-                  type="date"
-                  value={shippingData.delivery_date || ''}
-                  onChange={(e) => handleShippingFieldChange('delivery_date', e.target.value)}
-                  min={shippingData.shipping_date || ''}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                value={shippingData.notes || ''}
-                onChange={(e) => handleShippingFieldChange('notes', e.target.value)}
-                placeholder={
-                  shippingData.shipping_method === 'carrier'
-                    ? 'Shipment details, special instructions, contact info, etc.'
-                    : 'Who is transporting, vehicle info, route details, etc.'
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
-                rows={3}
-              />
-            </div>
-
             {/* Receipt Upload Button */}
-            <div className="flex items-center gap-2">
+            {checklist.boothShipping.length === 0 && !showAddShipmentForm && (
+              <p className="text-sm text-gray-500 text-center py-4">
+                No shipments added yet. Click "Add Shipment" to get started.
+              </p>
+            )}
+
+            <div className="flex items-center gap-2 pt-2">
               {receiptStatus.booth_shipping.length > 0 && (
                 <>
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
