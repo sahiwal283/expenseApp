@@ -556,6 +556,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       return; // Already pushed
     }
 
+    console.log(`[Push to Zoho] Starting push for expense ${expense.id} to entity "${expense.zohoEntity}"`);
+    console.log(`[Push to Zoho] Current user:`, user);
+    
     setPushingExpenseId(expense.id);
     try {
       await api.pushToZoho(expense.id);
@@ -563,7 +566,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
       await reloadData();
     } catch (error: any) {
-      console.error('Failed to push to Zoho:', error);
+      console.error('[Push to Zoho] Failed:', error);
+      console.error('[Push to Zoho] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
       
       const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
       
