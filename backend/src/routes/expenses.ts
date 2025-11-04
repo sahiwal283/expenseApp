@@ -727,6 +727,13 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
 // Manual push to Zoho Books (accountant/admin only)
 router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
+    console.log(`[Zoho:Push] User attempting push:`, {
+      userId: req.user?.id,
+      username: req.user?.username,
+      role: req.user?.role,
+      allowedRoles: ['admin', 'accountant', 'developer']
+    });
+    
     const { id } = req.params;
 
     // Get expense with full details

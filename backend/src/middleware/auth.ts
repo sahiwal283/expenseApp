@@ -30,14 +30,25 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
 export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
+    console.log(`[Auth] Authorization check:`, {
+      user: req.user,
+      requiredRoles: roles,
+      hasUser: !!req.user,
+      userRole: req.user?.role,
+      isAuthorized: req.user && roles.includes(req.user.role)
+    });
+    
     if (!req.user) {
+      console.log(`[Auth] FAILED: No user in request`);
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     if (!roles.includes(req.user.role)) {
+      console.log(`[Auth] FAILED: User role "${req.user.role}" not in allowed roles:`, roles);
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
+    console.log(`[Auth] SUCCESS: User authorized`);
     next();
   };
 };
