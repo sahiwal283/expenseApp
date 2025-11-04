@@ -19,6 +19,12 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
       const endDate = parseLocalDate(event.endDate);
       return endDate >= today; // Include events that end today or later
     })
+    .sort((a, b) => {
+      // Sort by start date (closest upcoming event first)
+      const dateA = parseLocalDate(a.startDate);
+      const dateB = parseLocalDate(b.startDate);
+      return dateA.getTime() - dateB.getTime();
+    })
     .slice(0, 3);
   
   const getDaysUntilLabel = (days: number) => {
