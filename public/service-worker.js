@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.27.10 - Fix: Sort upcoming events by date (closest first)
+// Version: 1.27.11 - Debug: Add entity assignment logging
 // Date: October 30, 2025
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.27.10';  // BUMPED VERSION for event sorting fix
-const STATIC_CACHE = 'expenseapp-static-v1.27.10';
+const CACHE_NAME = 'expenseapp-v1.27.11';  // BUMPED VERSION for entity assignment debug logging
+const STATIC_CACHE = 'expenseapp-static-v1.27.11';
 const urlsToCache = [
   '/',
   '/index.html',

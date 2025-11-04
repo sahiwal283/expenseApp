@@ -505,9 +505,21 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       }
     }
 
+    console.log(`[Entity Assignment] Starting: Expense ${expense.id} → "${entity}"`);
+
     try {
       if (api.USE_SERVER) {
-        await api.assignEntity(expense.id, { zoho_entity: entity });
+        const updatedExpense = await api.assignEntity(expense.id, { zoho_entity: entity });
+        console.log(`[Entity Assignment] Response:`, updatedExpense);
+        
+        // Verify entity was actually updated
+        if (updatedExpense.zohoEntity !== entity) {
+          console.error(`[Entity Assignment] MISMATCH: Expected "${entity}", got "${updatedExpense.zohoEntity}"`);
+          addToast('⚠️ Entity may not have been updated. Please refresh and try again.', 'warning');
+          return;
+        }
+        
+        console.log(`[Entity Assignment] SUCCESS: Entity is now "${updatedExpense.zohoEntity}"`);
       }
 
       // Remove from pushedExpenses set to allow re-push
@@ -519,7 +531,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         });
       }
 
+      console.log(`[Entity Assignment] Reloading data...`);
       await reloadData();
+      console.log(`[Entity Assignment] Data reloaded`);
       
       if (expense.zohoExpenseId) {
         addToast('✅ Entity changed. You can now push to the new entity.', 'success');
@@ -527,7 +541,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         addToast('✅ Entity assigned!', 'success');
       }
     } catch (error) {
-      console.error('Failed to assign entity:', error);
+      console.error('[Entity Assignment] Failed:', error);
       addToast('❌ Failed to assign entity. Please try again.', 'error');
     }
   };
