@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
-import { CheckCircle2, Circle, Plane, Hotel, Car, Package, Zap, Building2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Plane, Hotel, Car, Package, Zap, Building2, AlertCircle, List } from 'lucide-react';
 import { BoothSection } from './sections/BoothSection';
 import { FlightsSection } from './sections/FlightsSection';
 import { HotelsSection } from './sections/HotelsSection';
 import { CarRentalsSection } from './sections/CarRentalsSection';
 import { CustomItemsSection } from './sections/CustomItemsSection';
+import { CollapsibleSection } from './CollapsibleSection';
 
 export interface ChecklistData {
   id: number;
@@ -291,42 +292,87 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
 
           {/* Checklist Sections */}
           <div className="space-y-4">
-            <BoothSection 
-              checklist={checklist} 
-              user={user}
-              event={selectedEvent}
-              onUpdate={updateChecklist}
-              onReload={() => loadChecklist(selectedEventId!)}
-              saving={saving}
-            />
+            <CollapsibleSection
+              title="Booth & Facilities"
+              icon={<Building2 className="w-5 h-5" />}
+              isComplete={checklist.booth_ordered && checklist.electricity_ordered}
+              itemCount={2}
+              completedCount={(checklist.booth_ordered ? 1 : 0) + (checklist.electricity_ordered ? 1 : 0)}
+              defaultCollapsed={checklist.booth_ordered && checklist.electricity_ordered}
+            >
+              <BoothSection 
+                checklist={checklist} 
+                user={user}
+                event={selectedEvent}
+                onUpdate={updateChecklist}
+                onReload={() => loadChecklist(selectedEventId!)}
+                saving={saving}
+              />
+            </CollapsibleSection>
             
-            <FlightsSection 
-              checklist={checklist}
-              user={user}
-              event={selectedEvent}
-              onReload={() => loadChecklist(selectedEventId!)}
-            />
+            <CollapsibleSection
+              title="Flights"
+              icon={<Plane className="w-5 h-5" />}
+              isComplete={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
+              itemCount={checklist.flights.length}
+              completedCount={checklist.flights.filter(f => f.booked).length}
+              defaultCollapsed={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
+            >
+              <FlightsSection 
+                checklist={checklist}
+                user={user}
+                event={selectedEvent}
+                onReload={() => loadChecklist(selectedEventId!)}
+              />
+            </CollapsibleSection>
             
-            <HotelsSection 
-              checklist={checklist}
-              user={user}
-              event={selectedEvent}
-              onReload={() => loadChecklist(selectedEventId!)}
-            />
+            <CollapsibleSection
+              title="Hotels"
+              icon={<Hotel className="w-5 h-5" />}
+              isComplete={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
+              itemCount={checklist.hotels.length}
+              completedCount={checklist.hotels.filter(h => h.booked).length}
+              defaultCollapsed={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
+            >
+              <HotelsSection 
+                checklist={checklist}
+                user={user}
+                event={selectedEvent}
+                onReload={() => loadChecklist(selectedEventId!)}
+              />
+            </CollapsibleSection>
             
-            <CarRentalsSection 
-              checklist={checklist}
-              user={user}
-              event={selectedEvent}
-              onReload={() => loadChecklist(selectedEventId!)}
-            />
+            <CollapsibleSection
+              title="Car Rentals"
+              icon={<Car className="w-5 h-5" />}
+              isComplete={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
+              itemCount={checklist.carRentals.length}
+              completedCount={checklist.carRentals.filter(c => c.booked).length}
+              defaultCollapsed={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
+            >
+              <CarRentalsSection 
+                checklist={checklist}
+                user={user}
+                event={selectedEvent}
+                onReload={() => loadChecklist(selectedEventId!)}
+              />
+            </CollapsibleSection>
             
-            <CustomItemsSection 
-              checklist={checklist}
-              onReload={() => loadChecklist(selectedEventId!)}
-              canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
-              isAdmin={user.role === 'admin' || user.role === 'developer'}
-            />
+            <CollapsibleSection
+              title="Custom Tasks"
+              icon={<List className="w-5 h-5" />}
+              isComplete={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
+              itemCount={checklist.customItems.length}
+              completedCount={checklist.customItems.filter(i => i.completed).length}
+              defaultCollapsed={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
+            >
+              <CustomItemsSection 
+                checklist={checklist}
+                onReload={() => loadChecklist(selectedEventId!)}
+                canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
+                isAdmin={user.role === 'admin' || user.role === 'developer'}
+              />
+            </CollapsibleSection>
           </div>
         </>
       )}

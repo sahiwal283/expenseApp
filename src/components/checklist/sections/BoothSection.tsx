@@ -213,13 +213,7 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
 
   return (
     <>
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <Building2 className="w-5 h-5 text-purple-600" />
-        Booth & Facilities
-      </h3>
-
-      <div className="space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         {/* Booth Checkbox */}
         <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
           <button
@@ -667,7 +661,6 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
           </div>
         </div>
       </div>
-    </div>
 
     {/* Receipt Upload Modal */}
     {showReceiptUpload && (
