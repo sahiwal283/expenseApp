@@ -175,12 +175,8 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
   return (
     <>
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Car className="w-5 h-5 text-orange-600" />
-          Car Rentals ({checklist.carRentals.filter(r => r.booked).length}/{checklist.carRentals.length})
-        </h3>
         
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -592,7 +588,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
           })}
         </div>
       )}
-    </div>
+      </div>
 
     {/* Receipt Upload Modal */}
     {showReceiptUpload && (

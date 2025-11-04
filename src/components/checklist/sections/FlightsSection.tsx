@@ -101,12 +101,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
 
   return (
     <>
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <Plane className="w-5 h-5 text-blue-600" />
-        Flights ({checklist.flights.filter(f => f.booked).length}/{participants.length})
-      </h3>
-
+      <div className="p-4 sm:p-6">
       {participants.length === 0 ? (
         <p className="text-gray-500 text-sm">No participants added to this event yet.</p>
       ) : (
@@ -208,7 +203,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
           })}
         </div>
       )}
-    </div>
+      </div>
 
     {/* Receipt Upload Modal */}
     {showReceiptUpload && (
