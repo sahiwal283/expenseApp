@@ -31,7 +31,11 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
   const [newRentalReceipt, setNewRentalReceipt] = useState<File | null>(null);
   const [processingReceipt, setProcessingReceipt] = useState(false);
 
-  const handleFieldChange = (rentalId: number, field: keyof CarRentalData, value: any) => {
+  const handleFieldChange = <K extends keyof CarRentalData>(
+    rentalId: number,
+    field: K,
+    value: CarRentalData[K]
+  ) => {
     const existing = checklist.carRentals.find(r => r.id === rentalId);
     if (!existing) return;
 
@@ -53,12 +57,12 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
     try {
       await api.checklist.updateCarRental(rentalId, {
-        provider: rentalData.provider,
-        confirmationNumber: rentalData.confirmation_number,
-        pickupDate: rentalData.pickup_date,
-        returnDate: rentalData.return_date,
-        notes: rentalData.notes,
-        booked: true,  // Always mark as booked when saving car rental info
+            provider: rentalData.provider,
+            confirmationNumber: rentalData.confirmation_number,
+            pickupDate: rentalData.pickup_date,
+            returnDate: rentalData.return_date,
+            notes: rentalData.notes,
+        booked: rentalData.booked || false,  // Use actual booked state
         rentalType: rentalData.rental_type || 'group',
         assignedToId: rentalData.assigned_to_id || null,
         assignedToName: rentalData.assigned_to_name || null
@@ -83,12 +87,12 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
     try {
       // Create the rental first
       await api.checklist.createCarRental(checklist.id, {
-        provider: newRental.provider,
-        confirmationNumber: newRental.confirmation_number,
-        pickupDate: newRental.pickup_date,
-        returnDate: newRental.return_date,
-        notes: newRental.notes,
-        booked: true,  // Always mark as booked when adding car rental info
+            provider: newRental.provider,
+            confirmationNumber: newRental.confirmation_number,
+            pickupDate: newRental.pickup_date,
+            returnDate: newRental.return_date,
+            notes: newRental.notes,
+        booked: newRental.booked || false,  // Use actual booked state
         rentalType: newRental.rental_type || 'group',
         assignedToId: newRental.assigned_to_id || null,
         assignedToName: newRental.assigned_to_name || null
@@ -157,11 +161,11 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
     try {
       await api.checklist.updateCarRental(rentalId, {
-        provider: rental.provider,
-        confirmationNumber: rental.confirmation_number,
-        pickupDate: rental.pickup_date,
-        returnDate: rental.return_date,
-        notes: rental.notes,
+            provider: rental.provider,
+            confirmationNumber: rental.confirmation_number,
+            pickupDate: rental.pickup_date,
+            returnDate: rental.return_date,
+            notes: rental.notes,
         booked: !rental.booked,
         rentalType: rental.rental_type || 'group',
         assignedToId: rental.assigned_to_id || null,
@@ -414,7 +418,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                     </button>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900">{currentData.provider || 'Unnamed Rental'}</p>
+                      <p className="font-medium text-gray-900">{currentData.provider || 'Unnamed Rental'}</p>
                         {currentData.rental_type === 'individual' && currentData.assigned_to_name && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
                             <UserIcon className="w-3 h-3" />
@@ -594,7 +598,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
           })}
         </div>
       )}
-      </div>
+    </div>
 
     {/* Receipt Upload Modal */}
     {showReceiptUpload && (

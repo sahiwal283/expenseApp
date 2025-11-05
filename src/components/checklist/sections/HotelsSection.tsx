@@ -54,16 +54,16 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
     try {
       const existingHotel = getHotelForAttendee(attendeeId);
       const isNewHotel = !existingHotel || !existingHotel.id;
-      
+
       const payload = {
-        attendeeId: hotelData.attendee_id,
-        attendeeName: hotelData.attendee_name,
-        propertyName: hotelData.property_name,
-        confirmationNumber: hotelData.confirmation_number,
-        checkInDate: hotelData.check_in_date,
-        checkOutDate: hotelData.check_out_date,
-        notes: hotelData.notes,
-        booked: true  // Always mark as booked when saving hotel info
+          attendeeId: hotelData.attendee_id,
+          attendeeName: hotelData.attendee_name,
+          propertyName: hotelData.property_name,
+          confirmationNumber: hotelData.confirmation_number,
+          checkInDate: hotelData.check_in_date,
+          checkOutDate: hotelData.check_out_date,
+          notes: hotelData.notes,
+        booked: hotelData.booked || false  // Use actual booked state
       };
 
       if (existingHotel && existingHotel.id) {
@@ -91,12 +91,12 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
 
     try {
       await api.checklist.updateHotel(hotel.id, {
-        propertyName: hotel.property_name,
-        confirmationNumber: hotel.confirmation_number,
-        checkInDate: hotel.check_in_date,
-        checkOutDate: hotel.check_out_date,
-        notes: hotel.notes,
-        booked: !hotel.booked
+            propertyName: hotel.property_name,
+            confirmationNumber: hotel.confirmation_number,
+            checkInDate: hotel.check_in_date,
+            checkOutDate: hotel.check_out_date,
+            notes: hotel.notes,
+            booked: !hotel.booked
       });
       onReload();
     } catch (error) {
@@ -241,7 +241,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
           })}
         </div>
       )}
-      </div>
+    </div>
 
     {/* Receipt Upload Modal */}
     {showReceiptUpload && (
