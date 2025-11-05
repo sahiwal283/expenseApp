@@ -357,33 +357,14 @@ router.post('/:checklistId/booth-shipping', authorize('admin', 'coordinator', 'd
     const { checklistId } = req.params;
     const { shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped } = req.body;
 
-    // Check if shipping info already exists
-    const existing = await query(
-      'SELECT id FROM checklist_booth_shipping WHERE checklist_id = $1',
-      [checklistId]
+    // Always insert a new booth shipping record (supports multiple shipments)
+    const result = await query(
+      `INSERT INTO checklist_booth_shipping 
+       (checklist_id, shipping_method, carrier_name, tracking_number, shipping_date, delivery_date, notes, shipped)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [checklistId, shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped || false]
     );
-
-    let result;
-    if (existing.rows.length > 0) {
-      // Update
-      result = await query(
-        `UPDATE checklist_booth_shipping 
-         SET shipping_method = $1, carrier_name = $2, tracking_number = $3, 
-             shipping_date = $4, delivery_date = $5, notes = $6, shipped = $7, updated_at = CURRENT_TIMESTAMP
-         WHERE checklist_id = $8
-         RETURNING *`,
-        [shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped || false, checklistId]
-      );
-    } else {
-      // Insert
-      result = await query(
-        `INSERT INTO checklist_booth_shipping 
-         (checklist_id, shipping_method, carrier_name, tracking_number, shipping_date, delivery_date, notes, shipped)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING *`,
-        [checklistId, shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped || false]
-      );
-    }
 
     res.json(result.rows[0]);
   } catch (error) {

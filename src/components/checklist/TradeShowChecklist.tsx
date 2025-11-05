@@ -404,9 +404,31 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
                 }
               ];
 
-              // Sort: incomplete sections first, completed sections last
+              // Sort: incomplete sections with items first, completed sections next, empty sections last
               return sections
-                .sort((a, b) => (a.isComplete === b.isComplete ? 0 : a.isComplete ? 1 : -1))
+                .sort((a, b) => {
+                  // Check if sections have items
+                  const aHasItems = a.key === 'booth' ? true : // Always show booth
+                                    a.key === 'flights' ? checklist.flights.length > 0 :
+                                    a.key === 'hotels' ? checklist.hotels.length > 0 :
+                                    a.key === 'car_rentals' ? checklist.carRentals.length > 0 :
+                                    a.key === 'custom' ? checklist.customItems.length > 0 : true;
+                  
+                  const bHasItems = b.key === 'booth' ? true : // Always show booth
+                                    b.key === 'flights' ? checklist.flights.length > 0 :
+                                    b.key === 'hotels' ? checklist.hotels.length > 0 :
+                                    b.key === 'car_rentals' ? checklist.carRentals.length > 0 :
+                                    b.key === 'custom' ? checklist.customItems.length > 0 : true;
+                  
+                  // Empty sections go to bottom
+                  if (!aHasItems && bHasItems) return 1;
+                  if (aHasItems && !bHasItems) return -1;
+                  if (!aHasItems && !bHasItems) return 0;
+                  
+                  // Among sections with items: incomplete first, completed last
+                  if (a.isComplete === b.isComplete) return 0;
+                  return a.isComplete ? 1 : -1;
+                })
                 .map(section => <div key={section.key}>{section.component}</div>);
             })()}
           </div>
