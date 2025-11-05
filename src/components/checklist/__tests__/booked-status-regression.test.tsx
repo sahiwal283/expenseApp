@@ -111,13 +111,13 @@ describe('REGRESSION: Booked Status Bug (v1.27.15)', () => {
       const addButton = screen.getByRole('button', { name: 'Add' });
       await user.click(addButton);
 
-      // CRITICAL ASSERTION: When user provides rental info, it should be marked as booked
+      // FIXED: Should preserve initial booked state (false for new rental)
       await waitFor(() => {
         expect(api.checklist.createCarRental).toHaveBeenCalledWith(
           1,
           expect.objectContaining({
             provider: 'Enterprise',
-            booked: true, // Should be true because user filled out the form
+            booked: false, // FIXED: Should not auto-mark as booked, preserves initial state
           })
         );
       });
@@ -146,13 +146,13 @@ describe('REGRESSION: Booked Status Bug (v1.27.15)', () => {
       await user.click(addButton);
 
       // The key test: verify the API is called with the component's intended booked value
-      // (not hardcoded, but determined by the component's save logic)
+      // (not hardcoded, but determined by the component's actual booked state)
       await waitFor(() => {
         const callArgs = vi.mocked(api.checklist.createCarRental).mock.calls[0];
         expect(callArgs).toBeDefined();
         expect(callArgs[1]).toHaveProperty('booked');
-        // The component's logic: when saving info, mark as booked
-        expect(callArgs[1].booked).toBe(true);
+        // FIXED: The component preserves the actual state, not hardcoded to true
+        expect(callArgs[1].booked).toBe(false);
       });
     });
   });
@@ -202,7 +202,7 @@ describe('REGRESSION: Booked Status Bug (v1.27.15)', () => {
           1,
           expect.objectContaining({
             provider: 'Hertz',
-            booked: true, // Should be true when saving rental info
+            booked: false, // FIXED: Should preserve existing state, not hardcode to true
           })
         );
       });
@@ -352,14 +352,14 @@ describe('REGRESSION: Booked Status Bug (v1.27.15)', () => {
       const saveButton = screen.getByRole('button', { name: 'Save' });
       await user.click(saveButton);
 
-      // Should mark as booked when filling in details
+      // FIXED: Should preserve existing booked state (false) when filling details
       await waitFor(() => {
         expect(api.checklist.updateCarRental).toHaveBeenCalledWith(
           1,
           expect.objectContaining({
             provider: 'Enterprise',
             confirmationNumber: 'ENT123',
-            booked: true, // Should be booked after filling details
+            booked: false, // FIXED: Should preserve existing state, not auto-mark as booked
           })
         );
       });
