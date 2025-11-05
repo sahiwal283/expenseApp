@@ -290,89 +290,125 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
             </div>
           </div>
 
-          {/* Checklist Sections */}
+          {/* Checklist Sections - Sorted by completion (incomplete first) */}
           <div className="space-y-4">
-            <CollapsibleSection
-              title="Booth & Facilities"
-              icon={<Building2 className="w-5 h-5" />}
-              isComplete={checklist.booth_ordered && checklist.electricity_ordered}
-              itemCount={2}
-              completedCount={(checklist.booth_ordered ? 1 : 0) + (checklist.electricity_ordered ? 1 : 0)}
-              defaultCollapsed={checklist.booth_ordered && checklist.electricity_ordered}
-            >
-              <BoothSection 
-                checklist={checklist} 
-                user={user}
-                event={selectedEvent}
-                onUpdate={updateChecklist}
-                onReload={() => loadChecklist(selectedEventId!)}
-                saving={saving}
-              />
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-              title="Flights"
-              icon={<Plane className="w-5 h-5" />}
-              isComplete={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
-              itemCount={checklist.flights.length}
-              completedCount={checklist.flights.filter(f => f.booked).length}
-              defaultCollapsed={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
-            >
-              <FlightsSection 
-                checklist={checklist}
-                user={user}
-                event={selectedEvent}
-                onReload={() => loadChecklist(selectedEventId!)}
-              />
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-              title="Hotels"
-              icon={<Hotel className="w-5 h-5" />}
-              isComplete={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
-              itemCount={checklist.hotels.length}
-              completedCount={checklist.hotels.filter(h => h.booked).length}
-              defaultCollapsed={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
-            >
-              <HotelsSection 
-                checklist={checklist}
-                user={user}
-                event={selectedEvent}
-                onReload={() => loadChecklist(selectedEventId!)}
-              />
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-              title="Car Rentals"
-              icon={<Car className="w-5 h-5" />}
-              isComplete={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
-              itemCount={checklist.carRentals.length}
-              completedCount={checklist.carRentals.filter(c => c.booked).length}
-              defaultCollapsed={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
-            >
-              <CarRentalsSection 
-                checklist={checklist}
-                user={user}
-                event={selectedEvent}
-                onReload={() => loadChecklist(selectedEventId!)}
-              />
-            </CollapsibleSection>
-            
-            <CollapsibleSection
-              title="Custom Tasks"
-              icon={<List className="w-5 h-5" />}
-              isComplete={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
-              itemCount={checklist.customItems.length}
-              completedCount={checklist.customItems.filter(i => i.completed).length}
-              defaultCollapsed={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
-            >
-              <CustomItemsSection 
-                checklist={checklist}
-                onReload={() => loadChecklist(selectedEventId!)}
-                canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
-                isAdmin={user.role === 'admin' || user.role === 'developer'}
-              />
-            </CollapsibleSection>
+            {(() => {
+              // Define sections with their completion status
+              const sections = [
+                {
+                  key: 'booth',
+                  isComplete: checklist.booth_ordered && checklist.electricity_ordered,
+                  component: (
+                    <CollapsibleSection
+                      title="Booth & Facilities"
+                      icon={<Building2 className="w-5 h-5" />}
+                      isComplete={checklist.booth_ordered && checklist.electricity_ordered}
+                      itemCount={2}
+                      completedCount={(checklist.booth_ordered ? 1 : 0) + (checklist.electricity_ordered ? 1 : 0)}
+                      defaultCollapsed={checklist.booth_ordered && checklist.electricity_ordered}
+                    >
+                      <BoothSection 
+                        checklist={checklist} 
+                        user={user}
+                        event={selectedEvent}
+                        onUpdate={updateChecklist}
+                        onReload={() => loadChecklist(selectedEventId!)}
+                        saving={saving}
+                      />
+                    </CollapsibleSection>
+                  )
+                },
+                {
+                  key: 'flights',
+                  isComplete: checklist.flights.length > 0 && checklist.flights.every(f => f.booked),
+                  component: (
+                    <CollapsibleSection
+                      title="Flights"
+                      icon={<Plane className="w-5 h-5" />}
+                      isComplete={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
+                      itemCount={checklist.flights.length}
+                      completedCount={checklist.flights.filter(f => f.booked).length}
+                      defaultCollapsed={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
+                    >
+                      <FlightsSection 
+                        checklist={checklist}
+                        user={user}
+                        event={selectedEvent}
+                        onReload={() => loadChecklist(selectedEventId!)}
+                      />
+                    </CollapsibleSection>
+                  )
+                },
+                {
+                  key: 'hotels',
+                  isComplete: checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked),
+                  component: (
+                    <CollapsibleSection
+                      title="Hotels"
+                      icon={<Hotel className="w-5 h-5" />}
+                      isComplete={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
+                      itemCount={checklist.hotels.length}
+                      completedCount={checklist.hotels.filter(h => h.booked).length}
+                      defaultCollapsed={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
+                    >
+                      <HotelsSection 
+                        checklist={checklist}
+                        user={user}
+                        event={selectedEvent}
+                        onReload={() => loadChecklist(selectedEventId!)}
+                      />
+                    </CollapsibleSection>
+                  )
+                },
+                {
+                  key: 'car_rentals',
+                  isComplete: checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked),
+                  component: (
+                    <CollapsibleSection
+                      title="Car Rentals"
+                      icon={<Car className="w-5 h-5" />}
+                      isComplete={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
+                      itemCount={checklist.carRentals.length}
+                      completedCount={checklist.carRentals.filter(c => c.booked).length}
+                      defaultCollapsed={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
+                    >
+                      <CarRentalsSection 
+                        checklist={checklist}
+                        user={user}
+                        event={selectedEvent}
+                        onReload={() => loadChecklist(selectedEventId!)}
+                      />
+                    </CollapsibleSection>
+                  )
+                },
+                {
+                  key: 'custom',
+                  isComplete: checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed),
+                  component: (
+                    <CollapsibleSection
+                      title="Custom Tasks"
+                      icon={<List className="w-5 h-5" />}
+                      isComplete={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
+                      itemCount={checklist.customItems.length}
+                      completedCount={checklist.customItems.filter(i => i.completed).length}
+                      defaultCollapsed={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
+                    >
+                      <CustomItemsSection 
+                        checklist={checklist}
+                        onReload={() => loadChecklist(selectedEventId!)}
+                        canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
+                        isAdmin={user.role === 'admin' || user.role === 'developer'}
+                      />
+                    </CollapsibleSection>
+                  )
+                }
+              ];
+
+              // Sort: incomplete sections first, completed sections last
+              return sections
+                .sort((a, b) => (a.isComplete === b.isComplete ? 0 : a.isComplete ? 1 : -1))
+                .map(section => <div key={section.key}>{section.component}</div>);
+            })()}
           </div>
         </>
       )}

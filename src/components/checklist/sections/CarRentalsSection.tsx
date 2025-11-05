@@ -384,7 +384,13 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
         <p className="text-gray-500 text-sm">No car rentals added yet.</p>
       ) : (
         <div className="space-y-3">
-          {checklist.carRentals.map(rental => {
+          {checklist.carRentals
+            .sort((a, b) => {
+              // Unbooked rentals first, booked rentals last
+              if (a.booked === b.booked) return 0;
+              return a.booked ? 1 : -1;
+            })
+            .map(rental => {
             const editing = editingRentals[rental.id!];
             const currentData = editing || rental;
             const isModified = !!editing;

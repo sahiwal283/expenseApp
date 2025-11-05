@@ -106,7 +106,15 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
         <p className="text-gray-500 text-sm">No participants added to this event yet.</p>
       ) : (
         <div className="space-y-3">
-          {participants.map(participant => {
+          {participants
+            .sort((a, b) => {
+              const flightA = getFlightForAttendee(a.id);
+              const flightB = getFlightForAttendee(b.id);
+              // Unbooked flights first, booked flights last
+              if (flightA?.booked === flightB?.booked) return 0;
+              return flightA?.booked ? 1 : -1;
+            })
+            .map(participant => {
             const flight = getFlightForAttendee(participant.id);
             const editing = editingFlights[participant.id];
             const currentData = editing || flight;

@@ -111,7 +111,15 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
         <p className="text-gray-500 text-sm">No participants added to this event yet.</p>
       ) : (
         <div className="space-y-3">
-          {participants.map(participant => {
+          {participants
+            .sort((a, b) => {
+              const hotelA = getHotelForAttendee(a.id);
+              const hotelB = getHotelForAttendee(b.id);
+              // Unbooked hotels first, booked hotels last
+              if (hotelA?.booked === hotelB?.booked) return 0;
+              return hotelA?.booked ? 1 : -1;
+            })
+            .map(participant => {
             const hotel = getHotelForAttendee(participant.id);
             const editing = editingHotels[participant.id];
             const currentData = editing || hotel;

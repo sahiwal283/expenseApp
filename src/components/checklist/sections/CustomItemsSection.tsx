@@ -250,7 +250,13 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
         </div>
       ) : (
         <div className="space-y-3">
-          {checklist.customItems.map((item) => (
+          {checklist.customItems
+            .sort((a, b) => {
+              // Incomplete items first, completed items last
+              if (a.completed === b.completed) return 0;
+              return a.completed ? 1 : -1;
+            })
+            .map((item) => (
             <div
               key={item.id}
               className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
