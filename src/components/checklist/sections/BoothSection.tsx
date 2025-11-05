@@ -36,13 +36,14 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
   // Booth shipping state - support multiple shipments
   const [showAddShipmentForm, setShowAddShipmentForm] = useState(false);
   const [editingShipmentId, setEditingShipmentId] = useState<string | null>(null);
-  const [newShipmentData, setNewShipmentData] = useState<Omit<BoothShippingData, 'id' | 'shipped'>>({
+  const [newShipmentData, setNewShipmentData] = useState<Omit<BoothShippingData, 'id'>>({
     shipping_method: 'carrier',
     carrier_name: null,
     tracking_number: null,
     shipping_date: null,
     delivery_date: null,
-    notes: null
+    notes: null,
+    shipped: false
   });
   const [savingShipment, setSavingShipment] = useState(false);
 
@@ -156,7 +157,7 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
         shippingDate: newShipmentData.shipping_date,
         deliveryDate: newShipmentData.delivery_date,
         notes: newShipmentData.notes,
-        shipped: false
+        shipped: newShipmentData.shipped
       };
 
       await api.checklist.createBoothShipping(checklist.id, payload);
@@ -168,7 +169,8 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
         tracking_number: null,
         shipping_date: null,
         delivery_date: null,
-        notes: null
+        notes: null,
+        shipped: false
       });
       setShowAddShipmentForm(false);
       onReload();
@@ -609,6 +611,25 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
                     rows={2}
                   />
+                </div>
+
+                {/* Shipped Checkbox */}
+                <div className="mb-3 flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => handleNewShipmentFieldChange('shipped', !newShipmentData.shipped)}
+                    className="flex-shrink-0"
+                  >
+                    {newShipmentData.shipped ? (
+                      <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
+                    ) : (
+                      <Circle className="w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 text-sm">Mark as Shipped</p>
+                    <p className="text-xs text-gray-600">Check this if the booth materials have already been shipped</p>
+                  </div>
                 </div>
 
                 <button
