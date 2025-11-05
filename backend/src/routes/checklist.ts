@@ -117,11 +117,13 @@ router.get('/templates', authorize('admin', 'coordinator', 'developer'), async (
  * 
  * @route POST /api/checklist/templates
  * @param {Object} body - Template details
- * @param {string} body.title - Template title (required)
- * @param {string} body.description - Template description
- * @param {number} body.position - Display position (default: 0)
+ * @param {string} body.title - Template title (required, 1-255 characters)
+ * @param {string} body.description - Template description (optional, max 1000 characters)
+ * @param {number} body.position - Display position (optional, non-negative integer, default: 0)
  * @returns {Object} Created template
+ * @throws {400} Invalid input - Returns Zod validation errors with field-level details
  * @access Admin, Developer only
+ * @validation Uses Zod schema: templateSchema
  */
 router.post('/templates', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
@@ -222,7 +224,20 @@ router.get('/checklist/:checklistId/custom-items', authorize('admin', 'coordinat
   }
 });
 
-// Create custom item
+/**
+ * Create custom checklist item
+ * 
+ * @route POST /api/checklist/:checklistId/custom-items
+ * @param {number} checklistId - ID of the checklist
+ * @param {Object} body - Item details
+ * @param {string} body.title - Item title (required, 1-255 characters)
+ * @param {string} body.description - Item description (optional, max 1000 characters)
+ * @param {number} body.position - Display position (optional, non-negative integer, default: 0)
+ * @returns {Object} Created custom item
+ * @throws {400} Invalid input - Returns Zod validation errors with field-level details
+ * @access Admin, Coordinator, Developer
+ * @validation Uses Zod schema: customItemSchema
+ */
 router.post('/checklist/:checklistId/custom-items', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { checklistId } = req.params;

@@ -1,6 +1,6 @@
 # 🤖 MASTER GUIDE - ExpenseApp
-**Last Updated:** October 27, 2025 (21:00 PST)  
-**Status:** ✅ Production Active | 🔬 Sandbox Trade Show Checklist Feature (v1.20.0)
+**Last Updated:** November 5, 2025 (12:00 PST)  
+**Status:** ✅ Production Active | 🔬 Sandbox Event Checklist Feature (v1.27.14)
 
 ## 📦 Current Versions
 
@@ -11,13 +11,20 @@
 - **Status:** ✅ Stable, Live Users
 - **Features:** Full expense management, Zoho integration, offline PWA, embedded OCR
 
-### **Sandbox (Container 203)** - October 27, 2025
-- **Frontend:** v1.20.0 (Container 203)
-- **Backend:** v1.18.0 (Container 203)
-- **Branch:** `v1.6.0`
-- **Status:** 🔬 Trade Show Checklist Feature Added
+### **Sandbox (Container 203)** - November 5, 2025
+- **Frontend:** v1.27.14 (Container 203)
+- **Backend:** v1.27.14 (Container 203)
+- **Branch:** `main`
+- **Status:** 🔬 Event Checklist Feature Complete - Ready for Testing
 - **Features:** All production features PLUS:
-  - ✅ **Trade Show Checklist** - Event logistics management (flights, hotels, car rentals, booth, shipping)
+  - ✨ **Event Checklist System** (NEW in v1.27.14) - Comprehensive logistics management
+    - ✅ **Flights** - Track bookings per attendee with carrier, confirmation, notes
+    - ✅ **Hotels** - Manage reservations with check-in/out dates, property details
+    - ✅ **Car Rentals** - Group or individual assignments with receipt integration
+    - ✅ **Booth Management** - Order tracking, map uploads, electricity notes
+    - ✅ **Shipping** - Multiple shipments with carrier tracking and dates
+    - ✅ **Custom Items** - Flexible task tracking with completion status
+    - ✅ **Templates** - Reusable checklist items auto-applied to new events
   - ✅ **HEIC/HEIF File Support** - iPhone photos automatically converted to JPEG
   - ✅ **20MB Upload Limit** - Nginx configured for large receipt images
   - ✅ **Image Optimization** - Auto-resize to 2000px for faster processing
@@ -56,6 +63,7 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 | Module | Features | Key Users |
 |--------|----------|-----------|
 | **Event Management** | Create events, manage participants, track budgets | Admin, Coordinator |
+| **Event Checklist** 🆕 | Flights, hotels, car rentals, booth, shipping, custom tasks | Admin, Coordinator, Developer |
 | **Expense Submission** | Upload receipts, OCR extraction, offline support | All users |
 | **Approval Workflows** | Automated approval, entity assignment, reimbursement | Admin, Accountant |
 | **Zoho Integration** | 5-entity sync, duplicate prevention, OAuth 2.0 | Admin, Accountant |
@@ -1618,6 +1626,96 @@ CREATE TABLE ocr_corrections (
 - `POST /api/events` - Create event (admin, coordinator, developer)
 - `PUT /api/events/:id` - Update event (admin, coordinator, developer)
 - `DELETE /api/events/:id` - Delete event (admin, coordinator, developer)
+
+**Event Checklists** 🆕 (v1.27.14+):
+- `GET /api/checklist/:eventId` - Get or create checklist for event (all authenticated users)
+- `PUT /api/checklist/:checklistId` - Update booth/electricity fields (admin, coordinator, developer)
+- **Booth Management**:
+  - `POST /api/checklist/:checklistId/booth-map` - Upload booth map (admin, coordinator, developer)
+  - `DELETE /api/checklist/:checklistId/booth-map` - Delete booth map (admin, coordinator, developer)
+- **Flights**:
+  - `POST /api/checklist/:checklistId/flights` - Add flight booking (admin, coordinator, developer)
+  - `PUT /api/checklist/flights/:flightId` - Update flight (admin, coordinator, developer)
+  - `DELETE /api/checklist/flights/:flightId` - Delete flight (admin, coordinator, developer)
+- **Hotels**:
+  - `POST /api/checklist/:checklistId/hotels` - Add hotel reservation (admin, coordinator, developer)
+  - `PUT /api/checklist/hotels/:hotelId` - Update hotel (admin, coordinator, developer)
+  - `DELETE /api/checklist/hotels/:hotelId` - Delete hotel (admin, coordinator, developer)
+- **Car Rentals**:
+  - `POST /api/checklist/:checklistId/car-rentals` - Add car rental (admin, coordinator, developer)
+  - `PUT /api/checklist/car-rentals/:rentalId` - Update car rental (admin, coordinator, developer)
+  - `DELETE /api/checklist/car-rentals/:rentalId` - Delete car rental (admin, coordinator, developer)
+- **Booth Shipping**:
+  - `POST /api/checklist/:checklistId/booth-shipping` - Add shipping record (admin, coordinator, developer)
+- **Custom Items**:
+  - `GET /api/checklist/:checklistId/custom-items` - Get custom items (all authenticated users)
+  - `POST /api/checklist/:checklistId/custom-items` - Create custom item (admin, coordinator, developer) ⚠️ **Zod Validated** (v1.27.15+)
+    - Validates: title (required, 1-255 chars), description (optional, max 1000 chars), position (optional, non-negative int)
+    - Returns `400` with validation details on error
+  - `PUT /api/checklist/custom-items/:id` - Update custom item (admin, coordinator, developer)
+  - `DELETE /api/checklist/custom-items/:id` - Delete custom item (admin, coordinator, developer)
+- **Templates**:
+  - `GET /api/checklist/templates` - Get all active templates (admin, coordinator, developer)
+  - `POST /api/checklist/templates` - Create template (admin, developer) ⚠️ **Zod Validated** (v1.27.15+)
+    - Validates: title (required, 1-255 chars), description (optional, max 1000 chars), position (optional, non-negative int)
+    - Returns `400` with validation details on error
+  - `PUT /api/checklist/templates/:id` - Update template (admin, developer)
+  - `DELETE /api/checklist/templates/:id` - Soft delete template (admin, developer)
+  - `POST /api/checklist/:checklistId/apply-templates` - Apply templates to checklist (admin, coordinator, developer)
+
+**Expenses**:
+- `GET /api/expenses` - Get expenses (filtered by role)
+- `POST /api/expenses` - Create expense + upload receipt
+
+---
+
+### 📋 Input Validation (v1.27.15+)
+
+**Zod Runtime Validation** - Checklist routes now use Zod for input validation to prevent invalid data from reaching the database.
+
+#### Custom Item Schema (`customItemSchema`)
+```typescript
+{
+  title: string (required, 1-255 characters)
+  description: string | null (optional, max 1000 characters)
+  position: number (optional, non-negative integer, default: 0)
+}
+```
+
+**Validated Endpoints:**
+- `POST /api/checklist/:checklistId/custom-items`
+- `PUT /api/checklist/custom-items/:id`
+
+#### Template Schema (`templateSchema`)
+```typescript
+{
+  title: string (required, 1-255 characters)
+  description: string | null (optional, max 1000 characters)
+  position: number (optional, non-negative integer, default: 0)
+}
+```
+
+**Validated Endpoints:**
+- `POST /api/checklist/templates`
+- `PUT /api/checklist/templates/:id`
+
+#### Error Response Format
+When validation fails, endpoints return:
+```json
+{
+  "error": "Invalid input",
+  "details": [
+    {
+      "path": ["fieldName"],
+      "message": "Validation error message"
+    }
+  ]
+}
+```
+
+**HTTP Status:** `400 Bad Request`
+
+---
 
 **Expenses**:
 - `GET /api/expenses` - Get expenses (filtered by role)
