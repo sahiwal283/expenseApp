@@ -10,7 +10,11 @@
     "update-version": "node scripts/update-version.js",
     "copy-py": "cp src/services/ocr/*.py dist/services/ocr/",
     "migrate": "ts-node src/database/migrate.ts",
-    "seed": "ts-node src/database/seed.ts"
+    "seed": "ts-node src/database/seed.ts",
+    "test": "vitest",
+    "test:integration": "vitest run tests/integration",
+    "test:integration:schema": "vitest run tests/integration/database-schema.test.ts",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -38,8 +42,10 @@
     "@types/node": "^20.19.19",
     "@types/pg": "^8.15.5",
     "@types/uuid": "^9.0.7",
+    "@vitest/coverage-v8": "^2.0.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.0.4"
   }
 }
