@@ -24,7 +24,28 @@
 - [ ] **Action Required**: Commit all changes before deployment
 - [ ] **Tag Required**: Create production tag (e.g., `v1.27.6-production`)
 
-### ✅ 3. DATABASE MIGRATIONS
+### ✅ 3. DATABASE SCHEMA VALIDATION (NEW - v1.27.15)
+**CRITICAL**: Run schema validation before any deployment
+
+```bash
+# Validate production schema against migrations
+./scripts/validate-schema.sh production
+```
+
+**Expected Exit Codes:**
+- `0` = ✅ Schema matches migrations (safe to deploy)
+- `1` = ❌ Schema mismatches found (DEPLOYMENT BLOCKED)
+- `2` = 🔧 Configuration/connection error
+
+**Action Required**:
+- [ ] Run schema validation script
+- [ ] Review validation report: `schema-validation-production-*.txt`
+- [ ] Fix any schema mismatches before proceeding
+- [ ] **NEVER deploy if validation fails**
+
+📖 **Documentation**: `docs/SCHEMA_VALIDATION.md`
+
+### ✅ 4. DATABASE MIGRATIONS
 **New Migrations Since Production (v1.5.1):**
 1. `016_add_show_and_travel_dates.sql` ✅
 2. `017_add_event_checklist.sql` ✅ **CRITICAL - Checklist Feature**
@@ -35,9 +56,11 @@
 7. `022_add_car_rental_assignment.sql` ✅ **Checklist Feature**
 
 **Action Required**: 
+- [ ] Validate schema first (see section 3 above)
 - [ ] Run all 7 migrations on production database
 - [ ] Verify migrations are reversible (if needed)
 - [ ] Test migrations on sandbox first (already done)
+- [ ] Re-validate schema after migrations
 
 ### ✅ 4. MAJOR FEATURES ADDED SINCE PRODUCTION
 **Trade Show Checklist Feature** (NEW - Not in Production):
