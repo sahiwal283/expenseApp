@@ -1,0 +1,244 @@
+name: Schema Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'v*'
+      - 'hotfix/*'
+      - 'feature/*'
+    paths:
+      - 'backend/src/database/migrations/**'
+      - 'backend/src/database/schema.sql'
+      - 'backend/src/**/*.ts'
+      - '.github/workflows/schema-validation.yml'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to validate'
+        required: true
+        default: 'sandbox'
+        type: choice
+        options:
+          - production
+          - sandbox
+          - local
+
+jobs:
+  validate-schema:
+    name: Validate Database Schema
+    runs-on: ubuntu-latest
+    
+    # Only run on PRs or manual triggers
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: expense_app_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comparing with base branch
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+      
+      - name: Create Test Environment File
+        run: |
+          cat > backend/.env << EOF
+          PORT=5000
+          NODE_ENV=test
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_NAME=expense_app_test
+          DB_USER=test_user
+          DB_PASSWORD=test_password
+          JWT_SECRET=test_jwt_secret_for_ci
+          UPLOAD_DIR=uploads
+          MAX_FILE_SIZE=20971520
+          EOF
+      
+      - name: Run Database Migrations
+        run: |
+          cd backend
+          npm run migrate
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: expense_app_test
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+      
+      - name: Validate Schema Against Migrations
+        id: validate
+        run: |
+          chmod +x scripts/validate-schema.sh
+          ./scripts/validate-schema.sh local
+        continue-on-error: true
+      
+      - name: Upload Validation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-validation-report
+          path: schema-validation-*.txt
+          retention-days: 30
+      
+      - name: Check Validation Result
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "::error::❌ Schema validation failed!"
+          echo "::error::Database schema does not match migration files"
+          echo "::error::Review the validation report in artifacts"
+          cat schema-validation-*.txt || echo "Report not found"
+          exit 1
+      
+      - name: Post PR Comment on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let reportContent = 'Schema validation report not available';
+            
+            try {
+              const files = fs.readdirSync('.').filter(f => f.startsWith('schema-validation-'));
+              if (files.length > 0) {
+                reportContent = fs.readFileSync(files[0], 'utf8');
+              }
+            } catch (error) {
+              console.error('Error reading report:', error);
+            }
+            
+            const comment = `## ❌ Schema Validation Failed
+            
+            The database schema does not match the migration files. This PR cannot be merged until the schema issues are resolved.
+            
+            ### What This Means
+            
+            - 🔴 **Missing tables**: Tables defined in migrations are missing from the database
+            - 🔴 **Extra tables**: Tables exist in database but not in migrations
+            - 🔴 **Column mismatches**: Tables have incorrect number of columns
+            
+            ### How to Fix
+            
+            1. Review the validation report below
+            2. Ensure all migrations are included in your PR
+            3. Run migrations locally: \`cd backend && npm run migrate\`
+            4. Test locally: \`./scripts/validate-schema.sh local\`
+            5. Push fixes and re-run the workflow
+            
+            ### Validation Report
+            
+            \`\`\`
+            ${reportContent.substring(0, 4000)}
+            \`\`\`
+            
+            📄 Full report available in workflow artifacts.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Post PR Comment on Success
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## ✅ Schema Validation Passed
+            
+            Database schema matches migration files. All tables and columns are correctly defined.
+            
+            ### Validation Summary
+            
+            - ✅ All expected tables exist
+            - ✅ No extra tables found
+            - ✅ Column counts match expectations
+            - ✅ Schema is consistent with migrations
+            
+            Safe to merge from a schema validation perspective.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Fail Job if Validation Failed
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+  # Optional: Validate against remote environments (requires VPN/access)
+  validate-remote:
+    name: Validate Remote Environment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      
+      - name: Validate Remote Schema
+        run: |
+          chmod +x scripts/validate-schema.sh
+          
+          ENV="${{ github.event.inputs.environment }}"
+          echo "Validating $ENV environment..."
+          
+          ./scripts/validate-schema.sh "$ENV"
+        env:
+          # These would need to be set as repository secrets
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      
+      - name: Upload Remote Validation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-validation-report-${{ github.event.inputs.environment }}
+          path: schema-validation-*.txt
+          retention-days: 30
+
