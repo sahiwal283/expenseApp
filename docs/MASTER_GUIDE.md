@@ -1840,12 +1840,6 @@ Connect to production database and run validation queries:
 # Connect to production database (Container 201)
 ssh root@192.168.1.190
 pct exec 201 -- su - postgres -c 'psql -d expense_app_production'
-```
-
-```bash
-# Connect to production database (Container 201)
-ssh root@192.168.1.190
-pct exec 201 -- su - postgres -c 'psql -d expense_app_production'
 
 # 1. Verify all required tables exist
 SELECT table_name 
