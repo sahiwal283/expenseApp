@@ -1,5 +1,5 @@
 # 🤖 MASTER GUIDE - ExpenseApp
-**Last Updated:** October 27, 2025 (21:00 PST)  
+**Last Updated:** November 10, 2025 (17:00 PST)  
 **Status:** ✅ Production Active | 🔬 Sandbox Trade Show Checklist Feature (v1.20.0)
 
 ## 📦 Current Versions
@@ -8042,6 +8042,247 @@ Implement a comprehensive Trade Show Checklist feature for coordinators to manag
 - Production builds use full domain
 - `.env.production` file can interfere with sandbox builds
 - Remove production env files when building for sandbox
+
+#### 📝 Current Status (End of Session)
+
+**✅ Working:**
+- Feature fully implemented and tested locally
+
+---
+
+### Session: November 10, 2025 - Production Login Failure Incident
+
+**AI Agent:** Auto (Agent Manager) + Multiple Agents  
+**Duration:** ~3 hours  
+**Branch:** `hotfix/audit-log-table-name`  
+**Status:** ✅ RESOLVED - Production Login Restored
+
+#### 🚨 CRITICAL PRODUCTION INCIDENT
+
+**Issue:** All users unable to log in to production - "Invalid username or password" error  
+**Impact:** Production completely down - no users could authenticate  
+**Duration:** ~3 hours (from initial report to resolution)  
+**Root Causes:** Multiple cascading issues
+
+#### 🔍 ROOT CAUSES IDENTIFIED
+
+**1. Database Schema Mismatch (PRIMARY ISSUE)**
+- **Problem:** Code referenced `audit_log` (singular) but production database had `audit_logs` (plural)
+- **Impact:** Every login attempt failed when trying to log audit event
+- **Error:** `relation "audit_log" does not exist`
+- **Fix:** Updated code to use `audit_logs` table name
+- **Files Changed:**
+  - `backend/src/utils/auditLogger.ts` - Changed INSERT statement
+  - `backend/src/routes/devDashboard.ts` - Updated table checks and queries
+
+**2. Missing Database Columns (SECONDARY ISSUE)**
+- **Problem:** `audit_logs` table missing 7 required columns:
+  - `user_name`, `user_email`, `user_role`, `request_method`, `request_path`, `changes`, `error_message`
+- **Impact:** Even after table name fix, INSERT still failed with "column does not exist"
+- **Fix:** Added missing columns via ALTER TABLE
+- **SQL Executed:**
+  ```sql
+  ALTER TABLE audit_logs 
+    ADD COLUMN IF NOT EXISTS user_name VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS user_email VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS user_role VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS request_method VARCHAR(10),
+    ADD COLUMN IF NOT EXISTS request_path VARCHAR(500),
+    ADD COLUMN IF NOT EXISTS changes JSONB,
+    ADD COLUMN IF NOT EXISTS error_message TEXT;
+  ```
+
+**3. Network-Level Routing Override (TERTIARY ISSUE)**
+- **Problem:** iptables DNAT rule on Proxmox host redirecting ALL port 3000 traffic to sandbox
+- **Impact:** Even with correct NPMplus config, requests went to sandbox backend
+- **Rule:** `DNAT tcp -- vmbr0 * 0.0.0.0/0 0.0.0.0/0 tcp dpt:3000 to:192.168.1.144:3000`
+- **Fix:** Removed malicious NAT rule
+- **Command:** `iptables -t nat -D PREROUTING 2`
+
+**4. Stale Backend Process (QUATERNARY ISSUE)**
+- **Problem:** Backend service running old code from before fixes
+- **Impact:** Environment label showed "development" instead of "production"
+- **Fix:** Restarted backend service to load fresh code
+- **Command:** `systemctl restart expenseapp-backend`
+
+#### ✅ RESOLUTION STEPS
+
+1. **Fixed Table Name Mismatch**
+   - Updated `auditLogger.ts` to use `audit_logs` (plural)
+   - Updated `devDashboard.ts` table checks
+   - Committed to `hotfix/audit-log-table-name` branch
+
+2. **Fixed Database Schema**
+   - Added 7 missing columns to `audit_logs` table
+   - Updated migration 004 to match production schema
+   - Verified schema matches code expectations
+
+3. **Removed Network Routing Override**
+   - Identified iptables DNAT rule redirecting traffic
+   - Removed rule and saved iptables configuration
+   - Verified routing now goes to production
+
+4. **Restarted Backend Service**
+   - Restarted production backend to load latest code
+   - Verified environment label now shows "production"
+   - Confirmed login functionality restored
+
+#### 🎓 CRITICAL LESSONS LEARNED
+
+**LESSON 1: Network-Level Rules Override Application Config**
+
+**The Problem:**
+- NPMplus config was correct (pointed to production)
+- Frontend nginx config was correct (pointed to production)
+- But iptables NAT rule intercepted traffic BEFORE it reached applications
+
+**The Reality:**
+```
+Request → iptables NAT rule → Redirected to sandbox
+         ↑ This happens FIRST, before any app config is checked
+```
+
+**Prevention:**
+- Always check network-level routing (iptables, firewall rules) when investigating routing issues
+- Document all iptables rules and review after network changes
+- Consider installing `iptables-persistent` for automatic rule persistence
+- Add NAT rule review to deployment checklist
+
+**LESSON 2: Database Schema Drift Detection**
+
+**The Problem:**
+- Migration 004 creates `audit_log` (singular) with all columns
+- Production database had `audit_logs` (plural) with incomplete schema
+- Code expected specific columns that didn't exist
+
+**Prevention:**
+- Schema validation scripts created (DevOps Agent)
+- Pre-deployment schema checks implemented
+- GitHub Actions workflow for PR validation
+- Always verify production schema matches migrations before deployment
+
+**LESSON 3: Stale Processes Cause Unexpected Behavior**
+
+**The Problem:**
+- Backend service was running old code from before fixes
+- Environment variables were correct, but process hadn't reloaded
+- Health endpoint showed wrong environment label
+
+**Prevention:**
+- Always restart services after deployments
+- Verify service restart times match deployment times
+- Check process PIDs to confirm fresh processes
+- Add service restart verification to deployment checklist
+
+**LESSON 4: Multiple Symptoms, Single Root Cause**
+
+**The Problem:**
+- Environment label wrong
+- Routing wrong
+- Login failing
+- All seemed like separate issues
+
+**The Reality:**
+- All symptoms caused by: stale process + NAT rule + schema mismatch
+- Fixing root causes resolved all symptoms
+
+**Prevention:**
+- Look for common root causes when multiple issues appear
+- Fix infrastructure issues first (routing, network)
+- Then fix application issues (code, database)
+- Verify each fix before moving to next
+
+**LESSON 5: Service Restart is Critical After Fixes**
+
+**The Problem:**
+- Fixed code and database, but service wasn't restarted
+- Old process kept running with old code
+- Fixes didn't take effect until restart
+
+**Prevention:**
+- Always restart services after ANY code/config change
+- Document restart requirement in deployment checklist
+- Verify restart in deployment verification steps
+
+#### 📋 PREVENTION MEASURES IMPLEMENTED
+
+**1. Schema Validation Scripts (DevOps Agent)**
+- Created `scripts/validate-schema.sh` for pre-deployment validation
+- Created `scripts/validate-production-schema.sh` for production-specific checks
+- GitHub Actions workflow for automated PR validation
+- Blocks deployment if schema mismatches detected
+
+**2. Migration Documentation Updated (Database Agent)**
+- Updated migration 004 to use `audit_logs` (plural) to match production
+- Added comprehensive documentation explaining schema
+- Documented incident in migration README
+
+**3. Deployment Checklist Enhanced**
+- Added service restart verification
+- Added NAT rule review step
+- Added schema validation step
+- Added environment label verification
+
+**4. iptables Persistence Recommendation**
+- Documented need for `iptables-persistent` package
+- Saved rules to `/etc/iptables.rules`
+- Added warning about rule persistence on reboot
+
+#### 🔧 DEPLOYMENT CHECKLIST UPDATE
+
+**After ANY code/config changes:**
+```bash
+# 1. Deploy code
+git fetch origin && git reset --hard origin/branch-name
+cd backend && npm install && npm run build
+
+# 2. RESTART SERVICE (CRITICAL!)
+systemctl restart expenseapp-backend
+
+# 3. Verify restart
+systemctl status expenseapp-backend
+journalctl -u expenseapp-backend --since '1 minute ago'
+
+# 4. Verify environment
+curl http://192.168.1.201:3000/api/health
+# Should show: "environment": "production"
+
+# 5. Verify routing (if changed)
+# Check iptables rules: iptables -t nat -L -n -v
+# Test login through public URL
+```
+
+#### 📊 INCIDENT TIMELINE
+
+| Time | Event |
+|------|-------|
+| Initial | Users report login failures |
+| +15 min | Identified audit_log table name mismatch |
+| +30 min | Fixed code to use audit_logs |
+| +45 min | Discovered missing database columns |
+| +60 min | Added missing columns to database |
+| +90 min | Identified NAT rule redirecting traffic |
+| +105 min | Removed NAT rule |
+| +120 min | Restarted backend service |
+| +135 min | Verified login working |
+| **Total** | **~3 hours** |
+
+#### ✅ FINAL STATUS
+
+**Production Status:** ✅ FULLY OPERATIONAL
+- Login working through https://expapp.duckdns.org
+- Environment label shows "production"
+- Routing goes to production backend
+- Database schema matches code expectations
+- All users can authenticate successfully
+
+**Prevention Status:** ✅ MEASURES IMPLEMENTED
+- Schema validation scripts created
+- Deployment checklist updated
+- Incident documented
+- Prevention measures in place
+
+---
 
 #### 📝 Current Status (End of Session)
 
