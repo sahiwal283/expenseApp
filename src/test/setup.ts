@@ -55,4 +55,3 @@ global.console = {
   warn: vi.fn(),
 };
 
-

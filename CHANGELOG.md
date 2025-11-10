@@ -7,6 +7,176 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.27.15] - 2025-11-05 (Sandbox) 🔧 PATCH - Checklist Validation & Type Safety
+
+### Fixed
+- **TypeScript Type Safety** - Removed all `any` types from checklist routes
+  - Added proper TypeScript interfaces for template rows
+  - Improved type safety across all checklist endpoints
+  - Better IDE autocomplete and compile-time error detection
+- **Booked Status Toggle Logic** - Fixed inconsistent behavior when toggling booked status
+  - Hotels, flights, and car rentals now correctly toggle booked/pending status
+  - Status changes persist immediately without requiring form save
+  - Visual indicators (checkmarks) update correctly on toggle
+
+### Added
+- **Zod Validation Schemas** - Runtime input validation for checklist operations
+  - `customItemSchema` - Validates custom checklist item creation/updates
+    - Title: Required, 1-255 characters
+    - Description: Optional, max 1000 characters
+    - Position: Optional, non-negative integer
+  - `templateSchema` - Validates checklist template creation/updates
+    - Same validation rules as custom items
+    - Ensures data consistency before database operations
+- **Comprehensive Error Handling** - Zod validation errors return detailed feedback
+  - 400 status code with `error: 'Invalid input'` and `details: [validation issues]`
+  - Frontend receives specific field-level error messages
+  - Prevents invalid data from reaching database layer
+
+### Changed
+- **Input Validation** - Custom items and templates now use Zod validation
+  - POST `/api/checklist/templates` - Validates template creation
+  - POST `/api/checklist/:checklistId/custom-items` - Validates custom item creation
+  - PUT `/api/checklist/templates/:id` - Validates template updates
+  - PUT `/api/checklist/custom-items/:id` - Validates custom item updates
+- **Type Safety Improvements** - All checklist routes now properly typed
+  - Removed unsafe `any` type usage
+  - Added `TemplateRow` interface for database query results
+  - Better compile-time error detection
+
+### Testing
+- **Regression Tests Added** - Comprehensive test coverage for booked status behavior
+  - Tests verify correct toggle behavior for hotels
+  - Tests verify correct toggle behavior for car rentals
+  - Tests verify error handling when toggle fails
+  - Tests ensure visual state updates correctly
+
+### Technical Details
+- **Validation Library**: Zod (runtime schema validation)
+- **Error Response Format**: `{ error: 'Invalid input', details: [{ path, message }] }`
+- **Type Safety**: All routes use proper TypeScript interfaces
+- **Backward Compatibility**: Existing API contracts maintained
+
+### Versions
+- Frontend: v1.27.15
+- Backend: v1.27.15
+- Git Branch: `v1.27.15`
+- Status: ✅ Ready for merge
+
+### Migration Notes
+- No database migrations required
+- No breaking API changes
+- Existing clients work without modification
+- Enhanced validation provides better error messages
+
+---
+
+## [1.27.14] - 2025-11-05 (Sandbox) ✨ MINOR - Event Checklist System
+
+### Added
+- **Comprehensive Event Checklist System** for managing trade show logistics
+  - **Flights Tracking** - Manage flight bookings per attendee
+    - Carrier, confirmation number, notes
+    - Booked/pending status with visual indicators
+    - Add, edit, delete flight records
+  - **Hotel Reservations** - Track accommodations per attendee
+    - Property name, confirmation number
+    - Check-in/check-out dates
+    - Room notes and special requests
+    - Receipt upload integration
+  - **Car Rental Management** - Two rental types supported
+    - **Group Rentals** - Shared vehicles for team
+    - **Individual Rentals** - Assigned to specific participants
+    - Provider, confirmation, pickup/return dates
+    - Receipt upload at creation time
+  - **Booth Management** - Track booth setup and utilities
+    - Booth ordered status and notes
+    - Electricity ordered status and notes
+    - Booth map upload (images/PDFs up to 10MB)
+    - View/delete booth maps
+  - **Shipping Tracking** - Monitor booth material shipments
+    - Multiple shipments per event
+    - Shipping method (manual/carrier)
+    - Carrier name, tracking numbers
+    - Shipping and delivery dates
+  - **Custom Checklist Items** - Flexible task tracking
+    - Create custom to-do items
+    - Drag-and-drop position ordering
+    - Mark complete/incomplete
+    - Title, description, position fields
+  - **Checklist Templates** - Reusable task templates
+    - Create template items (admin/developer only)
+    - Auto-apply templates to new events
+    - Position-based ordering
+    - Active/inactive status
+
+### Changed
+- **Database Schema** - Migration 017_add_event_checklist.sql
+  - New tables: `event_checklists`, `checklist_flights`, `checklist_hotels`, `checklist_car_rentals`, `checklist_booth_shipping`, `checklist_custom_items`, `checklist_templates`
+  - Foreign key relationships with cascading deletes
+  - Indexes for performance optimization
+  - Comprehensive column comments for documentation
+
+- **Backend API** - New `/api/checklist` routes
+  - GET `/:eventId` - Get or create checklist with all related data
+  - PUT `/:checklistId` - Update booth/electricity fields
+  - POST/PUT/DELETE for flights, hotels, car rentals
+  - POST/DELETE for booth map uploads
+  - POST for booth shipping (supports multiple shipments)
+  - Full CRUD for custom items and templates
+  - POST `/:checklistId/apply-templates` - Apply templates to checklist
+
+- **Frontend Components**
+  - `CarRentalsSection.tsx` - Group vs individual rental management
+  - `HotelsSection.tsx` - Per-attendee hotel tracking
+  - Integrated receipt upload for car rentals and hotels
+  - Automatic expense creation when receipts uploaded
+  - Visual status indicators (checkmarks for completed items)
+
+### Technical Details
+- **Receipt Integration**: Car rental and hotel receipts automatically create expense records
+  - Category: "Rental - Car / U-haul" for car rentals
+  - Category: "Hotel" for hotel accommodations
+  - Merchant name pre-filled from checklist data
+  - Linked to event for proper reporting
+- **Authorization**: Admin, Coordinator, and Developer can manage checklists
+  - All authenticated users can view checklists
+  - Salesperson and Accountant have read-only access
+- **Auto-template Application**: New checklists automatically get active templates applied
+- **File Upload**: Booth maps support JPEG, PNG, GIF, PDF (10MB max)
+- **Rental Types**: 
+  - Group rentals displayed with "Group" badge
+  - Individual rentals show assigned participant name
+  - Participant assignment dropdown for individual rentals
+
+### UX Improvements
+- Collapsible checklist sections for clean interface
+- Inline editing with auto-save on field changes
+- Visual completion indicators (green checkmarks)
+- Receipt upload within checklist workflow (no separate expense submission)
+- Confirmation dialogs for all delete operations
+- Sorting: Uncompleted items first, completed items last
+
+### Database
+- 7 new tables with proper foreign keys and indexes
+- Comprehensive COMMENT annotations for all tables and columns
+- Cascading deletes maintain referential integrity
+- `templates_applied` flag prevents duplicate template application
+
+### Versions
+- Frontend: v1.27.14
+- Backend: v1.27.14 (embedded frontend version)
+- Git Branch: `main`
+- Status: ✅ Sandbox-ready, pending production deployment
+
+### Migration Notes
+- Run migration `017_add_event_checklist.sql` before deploying
+- No breaking changes to existing functionality
+- Checklist feature is additive, doesn't affect expense/event workflows
+- Existing events will get checklists created on first access
+
+---
+
 ## [1.18.0] - 2025-10-27 (Sandbox) 🏗️ MINOR - Major Codebase Refactor (Phases 3-5)
 
 ### Major Changes

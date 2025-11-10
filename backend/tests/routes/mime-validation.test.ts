@@ -353,4 +353,3 @@ describe('REGRESSION: MIME Type Validation (v1.27.15)', () => {
   });
 });
 
-

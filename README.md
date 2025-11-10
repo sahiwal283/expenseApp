@@ -3,9 +3,9 @@
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
 **Production:** Frontend v1.4.13 / Backend v1.5.1 (October 16, 2025)  
-**Sandbox:** Frontend v1.18.0 / Backend v1.16.0 (October 27, 2025)  
+**Sandbox:** Frontend v1.27.14 / Backend v1.27.14 (November 5, 2025)  
 **Production Status:** ✅ Stable and Active  
-**Sandbox Status:** 🏗️ Major Refactor Complete (Phases 3-5)
+**Sandbox Status:** ✨ Event Checklist Feature Complete (v1.27.14)
 
 📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
 🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
@@ -16,7 +16,43 @@ A professional web application for managing trade show events and expenses with 
 
 ## 🚀 Quick Start
 
-### Sandbox Environment (Development/Testing)
+### 🏠 Local Development (Recommended for Testing)
+
+**One-Line Setup:**
+```bash
+./scripts/local-deploy.sh
+```
+
+This automated script will:
+- ✅ Check prerequisites (Node.js, PostgreSQL)
+- ✅ Create database if needed
+- ✅ Install dependencies
+- ✅ Run migrations and seed demo data
+- ✅ Start both frontend and backend servers
+
+**URLs:**
+- Frontend: http://localhost:5173
+- Backend: http://localhost:5000
+
+**Demo Credentials:**
+- Admin: `admin` / `password123`
+- Coordinator: `sarah` / `password123`
+- Salesperson: `mike` / `password123`
+- Accountant: `lisa` / `password123`
+- Developer: `developer` / `password123`
+
+**Health Check:**
+```bash
+./scripts/health-check.sh
+```
+
+📖 **Detailed Setup:** See [docs/LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md) for complete local setup guide
+
+---
+
+### 🌐 Remote Environments
+
+#### Sandbox Environment (Development/Testing)
 **URL:** http://192.168.1.144  
 **Credentials:**
 - Admin: `admin` / `sandbox123`
@@ -26,16 +62,50 @@ A professional web application for managing trade show events and expenses with 
 - Developer: `developer` / `sandbox123`
 - Temporary: `temporary` / `changeme123`
 
-### Production Environment
+#### Production Environment
 **URL:** http://192.168.1.138  
 See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production credentials
 
 ---
 
-## 🚧 Latest Development (v1.18.0 - Major Codebase Refactor)
+## 🚧 Latest Development (v1.27.14 - Event Checklist System)
 
-**Branch:** `v1.6.0` (Sandbox Only - Container 203)  
-**Status:** ✅ Production-Ready Refactor Complete
+**Branch:** `main` (Sandbox Only - Container 203)  
+**Status:** ✨ Event Checklist Feature Complete - Ready for Testing
+
+### ✨ v1.27.14 - Event Checklist System (Nov 5, 2025)
+
+**Major Feature:** Comprehensive trade show logistics management system
+
+**What's New:**
+- ✅ **Flights** - Track flight bookings per attendee with carrier, confirmation numbers, notes
+- ✅ **Hotels** - Manage hotel reservations with check-in/out dates, property names, special requests
+- ✅ **Car Rentals** - Support for group (shared) or individual (assigned) rentals with receipt integration
+- ✅ **Booth Management** - Order tracking, booth map uploads (images/PDFs), electricity notes
+- ✅ **Shipping** - Multiple shipments per event with carrier tracking, dates, and notes
+- ✅ **Custom Checklist Items** - Flexible task tracking with completion status and drag-drop ordering
+- ✅ **Templates** - Reusable checklist items that auto-apply to new events
+
+**Database:**
+- 7 new tables: `event_checklists`, `checklist_flights`, `checklist_hotels`, `checklist_car_rentals`, `checklist_booth_shipping`, `checklist_custom_items`, `checklist_templates`
+- Migration 017_add_event_checklist.sql with foreign keys, indexes, and comprehensive comments
+- Cascading deletes maintain referential integrity
+
+**API:**
+- 30+ new endpoints under `/api/checklist`
+- Full CRUD operations for all checklist entities
+- Authorization: Admin, Coordinator, Developer can manage; all users can view
+
+**UX:**
+- Receipt integration: Car rentals and hotels can upload receipts during checklist entry (auto-creates expense)
+- Visual status indicators with green checkmarks for completed items
+- Collapsible sections for clean interface
+- Inline editing with auto-save
+- Confirmation dialogs for all delete operations
+
+**See:** [CHANGELOG.md](CHANGELOG.md) for complete v1.27.14 details
+
+---
 
 ### 🏗️ v1.18.0 - Comprehensive Codebase Refactor (Oct 27, 2025)
 
@@ -239,6 +309,16 @@ Back to OCR Service (Continuous Learning)
 - **Event status tracking** - Upcoming, in progress, completed
 - **Budget management** (admin-only visibility)
 - **Event filtering & search**
+
+### ✅ Event Checklist System 🆕 (v1.27.14)
+- **Flight Bookings** - Track per-attendee flights with carrier, confirmation, status
+- **Hotel Reservations** - Manage check-in/out dates, property details, room notes
+- **Car Rentals** - Group or individual assignments with optional receipt upload
+- **Booth Management** - Order status, map uploads (images/PDFs), electricity tracking
+- **Shipping Tracking** - Multiple shipments with carrier names, tracking numbers, dates
+- **Custom Checklist Items** - Flexible task tracking with completion status
+- **Checklist Templates** - Reusable templates auto-applied to new events
+- **Receipt Integration** - Upload car rental/hotel receipts during checklist entry (auto-creates expenses)
 
 ### 💰 Expense Management
 - **Submit expenses** with receipt upload (10+ file formats including phone camera images)
@@ -489,6 +569,31 @@ npm run dev
 - `POST /api/events` - Create event
 - `PUT /api/events/:id` - Update event
 - `DELETE /api/events/:id` - Delete event
+
+### Event Checklists 🆕 (v1.27.14)
+- `GET /api/checklist/:eventId` - Get or create checklist for event
+- `PUT /api/checklist/:checklistId` - Update booth/electricity fields
+- `POST /api/checklist/:checklistId/booth-map` - Upload booth map
+- `DELETE /api/checklist/:checklistId/booth-map` - Delete booth map
+- `POST /api/checklist/:checklistId/flights` - Add flight
+- `PUT /api/checklist/flights/:flightId` - Update flight
+- `DELETE /api/checklist/flights/:flightId` - Delete flight
+- `POST /api/checklist/:checklistId/hotels` - Add hotel
+- `PUT /api/checklist/hotels/:hotelId` - Update hotel
+- `DELETE /api/checklist/hotels/:hotelId` - Delete hotel
+- `POST /api/checklist/:checklistId/car-rentals` - Add car rental
+- `PUT /api/checklist/car-rentals/:rentalId` - Update car rental
+- `DELETE /api/checklist/car-rentals/:rentalId` - Delete car rental
+- `POST /api/checklist/:checklistId/booth-shipping` - Add shipping record
+- `GET /api/checklist/:checklistId/custom-items` - Get custom items
+- `POST /api/checklist/:checklistId/custom-items` - Create custom item
+- `PUT /api/checklist/custom-items/:id` - Update custom item
+- `DELETE /api/checklist/custom-items/:id` - Delete custom item
+- `GET /api/checklist/templates` - Get all active templates
+- `POST /api/checklist/templates` - Create template
+- `PUT /api/checklist/templates/:id` - Update template
+- `DELETE /api/checklist/templates/:id` - Soft delete template
+- `POST /api/checklist/:checklistId/apply-templates` - Apply templates to checklist
 
 ### Expenses
 - `GET /api/expenses` - Get all expenses

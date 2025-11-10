@@ -141,4 +141,3 @@ If you encounter issues with the booked status toggle:
 **Last Updated:** November 5, 2025  
 **Version:** v1.27.15
 
-
