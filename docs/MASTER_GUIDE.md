@@ -1796,11 +1796,51 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c '
 
 See `DEPLOY_TO_PRODUCTION.sh` for automated script (use with caution).
 
-#### 🔍 Pre-Deployment Schema Validation (CRITICAL)
+#### 🔍 Schema Validation Before Deployment (CRITICAL)
 
 **⚠️ MUST RUN BEFORE EVERY PRODUCTION DEPLOYMENT**
 
-Validate database schema to prevent runtime errors from missing tables/columns:
+Schema validation prevents runtime errors from missing tables, columns, or constraints. This step is **mandatory** before deploying code that depends on database changes.
+
+**Why Schema Validation is Critical:**
+- Prevents `column does not exist` errors at runtime
+- Catches missing tables before code tries to query them
+- Verifies foreign key constraints are properly defined
+- Ensures CHECK constraints match code expectations
+- Identifies missing migrations before deployment
+
+**When to Run Validation:**
+- Before every production deployment
+- After running migrations manually
+- When deploying features that add new database tables/columns
+- After restoring from database backup
+- When troubleshooting runtime database errors
+
+---
+
+##### How to Run Schema Validation
+
+**Method 1: Automated Validation Script (Recommended)**
+
+If a validation script exists, run it:
+```bash
+# From project root
+cd backend
+npm run validate-schema
+
+# Or directly
+node scripts/validate-schema.js
+```
+
+**Method 2: Manual SQL Validation (If Script Not Available)**
+
+Connect to production database and run validation queries:
+
+```bash
+# Connect to production database (Container 201)
+ssh root@192.168.1.190
+pct exec 201 -- su - postgres -c 'psql -d expense_app_production'
+```
 
 ```bash
 # Connect to production database (Container 201)
@@ -1915,11 +1955,230 @@ WHERE tc.constraint_type = 'CHECK'
 5. Re-run validation until all checks pass
 6. **Only proceed with deployment after validation passes**
 
-**Common Issues:**
-- Missing `templates_applied` column in `event_checklists` → Run migration 019
-- Missing `checklist_custom_items` table → Run migration 018
-- Missing `checklist_templates` table → Run migration 019
-- Wrong column count → Check if migrations were applied in order
+---
+
+##### What to Check Before Deploying
+
+**Pre-Deployment Checklist:**
+
+1. **Table Existence** ✅
+   - [ ] All required tables exist (compare against `backend/src/database/schema.sql`)
+   - [ ] Checklist tables exist if deploying checklist features
+   - [ ] Audit/logging tables exist if deploying audit features
+   - [ ] No unexpected missing tables
+
+2. **Column Counts** ✅
+   - [ ] Column counts match expected values (verify against migration files)
+   - [ ] Critical tables have all expected columns
+   - [ ] No columns missing from foreign key relationships
+
+3. **Critical Columns** ✅
+   - [ ] Foreign key columns exist (e.g., `event_id`, `user_id`, `checklist_id`)
+   - [ ] Status/enum columns exist (e.g., `status`, `booked`, `rental_type`)
+   - [ ] Required fields exist (e.g., `id`, `created_at`, `updated_at`)
+   - [ ] New feature columns exist (if deploying new features)
+
+4. **Constraints** ✅
+   - [ ] Foreign key constraints are properly defined
+   - [ ] CHECK constraints exist for enum-like fields
+   - [ ] UNIQUE constraints exist where required
+   - [ ] NOT NULL constraints match code expectations
+
+5. **Indexes** ✅
+   - [ ] Indexes exist on foreign key columns (performance)
+   - [ ] Indexes exist on frequently queried columns
+   - [ ] Composite indexes exist where needed
+
+6. **Data Types** ✅
+   - [ ] Column data types match code expectations
+   - [ ] UUID columns use UUID type (not VARCHAR)
+   - [ ] Date columns use DATE or TIMESTAMP (not VARCHAR)
+   - [ ] Boolean columns use BOOLEAN (not INTEGER)
+
+---
+
+##### Common Schema Mismatch Issues
+
+**Issue 1: Missing Table**
+```
+Error: relation "checklist_custom_items" does not exist
+```
+**Cause:** Migration not applied or migration file missing  
+**Solution:**
+```bash
+# Check if migration file exists
+ls backend/src/database/migrations/018_create_custom_items.sql
+
+# Apply missing migration
+pct exec 201 -- su - postgres -c 'psql -d expense_app_production -f /opt/expenseApp/backend/src/database/migrations/018_create_custom_items.sql'
+```
+
+**Issue 2: Missing Column**
+```
+Error: column "templates_applied" does not exist
+```
+**Cause:** Migration not applied or column added in later migration  
+**Solution:**
+```bash
+# Check migration history
+cat backend/src/database/migrations/019_add_templates_applied.sql
+
+# Apply missing migration
+pct exec 201 -- su - postgres -c 'psql -d expense_app_production -f /opt/expenseApp/backend/src/database/migrations/019_add_templates_applied.sql'
+```
+
+**Issue 3: Wrong Column Count**
+```
+Expected: event_checklists has 10 columns
+Actual: event_checklists has 8 columns
+```
+**Cause:** Migrations applied out of order or some migrations skipped  
+**Solution:**
+1. List all migrations: `ls backend/src/database/migrations/ | sort`
+2. Check which migrations were applied:
+   ```sql
+   SELECT * FROM information_schema.tables WHERE table_name LIKE 'migration%';
+   ```
+3. Apply missing migrations in order
+4. Re-run validation
+
+**Issue 4: Missing CHECK Constraint**
+```
+Error: new row violates check constraint "expenses_status_check"
+```
+**Cause:** Code uses new enum value but database constraint not updated  
+**Solution:**
+```sql
+-- Update constraint to include new value
+ALTER TABLE expenses DROP CONSTRAINT IF EXISTS expenses_status_check;
+ALTER TABLE expenses ADD CONSTRAINT expenses_status_check 
+  CHECK (status IN ('pending', 'approved', 'rejected', 'needs further review', 'NEW_VALUE'));
+```
+
+**Issue 5: Missing Foreign Key Constraint**
+```
+Error: insert or update on table "checklist_flights" violates foreign key constraint
+```
+**Cause:** Foreign key constraint not defined or referencing wrong table  
+**Solution:**
+```sql
+-- Verify foreign key exists
+SELECT * FROM information_schema.table_constraints 
+WHERE constraint_type = 'FOREIGN KEY' 
+  AND table_name = 'checklist_flights';
+
+-- Add missing foreign key
+ALTER TABLE checklist_flights 
+ADD CONSTRAINT fk_checklist_flights_checklist_id 
+FOREIGN KEY (checklist_id) REFERENCES event_checklists(id) ON DELETE CASCADE;
+```
+
+**Issue 6: Wrong Data Type**
+```
+Error: operator does not exist: uuid = character varying
+```
+**Cause:** Column defined as VARCHAR instead of UUID  
+**Solution:**
+```sql
+-- Check current data type
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'event_checklists' AND column_name = 'event_id';
+
+-- Fix data type (requires data migration)
+ALTER TABLE event_checklists ALTER COLUMN event_id TYPE UUID USING event_id::uuid;
+```
+
+**Issue 7: Migration Applied Out of Order**
+```
+Error: column "templates_applied" already exists
+```
+**Cause:** Migration applied multiple times or out of sequence  
+**Solution:**
+1. Check migration idempotency (should use `IF NOT EXISTS`)
+2. Verify migration file uses safe operations
+3. If migration is not idempotent, manually fix:
+   ```sql
+   -- Check if column exists before adding
+   DO $$ 
+   BEGIN 
+     IF NOT EXISTS (
+       SELECT 1 FROM information_schema.columns 
+       WHERE table_name = 'event_checklists' AND column_name = 'templates_applied'
+     ) THEN
+       ALTER TABLE event_checklists ADD COLUMN templates_applied BOOLEAN DEFAULT FALSE;
+     END IF;
+   END $$;
+   ```
+
+---
+
+##### Validation Failure Recovery
+
+**If Validation Fails:**
+
+1. **STOP deployment immediately** - Do not proceed with code deployment
+2. **Document the failure** - Note which checks failed and expected vs actual values
+3. **Review migration files** - Check `backend/src/database/migrations/` for missing migrations
+4. **Identify root cause** - Determine if migration was skipped, failed, or applied incorrectly
+5. **Apply missing migrations** - Run migrations manually in correct order:
+   ```bash
+   # List migrations in order
+   ls -1 backend/src/database/migrations/*.sql | sort
+   
+   # Apply each missing migration
+   for migration in $(ls -1 backend/src/database/migrations/*.sql | sort); do
+     echo "Applying: $migration"
+     pct exec 201 -- su - postgres -c "psql -d expense_app_production -f /opt/expenseApp/backend/src/database/migrations/$(basename $migration)"
+   done
+   ```
+6. **Re-run validation** - Verify all checks pass
+7. **Only proceed after validation passes** - Deploy code only after schema is validated
+
+**Emergency Rollback:**
+If deployment already started and validation fails:
+1. Stop backend service: `systemctl stop expenseapp-backend`
+2. Restore previous code version
+3. Fix schema issues
+4. Re-run validation
+5. Deploy fixed code
+
+---
+
+##### Quick Reference: Expected Schema State
+
+**Core Tables (Always Required):**
+- `users` - User accounts
+- `roles` - Role definitions
+- `events` - Trade show events
+- `event_participants` - Event-user relationships
+- `expenses` - Expense records
+- `app_settings` - Application settings
+
+**Checklist Tables (If Checklist Feature Deployed):**
+- `event_checklists` - Main checklist table
+- `checklist_flights` - Flight bookings
+- `checklist_hotels` - Hotel reservations
+- `checklist_car_rentals` - Car rental bookings
+- `checklist_booth_shipping` - Shipping records
+- `checklist_custom_items` - Custom checklist items
+- `checklist_templates` - Reusable templates
+
+**Audit/Logging Tables (If Features Enabled):**
+- `audit_log` - Change tracking
+- `user_sessions` - Session management
+- `api_requests` - API analytics
+- `ocr_corrections` - OCR training data
+
+**Verify Current Schema:**
+```sql
+-- Quick table count check
+SELECT COUNT(*) as table_count 
+FROM information_schema.tables 
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+
+-- Should return expected number based on features deployed
+```
 
 ---
 
