@@ -23,7 +23,7 @@ export interface AuditLogEntry {
 export async function logAudit(entry: AuditLogEntry): Promise<void> {
   try {
     await pool.query(
-      `INSERT INTO audit_log (
+      `INSERT INTO audit_logs (
         user_id, user_name, user_email, user_role, action, 
         entity_type, entity_id, status, ip_address, user_agent,
         request_method, request_path, changes, error_message

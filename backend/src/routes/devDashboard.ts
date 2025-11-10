@@ -333,12 +333,12 @@ router.get('/audit-logs', async (req, res) => {
   try {
     const { limit = 50, action, search } = req.query;
     
-    // Check if audit_log table exists
+    // Check if audit_logs table exists
     const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND table_name = 'audit_log'
+        AND table_name = 'audit_logs'
       )
     `);
     
@@ -364,7 +364,7 @@ router.get('/audit-logs', async (req, res) => {
           changes,
           error_message,
           created_at
-        FROM audit_log
+        FROM audit_logs
         WHERE 1=1
       `;
       
@@ -438,7 +438,7 @@ router.get('/audit-logs', async (req, res) => {
       res.json({
         logs: result.rows,
         total: result.rowCount,
-        notice: 'Using simulated audit logs. Run migration 004_create_audit_log.sql for full audit logging.'
+        notice: 'Using simulated audit logs. Run migration 004_create_audit_log.sql for full audit logging. (Note: Table is named audit_logs in production)'
       });
     }
   } catch (error) {
