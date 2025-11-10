@@ -1796,6 +1796,131 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c '
 
 See `DEPLOY_TO_PRODUCTION.sh` for automated script (use with caution).
 
+#### 🔍 Pre-Deployment Schema Validation (CRITICAL)
+
+**⚠️ MUST RUN BEFORE EVERY PRODUCTION DEPLOYMENT**
+
+Validate database schema to prevent runtime errors from missing tables/columns:
+
+```bash
+# Connect to production database (Container 201)
+ssh root@192.168.1.190
+pct exec 201 -- su - postgres -c 'psql -d expense_app_production'
+
+# 1. Verify all required tables exist
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+  AND table_type = 'BASE TABLE'
+ORDER BY table_name;
+
+# Expected tables (verify ALL exist):
+# Core: users, roles, events, expenses, settings
+# Checklist: event_checklists, checklist_flights, checklist_hotels, 
+#            checklist_car_rentals, checklist_booth_shipping,
+#            checklist_custom_items, checklist_templates
+
+# 2. Verify table column counts
+SELECT 
+  table_name,
+  COUNT(column_name) as column_count
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name IN (
+    'event_checklists',
+    'checklist_flights',
+    'checklist_hotels',
+    'checklist_car_rentals',
+    'expenses',
+    'events',
+    'users'
+  )
+GROUP BY table_name
+ORDER BY table_name;
+
+# Expected column counts (update based on current schema):
+# - event_checklists: 10 columns (id, event_id, booth_ordered, booth_notes, 
+#   booth_map_url, electricity_ordered, electricity_notes, templates_applied, 
+#   created_at, updated_at)
+# - checklist_flights: 8 columns
+# - checklist_hotels: 10 columns
+# - checklist_car_rentals: 11 columns
+# - expenses: 20+ columns (verify against current schema.sql)
+
+# 3. Verify critical columns exist
+SELECT 
+  table_name,
+  column_name,
+  data_type,
+  is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND (
+    (table_name = 'event_checklists' AND column_name IN ('event_id', 'booth_ordered', 'electricity_ordered', 'templates_applied'))
+    OR (table_name = 'checklist_flights' AND column_name IN ('checklist_id', 'attendee_id', 'booked'))
+    OR (table_name = 'checklist_hotels' AND column_name IN ('checklist_id', 'attendee_id', 'booked'))
+    OR (table_name = 'checklist_car_rentals' AND column_name IN ('checklist_id', 'rental_type', 'booked'))
+    OR (table_name = 'expenses' AND column_name IN ('id', 'user_id', 'event_id', 'status', 'zoho_entity'))
+  )
+ORDER BY table_name, column_name;
+
+# 4. Verify foreign key constraints
+SELECT
+  tc.table_name,
+  kcu.column_name,
+  ccu.table_name AS foreign_table_name,
+  ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+  ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+  ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND tc.table_schema = 'public'
+  AND tc.table_name IN ('event_checklists', 'checklist_flights', 'checklist_hotels', 'checklist_car_rentals')
+ORDER BY tc.table_name;
+
+# 5. Verify CHECK constraints (for enum-like fields)
+SELECT
+  tc.table_name,
+  tc.constraint_name,
+  cc.check_clause
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.check_constraints AS cc
+  ON tc.constraint_name = cc.constraint_name
+WHERE tc.constraint_type = 'CHECK'
+  AND tc.table_schema = 'public'
+  AND tc.table_name IN ('checklist_car_rentals', 'checklist_booth_shipping', 'expenses', 'users');
+
+# Exit psql
+\q
+```
+
+**Pre-Deployment Validation Checklist:**
+- [ ] All required tables exist (compare against `backend/src/database/schema.sql`)
+- [ ] Column counts match expected values (verify against migration files)
+- [ ] Critical columns exist (foreign keys, status fields, required fields)
+- [ ] Foreign key constraints are properly defined
+- [ ] CHECK constraints exist for enum-like fields (status, rental_type, etc.)
+- [ ] Indexes exist on foreign key columns (performance)
+
+**If Validation Fails:**
+1. **STOP deployment immediately**
+2. Review migration files in `backend/src/database/migrations/`
+3. Identify missing migrations
+4. Run missing migrations manually:
+   ```bash
+   pct exec 201 -- su - postgres -c 'psql -d expense_app_production -f /opt/expenseApp/backend/src/database/migrations/XXX_migration_name.sql'
+   ```
+5. Re-run validation until all checks pass
+6. **Only proceed with deployment after validation passes**
+
+**Common Issues:**
+- Missing `templates_applied` column in `event_checklists` → Run migration 019
+- Missing `checklist_custom_items` table → Run migration 018
+- Missing `checklist_templates` table → Run migration 019
+- Wrong column count → Check if migrations were applied in order
+
 ---
 
 ## 🐛 KNOWN ISSUES & SOLUTIONS
