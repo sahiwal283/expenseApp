@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { userRepository, expenseRepository } from '../database/repositories';
 
 const router = Router();
 
@@ -19,25 +20,20 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     // ADMIN & DEVELOPER TASKS
     if (userRole === 'admin' || userRole === 'developer') {
       // 1. Users pending role assignment
-      const pendingUsersResult = await query(
-        `SELECT id, username, name, email, created_at 
-         FROM users 
-         WHERE role = 'pending' 
-         ORDER BY created_at ASC`
-      );
+      const pendingUsers = await userRepository.findByRole('pending');
       
-      if (pendingUsersResult.rows.length > 0) {
+      if (pendingUsers.length > 0) {
         tasks.push({
           id: 'pending-users',
           type: 'admin',
           priority: 'high',
-          title: `${pendingUsersResult.rows.length} New User${pendingUsersResult.rows.length > 1 ? 's' : ''} Awaiting Role Assignment`,
-          description: `${pendingUsersResult.rows.length} user${pendingUsersResult.rows.length > 1 ? 's have' : ' has'} registered and need${pendingUsersResult.rows.length === 1 ? 's' : ''} a role assigned`,
-          count: pendingUsersResult.rows.length,
+          title: `${pendingUsers.length} New User${pendingUsers.length > 1 ? 's' : ''} Awaiting Role Assignment`,
+          description: `${pendingUsers.length} user${pendingUsers.length > 1 ? 's have' : ' has'} registered and need${pendingUsers.length === 1 ? 's' : ''} a role assigned`,
+          count: pendingUsers.length,
           action: 'Go to User Management',
           link: '/settings', // User management is on settings page
           icon: 'UserPlus',
-          users: pendingUsersResult.rows
+          users: pendingUsers
         });
       }
 
