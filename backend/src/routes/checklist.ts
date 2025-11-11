@@ -121,15 +121,14 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
     const { flightId } = req.params;
     const { carrier, confirmationNumber, notes, booked } = req.body;
 
-    const result = await query(
-      `UPDATE checklist_flights 
-       SET carrier = $1, confirmation_number = $2, notes = $3, booked = $4, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5
-       RETURNING *`,
-      [carrier, confirmationNumber, notes, booked, flightId]
-    );
+    const flight = await checklistRepository.updateFlight(parseInt(flightId), {
+      carrier,
+      confirmation_number: confirmationNumber,
+      notes,
+      booked
+    });
 
-    res.json(result.rows[0]);
+    res.json(flight);
   } catch (error) {
     console.error('[Checklist] Error updating flight:', error);
     res.status(500).json({ error: 'Failed to update flight' });
@@ -140,7 +139,7 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
 router.delete('/flights/:flightId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { flightId } = req.params;
-    await query('DELETE FROM checklist_flights WHERE id = $1', [flightId]);
+    await checklistRepository.deleteFlight(parseInt(flightId));
     res.json({ success: true });
   } catch (error) {
     console.error('[Checklist] Error deleting flight:', error);
@@ -154,15 +153,19 @@ router.post('/:checklistId/hotels', authorize('admin', 'coordinator', 'developer
     const { checklistId } = req.params;
     const { attendeeId, attendeeName, propertyName, confirmationNumber, checkInDate, checkOutDate, notes, booked } = req.body;
 
-    const result = await query(
-      `INSERT INTO checklist_hotels 
-       (checklist_id, attendee_id, attendee_name, property_name, confirmation_number, check_in_date, check_out_date, notes, booked)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [checklistId, attendeeId, attendeeName, propertyName, confirmationNumber, checkInDate, checkOutDate, notes, booked || false]
-    );
+    const hotel = await checklistRepository.createHotel({
+      checklistId: parseInt(checklistId),
+      attendeeId,
+      attendeeName,
+      propertyName,
+      confirmationNumber,
+      checkInDate,
+      checkOutDate,
+      notes,
+      booked: booked || false
+    });
 
-    res.json(result.rows[0]);
+    res.json(hotel);
   } catch (error) {
     console.error('[Checklist] Error adding hotel:', error);
     res.status(500).json({ error: 'Failed to add hotel' });
@@ -175,16 +178,16 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
     const { hotelId } = req.params;
     const { propertyName, confirmationNumber, checkInDate, checkOutDate, notes, booked } = req.body;
 
-    const result = await query(
-      `UPDATE checklist_hotels 
-       SET property_name = $1, confirmation_number = $2, check_in_date = $3, check_out_date = $4, 
-           notes = $5, booked = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
-       RETURNING *`,
-      [propertyName, confirmationNumber, checkInDate, checkOutDate, notes, booked, hotelId]
-    );
+    const hotel = await checklistRepository.updateHotel(parseInt(hotelId), {
+      property_name: propertyName,
+      confirmation_number: confirmationNumber,
+      check_in_date: checkInDate,
+      check_out_date: checkOutDate,
+      notes,
+      booked
+    });
 
-    res.json(result.rows[0]);
+    res.json(hotel);
   } catch (error) {
     console.error('[Checklist] Error updating hotel:', error);
     res.status(500).json({ error: 'Failed to update hotel' });
@@ -195,7 +198,7 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
 router.delete('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { hotelId } = req.params;
-    await query('DELETE FROM checklist_hotels WHERE id = $1', [hotelId]);
+    await checklistRepository.deleteHotel(parseInt(hotelId));
     res.json({ success: true });
   } catch (error) {
     console.error('[Checklist] Error deleting hotel:', error);
@@ -209,15 +212,20 @@ router.post('/:checklistId/car-rentals', authorize('admin', 'coordinator', 'deve
     const { checklistId } = req.params;
     const { provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType, assignedToId, assignedToName } = req.body;
 
-    const result = await query(
-      `INSERT INTO checklist_car_rentals 
-       (checklist_id, provider, confirmation_number, pickup_date, return_date, notes, booked, rental_type, assigned_to_id, assigned_to_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [checklistId, provider, confirmationNumber, pickupDate, returnDate, notes, booked || false, rentalType || 'group', assignedToId || null, assignedToName || null]
-    );
+    const rental = await checklistRepository.createCarRental({
+      checklistId: parseInt(checklistId),
+      provider,
+      confirmationNumber,
+      pickupDate,
+      returnDate,
+      notes,
+      booked: booked || false,
+      rentalType: rentalType || 'group',
+      assignedToId: assignedToId || null,
+      assignedToName: assignedToName || null
+    });
 
-    res.json(result.rows[0]);
+    res.json(rental);
   } catch (error) {
     console.error('[Checklist] Error adding car rental:', error);
     res.status(500).json({ error: 'Failed to add car rental' });
@@ -230,17 +238,19 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
     const { rentalId } = req.params;
     const { provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType, assignedToId, assignedToName } = req.body;
 
-    const result = await query(
-      `UPDATE checklist_car_rentals 
-       SET provider = $1, confirmation_number = $2, pickup_date = $3, return_date = $4, 
-           notes = $5, booked = $6, rental_type = $7, assigned_to_id = $8, assigned_to_name = $9, 
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
-       RETURNING *`,
-      [provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType || 'group', assignedToId || null, assignedToName || null, rentalId]
-    );
+    const rental = await checklistRepository.updateCarRental(parseInt(rentalId), {
+      provider,
+      confirmation_number: confirmationNumber,
+      pickup_date: pickupDate,
+      return_date: returnDate,
+      notes,
+      booked,
+      rental_type: rentalType || 'group',
+      assigned_to_id: assignedToId || null,
+      assigned_to_name: assignedToName || null
+    });
 
-    res.json(result.rows[0]);
+    res.json(rental);
   } catch (error) {
     console.error('[Checklist] Error updating car rental:', error);
     res.status(500).json({ error: 'Failed to update car rental' });
@@ -251,7 +261,7 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
 router.delete('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rentalId } = req.params;
-    await query('DELETE FROM checklist_car_rentals WHERE id = $1', [rentalId]);
+    await checklistRepository.deleteCarRental(parseInt(rentalId));
     res.json({ success: true });
   } catch (error) {
     console.error('[Checklist] Error deleting car rental:', error);
@@ -266,15 +276,18 @@ router.post('/:checklistId/booth-shipping', authorize('admin', 'coordinator', 'd
     const { shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped } = req.body;
 
     // Always insert a new booth shipping record (supports multiple shipments)
-    const result = await query(
-      `INSERT INTO checklist_booth_shipping 
-       (checklist_id, shipping_method, carrier_name, tracking_number, shipping_date, delivery_date, notes, shipped)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [checklistId, shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped || false]
-    );
+    const shipping = await checklistRepository.createBoothShipping({
+      checklistId: parseInt(checklistId),
+      shippingMethod,
+      carrierName,
+      trackingNumber,
+      shippingDate,
+      deliveryDate,
+      notes,
+      shipped: shipped || false
+    });
 
-    res.json(result.rows[0]);
+    res.json(shipping);
   } catch (error) {
     console.error('[Checklist] Error saving booth shipping:', error);
     res.status(500).json({ error: 'Failed to save booth shipping' });
