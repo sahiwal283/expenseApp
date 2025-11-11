@@ -1,6 +1,6 @@
 {
   "name": "expense-app-backend",
-  "version": "1.19.9",
+  "version": "1.20.0",
   "description": "Trade Show Expense Management Backend",
   "main": "dist/server.js",
   "scripts": {
