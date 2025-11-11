@@ -6,6 +6,7 @@
 import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { DevDashboardService } from '../services/DevDashboardService';
+import { VersionService, SessionService, OCRMetricsService } from '../services/dashboard';
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.use((req: AuthRequest, res: Response, next) => {
 // GET /api/dev-dashboard/version
 router.get('/version', async (req: AuthRequest, res: Response) => {
   try {
-    const versionInfo = await DevDashboardService.getVersionInfo();
+    const versionInfo = await VersionService.getVersionInfo();
     res.json(versionInfo);
   } catch (error) {
     console.error('Version endpoint error:', error);
@@ -71,7 +72,7 @@ router.get('/audit-logs', async (req: AuthRequest, res: Response) => {
 // GET /api/dev-dashboard/sessions
 router.get('/sessions', async (req: AuthRequest, res: Response) => {
   try {
-    const sessions = await DevDashboardService.getSessions();
+    const sessions = await SessionService.getSessions();
     res.json(sessions);
   } catch (error) {
     console.error('Sessions endpoint error:', error);
@@ -143,7 +144,7 @@ router.get('/page-analytics', async (req: AuthRequest, res: Response) => {
 // GET /api/dev-dashboard/ocr-metrics
 router.get('/ocr-metrics', async (req: AuthRequest, res: Response) => {
   try {
-    const metrics = await DevDashboardService.getOCRMetrics();
+    const metrics = await OCRMetricsService.getOCRMetrics();
     res.json(metrics);
   } catch (error) {
     console.error('OCR metrics endpoint error:', error);
