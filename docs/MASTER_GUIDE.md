@@ -81,10 +81,25 @@ This is the **SINGLE AUTHORITATIVE SOURCE** for all AI assistants working on the
 
 **Frontend:** React 18 + TypeScript + Tailwind CSS + Vite  
 **Backend:** Node.js + Express + TypeScript + PostgreSQL  
+**Architecture:** Repository Pattern (Backend) + Component Modularization (Frontend)  
 **Infrastructure:** Proxmox LXC (Debian 12) + Nginx + PM2  
 **Integrations:** Zoho Books API (OAuth 2.0)  
 **OCR:** Tesseract (production) | External microservice with Ollama LLM (sandbox)  
 **PWA:** Service Worker + IndexedDB + Background Sync
+
+### Architecture Overview
+
+**Backend Architecture (v1.28.0+):**
+- **Routes** → HTTP request handling, validation, response formatting
+- **Services** → Business logic, authorization, orchestration
+- **Repositories** → Data access layer, query building, type safety
+- **Database** → PostgreSQL with migrations
+
+**Frontend Architecture (v1.28.0+):**
+- **Feature-Based Organization** → Each feature in its own directory
+- **Component Modularization** → Large components split into sub-components
+- **Custom Hooks** → Shared logic extracted into reusable hooks
+- **Shared Components** → Common UI components in `common/` directory
 
 ---
 
