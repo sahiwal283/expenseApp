@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, Code } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
+import { AppError } from '../../types/types';
 import { DashboardSummaryCards } from './DevDashboard/DashboardSummaryCards';
 import { DashboardTabNavigation } from './DevDashboard/DashboardTabNavigation';
 import { OverviewTab } from './DevDashboard/OverviewTab';
@@ -73,10 +74,11 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
       if (includeTabData) {
         await loadTabData(activeTab);
       }
-    } catch (error: any) {
-      console.error('Failed to load dashboard data:', error);
+    } catch (error) {
+      const appError = error as AppError;
+      console.error('Failed to load dashboard data:', appError);
       console.error('Error details:', {
-        message: error?.message,
+        message: appError?.message,
         response: error?.response?.data,
         status: error?.response?.status
       });
@@ -130,8 +132,9 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
         setPageAnalytics(pageData);
       }
       // overview, metrics, ocr, training tabs use data already loaded
-    } catch (error: any) {
-      console.error('Failed to load tab data:', error);
+    } catch (error) {
+      const appError = error as AppError;
+      console.error('Failed to load tab data:', appError);
     }
   };
 

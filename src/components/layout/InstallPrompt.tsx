@@ -5,7 +5,14 @@ interface InstallPromptProps {}
 
 export const InstallPrompt: React.FC<InstallPromptProps> = () => {
   const [showPrompt, setShowPrompt] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  // beforeinstallprompt event type (browser API, not in standard TypeScript)
+  interface BeforeInstallPromptEvent extends Event {
+    preventDefault: () => void;
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  }
+  
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -16,7 +23,7 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
     setIsStandalone(standalone);
 
     // Check if iOS
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
     setIsIOS(ios);
 
     // Check if Android
@@ -37,9 +44,10 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
     }
 
     // For Android, listen for beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+    const handleBeforeInstallPrompt = (e: Event) => {
+      const installEvent = e as BeforeInstallPromptEvent;
+      installEvent.preventDefault();
+      setDeferredPrompt(installEvent);
       
       // Only show prompt if not dismissed recently
       if (daysSinceDismissed > 7) {

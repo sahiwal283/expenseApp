@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Receipt, Search, Filter, X, Loader2
-} from 'lucide-react';
-import { User, Expense, TradeShow } from '../../App';
+import { User, Expense } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
-import { PendingActions } from '../common/PendingActions';
 import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { formatLocalDate, getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
-import { formatReimbursementStatus } from '../../constants/appConstants';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
-import { ReceiptData } from '../../types/types';
+import { ReceiptData, AuditTrailEntry, ExpenseEditFormData, OcrV2Data, AppError } from '../../types/types';
 import { useToast, ToastContainer } from '../common/Toast';
 import { sendOCRCorrection, detectCorrections } from '../../utils/ocrCorrections';
 
 // ✅ REFACTORED: Imported extracted components
-import { ExpenseTableFilters, ExpenseTableRow } from './ExpenseTable';
 import {
   ExpenseModalHeader,
   ExpenseModalFooter,
@@ -29,6 +23,12 @@ import {
   ExpenseModalDetailsEdit,
   ExpenseModalStatusManagement,
 } from './ExpenseModal';
+import {
+  ExpenseSubmissionHeader,
+  ExpenseSubmissionEmptyState,
+  ExpenseSubmissionTable,
+  PendingSyncModal,
+} from './ExpenseSubmission/index';
 
 interface ExpenseSubmissionProps {
   user: User;
@@ -75,16 +75,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [pushedExpenses, setPushedExpenses] = useState<Set<string>>(new Set());
 
   // OCR correction tracking
-  const [ocrV2Data, setOcrV2Data] = useState<any>(null);
+  const [ocrV2Data, setOcrV2Data] = useState<OcrV2Data | null>(null);
 
   // Audit trail
-  const [auditTrail, setAuditTrail] = useState<any[]>([]);
+  const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [showAuditTrail, setShowAuditTrail] = useState(false);
 
   // Inline editing in modal
   const [isEditingExpense, setIsEditingExpense] = useState(false);
-  const [editFormData, setEditFormData] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState<ExpenseEditFormData | null>(null);
 
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
@@ -114,7 +114,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         const trail = data.auditTrail || [];
         setAuditTrail(trail);
         // Auto-expand if there's history (more than just "created")
-        const hasChanges = trail.filter((entry: any) => entry.action !== 'created').length > 0;
+        const hasChanges = trail.filter((entry: AuditTrailEntry) => entry.action !== 'created').length > 0;
         setShowAuditTrail(hasChanges);
       } else {
         console.error('[Audit] Failed to fetch audit trail');
@@ -130,7 +130,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File, ocrDataOverride?: any) => {
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File, ocrDataOverride?: OcrV2Data) => {
     // Prevent duplicate submissions
     if (isSaving) {
       console.log('[ExpenseSubmission] Already saving, ignoring duplicate submission');
@@ -318,7 +318,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
       if (!response.ok) throw new Error('Failed to update expense');
 
-      const updatedExpense = await response.json();
+          const updatedExpense = await response.json() as Expense;
       
       // Update the viewing expense
       setViewingExpense(updatedExpense);
@@ -382,16 +382,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setIsSaving(true);
     
     // Prepare OCR v2 data for correction tracking (but don't rely on state)
-    let ocrDataForCorrections: any = null;
+    let ocrDataForCorrections: OcrV2Data | null = null;
     if (receiptData.ocrV2Data) {
       console.log('[OCR Correction] Preparing OCR v2 data for correction tracking');
       const inference = receiptData.ocrV2Data.inference;
       ocrDataForCorrections = {
-        ocrText: receiptData.ocrText,
         inference: inference,
         categories: receiptData.ocrV2Data.categories,
-        provider: receiptData.ocrV2Data.ocrProvider,
-        confidence: receiptData.confidence,
+        ocrProvider: receiptData.ocrV2Data.ocrProvider,
+        ocrText: receiptData.ocrText,
         // Store the ORIGINAL OCR-extracted values (before user edits)
         originalValues: {
           merchant: inference?.merchant?.value || 'Unknown Merchant',
@@ -427,12 +426,18 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       status: 'pending',
       location: receiptData.location || '',
       ocrText: receiptData.ocrText || '',
-      extractedData: receiptData,
+      extractedData: {
+        total: receiptData.total || 0,
+        category: receiptData.category || 'Other',
+        merchant: receiptData.merchant || '',
+        date: receiptData.date || getTodayLocalDateString(),
+        location: receiptData.location || ''
+      },
       zohoEntity: receiptData.zohoEntity || undefined  // Auto-populated from card selection
     };
 
-    // Save and wait for completion before closing - pass OCR data directly
-    await handleSaveExpense(expenseData, file, ocrDataForCorrections);
+        // Save and wait for completion before closing - pass OCR data directly
+        await handleSaveExpense(expenseData, file, ocrDataForCorrections || undefined);
     setIsSaving(false);
     setShowReceiptUpload(false);
   };
@@ -509,7 +514,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
     try {
       if (api.USE_SERVER) {
-        const updatedExpense = await api.assignEntity(expense.id, { zoho_entity: entity });
+        const updatedExpense = await api.assignEntity(expense.id, { zoho_entity: entity }) as Expense;
         console.log(`[Entity Assignment] Response:`, updatedExpense);
         
         // Verify entity was actually updated
@@ -565,16 +570,17 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       setPushedExpenses(prev => new Set(prev).add(expense.id));
       addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
       await reloadData();
-    } catch (error: any) {
-      console.error('[Push to Zoho] Failed:', error);
+    } catch (error) {
+      const appError = error as AppError & { response?: { status?: number; statusText?: string; data?: unknown } };
+      console.error('[Push to Zoho] Failed:', appError);
       console.error('[Push to Zoho] Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
+        status: appError.response?.status,
+        statusText: appError.response?.statusText,
+        data: appError.response?.data,
+        message: appError.message
       });
       
-      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+      const errorMsg = appError.response?.data?.error || appError.message || 'Unknown error';
       
       if (errorMsg.includes('does not have Zoho Books integration configured')) {
         addToast(
@@ -634,178 +640,66 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Expense Management</h1>
-          <p className="text-gray-600 mt-1">
-            {hasApprovalPermission 
-              ? 'Review, approve, and manage expense submissions'
-              : 'Submit and track your trade show expenses'}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-          {hasActiveFilters && (
-            <button
-              onClick={clearAllFilters}
-              className="bg-gray-100 text-gray-700 px-4 py-3 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 flex items-center space-x-2"
-            >
-              <X className="w-5 h-5" />
-              <span>Clear Filters</span>
-            </button>
-          )}
-          {pendingCount > 0 && (
-            <button
-              onClick={() => setShowPendingSync(true)}
-              className="relative bg-orange-50 text-orange-700 border border-orange-200 px-4 py-3 rounded-lg font-medium hover:bg-orange-100 transition-all duration-200 flex items-center space-x-2"
-            >
-              <Clock className="w-5 h-5" />
-              <span>Pending Sync</span>
-              <span className="ml-1 px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
-                {pendingCount}
-              </span>
-            </button>
-          )}
-          <button
-            onClick={() => setShowReceiptUpload(true)}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/30"
-          >
-            <Receipt className="w-5 h-5" />
-            <span>Add Expense</span>
-          </button>
-        </div>
-      </div>
+      <ExpenseSubmissionHeader
+        hasApprovalPermission={hasApprovalPermission}
+        hasActiveFilters={hasActiveFilters}
+        pendingCount={pendingCount}
+        onClearFilters={clearAllFilters}
+        onShowPendingSync={() => setShowPendingSync(true)}
+        onAddExpense={() => setShowReceiptUpload(true)}
+      />
 
       {/* Approval Workflow Cards (Only visible to admin/accountant/developer) */}
       {hasApprovalPermission && <ApprovalCards expenses={expenses} />}
 
       {/* Expenses Table */}
       {finalFilteredExpenses.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Expenses Found</h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            {hasActiveFilters
-              ? 'Try adjusting your filters to see more expenses.'
-              : 'Start by submitting your first expense with automatic OCR extraction from receipts.'
-            }
-          </p>
-          <div className="flex justify-center space-x-4">
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="bg-gray-100 text-gray-700 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:bg-gray-200 transition-all duration-200"
-              >
-                Clear Filters
-              </button>
-            )}
-            <button
-              onClick={() => setShowReceiptUpload(true)}
-              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
-            >
-              Add Expense
-            </button>
-          </div>
-        </div>
+        <ExpenseSubmissionEmptyState
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearAllFilters}
+          onAddExpense={() => setShowReceiptUpload(true)}
+        />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-max">
-              <thead className="bg-gray-50">
-                {/* Column Headers */}
-                <tr>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Date</th>
-                  {hasApprovalPermission && (
-                    <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">User</th>
-                  )}
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Event</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Category</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Merchant</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Amount</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Card Used</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Status</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Reimbursement</th>
-                  {hasApprovalPermission && (
-                    <>
-                      <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Entity</th>
-                      <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-center text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Zoho</th>
-                    </>
-                  )}
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">
-                    <div className="flex items-center justify-end space-x-2">
-                      <span>Actions</span>
-                      <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`p-1 rounded transition-colors ${
-                          showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                        }`}
-                        title={showFilters ? 'Hide Filters' : 'Show Filters'}
-                      >
-                        <Filter className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </th>
-                </tr>
-                {/* ✅ REFACTORED: Replaced 147 lines with ExpenseTableFilters component */}
-                <ExpenseTableFilters
-                  expenses={expenses}
-                  events={events}
-                  users={users}
-                  hasApprovalPermission={hasApprovalPermission}
-                  showFilters={showFilters}
-                  dateFilter={dateFilter}
-                  setDateFilter={setDateFilter}
-                  eventFilter={eventFilter}
-                  setEventFilter={setEventFilter}
-                  categoryFilter={categoryFilter}
-                  setCategoryFilter={setCategoryFilter}
-                  merchantFilter={merchantFilter}
-                  setMerchantFilter={setMerchantFilter}
-                  cardFilter={cardFilter}
-                  setCardFilter={setCardFilter}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                  reimbursementFilter={reimbursementFilter}
-                  setReimbursementFilter={setReimbursementFilter}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  uniqueCategories={uniqueCategories}
-                  uniqueCards={uniqueCards}
-                />
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {/* ✅ REFACTORED: Replaced 206 lines with ExpenseTableRow component */}
-                {finalFilteredExpenses.map((expense) => {
-                  const event = events.find(e => e.id === expense.tradeShowId);
-                  const userName = expense.user_name || users.find(u => u.id === expense.userId)?.name || 'Unknown User';
-                  
-                  return (
-                    <ExpenseTableRow
-                      key={expense.id}
-                      expense={expense}
-                      event={event}
-                      userName={userName}
-                      hasApprovalPermission={hasApprovalPermission}
-                      entityOptions={entityOptions}
-                      pushingExpenseId={pushingExpenseId}
-                      pushedExpenses={pushedExpenses}
-                      onReimbursementApproval={handleReimbursementApproval}
-                      onMarkAsPaid={handleMarkAsPaid}
-                      onAssignEntity={handleAssignEntity}
-                      onPushToZoho={handlePushToZoho}
-                      onViewExpense={(exp) => {
-                        setViewingExpense(exp);
-                        fetchAuditTrail(exp.id);
-                      }}
-                      onDeleteExpense={handleDeleteExpense}
-                      currentUserId={user.id}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ExpenseSubmissionTable
+          expenses={expenses}
+          filteredExpenses={finalFilteredExpenses}
+          events={events}
+          users={users}
+          hasApprovalPermission={hasApprovalPermission}
+          entityOptions={entityOptions}
+          pushingExpenseId={pushingExpenseId}
+          pushedExpenses={pushedExpenses}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          dateFilter={dateFilter}
+          setDateFilter={setDateFilter}
+          eventFilter={eventFilter}
+          setEventFilter={setEventFilter}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          merchantFilter={merchantFilter}
+          setMerchantFilter={setMerchantFilter}
+          cardFilter={cardFilter}
+          setCardFilter={setCardFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          reimbursementFilter={reimbursementFilter}
+          setReimbursementFilter={setReimbursementFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          uniqueCategories={uniqueCategories}
+          uniqueCards={uniqueCards}
+          onReimbursementApproval={handleReimbursementApproval}
+          onMarkAsPaid={handleMarkAsPaid}
+          onAssignEntity={handleAssignEntity}
+          onPushToZoho={handlePushToZoho}
+          onViewExpense={(exp) => {
+            setViewingExpense(exp);
+            fetchAuditTrail(exp.id);
+          }}
+          onDeleteExpense={handleDeleteExpense}
+          currentUserId={user.id}
+        />
       )}
 
       {/* ✅ REFACTORED: Expense Details Modal with 8 sub-components */}
@@ -845,9 +739,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 hasApprovalPermission={hasApprovalPermission}
                 entityOptions={entityOptions}
                 auditTrail={auditTrail}
-                onExpenseUpdate={(updates) => setViewingExpense({ ...viewingExpense, ...updates })}
-                onReloadData={reloadData}
-                onToast={addToast}
+                onReimbursementStatusChange={async (newStatus) => {
+                  await handleReimbursementApproval(viewingExpense, newStatus === 'approved' ? 'approved' : newStatus === 'rejected' ? 'rejected' : 'pending review');
+                  if (newStatus === 'paid') {
+                    await handleMarkAsPaid(viewingExpense);
+                  }
+                }}
+                onEntityChange={async (newEntity) => {
+                  await handleAssignEntity(viewingExpense, newEntity);
+                }}
               />
 
               {/* ✅ REFACTORED: Replaced 27 lines with ExpenseModalReceipt */}
@@ -860,10 +760,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               {/* ✅ REFACTORED: Replaced 110 lines with ExpenseModalAuditTrail */}
               <ExpenseModalAuditTrail
                 hasApprovalPermission={hasApprovalPermission}
-                showAuditTrail={showAuditTrail}
                 loadingAudit={loadingAudit}
                 auditTrail={auditTrail}
-                onToggle={() => setShowAuditTrail(!showAuditTrail)}
               />
             </div>
 
@@ -885,28 +783,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         </div>
       )}
 
-      {/* Pending Sync Modal */}
-      {showPendingSync && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={() => setShowPendingSync(false)}></div>
-            <div className="relative bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden z-50">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">Pending Sync</h2>
-                <button
-                  onClick={() => setShowPendingSync(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-                <PendingActions user={user} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <PendingSyncModal
+        user={user}
+        isOpen={showPendingSync}
+        onClose={() => setShowPendingSync(false)}
+      />
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />

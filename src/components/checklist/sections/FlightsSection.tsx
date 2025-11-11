@@ -23,7 +23,11 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
     return checklist.flights.find(f => f.attendee_id?.toString() === attendeeId);
   };
 
-  const handleFieldChange = (attendeeId: string, field: keyof FlightData, value: any) => {
+  const handleFieldChange = <K extends keyof FlightData>(
+    attendeeId: string,
+    field: K,
+    value: FlightData[K]
+  ) => {
     const existing = getFlightForAttendee(attendeeId) || {
       attendee_id: attendeeId,
       attendee_name: participants.find(p => p.id === attendeeId)?.name || '',

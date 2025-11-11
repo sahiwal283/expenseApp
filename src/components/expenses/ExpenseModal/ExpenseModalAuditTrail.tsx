@@ -8,13 +8,10 @@
 
 import React, { useState } from 'react';
 import { History, Loader2 } from 'lucide-react';
+import { AuditTrailEntry } from '../../../types/types';
 
-interface AuditEntry {
-  id: string;
-  action: string;
+interface AuditEntry extends AuditTrailEntry {
   userName: string;
-  timestamp: string;
-  changes?: Record<string, { old: any; new: any }>;
 }
 
 interface ExpenseModalAuditTrailProps {
@@ -113,7 +110,7 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
 
                   {entry.changes && Object.keys(entry.changes).length > 0 && (
                     <div className="mt-2 space-y-1">
-                      {Object.entries(entry.changes).map(([field, change]: [string, any]) => {
+                      {Object.entries(entry.changes).map(([field, change]) => {
                         return (
                           <div key={field} className="text-xs text-gray-700">
                             <span className="font-medium">{fieldLabels[field] || field}:</span>{' '}

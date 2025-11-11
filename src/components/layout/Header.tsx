@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
-import { User } from '../../App';
+import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import packageJson from '../../../package.json';
 
@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
       if (api.USE_SERVER) {
         try {
           const ex = await api.getExpenses();
-          const pending = (ex || []).filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
+          const pending = (ex || []).filter((e: Expense) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
           setNotifications(pending);
           
           // Reset viewed flag if new notifications arrive
@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
         }
       } else {
         const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
-        const pendingExpenses = expenses.filter((e: any) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
+        const pendingExpenses = expenses.filter((e: Expense) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
         setNotifications(pendingExpenses);
         
         // Reset viewed flag if new notifications arrive
@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
                 </div>
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.length > 0 ? (
-                    notifications.map((expense: any, index: number) => (
+                    notifications.map((expense: Expense, index: number) => (
                       <div key={index} className="p-4 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
                         <p className="text-sm text-gray-900 font-medium">Pending Expense Approval</p>
                         <p className="text-xs text-gray-600 mt-1">{expense.merchant} - ${expense.amount}</p>

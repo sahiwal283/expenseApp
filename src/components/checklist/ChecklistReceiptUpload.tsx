@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, FileImage, Scan, Receipt, DollarSign } from 'lucide-react';
 import { api } from '../../utils/api';
 import { User, TradeShow } from '../../App';
+import { AppError } from '../../types/types';
 
 interface ChecklistReceiptUploadProps {
   user: User;
@@ -108,7 +109,18 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     try {
       // Create expense with receipt URL (no file re-upload needed)
       // The receipt was already uploaded during OCR processing
-      const expensePayload: any = {
+      const expensePayload: {
+        event_id: string;
+        category: string;
+        merchant: string;
+        amount: number;
+        date: string;
+        description: string;
+        card_used: string;
+        reimbursement_required: boolean;
+        zoho_entity?: string;
+        receipt_url?: string;
+      } = {
         event_id: event.id,
         category: SECTION_CATEGORIES[section],
         merchant: formData.merchant,
@@ -137,9 +149,10 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
       
       onExpenseCreated();
       onClose();
-    } catch (error: any) {
-      console.error('[ChecklistReceiptUpload] Error creating expense:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to create expense. Please try again.';
+    } catch (error) {
+      const appError = error as AppError & { response?: { data?: { error?: string } } };
+      console.error('[ChecklistReceiptUpload] Error creating expense:', appError);
+      const errorMessage = appError.response?.data?.error || appError.message || 'Failed to create expense. Please try again.';
       
       // Show error notification
       alert(`❌ Failed to save receipt:\n${errorMessage}`);

@@ -6,14 +6,7 @@
  */
 
 import { useState } from 'react';
-
-interface AuditTrailEntry {
-  action: string;
-  timestamp: string;
-  user?: string;
-  changes?: Record<string, any>;
-  [key: string]: any;
-}
+import { AuditTrailEntry } from '../../../../types/types';
 
 export function useAuditTrail() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);

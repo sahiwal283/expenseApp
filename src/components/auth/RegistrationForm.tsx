@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Key, ArrowLeft, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { apiClient } from '../../utils/apiClient';
+import { AppError } from '../../types/types';
 
 interface RegistrationFormProps {
   onBack: () => void;
@@ -122,12 +123,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
       if (response.success) {
         setSuccess(true);
       }
-    } catch (err: any) {
-      if (err.response?.data?.details) {
-        setValidationErrors(err.response.data.details);
+    } catch (err) {
+      const appError = err as AppError & { response?: { data?: { details?: string[]; error?: string } } };
+      if (appError.response?.data?.details) {
+        setValidationErrors(appError.response.data.details);
         setError('Password does not meet security requirements');
       } else {
-        setError(err.response?.data?.error || 'Registration failed. Please try again.');
+        setError(appError.response?.data?.error || 'Registration failed. Please try again.');
       }
     }
     

@@ -34,7 +34,7 @@ export function useUserManagement(): UseUserManagementReturn {
         // Load roles from database
         const rolesData = await api.getRoles();
         // Filter out 'pending' role from dropdowns (it's for new registrations only)
-        setRoles((rolesData || []).filter((r: any) => r.name !== 'pending'));
+        setRoles((rolesData || []).filter((r: Role) => r.name !== 'pending'));
       } catch {
         setUsers([]);
       }

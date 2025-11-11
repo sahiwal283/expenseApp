@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AppError } from '../../types/types';
 import { Shield, Plus, Edit2, Trash2, X, AlertTriangle, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '../../utils/api';
 
@@ -63,7 +64,8 @@ export const RoleManagement: React.FC = () => {
 
       await loadRoles();
       handleCloseForm();
-    } catch (error: any) {
+    } catch (error) {
+      const appError = error as AppError;
       console.error('Error saving role:', error);
       alert(error.response?.data?.error || 'Failed to save role');
     }
@@ -93,7 +95,8 @@ export const RoleManagement: React.FC = () => {
     try {
       await api.deleteRole(role.id);
       await loadRoles();
-    } catch (error: any) {
+    } catch (error) {
+      const appError = error as AppError;
       console.error('Error deleting role:', error);
       alert(error.response?.data?.error || 'Failed to delete role');
     }

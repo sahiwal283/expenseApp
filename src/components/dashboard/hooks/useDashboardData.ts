@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../utils/api';
 import { Expense, TradeShow, User } from '../../../App';
+import { AppError } from '../../../types/types';
 
 export function useDashboardData() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -32,14 +33,15 @@ export function useDashboardData() {
           console.log('[Dashboard] Loaded expenses:', ex?.length || 0);
           setExpenses(ex || []);
         }
-      } catch (error: any) {
-        console.error('[Dashboard] Error loading expenses:', error);
+      } catch (error) {
+        const appError = error as AppError;
+        console.error('[Dashboard] Error loading expenses:', appError);
         // If we get a 401/403, the apiClient unauthorized callback should handle logout
         // But if that fails, we'll at least show empty data instead of crashing
         if (mounted) setExpenses([]);
         
         // Don't continue loading other data if authentication failed
-        if (error?.statusCode === 401 || error?.statusCode === 403) {
+        if (appError?.statusCode === 401 || appError?.statusCode === 403) {
           console.error('[Dashboard] Authentication failed, stopping data load');
           if (mounted) setLoading(false);
           return;
@@ -53,12 +55,13 @@ export function useDashboardData() {
           console.log('[Dashboard] Loaded events:', ev?.length || 0);
           setEvents(ev || []);
         }
-      } catch (error: any) {
-        console.error('[Dashboard] Error loading events:', error);
+      } catch (error) {
+        const appError = error as AppError;
+        console.error('[Dashboard] Error loading events:', appError);
         if (mounted) setEvents([]);
         
         // Don't continue if authentication failed
-        if (error?.statusCode === 401 || error?.statusCode === 403) {
+        if (appError?.statusCode === 401 || appError?.statusCode === 403) {
           console.error('[Dashboard] Authentication failed, stopping data load');
           if (mounted) setLoading(false);
           return;
@@ -72,7 +75,7 @@ export function useDashboardData() {
           console.log('[Dashboard] Loaded users:', us?.length || 0);
           setUsers(us || []);
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error('[Dashboard] Error loading users (non-critical):', error);
         if (mounted) setUsers([]);
       }

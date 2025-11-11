@@ -6,12 +6,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../../../../utils/api';
-import { TradeShow } from '../../../../../App';
+import { TradeShow, Expense } from '../../../../../App';
 
 interface ReceiptStatus {
-  booth: any[];
-  electricity: any[];
-  booth_shipping: any[];
+  booth: Expense[];
+  electricity: Expense[];
+  booth_shipping: Expense[];
 }
 
 interface UseBoothReceiptsReturn {
@@ -35,9 +35,9 @@ export function useBoothReceipts(event: TradeShow): UseBoothReceiptsReturn {
       
       // Categorize expenses by checklist section
       const categorizedReceipts: ReceiptStatus = {
-        booth: expenses.filter((e: any) => e.category === 'Booth / Marketing / Tools'),
-        electricity: expenses.filter((e: any) => e.category === 'Utilities'),
-        booth_shipping: expenses.filter((e: any) => e.category === 'Shipping Charges')
+        booth: expenses.filter((e: Expense) => e.category === 'Booth / Marketing / Tools'),
+        electricity: expenses.filter((e: Expense) => e.category === 'Utilities'),
+        booth_shipping: expenses.filter((e: Expense) => e.category === 'Shipping Charges')
       };
       
       setReceiptStatus(categorizedReceipts);

@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Expense } from '../../../../App';
 import { api } from '../../../../utils/api';
+import { AppError } from '../../../../types/types';
 
 interface UseExpenseApprovalsProps {
   expenses: Expense[];
@@ -49,10 +50,11 @@ export function useExpenseApprovals({
       setPushedExpenses((prev) => new Set(prev).add(expense.id));
       addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
       await reloadData();
-    } catch (error: any) {
-      console.error('Failed to push to Zoho:', error);
+    } catch (error) {
+      const appError = error as AppError & { response?: { data?: { error?: string } } };
+      console.error('Failed to push to Zoho:', appError);
 
-      const errorMsg = error.response?.data?.error || error.message || 'Unknown error';
+      const errorMsg = appError.response?.data?.error || appError.message || 'Unknown error';
 
       if (errorMsg.includes('does not have Zoho Books integration configured')) {
         addToast(

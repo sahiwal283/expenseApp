@@ -29,9 +29,9 @@ export function useApprovals() {
         console.log('[Approvals] Loaded expenses:', ex?.length || 0);
         
         // Debug: Check for duplicateCheck field
-        const expensesWithDups = ex.filter((e: any) => e.duplicateCheck);
+        const expensesWithDups = ex.filter((e: Expense) => e.duplicateCheck);
         if (expensesWithDups.length > 0) {
-          console.log('[Approvals] Expenses with duplicateCheck:', expensesWithDups.map((e: any) => ({
+          console.log('[Approvals] Expenses with duplicateCheck:', expensesWithDups.map((e: Expense) => ({
             id: e.id.substring(0, 8),
             merchant: e.merchant,
             dupCount: e.duplicateCheck?.length

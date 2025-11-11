@@ -13,7 +13,10 @@ interface BoothShippingSectionProps {
   showAddShipmentForm: boolean;
   setShowAddShipmentForm: (show: boolean) => void;
   newShipmentData: Omit<BoothShippingData, 'id'>;
-  handleNewShipmentFieldChange: (field: keyof Omit<BoothShippingData, 'id'>, value: any) => void;
+  handleNewShipmentFieldChange: <K extends keyof Omit<BoothShippingData, 'id'>>(
+    field: K,
+    value: Omit<BoothShippingData, 'id'>[K]
+  ) => void;
   savingShipment: boolean;
   onAddShipment: () => Promise<void>;
   onDeleteShipment: (shipmentId: string) => Promise<void>;

@@ -31,7 +31,11 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
   const [newRentalReceipt, setNewRentalReceipt] = useState<File | null>(null);
   const [processingReceipt, setProcessingReceipt] = useState(false);
 
-  const handleFieldChange = (rentalId: number, field: keyof CarRentalData, value: any) => {
+  const handleFieldChange = <K extends keyof CarRentalData>(
+    rentalId: number,
+    field: K,
+    value: CarRentalData[K]
+  ) => {
     const existing = checklist.carRentals.find(r => r.id === rentalId);
     if (!existing) return;
 

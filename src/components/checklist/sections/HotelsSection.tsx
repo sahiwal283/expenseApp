@@ -23,7 +23,11 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
     return checklist.hotels.find(h => h.attendee_id?.toString() === attendeeId);
   };
 
-  const handleFieldChange = (attendeeId: string, field: keyof HotelData, value: any) => {
+  const handleFieldChange = <K extends keyof HotelData>(
+    attendeeId: string,
+    field: K,
+    value: HotelData[K]
+  ) => {
     const existing = getHotelForAttendee(attendeeId) || {
       attendee_id: attendeeId,
       attendee_name: participants.find(p => p.id === attendeeId)?.name || '',

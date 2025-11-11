@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { AppError } from '../../types/types';
 import {
   RefreshCw,
   Trash2,
@@ -62,7 +63,8 @@ export const PendingActions: React.FC = () => {
     try {
       await syncManager.retryFailed();
       await loadItems();
-    } catch (error: any) {
+    } catch (error) {
+      const appError = error as AppError;
       console.error('[PendingActions] Retry failed:', error);
       alert(`Failed to retry: ${error.message}`);
     } finally {
@@ -75,7 +77,8 @@ export const PendingActions: React.FC = () => {
     try {
       await syncManager.syncNow();
       await loadItems();
-    } catch (error: any) {
+    } catch (error) {
+      const appError = error as AppError;
       console.error('[PendingActions] Sync failed:', error);
       alert(`Failed to sync: ${error.message}`);
     } finally {

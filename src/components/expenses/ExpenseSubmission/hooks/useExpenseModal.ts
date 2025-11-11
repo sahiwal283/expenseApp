@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { Expense } from '../../../../App';
+import { ExpenseEditFormData } from '../../../../types/types';
 
 interface UseExpenseModalProps {
   onSave: (expenseData: Partial<Expense>) => Promise<void>;
@@ -18,7 +19,7 @@ export function useExpenseModal({ onSave, reloadData, addToast }: UseExpenseModa
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
   const [isEditingExpense, setIsEditingExpense] = useState(false);
-  const [editFormData, setEditFormData] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState<ExpenseEditFormData | null>(null);
 
   const openExpenseModal = (expense: Expense) => {
     setViewingExpense(expense);
@@ -93,11 +94,17 @@ export function useExpenseModal({ onSave, reloadData, addToast }: UseExpenseModa
     }
   };
 
-  const updateEditFormField = (field: string, value: any) => {
-    setEditFormData((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const updateEditFormField = <K extends keyof ExpenseEditFormData>(
+    field: K,
+    value: ExpenseEditFormData[K]
+  ) => {
+    setEditFormData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
   };
 
   const toggleReceiptView = () => {

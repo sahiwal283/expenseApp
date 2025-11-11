@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, CreditCard, Building2, Users, Pencil, Check, X, Tag } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
 import { RoleManagement } from './RoleManagement';
+import {
+  AdminSettingsHeader,
+  AdminSettingsTabs,
+  CardOptionsSection,
+  EntityOptionsSection,
+  CategoryOptionsSection,
+} from './AdminSettings/index';
 
 interface AdminSettingsProps {
   user: User;
@@ -322,53 +328,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage system settings and user accounts</p>
-      </div>
+      <AdminSettingsHeader />
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            <button
-              onClick={() => {
-                setActiveTab('system');
-                window.location.hash = ''; // Clear hash when manually switching
-              }}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'system'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Settings className="w-5 h-5" />
-                <span>System Settings</span>
-              </div>
-            </button>
-            {(user.role === 'admin' || user.role === 'developer') && (
-              <button
-                onClick={() => {
-                  setActiveTab('users');
-                  window.location.hash = 'users'; // Set hash when manually switching to users
-                }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'users'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <Users className="w-5 h-5" />
-                  <span>User Management</span>
-                </div>
-              </button>
-            )}
-          </nav>
-        </div>
-      </div>
+      <AdminSettingsTabs
+        user={user}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       {/* Tab Content */}
       {activeTab === 'users' ? (
@@ -384,359 +350,68 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         </div>
       ) : (
         <div className="space-y-6">
-
-      {/* Auto-save Note */}
-      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-        <p className="text-sm text-blue-800">
-          <strong>Note:</strong> Changes to these settings are automatically saved to the database and will be immediately reflected in all expense forms and dropdowns throughout the application.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
-        {/* Card Options Management */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Card Options</h3>
-                <span className="text-xs text-gray-500">{settings.cardOptions?.length || 0} configured</span>
-              </div>
-              <p className="text-gray-600">Manage available payment card options</p>
-            </div>
+          {/* Auto-save Note */}
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> Changes to these settings are automatically saved to the database and will be immediately reflected in all expense forms and dropdowns throughout the application.
+            </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-3">
-              {/* Card Name and Last 4 */}
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={newCardName}
-                  onChange={(e) => setNewCardName(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Card name (e.g., Haute Inc USD Amex)"
-                />
-                <input
-                  type="text"
-                  value={newCardLastFour}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    setNewCardLastFour(value);
-                  }}
-                  className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Last 4"
-                  maxLength={4}
-                />
-              </div>
-              
-              {/* Entity Selection and Add Button */}
-              <div className="flex gap-3">
-                <select
-                  value={newCardEntity}
-                  onChange={(e) => setNewCardEntity(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                >
-                  <option value="">Personal Card (No Entity)</option>
-                  {settings.entityOptions.map((entity, idx) => (
-                    <option key={idx} value={entity}>{entity}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={addCardOption}
-                  disabled={!newCardName || !newCardLastFour || newCardLastFour.length !== 4 || isSaving}
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 whitespace-nowrap"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Add</span>
-                </button>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
+            <CardOptionsSection
+              cardOptions={settings.cardOptions}
+              entityOptions={settings.entityOptions}
+              newCardName={newCardName}
+              setNewCardName={setNewCardName}
+              newCardLastFour={newCardLastFour}
+              setNewCardLastFour={setNewCardLastFour}
+              newCardEntity={newCardEntity}
+              setNewCardEntity={setNewCardEntity}
+              editingCardIndex={editingCardIndex}
+              editCardName={editCardName}
+              setEditCardName={setEditCardName}
+              editCardLastFour={editCardLastFour}
+              setEditCardLastFour={setEditCardLastFour}
+              editCardEntity={editCardEntity}
+              setEditCardEntity={setEditCardEntity}
+              isSaving={isSaving}
+              onAddCard={addCardOption}
+              onRemoveCard={removeCardOption}
+              onStartEdit={startEditCard}
+              onCancelEdit={cancelEditCard}
+              onSaveEdit={saveEditCard}
+            />
 
-            <div className="space-y-2">
-              {settings.cardOptions.map((option, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
-                  {editingCardIndex === index ? (
-                    <div className="w-full space-y-2">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={editCardName}
-                          onChange={(e) => setEditCardName(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Card name"
-                        />
-                        <input
-                          type="text"
-                          value={editCardLastFour}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                            setEditCardLastFour(value);
-                          }}
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Last 4"
-                          maxLength={4}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <select
-                          value={editCardEntity}
-                          onChange={(e) => setEditCardEntity(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                        >
-                          <option value="">Personal Card (No Entity)</option>
-                          {settings.entityOptions.map((entity, idx) => (
-                            <option key={idx} value={entity}>{entity}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => saveEditCard(index)}
-                          disabled={isSaving || !editCardName || !editCardLastFour || editCardLastFour.length !== 4}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Save"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={cancelEditCard}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                          title="Cancel"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex-1">
-                        <div className="text-gray-900 font-medium">{option.name} | {option.lastFour}</div>
-                        <div className="text-sm mt-0.5">
-                          {option.entity ? (
-                            <span className="text-blue-600 font-medium">{option.entity}</span>
-                          ) : (
-                            <span className="text-gray-500">Personal Card</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEditCard(index)}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeCardOption(option)}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
+            <EntityOptionsSection
+              entityOptions={settings.entityOptions}
+              newEntityOption={newEntityOption}
+              setNewEntityOption={setNewEntityOption}
+              editingEntityIndex={editingEntityIndex}
+              editEntityValue={editEntityValue}
+              setEditEntityValue={setEditEntityValue}
+              isSaving={isSaving}
+              onAddEntity={addEntityOption}
+              onRemoveEntity={removeEntityOption}
+              onStartEdit={startEditEntity}
+              onCancelEdit={cancelEditEntity}
+              onSaveEdit={saveEditEntity}
+            />
+
+            <CategoryOptionsSection
+              categoryOptions={settings.categoryOptions}
+              newCategoryOption={newCategoryOption}
+              setNewCategoryOption={setNewCategoryOption}
+              editingCategoryIndex={editingCategoryIndex}
+              editCategoryValue={editCategoryValue}
+              setEditCategoryValue={setEditCategoryValue}
+              isSaving={isSaving}
+              onAddCategory={addCategoryOption}
+              onRemoveCategory={removeCategoryOption}
+              onStartEdit={startEditCategory}
+              onCancelEdit={cancelEditCategory}
+              onSaveEdit={saveEditCategory}
+            />
           </div>
-        </div>
-
-        {/* Entity Options Management */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Entity Options</h3>
-                <span className="text-xs text-gray-500">{settings.entityOptions?.length || 0} configured</span>
-              </div>
-              <p className="text-gray-600">Manage Zoho entity assignments</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newEntityOption}
-                onChange={(e) => setNewEntityOption(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addEntityOption()}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter new entity option..."
-              />
-              <button
-                onClick={addEntityOption}
-                disabled={!newEntityOption || isSaving}
-                className="bg-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Add</span>
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              {settings.entityOptions.map((option, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
-                  {editingEntityIndex === index ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editEntityValue}
-                        onChange={(e) => setEditEntityValue(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Entity name"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => saveEditEntity(index)}
-                          disabled={isSaving || !editEntityValue.trim()}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Save"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={cancelEditEntity}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                          title="Cancel"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-gray-900">{option}</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEditEntity(index)}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeEntityOption(option)}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Category Options Management */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Tag className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Expense Categories</h3>
-                <span className="text-xs text-gray-500">{settings.categoryOptions?.length || 0} configured</span>
-              </div>
-              <p className="text-gray-600">Manage expense category options</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newCategoryOption}
-                onChange={(e) => setNewCategoryOption(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addCategoryOption()}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter new category option..."
-              />
-              <button
-                onClick={addCategoryOption}
-                disabled={!newCategoryOption || isSaving}
-                className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Add</span>
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {settings.categoryOptions.map((option, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
-                  {editingCategoryIndex === index ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editCategoryValue}
-                        onChange={(e) => setEditCategoryValue(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Category name"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => saveEditCategory(index)}
-                          disabled={isSaving || !editCategoryValue.trim()}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Save"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={cancelEditCategory}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                          title="Cancel"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-gray-900">{option}</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEditCategory(index)}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removeCategoryOption(option)}
-                          disabled={isSaving}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
         </div>
       )}
     </div>
