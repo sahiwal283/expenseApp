@@ -830,6 +830,22 @@ App.tsx (Root)
 │ created_at  │
 └─────────────┘
        │
+       │  ┌──────────────────┐
+       │  │ event_checklists │  (NEW v1.27.14)
+       │  ├──────────────────┤
+       │  │ id               │
+       │  │ event_id         │
+       │  │ booth_ordered    │
+       │  │ booth_map_url    │
+       │  │ electricity_ordered│
+       │  └──────────────────┘
+       │         │
+       │         ├──► checklist_flights
+       │         ├──► checklist_hotels
+       │         ├──► checklist_car_rentals
+       │         ├──► checklist_booth_shipping
+       │         └──► checklist_custom_items
+       │
        │  ┌─────────────┐
        └──┤  expenses   │
           ├─────────────┤
@@ -841,7 +857,7 @@ App.tsx (Root)
           │ description │
           │ receipt_path│
           │ ocr_text    │
-          │ status      │  (pending/approved/rejected)
+          │ status      │  (pending/approved/rejected/needs further review)
           │ zoho_entity │  (haute/alpha/beta/gamma/delta)
           │ zoho_expense_id │  (tracking)
           │ reimbursement_required │
