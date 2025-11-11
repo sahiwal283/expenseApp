@@ -995,6 +995,309 @@ type(scope): description
 
 ---
 
+## ⚠️ Common Pitfalls & Errors to Avoid
+
+### 🚨 CRITICAL PITFALLS (Will Break Production!)
+
+**1. Database Schema Constraints Not Updated**
+- **Pitfall:** Deploying code with new enum values without updating CHECK constraints
+- **Error:** `"new row violates check constraint"` or `"Failed to update entity"`
+- **Example:** Adding `'needs further review'` status without updating `expenses_status_check`
+- **Fix:** ALWAYS update schema.sql and create migration BEFORE deploying code
+- **Prevention:** Run schema validation before every deployment
+
+**2. Frontend Deployment Directory Wrong**
+- **Pitfall:** Deploying to `/var/www/html` or `/var/www/expenseapp/` instead of `/var/www/expenseapp/current/`
+- **Error:** 404 Not Found errors, frontend doesn't load
+- **Fix:** Always deploy to `/var/www/expenseapp/current/` (production) or `/var/www/expenseapp/` (sandbox)
+- **Prevention:** Check Nginx root path before deploying
+
+**3. Backend Service Path Case Sensitivity**
+- **Pitfall:** Using `expenseapp` instead of `expenseApp` (capital 'A')
+- **Error:** Service won't start, 500 errors
+- **Fix:** Always use `/opt/expenseApp/backend` (exact case)
+- **Prevention:** Copy path from service file, never type manually
+
+**4. Forgetting to Restart NPMplus Proxy**
+- **Pitfall:** Deploying frontend but not restarting Container 104
+- **Error:** Old version cached, users see stale frontend
+- **Fix:** Always run `pct stop 104 && sleep 3 && pct start 104` after frontend deployment
+- **Prevention:** Include in deployment checklist
+
+**5. Not Updating Service Worker Cache Names**
+- **Pitfall:** Changing version in package.json but not in service-worker.js
+- **Error:** Service worker doesn't update, users see old version
+- **Fix:** Update ALL version references in service-worker.js (CACHE_NAME, STATIC_CACHE, console logs)
+- **Prevention:** Version update checklist
+
+**6. Deploying to Production Without Approval**
+- **Pitfall:** Accidentally deploying to Container 201 instead of 203
+- **Error:** Breaks production for real users
+- **Fix:** ALWAYS ask for explicit confirmation before production deployment
+- **Prevention:** Default to sandbox, require explicit "deploy to production" command
+
+### 🐛 Common Bugs & Errors
+
+**1. Timezone Bug with Date Handling**
+- **Bug:** Expenses submitted at 9:35 PM showed next day's date
+- **Cause:** Using `new Date(dateString)` treats YYYY-MM-DD as UTC midnight
+- **Error:** Date shifts backward by one day in timezones behind UTC
+- **Fix:** Always use `dateUtils.parseLocalDate()` instead of `new Date()`
+- **Prevention:** Never use `new Date()` for date-only strings, always use dateUtils
+
+**2. Offline Notification Spam**
+- **Bug:** Multiple "Working Offline" notifications stacking up, not dismissing
+- **Cause:** Network detection too aggressive, no notification ID tracking
+- **Fix:** Implemented notification ID tracking, less aggressive detection
+- **Prevention:** Always track notification IDs to prevent duplicates
+
+**3. Session Timeout Warning Not Appearing**
+- **Bug:** Users logged out without seeing 5-minute warning modal
+- **Cause:** Token refresh URL incorrect, session/API coordination issues
+- **Fix:** Corrected token refresh URL, improved coordination
+- **Prevention:** Test session timeout flow in development
+
+**4. Auto-Status Logic Not Reliable**
+- **Bug:** Expenses stuck in "needs further review" despite corrective actions
+- **Cause:** Complex logic with edge cases, regression detection issues
+- **Fix:** Rewrote with 3 clear rules (regression → approval → no-op)
+- **Prevention:** Keep status logic simple and test all edge cases
+
+**5. Pending Tasks Navigation 404**
+- **Bug:** "Push to Zoho" button in dashboard led to 404 (old approvals page)
+- **Cause:** Navigation links not updated after page merge
+- **Fix:** Updated all task links to point to unified expenses page
+- **Prevention:** Update all navigation links when restructuring pages
+
+**6. Phone Camera Images Rejected**
+- **Bug:** HEIC, HEIF, WebP images from phones rejected
+- **Cause:** MIME type validation too strict
+- **Fix:** Accept any `image/*` MIME type
+- **Prevention:** Use flexible MIME type checking for image uploads
+
+**7. Missing useEffect Import**
+- **Bug:** Production-breaking bug - useEffect not imported
+- **Cause:** Missing import statement
+- **Fix:** Added `import { useEffect } from 'react'`
+- **Prevention:** Always check imports, use linter
+
+**8. Double `/api/api/` URL Path**
+- **Bug:** Frontend 404 on corrections endpoint
+- **Cause:** API client adding `/api/` prefix to already-prefixed URLs
+- **Fix:** Fixed URL construction to prevent double prefix
+- **Prevention:** Check API client URL construction logic
+
+**9. Data Pool 422 Validation Error**
+- **Bug:** Data Pool rejecting correction submissions
+- **Cause:** `corrected_fields` not nested in request body
+- **Fix:** Nested corrected_fields properly in request
+- **Prevention:** Match Data Pool API schema exactly
+
+**10. Data Pool UTF-8 Encoding Errors**
+- **Bug:** Unicode characters (™, ®, ©) causing database errors
+- **Cause:** Database not created with UTF-8 encoding
+- **Fix:** Recreated database with UTF-8 encoding
+- **Prevention:** Always use UTF-8 encoding for databases
+
+**11. Nginx 404 on Frontend**
+- **Bug:** Frontend files not loading after deployment
+- **Cause:** Nginx root directive path incorrect
+- **Fix:** Corrected root directive to match deployment path
+- **Prevention:** Verify Nginx config matches deployment structure
+
+**12. 504 Gateway Timeout During OCR**
+- **Bug:** OCR processing taking too long, causing timeouts
+- **Cause:** Timeouts too short for LLM enhancement (95-115s)
+- **Fix:** Increased timeouts to 180s across all layers (Nginx, Backend, OCR)
+- **Prevention:** Set appropriate timeouts for long-running operations
+
+**13. Random LLM Sampling Slow**
+- **Bug:** High-confidence receipts still triggering slow LLM processing
+- **Cause:** 10% random sampling on all receipts
+- **Fix:** Disabled sampling on high-confidence receipts
+- **Prevention:** Only use LLM for low-confidence receipts
+
+**14. Navigation Failures**
+- **Bug:** Navigation not working reliably
+- **Cause:** Using URL hash for navigation state
+- **Fix:** Use sessionStorage instead of URL hash
+- **Prevention:** Prefer sessionStorage/localStorage over URL state
+
+**15. Entity Change Warning Not Appearing**
+- **Bug:** Warning dialog not showing when changing entity in modal
+- **Cause:** onChange event not firing properly
+- **Status:** Under investigation
+- **Workaround:** User can still change entities, just without warning
+- **Prevention:** Test modal interactions thoroughly
+
+**16. Zoho Duplicate Prevention Issues**
+- **Bug:** In-memory Set prevents re-push of deleted expenses
+- **Cause:** Set persists across requests but not backend restarts
+- **Status:** Needs database-based duplicate check
+- **Workaround:** Restart backend to clear Set
+- **Prevention:** Use database-based duplicate tracking
+
+**17. OCR Service 500 Errors**
+- **Bug:** OCR service returning 500 errors
+- **Cause:** Tesseract language code wrong ("en" instead of "eng")
+- **Fix:** Changed to "eng" language code
+- **Prevention:** Verify Tesseract language codes
+
+**18. Event Days Display Negative**
+- **Bug:** Events in progress showing negative days
+- **Cause:** Date calculation logic issue
+- **Fix:** Show "Today" instead of negative days
+- **Prevention:** Handle edge cases in date calculations
+
+**19. Entity Re-assignment Not Clearing Zoho ID**
+- **Bug:** Can't re-push expense after changing entity
+- **Cause:** `zoho_expense_id` not cleared on entity change
+- **Fix:** Clear `zoho_expense_id` when entity changes
+- **Prevention:** Always clear related IDs when changing relationships
+
+**20. Double OCR Processing**
+- **Bug:** Receipt processed twice (once on upload, once on save)
+- **Cause:** OCR triggered both in upload handler and expense creation
+- **Fix:** Store receipt URL from OCR, skip processing if already done
+- **Prevention:** Track OCR processing state to prevent duplicates
+
+### 💡 Development Pitfalls
+
+**1. Using `any` Types in TypeScript**
+- **Pitfall:** Using `any` to bypass type checking
+- **Problem:** Loses type safety, harder to catch errors
+- **Fix:** Always define proper interfaces
+- **Prevention:** Enable strict TypeScript, no `any` policy
+
+**2. Not Testing in Sandbox First**
+- **Pitfall:** Deploying directly to production
+- **Problem:** Breaks production for real users
+- **Fix:** ALWAYS test in sandbox first
+- **Prevention:** Make sandbox testing mandatory
+
+**3. Not Updating Version Numbers**
+- **Pitfall:** Forgetting to increment version in package.json and service-worker.js
+- **Problem:** Cache issues, users see old version
+- **Fix:** Always update all version references
+- **Prevention:** Version update checklist
+
+**4. Creating Too Many Branches**
+- **Pitfall:** Creating new branch for each small change
+- **Problem:** Clutters repo, hard to track
+- **Fix:** One branch per development session, many commits
+- **Prevention:** Follow branch management strategy
+
+**5. Not Committing Changes**
+- **Pitfall:** Leaving uncommitted changes before deployment
+- **Problem:** Deployment readiness unclear, risk of losing work
+- **Fix:** Always commit before deployment
+- **Prevention:** Pre-deployment checklist
+
+**6. Not Restarting Services After Deployment**
+- **Pitfall:** Deploying code but not restarting backend service
+- **Problem:** Old code still running, changes not applied
+- **Fix:** Always restart services after deployment
+- **Prevention:** Include in deployment checklist
+
+**7. Not Validating Schema Before Deployment**
+- **Pitfall:** Deploying code without checking database schema
+- **Problem:** Runtime errors, production failures
+- **Fix:** ALWAYS run schema validation first
+- **Prevention:** Make schema validation mandatory
+
+**8. Mixing Sandbox and Production Credentials**
+- **Pitfall:** Trying to "fix" separate credentials
+- **Problem:** Breaks data isolation, security risk
+- **Fix:** Keep credentials separate (intentional design)
+- **Prevention:** Understand why credentials are separate
+
+**9. Not Documenting Changes**
+- **Pitfall:** Making changes without updating documentation
+- **Problem:** Future AI agents don't know what changed
+- **Fix:** Always update MASTER_GUIDE.md
+- **Prevention:** Documentation update checklist
+
+**10. Not Testing Edge Cases**
+- **Pitfall:** Only testing happy path
+- **Problem:** Bugs in edge cases break production
+- **Fix:** Test all edge cases, especially date/timezone issues
+- **Prevention:** Comprehensive testing checklist
+
+### 🔧 Code-Specific Pitfalls
+
+**1. Date Handling Without dateUtils**
+- **Pitfall:** Using `new Date(dateString)` for YYYY-MM-DD strings
+- **Problem:** Timezone conversion bugs
+- **Fix:** Always use `dateUtils.parseLocalDate()`
+- **Example:**
+  ```typescript
+  // ❌ BAD
+  const date = new Date("2026-02-07");
+  
+  // ✅ GOOD
+  import { parseLocalDate } from '@/utils/dateUtils';
+  const date = parseLocalDate("2026-02-07");
+  ```
+
+**2. Not Using Repository Pattern**
+- **Pitfall:** Writing SQL queries directly in routes
+- **Problem:** Hard to test, violates separation of concerns
+- **Fix:** Use repositories for all database access
+- **Prevention:** Follow architecture pattern
+
+**3. Not Extracting Helper Functions**
+- **Pitfall:** Keeping large functions in service files
+- **Problem:** Hard to test, hard to maintain
+- **Fix:** Extract to `.helpers.ts` files
+- **Prevention:** Extract functions >20 lines used in multiple places
+
+**4. Not Using Zod Validation**
+- **Pitfall:** Trusting client input without validation
+- **Problem:** Bad data reaches database, security issues
+- **Fix:** Always validate input with Zod schemas
+- **Prevention:** Validation checklist
+
+**5. Not Handling Errors Properly**
+- **Pitfall:** Swallowing errors or not logging them
+- **Problem:** Hard to debug production issues
+- **Fix:** Always log errors, return proper error responses
+- **Prevention:** Error handling standards
+
+---
+
+## 🛡️ Prevention Checklist
+
+**Before Every Deployment:**
+- [ ] Schema validation passed
+- [ ] Version numbers updated (package.json + service-worker.js)
+- [ ] Tested in sandbox first
+- [ ] All changes committed
+- [ ] Service worker cache names updated
+- [ ] NPMplus restart included in deployment script
+- [ ] Correct deployment paths verified
+- [ ] Services restart included
+- [ ] Documentation updated
+
+**Before Every Code Change:**
+- [ ] Check for existing helpers/functions before creating new ones
+- [ ] Use dateUtils for all date handling
+- [ ] Use TypeScript interfaces (no `any` types)
+- [ ] Add JSDoc comments for public methods
+- [ ] Test edge cases (timezones, null values, empty strings)
+- [ ] Validate input with Zod schemas
+- [ ] Follow repository pattern (backend)
+- [ ] Follow component modularization (frontend)
+
+**Before Every Database Change:**
+- [ ] Update schema.sql
+- [ ] Create migration file
+- [ ] Test migration in sandbox
+- [ ] Update CHECK constraints if adding enum values
+- [ ] Verify foreign key constraints
+- [ ] Run schema validation after migration
+
+---
+
 ## 📡 API Reference
 
 ### Core Endpoints
