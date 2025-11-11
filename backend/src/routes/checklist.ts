@@ -4,7 +4,6 @@
  */
 
 import express, { Response } from 'express';
-import { query } from '../config/database';
 import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
 import { checklistRepository } from '../database/repositories';

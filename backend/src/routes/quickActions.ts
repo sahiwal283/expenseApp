@@ -1,7 +1,13 @@
 import { Router } from 'express';
-import { query } from '../config/database';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { userRepository, expenseRepository } from '../database/repositories';
+import {
+  getUnpushedZohoExpenses,
+  getReimbursementCount,
+  getEventsNearBudgetLimit,
+  getUserPendingExpensesCount,
+  getUserMissingReceiptsCount
+} from '../services/QuickActionsService';
 
 const router = Router();
 
@@ -38,11 +44,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       }
 
       // 2. Expenses pending approval
-      const pendingExpensesResult = await query(
-        `SELECT COUNT(*) as count FROM expenses WHERE status = 'pending'`
-      );
-      
-      const pendingExpensesCount = parseInt(pendingExpensesResult.rows[0].count);
+      const pendingExpensesCount = await expenseRepository.countByStatus('pending');
       if (pendingExpensesCount > 0) {
         tasks.push({
           id: 'pending-expenses',
@@ -58,41 +60,10 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       }
 
       // 3. Approved expenses not pushed to Zoho
-      const unpushedExpensesResult = await query(
-        `SELECT COUNT(*) as count, 
-                ARRAY_AGG(DISTINCT event_id) as event_ids,
-                event_id as primary_event
-         FROM expenses 
-         WHERE status = 'approved' 
-           AND zoho_entity IS NOT NULL 
-           AND zoho_expense_id IS NULL
-         GROUP BY event_id
-         ORDER BY COUNT(*) DESC
-         LIMIT 1`
-      );
+      const unpushedData = await getUnpushedZohoExpenses();
       
-      const unpushedCountQuery = await query(
-        `SELECT COUNT(*) as count 
-         FROM expenses 
-         WHERE status = 'approved' 
-           AND zoho_entity IS NOT NULL 
-           AND zoho_expense_id IS NULL`
-      );
-      
-      const unpushedCount = parseInt(unpushedCountQuery.rows[0].count);
-      if (unpushedCount > 0) {
-        // Get all unique event IDs with unpushed expenses
-        const eventsQuery = await query(
-          `SELECT DISTINCT event_id 
-           FROM expenses 
-           WHERE status = 'approved' 
-             AND zoho_entity IS NOT NULL 
-             AND zoho_expense_id IS NULL
-           ORDER BY event_id`
-        );
-        
-        const eventIds = eventsQuery.rows.map(row => row.event_id);
-        const primaryEventId = unpushedExpensesResult.rows[0]?.primary_event; // Event with most unpushed
+      if (unpushedData.count > 0) {
+        const { count: unpushedCount, eventIds, primaryEventId } = unpushedData;
         
         tasks.push({
           id: 'unpushed-zoho',
@@ -104,8 +75,8 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           action: 'Push to Zoho',
           link: '/expenses', // v1.3.0+: Push to Zoho now on unified Expenses page
           icon: 'Upload',
-          eventIds: eventIds,
-          primaryEventId: primaryEventId // Event with most unsynced expenses
+          eventIds,
+          primaryEventId // Event with most unsynced expenses
         });
       }
     }
@@ -113,11 +84,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     // ACCOUNTANT TASKS
     if (userRole === 'accountant') {
       // 1. Expenses pending approval
-      const pendingExpensesResult = await query(
-        `SELECT COUNT(*) as count FROM expenses WHERE status = 'pending'`
-      );
-      
-      const pendingExpensesCount = parseInt(pendingExpensesResult.rows[0].count);
+      const pendingExpensesCount = await expenseRepository.countByStatus('pending');
       if (pendingExpensesCount > 0) {
         tasks.push({
           id: 'pending-expenses',
@@ -133,14 +100,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       }
 
       // 2. Reimbursements to process
-      const reimbursementsResult = await query(
-        `SELECT COUNT(*) as count 
-         FROM expenses 
-         WHERE reimbursement_required = TRUE 
-           AND (reimbursement_status = 'pending review' OR reimbursement_status = 'approved')`
-      );
-      
-      const reimbursementCount = parseInt(reimbursementsResult.rows[0].count);
+      const reimbursementCount = await getReimbursementCount();
       if (reimbursementCount > 0) {
         tasks.push({
           id: 'pending-reimbursements',
@@ -159,33 +119,20 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     // COORDINATOR TASKS
     if (userRole === 'coordinator') {
       // Events requiring budget review
-      const eventBudgetResult = await query(
-        `SELECT e.id, e.name, 
-                SUM(ex.amount) as spent,
-                e.budget,
-                (SUM(ex.amount) / NULLIF(e.budget, 0) * 100) as percent_spent
-         FROM events e
-         LEFT JOIN expenses ex ON e.id = ex.event_id AND ex.status = 'approved'
-         WHERE e.coordinator_id = $1
-           AND e.status != 'completed'
-           AND e.budget IS NOT NULL
-         GROUP BY e.id, e.name, e.budget
-         HAVING SUM(ex.amount) / NULLIF(e.budget, 0) >= 0.8`,
-        [userId]
-      );
+      const eventsNearBudget = await getEventsNearBudgetLimit(userId);
       
-      if (eventBudgetResult.rows.length > 0) {
+      if (eventsNearBudget.length > 0) {
         tasks.push({
           id: 'budget-warnings',
           type: 'coordinator',
           priority: 'high',
-          title: `${eventBudgetResult.rows.length} Event${eventBudgetResult.rows.length > 1 ? 's' : ''} Near Budget Limit`,
+          title: `${eventsNearBudget.length} Event${eventsNearBudget.length > 1 ? 's' : ''} Near Budget Limit`,
           description: `Events have reached 80% or more of their budget`,
-          count: eventBudgetResult.rows.length,
+          count: eventsNearBudget.length,
           action: 'View Events',
           link: '/events',
           icon: 'AlertTriangle',
-          events: eventBudgetResult.rows
+          events: eventsNearBudget
         });
       }
     }
@@ -193,14 +140,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     // SALESPERSON TASKS
     if (userRole === 'salesperson') {
       // Pending expense submissions (user's own)
-      const userPendingResult = await query(
-        `SELECT COUNT(*) as count 
-         FROM expenses 
-         WHERE user_id = $1 AND status = 'pending'`,
-        [userId]
-      );
-      
-      const userPendingCount = parseInt(userPendingResult.rows[0].count);
+      const userPendingCount = await getUserPendingExpensesCount(userId);
       if (userPendingCount > 0) {
         tasks.push({
           id: 'user-pending-expenses',
@@ -216,14 +156,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       }
 
       // Missing receipts
-      const missingReceiptsResult = await query(
-        `SELECT COUNT(*) as count 
-         FROM expenses 
-         WHERE user_id = $1 AND receipt_url IS NULL`,
-        [userId]
-      );
-      
-      const missingReceiptsCount = parseInt(missingReceiptsResult.rows[0].count);
+      const missingReceiptsCount = await getUserMissingReceiptsCount(userId);
       if (missingReceiptsCount > 0) {
         tasks.push({
           id: 'missing-receipts',
