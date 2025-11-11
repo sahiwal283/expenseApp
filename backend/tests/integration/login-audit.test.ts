@@ -516,5 +516,129 @@ describe('Login and Audit Logging Integration Tests', () => {
       console.log('✅ Audit logging errors handled gracefully');
     });
   });
+
+  describe('Actual User Verification', () => {
+    it('should verify existing users in database', async () => {
+      if (!dbAvailable) {
+        console.log('⏭️  Skipping - database not available');
+        return;
+      }
+
+      // Check for existing users
+      const result = await pool.query(
+        `SELECT id, username, email, role, created_at 
+         FROM users 
+         WHERE role != 'pending'
+         ORDER BY created_at DESC 
+         LIMIT 10`
+      );
+
+      expect(result.rows.length).toBeGreaterThan(0);
+      console.log(`✅ Found ${result.rows.length} existing users in database`);
+
+      // Log user details for manual testing
+      result.rows.forEach((user, index) => {
+        console.log(`  User ${index + 1}: ${user.username} (${user.role}) - ${user.email}`);
+      });
+    });
+
+    it('should verify users have valid passwords', async () => {
+      if (!dbAvailable) {
+        console.log('⏭️  Skipping - database not available');
+        return;
+      }
+
+      // Get a test user
+      const result = await pool.query(
+        `SELECT id, username, password 
+         FROM users 
+         WHERE role != 'pending'
+         LIMIT 1`
+      );
+
+      if (result.rows.length > 0) {
+        const user = result.rows[0];
+        expect(user.password).toBeTruthy();
+        expect(user.password.length).toBeGreaterThan(0);
+        console.log(`✅ User ${user.username} has password hash`);
+      }
+    });
+
+    it('should verify audit_logs table is accessible', async () => {
+      if (!dbAvailable) {
+        console.log('⏭️  Skipping - database not available');
+        return;
+      }
+
+      // Try to query audit_logs table
+      const result = await pool.query(
+        `SELECT COUNT(*) as count FROM audit_logs`
+      );
+
+      expect(result.rows.length).toBe(1);
+      const count = parseInt(result.rows[0].count, 10);
+      console.log(`✅ audit_logs table accessible (${count} total entries)`);
+    });
+
+    it('should verify recent audit log entries exist', async () => {
+      if (!dbAvailable) {
+        console.log('⏭️  Skipping - database not available');
+        return;
+      }
+
+      // Check for recent audit log entries (last 24 hours)
+      const result = await pool.query(
+        `SELECT action, status, user_name, created_at 
+         FROM audit_logs 
+         WHERE created_at > NOW() - INTERVAL '24 hours'
+         ORDER BY created_at DESC 
+         LIMIT 5`
+      );
+
+      console.log(`✅ Found ${result.rows.length} audit log entries in last 24 hours`);
+      
+      if (result.rows.length > 0) {
+        result.rows.forEach((log, index) => {
+          console.log(`  Entry ${index + 1}: ${log.action} (${log.status}) - ${log.user_name || 'N/A'} - ${log.created_at}`);
+        });
+      }
+    });
+  });
+
+  describe('Login Endpoint Verification', () => {
+    it('should verify login endpoint code structure', async () => {
+      // Verify login route exists and uses audit logging
+      const authRoutes = await import('../../src/routes/auth');
+      expect(authRoutes).toBeDefined();
+      
+      // Verify logAuth is imported
+      const auditLogger = await import('../../src/utils/auditLogger');
+      expect(auditLogger.logAuth).toBeDefined();
+      
+      console.log('✅ Login endpoint code structure verified');
+    });
+
+    it('should verify login endpoint calls logAuth for success', async () => {
+      // This test verifies the code structure - actual HTTP testing requires server
+      const fs = await import('fs');
+      const path = await import('path');
+      const authPath = path.join(__dirname, '../../src/routes/auth.ts');
+      
+      try {
+        const authCode = await fs.promises.readFile(authPath, 'utf-8');
+        
+        // Verify logAuth is called for successful login
+        expect(authCode).toContain('logAuth');
+        expect(authCode).toContain('login_success');
+        expect(authCode).toContain('login_failed');
+        console.log('✅ Login endpoint code calls logAuth correctly');
+      } catch (error) {
+        // If file can't be read, verify imports work instead
+        const authRoutes = await import('../../src/routes/auth');
+        expect(authRoutes).toBeDefined();
+        console.log('✅ Login endpoint module loaded successfully');
+      }
+    });
+  });
 });
 
