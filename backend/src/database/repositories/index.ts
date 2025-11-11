@@ -1,0 +1,37 @@
+/**
+ * Repository Index
+ * 
+ * Central export point for all repository classes.
+ * Repositories provide a clean abstraction layer for database operations,
+ * separating data access logic from business logic in routes and services.
+ */
+
+// Export base repository
+export { BaseRepository } from './BaseRepository';
+
+// Export repositories and their interfaces
+export { ExpenseRepository, expenseRepository } from './ExpenseRepository';
+export type { Expense, ExpenseWithDetails } from './ExpenseRepository';
+
+export { UserRepository, userRepository } from './UserRepository';
+export type { User, UserWithoutPassword } from './UserRepository';
+
+export { EventRepository, eventRepository } from './EventRepository';
+export type { Event, EventWithStats } from './EventRepository';
+
+export { AuditLogRepository, auditLogRepository } from './AuditLogRepository';
+export type { AuditLog, AuditLogFilters } from './AuditLogRepository';
+
+export { ApiRequestRepository, apiRequestRepository } from './ApiRequestRepository';
+export type { ApiRequest, ApiRequestStats } from './ApiRequestRepository';
+
+export { ChecklistRepository, checklistRepository } from './ChecklistRepository';
+export type {
+  EventChecklist,
+  ChecklistFlight,
+  ChecklistHotel,
+  ChecklistCarRental,
+  ChecklistBoothShipping,
+  ChecklistCustomItem
+} from './ChecklistRepository';
+
