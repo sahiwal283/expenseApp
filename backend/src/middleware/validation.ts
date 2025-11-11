@@ -15,7 +15,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  custom?: (value: any) => boolean;
+  custom?: (value: unknown) => boolean;
   message?: string;
 }
 
@@ -34,7 +34,7 @@ export class ValidationError extends Error {
 /**
  * Validate a single field
  */
-function validateField(value: any, rule: ValidationRule): string | null {
+function validateField(value: unknown, rule: ValidationRule): string | null {
   // Required check
   if (rule.required && (value === undefined || value === null || value === '')) {
     return rule.message || `${rule.field} is required`;

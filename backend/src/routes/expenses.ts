@@ -148,7 +148,7 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
   // Include duplicate warnings in response
   const responseExpense = normalizeExpense(expense);
   if (duplicates.length > 0) {
-    responseExpense.duplicate_check = duplicates;
+    responseExpense.duplicateCheck = duplicates;
   }
 
   res.status(201).json(responseExpense);

@@ -14,22 +14,23 @@ interface LogEntry {
   duration?: number;
   error?: string;
   userId?: string;
+  [key: string]: unknown; // Index signature for Record compatibility
 }
 
 /**
  * Simple logger utility
  */
 export const logger = {
-  info: (message: string, meta?: any) => {
+  info: (message: string, meta?: Record<string, unknown>) => {
     console.log(`[INFO] ${new Date().toISOString()} - ${message}`, meta || '');
   },
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: Error | Record<string, unknown>) => {
     console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, error || '');
   },
-  warn: (message: string, meta?: any) => {
+  warn: (message: string, meta?: Record<string, unknown>) => {
     console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, meta || '');
   },
-  debug: (message: string, meta?: any) => {
+  debug: (message: string, meta?: Record<string, unknown>) => {
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[DEBUG] ${new Date().toISOString()} - ${message}`, meta || '');
     }
@@ -72,7 +73,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
 /**
  * Error logging middleware
  */
-export function errorLogger(err: any, req: Request, res: Response, next: NextFunction) {
+export function errorLogger(err: Error & { status?: number }, req: Request, res: Response, next: NextFunction) {
   const logEntry: LogEntry = {
     timestamp: new Date().toISOString(),
     method: req.method,
