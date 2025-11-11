@@ -9,6 +9,20 @@ import * as os from 'os';
 import backendPkg from '../../package.json';
 import { FRONTEND_VERSION } from '../config/version';
 import { auditLogRepository, apiRequestRepository } from '../database/repositories';
+import {
+  checkErrorRateAlert,
+  checkSlowResponseAlert,
+  checkStaleSessionsAlert,
+  checkEndpointFailureAlert,
+  checkTrafficSpikeAlert,
+  checkAuthFailuresAlert,
+  parseTimeRange,
+  getSystemMemoryMetrics,
+  getSystemCPUMetrics,
+  formatSessionDuration,
+  checkOCRServiceHealth,
+  calculateOCRCosts
+} from './DevDashboardService.helpers';
 
 export class DevDashboardService {
   /**
@@ -170,9 +184,7 @@ export class DevDashboardService {
    */
   static async getMetrics(timeRange: string = '24h') {
     // Parse time range
-    let interval = '24 hours';
-    if (timeRange === '7d') interval = '7 days';
-    else if (timeRange === '30d') interval = '30 days';
+    const interval = parseTimeRange(timeRange);
     
     // Get expense trends
     const expenseTrendsResult = await pool.query(`
@@ -212,12 +224,8 @@ export class DevDashboardService {
     `);
     
     // System metrics
-    const totalMemory = os.totalmem();
-    const freeMemory = os.freemem();
-    const usedMemory = totalMemory - freeMemory;
-    const memoryUsagePercent = (usedMemory / totalMemory) * 100;
-    const loadAverage = os.loadavg();
-    const cpuCores = os.cpus().length;
+    const memoryMetrics = getSystemMemoryMetrics();
+    const cpuMetrics = getSystemCPUMetrics();
     
     // Database stats
     const dbSizeResult = await pool.query(`
@@ -249,17 +257,17 @@ export class DevDashboardService {
       const historicalResult = await pool.query(`
         SELECT 
           'memory_usage' as metric_type,
-          AVG(${memoryUsagePercent}) as avg_value,
-          MAX(${memoryUsagePercent}) as max_value,
-          MIN(${memoryUsagePercent}) as min_value,
+          AVG(${memoryMetrics.usagePercent}) as avg_value,
+          MAX(${memoryMetrics.usagePercent}) as max_value,
+          MIN(${memoryMetrics.usagePercent}) as min_value,
           '%' as metric_unit,
           1 as sample_count
         UNION ALL
         SELECT 
           'cpu_load' as metric_type,
-          ${loadAverage[0]} as avg_value,
-          ${loadAverage[0]} as max_value,
-          ${loadAverage[0]} as min_value,
+          ${cpuMetrics.loadAverage[0]} as avg_value,
+          ${cpuMetrics.loadAverage[0]} as max_value,
+          ${cpuMetrics.loadAverage[0]} as min_value,
           '' as metric_unit,
           1 as sample_count
         UNION ALL
@@ -278,18 +286,8 @@ export class DevDashboardService {
     
     return {
       system: {
-        memory: {
-          usagePercent: memoryUsagePercent,
-          usedGB: parseFloat((usedMemory / 1024 / 1024 / 1024).toFixed(2)),
-          totalGB: parseFloat((totalMemory / 1024 / 1024 / 1024).toFixed(2)),
-          freeGB: parseFloat((freeMemory / 1024 / 1024 / 1024).toFixed(2))
-        },
-        cpu: {
-          loadAverage: loadAverage,
-          cores: cpuCores,
-          model: os.cpus()[0]?.model || 'Unknown',
-          speed: os.cpus()[0]?.speed || 0
-        },
+        memory: memoryMetrics,
+        cpu: cpuMetrics,
         platform: os.platform(),
         arch: os.arch(),
         hostname: os.hostname(),
@@ -453,9 +451,7 @@ export class DevDashboardService {
    * Get API analytics
    */
   static async getAPIAnalytics(timeRange: string = '24h') {
-    let interval = '24 hours';
-    if (timeRange === '7d') interval = '7 days';
-    else if (timeRange === '30d') interval = '30 days';
+    const interval = parseTimeRange(timeRange);
     
     // Get actual API request statistics from api_requests table
     const endpointStats = await pool.query(`
@@ -536,177 +532,20 @@ export class DevDashboardService {
     const alerts: any[] = [];
     const now = new Date();
     
-    // 1. Check for high error rate (last 1 hour)
-    const errorRateResult = await pool.query(`
-      SELECT 
-        COUNT(*) as total_requests,
-        COUNT(CASE WHEN status_code >= 400 THEN 1 END) as error_count
-      FROM api_requests
-      WHERE created_at > NOW() - INTERVAL '1 hour'
-    `);
+    // Run all alert checks in parallel
+    const alertChecks = await Promise.all([
+      checkErrorRateAlert(now),
+      checkSlowResponseAlert(now),
+      checkStaleSessionsAlert(now),
+      checkEndpointFailureAlert(now),
+      checkTrafficSpikeAlert(now),
+      checkAuthFailuresAlert(now)
+    ]);
     
-    const totalRequests = parseInt(errorRateResult.rows[0].total_requests) || 0;
-    const errorCount = parseInt(errorRateResult.rows[0].error_count) || 0;
-    const errorRate = totalRequests > 0 ? (errorCount / totalRequests * 100) : 0;
-    
-    if (errorRate > 10 && totalRequests > 20) {
-      alerts.push({
-        id: 'alert-error-rate',
-        severity: 'critical',
-        status: 'active',
-        title: 'High Error Rate Detected',
-        description: `${errorRate.toFixed(1)}% of API requests are failing (${errorCount}/${totalRequests} requests). Check API Analytics and server logs for details.`,
-        message: `${errorRate.toFixed(1)}% error rate in last hour`,
-        metric_value: errorRate.toFixed(1),
-        threshold_value: '10',
-        timestamp: now.toISOString(),
-        acknowledged: false
-      });
-    }
-    
-    // 2. Check for slow response times
-    const slowEndpointsResult = await pool.query(`
-      SELECT 
-        endpoint,
-        AVG(response_time_ms) as avg_response_time,
-        COUNT(*) as request_count
-      FROM api_requests
-      WHERE created_at > NOW() - INTERVAL '1 hour'
-        AND endpoint NOT LIKE '/api/dev-dashboard%'
-      GROUP BY endpoint
-      HAVING AVG(response_time_ms) > 2000 AND COUNT(*) >= 5
-      ORDER BY avg_response_time DESC
-      LIMIT 1
-    `);
-    
-    if (slowEndpointsResult.rows.length > 0) {
-      const slowEndpoint = slowEndpointsResult.rows[0];
-      const avgTime = Math.round(parseFloat(slowEndpoint.avg_response_time));
-      alerts.push({
-        id: 'alert-slow-response',
-        severity: 'warning',
-        status: 'active',
-        title: 'Slow API Response Times',
-        description: `Endpoint ${slowEndpoint.endpoint} is averaging ${avgTime}ms response time. This may indicate database performance issues, external API delays, or resource constraints.`,
-        message: `${slowEndpoint.endpoint} averaging ${avgTime}ms`,
-        metric_value: avgTime.toString(),
-        threshold_value: '2000',
-        timestamp: now.toISOString(),
-        acknowledged: false
-      });
-    }
-    
-    // 3. Check for database connection issues (stale sessions)
-    const staleSessions = await pool.query(`
-      SELECT COUNT(*) as count
-      FROM user_sessions
-      WHERE expires_at > NOW()
-        AND last_activity < NOW() - INTERVAL '24 hours'
-    `);
-    
-    const staleCount = parseInt(staleSessions.rows[0].count) || 0;
-    if (staleCount > 10) {
-      alerts.push({
-        id: 'alert-stale-sessions',
-        severity: 'info',
-        status: 'active',
-        title: 'Stale Sessions Detected',
-        description: `${staleCount} sessions haven't been active in 24+ hours but are still valid. Consider implementing session cleanup or reducing token expiry time.`,
-        message: `${staleCount} stale sessions`,
-        metric_value: staleCount.toString(),
-        threshold_value: '10',
-        timestamp: now.toISOString(),
-        acknowledged: false
-      });
-    }
-    
-    // 4. Check for repeated endpoint failures (potential bug)
-    const repeatedFailuresResult = await pool.query(`
-      SELECT 
-        endpoint,
-        method,
-        COUNT(*) as failure_count,
-        MAX(error_message) as latest_error
-      FROM api_requests
-      WHERE created_at > NOW() - INTERVAL '1 hour'
-        AND status_code >= 500
-      GROUP BY endpoint, method
-      HAVING COUNT(*) >= 5
-      ORDER BY failure_count DESC
-      LIMIT 1
-    `);
-    
-    if (repeatedFailuresResult.rows.length > 0) {
-      const failure = repeatedFailuresResult.rows[0];
-      alerts.push({
-        id: 'alert-endpoint-failure',
-        severity: 'critical',
-        status: 'active',
-        title: 'Endpoint Repeatedly Failing',
-        description: `${failure.method} ${failure.endpoint} has failed ${failure.failure_count} times in the last hour with 5xx errors. This likely indicates a server-side bug or service outage.`,
-        message: `${failure.method} ${failure.endpoint} failing (${failure.failure_count}x)`,
-        metric_value: failure.failure_count,
-        threshold_value: '5',
-        timestamp: now.toISOString(),
-        acknowledged: false
-      });
-    }
-    
-    // 5. Check API request volume spike
-    const volumeCheckResult = await pool.query(`
-      SELECT 
-        COUNT(*) as recent_count,
-        (
-          SELECT COUNT(*) 
-          FROM api_requests 
-          WHERE created_at BETWEEN NOW() - INTERVAL '2 hours' AND NOW() - INTERVAL '1 hour'
-        ) as previous_count
-      FROM api_requests
-      WHERE created_at > NOW() - INTERVAL '1 hour'
-    `);
-    
-    const recentCount = parseInt(volumeCheckResult.rows[0].recent_count) || 0;
-    const previousCount = parseInt(volumeCheckResult.rows[0].previous_count) || 1;
-    const volumeIncrease = ((recentCount - previousCount) / previousCount * 100);
-    
-    if (volumeIncrease > 200 && recentCount > 100) {
-      alerts.push({
-        id: 'alert-traffic-spike',
-        severity: 'warning',
-        status: 'active',
-        title: 'Unusual Traffic Spike',
-        description: `API traffic increased by ${volumeIncrease.toFixed(0)}% in the last hour (${recentCount} requests vs ${previousCount} previous hour). Monitor for potential DDoS or unusual usage patterns.`,
-        message: `+${volumeIncrease.toFixed(0)}% traffic increase`,
-        metric_value: volumeIncrease.toFixed(0),
-        threshold_value: '200',
-        timestamp: now.toISOString(),
-        acknowledged: false
-      });
-    }
-    
-    // 6. Check for authentication failures
-    const authFailuresResult = await pool.query(`
-      SELECT COUNT(*) as count
-      FROM api_requests
-      WHERE created_at > NOW() - INTERVAL '1 hour'
-        AND status_code = 401
-    `);
-    
-    const authFailures = parseInt(authFailuresResult.rows[0].count) || 0;
-    if (authFailures > 50) {
-      alerts.push({
-        id: 'alert-auth-failures',
-        severity: 'warning',
-        status: 'active',
-        title: 'High Authentication Failures',
-        description: `${authFailures} failed authentication attempts in the last hour. This could indicate expired tokens, credential attacks, or integration issues.`,
-        message: `${authFailures} auth failures`,
-        metric_value: authFailures.toString(),
-        threshold_value: '50',
-        timestamp: now.toISOString(),
-        acknowledged: false
-      });
-    }
+    // Filter out null results and add to alerts array
+    alertChecks.forEach(alert => {
+      if (alert) alerts.push(alert);
+    });
     
     // All systems operational
     if (alerts.length === 0) {
@@ -735,9 +574,7 @@ export class DevDashboardService {
    * Get page analytics
    */
   static async getPageAnalytics(timeRange: string = '24h') {
-    let interval = '24 hours';
-    if (timeRange === '7d') interval = '7 days';
-    else if (timeRange === '30d') interval = '30 days';
+    const interval = parseTimeRange(timeRange);
     
     // Get actual API request data grouped by endpoint
     const result = await pool.query(`
@@ -802,9 +639,7 @@ export class DevDashboardService {
     `);
     
     const avgSessionSeconds = parseFloat(sessionDurationResult.rows[0]?.avg_duration) || 0;
-    const minutes = Math.floor(avgSessionSeconds / 60);
-    const seconds = Math.round(avgSessionSeconds % 60);
-    const avgSessionDuration = avgSessionSeconds > 0 ? `${minutes}m ${seconds}s` : '0m 0s';
+    const avgSessionDuration = formatSessionDuration(avgSessionSeconds);
     
     // Calculate bounce rate
     const bounceRateResult = await pool.query(`
@@ -875,47 +710,20 @@ export class DevDashboardService {
     const googleReceiptsToday = parseInt(googleReceiptsResult.rows[0].receipts_today) || 0;
     
     // Fetch OCR service health and provider info
-    let ocrServiceHealth = null;
-    let ocrProviders = null;
+    const ocrServiceInfo = await checkOCRServiceHealth(OCR_SERVICE_URL);
     
-    try {
-      const [healthResponse, providersResponse] = await Promise.all([
-        axios.get(`${OCR_SERVICE_URL}/health/ready`, { timeout: 5000 }),
-        axios.get(`${OCR_SERVICE_URL}/ocr/providers`, { timeout: 5000 })
-      ]);
-      
-      ocrServiceHealth = healthResponse.data;
-      const providersData = providersResponse.data;
-      ocrProviders = {
-        primary: providersData.providers?.primary || 'unknown',
-        fallback: providersData.providers?.fallback || 'unknown',
-        availability: providersData.providers?.availability || {},
-        languages: providersData.languages || [],
-        confidenceThreshold: providersData.confidenceThreshold || 0.6
-      };
-    } catch (error) {
-      console.warn('[DevDashboard] OCR service not available:', (error as any).message);
-    }
-    
-    // Calculate estimated costs (Google Vision pricing)
-    const freeThreshold = 1000;
-    const costPer1000 = 1.50;
-    
-    let estimatedCostThisMonth = 0;
-    if (googleReceiptsThisMonth > freeThreshold) {
-      const billedReceipts = googleReceiptsThisMonth - freeThreshold;
-      estimatedCostThisMonth = (billedReceipts / 1000) * costPer1000;
-    }
+    // Calculate estimated costs
+    const costInfo = calculateOCRCosts(googleReceiptsThisMonth);
     
     return {
       service: {
         url: OCR_SERVICE_URL,
-        status: ocrServiceHealth ? 'healthy' : 'unavailable',
-        primary: ocrProviders?.primary || 'unknown',
-        fallback: ocrProviders?.fallback || 'unknown',
-        availability: ocrProviders?.availability || {},
-        languages: ocrProviders?.languages || [],
-        confidenceThreshold: ocrProviders?.confidenceThreshold || 0.6
+        status: ocrServiceInfo ? 'healthy' : 'unavailable',
+        primary: ocrServiceInfo?.providers.primary || 'unknown',
+        fallback: ocrServiceInfo?.providers.fallback || 'unknown',
+        availability: ocrServiceInfo?.providers.availability || {},
+        languages: ocrServiceInfo?.providers.languages || [],
+        confidenceThreshold: ocrServiceInfo?.providers.confidenceThreshold || 0.6
       },
       usage: {
         all: {
@@ -928,22 +736,20 @@ export class DevDashboardService {
           thisMonth: googleReceiptsThisMonth,
           today: googleReceiptsToday
         },
-        freeThreshold,
-        remainingFree: Math.max(0, freeThreshold - googleReceiptsThisMonth)
+        freeThreshold: costInfo.freeThreshold,
+        remainingFree: costInfo.remainingFree
       },
       costs: {
-        estimatedThisMonth: estimatedCostThisMonth.toFixed(2),
-        currency: 'USD',
-        pricingModel: `Free for first ${freeThreshold}/month, then $${costPer1000} per 1,000 images`,
-        projectedMonthly: ((googleReceiptsThisMonth / new Date().getDate()) * 30 > freeThreshold) 
-          ? (((googleReceiptsThisMonth / new Date().getDate()) * 30 - freeThreshold) / 1000 * costPer1000).toFixed(2)
-          : '0.00'
+        estimatedThisMonth: costInfo.estimatedThisMonth,
+        currency: costInfo.currency,
+        pricingModel: costInfo.pricingModel,
+        projectedMonthly: costInfo.projectedMonthly
       },
       performance: {
-        provider: ocrProviders?.primary || 'unknown',
-        fallback: ocrProviders?.fallback || 'unknown',
-        expectedSpeed: ocrProviders?.primary === 'google_vision' ? '2-5 seconds' : '10-15 seconds',
-        availability: ocrProviders?.availability || {}
+        provider: ocrServiceInfo?.providers.primary || 'unknown',
+        fallback: ocrServiceInfo?.providers.fallback || 'unknown',
+        expectedSpeed: ocrServiceInfo?.providers.primary === 'google_vision' ? '2-5 seconds' : '10-15 seconds',
+        availability: ocrServiceInfo?.providers.availability || {}
       }
     };
   }
