@@ -16,6 +16,7 @@ import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { normalizeExpense } from '../utils/expenseHelpers';
 import { expenseRepository, userRepository, eventRepository } from '../database/repositories';
+import { generateExpensePDF } from '../services/ExpensePDFService';
 
 const router = Router();
 
@@ -44,6 +45,25 @@ router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   }));
   
   res.json(normalizedExpenses);
+}));
+
+// Get expense PDF (must come before /:id route)
+router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'developer', 'salesperson'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  
+  // Get expense with user/event details
+  const expense = await expenseService.getExpenseByIdWithDetails(id);
+  
+  // Generate PDF
+  const pdfBuffer = await generateExpensePDF(expense);
+  
+  // Set response headers
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="expense-${id}.pdf"`);
+  res.setHeader('Content-Length', pdfBuffer.length.toString());
+  
+  // Send PDF
+  res.send(pdfBuffer);
 }));
 
 // Get expense by ID
