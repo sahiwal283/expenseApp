@@ -151,9 +151,6 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 - 📖 **Documentation**: Comprehensive testing and validation guides
 
 **Documentation:**
-- `docs/REFACTOR_PHASE3_COMPLETE.md` - Component extraction details
-- `docs/REFACTOR_PHASE4_COMPLETE.md` - Logic simplification summary
-- `docs/REFACTOR_PHASE5_COMPLETE.md` - Testing validation approach
 - `docs/TESTING_VALIDATION_GUIDE.md` - Complete testing procedures
 
 ---

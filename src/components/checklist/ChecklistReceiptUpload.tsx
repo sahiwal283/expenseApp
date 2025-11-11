@@ -12,25 +12,6 @@ interface ChecklistReceiptUploadProps {
   onExpenseCreated: () => void;
 }
 
-interface OcrResponse {
-  fields: {
-    merchant?: { value: string; confidence: number };
-    amount?: { value: number; confidence: number };
-    date?: { value: string; confidence: number };
-    cardLastFour?: { value: string; confidence: number };
-  };
-  receiptUrl?: string;
-}
-
-interface ApiError {
-  response?: {
-    data?: {
-      error?: string;
-    };
-  };
-  message: string;
-}
-
 const SECTION_CATEGORIES = {
   booth: 'Booth / Marketing / Tools',
   electricity: 'Booth / Marketing / Tools',
@@ -50,7 +31,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [ocrData, setOcrData] = useState<OcrResponse | null>(null);
+  const [ocrData, setOcrData] = useState<any>(null);
   const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
   const [formData, setFormData] = useState({
     merchant: '',
@@ -127,18 +108,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     try {
       // Create expense with receipt URL (no file re-upload needed)
       // The receipt was already uploaded during OCR processing
-      const expensePayload: {
-        event_id: string;
-        category: string;
-        merchant: string;
-        amount: number;
-        date: string;
-        description: string;
-        card_used: string;
-        reimbursement_required: boolean;
-        zoho_entity?: string;
-        receipt_url?: string;
-      } = {
+      const expensePayload: any = {
         event_id: event.id,
         category: SECTION_CATEGORIES[section],
         merchant: formData.merchant,
@@ -167,10 +137,9 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
       
       onExpenseCreated();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ChecklistReceiptUpload] Error creating expense:', error);
-      const apiError = error as ApiError;
-      const errorMessage = apiError.response?.data?.error || apiError.message || 'Failed to create expense. Please try again.';
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create expense. Please try again.';
       
       // Show error notification
       alert(`❌ Failed to save receipt:\n${errorMessage}`);
