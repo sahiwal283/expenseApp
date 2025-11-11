@@ -76,6 +76,55 @@ export const api = {
     apiClient.patch(`/expenses/${id}/reimbursement`, payload),
   
   deleteExpense: (id: string) => apiClient.delete(`/expenses/${id}`),
+  
+  // Download expense PDF
+  downloadExpensePDF: async (expenseId: string) => {
+    const token = TokenManager.getToken();
+    if (!token) {
+      throw new Error('Authentication required. Please log in again.');
+    }
+
+    const baseURL = apiClient.getBaseURL();
+    const response = await fetch(`${baseURL}/expenses/${expenseId}/pdf`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = 'Failed to download expense PDF';
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Get filename from Content-Disposition header or use default
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = `expense-${expenseId}.pdf`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+
+    // Convert response to blob and trigger download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 
   // Settings
   getSettings: () => apiClient.get('/settings'),

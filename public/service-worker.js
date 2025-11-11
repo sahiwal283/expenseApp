@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.27.14 - Collapsible Checklist Sections
+// Version: 1.28.0 - Download Expense PDF & Toast Notification Fix
 // Date: November 4, 2025
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.27.14';  // BUMPED VERSION for collapsible checklist sections
-const STATIC_CACHE = 'expenseapp-static-v1.27.14';
+const CACHE_NAME = 'expenseapp-v1.28.0';  // BUMPED VERSION for Download Expense PDF & Toast Notification Fix
+const STATIC_CACHE = 'expenseapp-static-v1.28.0';
 const urlsToCache = [
   '/',
   '/index.html',

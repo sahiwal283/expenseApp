@@ -684,6 +684,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             <ExpenseModalFooter
               isEditingExpense={isEditingExpense}
               isSaving={isSaving}
+              expenseId={viewingExpense.id}
               onClose={() => {
                 setViewingExpense(null);
                 setIsEditingExpense(false);
@@ -692,6 +693,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               onEdit={() => startInlineEdit(viewingExpense)}
               onCancel={cancelInlineEdit}
               onSave={saveInlineEdit}
+              onDownloadPDF={async (expenseId: string) => {
+                try {
+                  await api.downloadExpensePDF(expenseId);
+                  addToast('✅ Expense PDF downloaded successfully!', 'success');
+                } catch (error) {
+                  console.error('[ExpenseSubmission] Error downloading PDF:', error);
+                  const errorMessage = error instanceof Error ? error.message : 'Failed to download expense PDF';
+                  addToast(`❌ ${errorMessage}`, 'error');
+                }
+              }}
             />
           </div>
         </div>
