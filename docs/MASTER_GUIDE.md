@@ -3,44 +3,52 @@
 **Last Updated:** November 10, 2025 (17:00 PST)  
 **Status:** ✅ Production Active | 🔬 Sandbox Trade Show Checklist Feature (v1.28.0)
 
+**Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on ExpenseApp. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
+
 ---
 
 ## 📋 Table of Contents
 
-1. [Quick Reference](#-quick-reference)
-2. [Application Overview](#-application-overview)
-3. [Architecture](#-architecture)
-4. [Critical Information](#-critical-information)
-5. [Credentials & Access](#-credentials--access)
-6. [Deployment](#-deployment)
-7. [Development Workflows](#-development-workflows)
-8. [Known Issues & Solutions](#-known-issues--solutions)
-9. [API Reference](#-api-reference)
-10. [Recent Sessions](#-recent-sessions)
-11. [Troubleshooting](#-troubleshooting)
+1. [Current State](#-current-state)
+2. [What's Working](#-whats-working)
+3. [What's Not Working / Failures](#-whats-not-working--failures)
+4. [What's Being Worked On](#-whats-being-worked-on)
+5. [What's Planned / Roadmap](#-whats-planned--roadmap)
+6. [Critical Information](#-critical-information)
+7. [Application Overview](#-application-overview)
+8. [Architecture](#-architecture)
+9. [Credentials & Access](#-credentials--access)
+10. [Deployment](#-deployment)
+11. [Development Workflows](#-development-workflows)
+12. [Known Issues & Solutions](#-known-issues--solutions)
+13. [API Reference](#-api-reference)
+14. [Historical Sessions & Lessons Learned](#-historical-sessions--lessons-learned)
+15. [Troubleshooting](#-troubleshooting)
 
 ---
 
-## 🚀 Quick Reference
+## 🎯 Current State
 
-### Current Versions
+### Versions
 
 **Production (Container 201 & 202)**
 - **Frontend:** v1.4.13 (Container 202)
 - **Backend:** v1.5.1 (Container 201)
 - **Branch:** `main`
 - **Status:** ✅ Stable, Live Users
+- **Last Updated:** October 16, 2025
 
 **Sandbox (Container 203)**
-- **Frontend:** v1.20.0 (Container 203)
-- **Backend:** v1.18.0 (Container 203)
-- **Branch:** `v1.6.0`
-- **Status:** 🔬 Trade Show Checklist Feature Added
+- **Frontend:** v1.28.0 (Container 203)
+- **Backend:** v1.28.0 (Container 203)
+- **Branch:** `v1.28.0`
+- **Status:** 🔬 Trade Show Checklist Feature + Full Codebase Refactor
+- **Last Updated:** November 10, 2025
 
 ### Container Mapping (MEMORIZE THIS!)
-- **Container 201** = **PRODUCTION** (Live users, real financial data)
-- **Container 203** = **SANDBOX** (Testing environment)
+- **Container 201** = **PRODUCTION Backend** (Live users, real financial data)
 - **Container 202** = **PRODUCTION Frontend**
+- **Container 203** = **SANDBOX** (Testing environment)
 - **Container 104** = **NPMplus Proxy**
 
 ### Quick Access
@@ -51,171 +59,312 @@
 
 ---
 
-## 📱 Application Overview
+## ✅ What's Working
 
-### What is ExpenseApp?
+### Production Features (v1.4.13 / v1.5.1)
+- ✅ **Expense Management** - Full CRUD operations, receipt upload
+- ✅ **Event Management** - Create/manage events, participants
+- ✅ **Zoho Integration** - 5-entity sync, OAuth 2.0, duplicate prevention
+- ✅ **Automated Approval Workflows** - Auto-approve on entity assignment/reimbursement
+- ✅ **User & Role Management** - Dynamic roles, custom permissions
+- ✅ **Reports** - Detailed reports with filtering
+- ✅ **PWA/Offline** - Service Worker, IndexedDB, background sync
+- ✅ **Tesseract OCR** - Embedded OCR processing (production)
 
-**ExpenseApp** is a professional trade show expense management system for **Haute Brands** and its sub-brands (Alpha, Beta, Gamma, Delta). It manages the complete expense lifecycle from receipt capture to Zoho Books accounting integration.
+### Sandbox Features (v1.28.0)
+- ✅ **Event Checklist System** - Flights, hotels, car rentals, booth, shipping
+- ✅ **External OCR Service** - Google Document AI integration (4-8s processing, 95%+ confidence)
+- ✅ **AI Training Pipeline** - OCR corrections → Data Pool → Model Training
+- ✅ **Repository Pattern** - Clean separation of concerns (Routes → Services → Repositories)
+- ✅ **Component Modularization** - Feature-based organization, reusable hooks
+- ✅ **Helper Functions** - 13 backend helpers, organized frontend utilities
+- ✅ **Type Safety** - No `any` types, proper interfaces throughout
 
-### Core Modules
-
-| Module | Features | Key Users |
-|--------|----------|-----------|
-| **Event Management** | Create events, manage participants, track budgets | Admin, Coordinator |
-| **Expense Submission** | Upload receipts, OCR extraction, offline support | All users |
-| **Approval Workflows** | Automated approval, entity assignment, reimbursement | Admin, Accountant |
-| **Zoho Integration** | 5-entity sync, duplicate prevention, OAuth 2.0 | Admin, Accountant |
-| **Reports** | Detailed & summary reports, filtering, exports | Admin, Accountant |
-| **User Management** | CRUD operations, role assignments | Admin, Developer |
-| **Role Management** | Custom roles, dynamic permissions | Admin, Developer |
-| **Dashboard** | Widgets, quick actions, pending tasks | All users |
-| **Developer Tools** | Diagnostics, health checks, cache management | Developer only |
-| **PWA/Offline** | Service Worker, IndexedDB, background sync | All users |
-| **Event Checklist** | Trade show logistics (flights, hotels, car rentals, booth) | Coordinator, Admin |
-
-### Unique Capabilities
-
-1. **Dynamic Role System** - Create custom roles with colors and permissions
-2. **Automated Approval Workflows** - No manual approval buttons, status changes automatically
-3. **5-Entity Zoho Support** - Multi-brand accounting with separate Zoho organizations
-4. **Offline-First Architecture** - Submit expenses without internet, sync automatically
-5. **OCR + LLM Enhancement** (Sandbox) - AI-powered receipt extraction with continuous learning
-6. **Reimbursement Tracking** - Complete workflow from request to payment
-7. **Developer Dashboard** - Exclusive debugging tools for developer role
-8. **Entity Re-assignment** - Change Zoho entity and re-push expenses
-9. **Trade Show Checklist** - Complete event logistics management
-
-### Technology Stack
-
-**Frontend:** React 18 + TypeScript + Tailwind CSS + Vite  
-**Backend:** Node.js + Express + TypeScript + PostgreSQL  
-**Architecture:** Repository Pattern (Backend) + Component Modularization (Frontend)  
-**Infrastructure:** Proxmox LXC (Debian 12) + Nginx + PM2  
-**Integrations:** Zoho Books API (OAuth 2.0)  
-**OCR:** Tesseract (production) | External microservice with Ollama LLM (sandbox)  
-**PWA:** Service Worker + IndexedDB + Background Sync
+### What Worked Well
+- ✅ **Helper Function Extraction** - Reduced DevDashboardService complexity significantly
+- ✅ **Repository Pattern** - Improved testability and maintainability
+- ✅ **Component Modularization** - Easier to find and modify features
+- ✅ **Schema Validation** - Prevents deployment disasters
+- ✅ **Separate Sandbox/Production Credentials** - Data isolation works perfectly
+- ✅ **Automated Approval Workflows** - No manual buttons needed
+- ✅ **Zod Validation** - Runtime input validation prevents bad data
 
 ---
 
-## 🏗️ Architecture
+## ❌ What's Not Working / Failures
 
-### Backend Architecture (v1.28.0+)
+### Critical Failures (RESOLVED)
 
-**Pattern: Routes → Services → Repositories → Database**
+**1. Production Login Failure (November 10, 2025) - RESOLVED**
+- **What Happened:** All users unable to log in - "Invalid username or password"
+- **Root Causes:**
+  1. Database schema mismatch (`audit_log` vs `audit_logs`)
+  2. Missing database columns (7 columns missing from `audit_logs`)
+  3. Network-level routing override (iptables DNAT rule)
+  4. Stale backend process running old code
+- **Resolution:** Fixed table names, added columns, removed NAT rule, restarted service
+- **Lessons:** Always validate schema, restart services after deployment, check network rules
 
-```
-┌─────────────────┐
-│  Routes/       │  ← HTTP request handling, validation
-│  Controllers   │  ← Input sanitization, response formatting
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Services       │  ← Business logic, orchestration
-│                 │  ← Authorization checks
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Repositories   │  ← Data access layer
-│                 │  ← Query building, type safety
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  PostgreSQL     │  ← Database
-└─────────────────┘
-```
+**2. Database Migration System - RESOLVED**
+- **What Happened:** Migrations not running automatically
+- **Resolution:** Manual migration process established
+- **Status:** ✅ Resolved
 
-**Available Repositories:**
-- `BaseRepository` - Common CRUD operations
-- `ExpenseRepository` - Expense data access
-- `UserRepository` - User data access
-- `EventRepository` - Event data access
-- `AuditLogRepository` - Audit log data access
-- `ChecklistRepository` - Checklist data access
-- `ApiRequestRepository` - API analytics data access
+**3. Expenses Not Assigning Entity - RESOLVED**
+- **What Happened:** Expenses not getting Zoho entity assigned
+- **Resolution:** Fixed entity assignment logic
+- **Status:** ✅ Resolved
 
-**Available Services:**
-- `ExpenseService` - Expense business logic
-- `DevDashboardService` - Developer dashboard logic
-- `ZohoMultiAccountService` - Multi-entity Zoho integration
-- `ZohoBooksService` - Zoho Books API integration
-- `OCRService` - OCR processing orchestration
-- `UserCorrectionService` - OCR correction tracking
-- `DuplicateDetectionService` - Expense duplicate detection
-- `ExpenseAuditService` - Audit trail management
+**4. Caching Problems - RESOLVED**
+- **What Happened:** Service worker caching old versions
+- **Resolution:** Cache busting procedure established
+- **Status:** ✅ Resolved
 
-### Frontend Architecture (v1.28.0+)
+**5. Auto-Logout Not Working - RESOLVED**
+- **What Happened:** Users not logged out after inactivity
+- **Resolution:** Fixed session timeout logic
+- **Status:** ✅ Resolved
 
-**Pattern: Feature-Based Organization with Component Modularization**
+### Known Issues (ONGOING)
 
-```
-src/components/
-├── common/                ← Shared components
-│   ├── Badge.tsx
-│   ├── StatusBadge.tsx
-│   └── ...
-├── expenses/              ← Expense feature
-│   ├── ExpenseSubmission.tsx
-│   ├── ExpenseSubmission/  ← Sub-components
-│   │   ├── hooks/          ← Feature hooks
-│   │   └── *.tsx
-│   └── ReceiptUpload/
-├── admin/                 ← Admin features
-│   ├── AdminSettings.tsx
-│   └── AdminSettings/
-└── checklist/             ← Checklist feature
-    └── sections/
-```
+**1. OCR Service Configuration for Production**
+- **Problem:** Production doesn't have external OCR service (Container 204 is sandbox-only)
+- **Current State:** Production uses embedded Tesseract
+- **Options:**
+  1. Keep embedded Tesseract (safest, slower)
+  2. Deploy external OCR service (requires new infrastructure)
+- **Decision Needed:** Which OCR method for production?
+- **Impact:** Affects production deployment of checklist feature
 
-**Benefits:**
-- Feature isolation
-- Reusable hooks
-- Component composition
-- Easier testing
-- Better maintainability
+**2. Checklist Feature Not in Production**
+- **Problem:** Major new feature (v1.27.14) only in sandbox
+- **Risk:** Not tested with production data/scale
+- **Status:** Ready for testing, needs production deployment decision
+- **Action Required:** Decide on deployment strategy
 
-### File Structure
+**3. Uncommitted Changes**
+- **Problem:** Multiple files modified but not committed
+- **Impact:** Deployment readiness unclear
+- **Action Required:** Review and commit all changes
 
-**Backend:**
-```
-backend/src/
-├── config/                    ← Configuration files
-├── database/
-│   ├── schema.sql             ← Base schema
-│   ├── migrations/            ← Database migrations
-│   └── repositories/          ← Repository pattern
-├── middleware/                ← Express middleware
-├── routes/                    ← HTTP route handlers
-├── services/                  ← Business logic layer
-└── utils/                     ← Utility functions
-```
+### What Didn't Work / Lessons Learned
 
-**Frontend:**
-```
-src/
-├── components/
-│   ├── common/                ← Shared components
-│   ├── expenses/              ← Expense feature
-│   ├── admin/                 ← Admin features
-│   └── checklist/             ← Checklist feature
-├── hooks/                      ← Shared custom hooks
-├── utils/                      ← Utility functions
-└── constants/                  ← App constants
-```
+**1. Database Schema Constraints**
+- **Failure:** Deployed code with new enum values without updating CHECK constraints
+- **Result:** Runtime errors, production failures
+- **Lesson:** ALWAYS update schema constraints BEFORE deploying code
+- **Fix:** Schema validation process created
 
-### OCR System Architecture
+**2. Frontend Deployment Directory**
+- **Failure:** Deployed to wrong directory (`/var/www/html` instead of `/var/www/expenseapp`)
+- **Result:** 404 errors, broken frontend
+- **Lesson:** Always verify deployment paths
+- **Fix:** Documented correct paths
 
-**Sandbox (v1.11.0+):**
-- **External OCR Service** (192.168.1.195:8000) with LLM enhancement
-- **Ollama LLM** (192.168.1.173:11434) - dolphin-llama3
-- **Model Training** (192.168.1.197:5001) - v1.2.0 prompts
-- **Data Pool Integration** (192.168.1.196:5000) with UTF-8 encoding
+**3. Backend Service Path Case Sensitivity**
+- **Failure:** Wrong case in path (`expenseapp` vs `expenseApp`)
+- **Result:** Service wouldn't start
+- **Lesson:** Case-sensitive filesystems require exact paths
+- **Fix:** Documented correct path with capital 'A'
 
-**Production:**
-- **Tesseract OCR** - Embedded processing
-- **No LLM enhancement** - Rule-based inference only
+**4. Version Number Management**
+- **Failure:** Accidentally set version to 2.0.0 without breaking changes
+- **Result:** Confused versioning, broke semantic versioning
+- **Lesson:** Never change version numbers without explicit approval
+- **Fix:** Reset to proper versions
+
+**5. Network-Level Routing Override**
+- **Failure:** iptables DNAT rule redirecting production traffic to sandbox
+- **Result:** Production login failures
+- **Lesson:** Network-level rules override application config
+- **Fix:** Removed malicious rule, added monitoring
+
+**6. Session Timeout During OCR Processing**
+- **Failure:** JWT token expires if OCR takes too long (95-115s for LLM enhancement)
+- **Result:** Users logged out mid-processing
+- **Status:** NEEDS FIX
+- **Solution Needed:** Token refresh mechanism or extended expiry
+
+**7. LLM Processing Slow**
+- **Failure:** dolphin-llama3 model takes 95-115 seconds for low-confidence receipts
+- **Result:** Poor UX for 20% of receipts
+- **Status:** Acceptable for now, but needs improvement
+- **Future:** Switch to faster model (tinyllama, phi-2) or GPU acceleration
+
+**8. OCR Service Single Point of Failure**
+- **Failure:** No fallback if external OCR service is down
+- **Result:** OCR completely fails (embedded OCR removed per user request)
+- **Status:** Mitigation in place (health checks, local corrections stored first)
+- **Future:** Consider fallback to embedded OCR
+
+---
+
+## 🔨 What's Being Worked On
+
+### Active Development (v1.28.0)
+
+**1. Codebase Refactor - COMPLETE**
+- ✅ Repository pattern implemented
+- ✅ Service layer created
+- ✅ Component modularization
+- ✅ Helper function extraction
+- ✅ Type safety improvements
+- **Status:** ✅ Complete
+
+**2. Event Checklist System - COMPLETE**
+- ✅ Flights, hotels, car rentals tracking
+- ✅ Booth management and shipping
+- ✅ Custom checklist items
+- ✅ Templates system
+- ✅ Receipt integration
+- **Status:** ✅ Complete (Sandbox only)
+
+**3. Helper Functions Documentation - COMPLETE**
+- ✅ 13 backend helpers documented
+- ✅ Frontend utilities organized
+- ✅ HELPER_FUNCTIONS.md created
+- **Status:** ✅ Complete
+
+### In Progress
+
+**1. Production Deployment Preparation**
+- **Status:** Planning phase
+- **Blockers:**
+  - OCR service configuration decision needed
+  - Database migrations need production testing
+  - Checklist feature needs production testing
+- **Action Required:** See PRE_PRODUCTION_CHECKLIST.md
+
+**2. Schema Validation Automation**
+- **Status:** Scripts created, needs integration
+- **Goal:** Automated schema validation before deployments
+- **Progress:** Manual validation working, automation pending
+
+---
+
+## 🗺️ What's Planned / Roadmap
+
+### Immediate Priorities
+
+**1. Production Deployment of Checklist Feature**
+- **Priority:** HIGH
+- **Dependencies:**
+  - OCR service configuration decision
+  - Database migrations tested
+  - Production testing completed
+- **Timeline:** TBD
+
+**2. Session Timeout Fix for OCR**
+- **Priority:** MEDIUM
+- **Problem:** Tokens expire during long OCR processing
+- **Solution Options:**
+  - Token refresh mechanism
+  - Extended token expiry for OCR endpoints
+  - Progress feedback with token refresh
+- **Timeline:** TBD
+
+### Planned Features
+
+**1. Mobile App (React Native)**
+- **Status:** Planned
+- **Priority:** LOW
+- **Timeline:** Future
+
+**2. Push Notifications**
+- **Status:** Planned
+- **Priority:** MEDIUM
+- **Timeline:** Future
+
+**3. Advanced Analytics**
+- **Status:** Planned
+- **Priority:** LOW
+- **Timeline:** Future
+
+**4. Bulk Expense Import**
+- **Status:** Planned
+- **Priority:** MEDIUM
+- **Timeline:** Future
+
+**5. Receipt Scanning Improvements (ML-based)**
+- **Status:** Planned
+- **Priority:** MEDIUM
+- **Timeline:** Future
+
+**6. Multi-Currency Support**
+- **Status:** Planned
+- **Priority:** LOW
+- **Timeline:** Future
+
+**7. Custom Report Builder**
+- **Status:** Planned
+- **Priority:** LOW
+- **Timeline:** Future
+
+**8. Email Notifications**
+- **Status:** Partially implemented
+- **Priority:** MEDIUM
+- **Timeline:** Future
+
+**9. Export Capabilities (CSV, PDF, Excel)**
+- **Status:** Coming soon
+- **Priority:** MEDIUM
+- **Timeline:** Future
+
+### Technical Debt
+
+**1. Comprehensive Unit Tests**
+- **Status:** Needed
+- **Priority:** HIGH
+- **Impact:** Prevents regressions
+
+**2. E2E Tests (Playwright/Cypress)**
+- **Status:** Needed
+- **Priority:** MEDIUM
+- **Impact:** Automated testing
+
+**3. Rate Limiting**
+- **Status:** Needed
+- **Priority:** MEDIUM
+- **Impact:** Security
+
+**4. Redis Caching Layer**
+- **Status:** Planned
+- **Priority:** LOW
+- **Impact:** Performance
+
+**5. Database Connection Pooling Optimization**
+- **Status:** Needed
+- **Priority:** MEDIUM
+- **Impact:** Performance
+
+**6. OCR Improvements**
+- **Status:** Ongoing
+- **Priority:** MEDIUM
+- **Goals:**
+  - Faster LLM model (tinyllama vs dolphin-llama3)
+  - OCR progress feedback with stages
+  - Batch receipt upload
+  - Better accuracy (currently 65% merchant, 84% amount, 91% date, 62% category)
+
+### OCR Training Roadmap
+
+**v1.13.0 - Enhanced Learning (Next)**
+- [ ] Implement category pattern learning
+- [ ] Add amount validation patterns
+- [ ] Cross-merchant learning (similar patterns)
+- [ ] Confidence decay (older patterns get lower confidence)
+
+**v1.14.0 - Advanced AI (Future)**
+- [ ] Fine-tune Ollama on correction data
+- [ ] Multi-provider ensemble (Tesseract + EasyOCR vote)
+- [ ] OCR quality prediction (pre-process)
+- [ ] Automatic pattern A/B testing
+
+**v2.0.0 - Production ML (Long-term)**
+- [ ] Custom-trained OCR model for receipts
+- [ ] End-to-end neural network (image → structured data)
+- [ ] Active learning prompts (ask user for specific confirmations)
+- [ ] Multi-language support
 
 ---
 
@@ -391,6 +540,174 @@ ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/expenseapp"
 - Service file references exact path
 - Case-sensitive filesystem
 - Wrong case = service won't start
+
+---
+
+## 📱 Application Overview
+
+### What is ExpenseApp?
+
+**ExpenseApp** is a professional trade show expense management system for **Haute Brands** and its sub-brands (Alpha, Beta, Gamma, Delta). It manages the complete expense lifecycle from receipt capture to Zoho Books accounting integration.
+
+### Core Modules
+
+| Module | Features | Key Users |
+|--------|----------|-----------|
+| **Event Management** | Create events, manage participants, track budgets | Admin, Coordinator |
+| **Expense Submission** | Upload receipts, OCR extraction, offline support | All users |
+| **Approval Workflows** | Automated approval, entity assignment, reimbursement | Admin, Accountant |
+| **Zoho Integration** | 5-entity sync, duplicate prevention, OAuth 2.0 | Admin, Accountant |
+| **Reports** | Detailed & summary reports, filtering, exports | Admin, Accountant |
+| **User Management** | CRUD operations, role assignments | Admin, Developer |
+| **Role Management** | Custom roles, dynamic permissions | Admin, Developer |
+| **Dashboard** | Widgets, quick actions, pending tasks | All users |
+| **Developer Tools** | Diagnostics, health checks, cache management | Developer only |
+| **PWA/Offline** | Service Worker, IndexedDB, background sync | All users |
+| **Event Checklist** | Trade show logistics (flights, hotels, car rentals, booth) | Coordinator, Admin |
+
+### Unique Capabilities
+
+1. **Dynamic Role System** - Create custom roles with colors and permissions
+2. **Automated Approval Workflows** - No manual approval buttons, status changes automatically
+3. **5-Entity Zoho Support** - Multi-brand accounting with separate Zoho organizations
+4. **Offline-First Architecture** - Submit expenses without internet, sync automatically
+5. **OCR + LLM Enhancement** (Sandbox) - AI-powered receipt extraction with continuous learning
+6. **Reimbursement Tracking** - Complete workflow from request to payment
+7. **Developer Dashboard** - Exclusive debugging tools for developer role
+8. **Entity Re-assignment** - Change Zoho entity and re-push expenses
+9. **Trade Show Checklist** - Complete event logistics management
+
+### Technology Stack
+
+**Frontend:** React 18 + TypeScript + Tailwind CSS + Vite  
+**Backend:** Node.js + Express + TypeScript + PostgreSQL  
+**Architecture:** Repository Pattern (Backend) + Component Modularization (Frontend)  
+**Infrastructure:** Proxmox LXC (Debian 12) + Nginx + PM2  
+**Integrations:** Zoho Books API (OAuth 2.0)  
+**OCR:** Tesseract (production) | External microservice with Ollama LLM (sandbox)  
+**PWA:** Service Worker + IndexedDB + Background Sync
+
+---
+
+## 🏗️ Architecture
+
+### Backend Architecture (v1.28.0+)
+
+**Pattern: Routes → Services → Repositories → Database**
+
+```
+┌─────────────────┐
+│  Routes/       │  ← HTTP request handling, validation
+│  Controllers   │  ← Input sanitization, response formatting
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Services       │  ← Business logic, orchestration
+│                 │  ← Authorization checks
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Repositories   │  ← Data access layer
+│                 │  ← Query building, type safety
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  PostgreSQL     │  ← Database
+└─────────────────┘
+```
+
+**Available Repositories:**
+- `BaseRepository` - Common CRUD operations
+- `ExpenseRepository` - Expense data access
+- `UserRepository` - User data access
+- `EventRepository` - Event data access
+- `AuditLogRepository` - Audit log data access
+- `ChecklistRepository` - Checklist data access
+- `ApiRequestRepository` - API analytics data access
+
+**Available Services:**
+- `ExpenseService` - Expense business logic
+- `DevDashboardService` - Developer dashboard logic
+- `ZohoMultiAccountService` - Multi-entity Zoho integration
+- `ZohoBooksService` - Zoho Books API integration
+- `OCRService` - OCR processing orchestration
+- `UserCorrectionService` - OCR correction tracking
+- `DuplicateDetectionService` - Expense duplicate detection
+- `ExpenseAuditService` - Audit trail management
+
+### Frontend Architecture (v1.28.0+)
+
+**Pattern: Feature-Based Organization with Component Modularization**
+
+```
+src/components/
+├── common/                ← Shared components
+│   ├── Badge.tsx
+│   ├── StatusBadge.tsx
+│   └── ...
+├── expenses/              ← Expense feature
+│   ├── ExpenseSubmission.tsx
+│   ├── ExpenseSubmission/  ← Sub-components
+│   │   ├── hooks/          ← Feature hooks
+│   │   └── *.tsx
+│   └── ReceiptUpload/
+├── admin/                 ← Admin features
+│   ├── AdminSettings.tsx
+│   └── AdminSettings/
+└── checklist/             ← Checklist feature
+    └── sections/
+```
+
+**Benefits:**
+- Feature isolation
+- Reusable hooks
+- Component composition
+- Easier testing
+- Better maintainability
+
+### File Structure
+
+**Backend:**
+```
+backend/src/
+├── config/                    ← Configuration files
+├── database/
+│   ├── schema.sql             ← Base schema
+│   ├── migrations/            ← Database migrations
+│   └── repositories/          ← Repository pattern
+├── middleware/                ← Express middleware
+├── routes/                    ← HTTP route handlers
+├── services/                  ← Business logic layer
+└── utils/                     ← Utility functions
+```
+
+**Frontend:**
+```
+src/
+├── components/
+│   ├── common/                ← Shared components
+│   ├── expenses/              ← Expense feature
+│   ├── admin/                 ← Admin features
+│   └── checklist/             ← Checklist feature
+├── hooks/                      ← Shared custom hooks
+├── utils/                      ← Utility functions
+└── constants/                  ← App constants
+```
+
+### OCR System Architecture
+
+**Sandbox (v1.11.0+):**
+- **External OCR Service** (192.168.1.195:8000) with LLM enhancement
+- **Ollama LLM** (192.168.1.173:11434) - dolphin-llama3
+- **Model Training** (192.168.1.197:5001) - v1.2.0 prompts
+- **Data Pool Integration** (192.168.1.196:5000) with UTF-8 encoding
+
+**Production:**
+- **Tesseract OCR** - Embedded processing
+- **No LLM enhancement** - Rule-based inference only
 
 ---
 
@@ -723,7 +1040,7 @@ Authorization: Bearer <token>
 
 ---
 
-## 📝 Recent Sessions
+## 📚 Historical Sessions & Lessons Learned
 
 ### Session: November 10, 2025 - Full Codebase Refactor (v1.28.0)
 
@@ -817,6 +1134,35 @@ Authorization: Bearer <token>
 - Schema validation scripts created
 - Always restart services after deployments
 - Multiple symptoms can have single root cause
+- **Always validate schema before deployment**
+
+### Session: November 5, 2025 - Event Checklist System (v1.27.14)
+
+**Status:** ✅ Complete - Ready for Production Testing
+
+**What Was Built:**
+- Complete trade show logistics management system
+- Flights, hotels, car rentals, booth, shipping tracking
+- Custom checklist items and templates
+- Receipt integration (auto-creates expenses)
+- Role-based access control
+
+**Database:**
+- 7 new tables with proper foreign keys and indexes
+- Migration 017_add_event_checklist.sql
+
+**API:**
+- 30+ new endpoints under `/api/checklist`
+- Full CRUD operations
+- Zod validation for input
+
+**Lessons Learned:**
+- Large features need comprehensive planning
+- Database migrations must be tested thoroughly
+- Receipt integration requires careful expense creation logic
+- Templates system provides good UX
+
+**Status:** Complete in sandbox, awaiting production deployment decision
 
 ---
 
@@ -903,6 +1249,7 @@ ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend"
 - OCR system: `backend/src/services/ocr/README.md`
 - Helper functions: `docs/HELPER_FUNCTIONS.md` - Complete reference for all helper functions
 - Frontend utilities: `src/utils/README.md` - Frontend utility functions guide
+- Pre-production checklist: `PRE_PRODUCTION_CHECKLIST.md` - Production deployment readiness
 
 ---
 
@@ -935,6 +1282,15 @@ ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend"
 - ✅ Use component modularization (frontend)
 - ✅ Extract reusable hooks
 - ✅ Add JSDoc comments for public methods
+
+**When Documenting:**
+- ✅ Document what worked and why
+- ✅ Document what didn't work and why
+- ✅ Document failures and lessons learned
+- ✅ Document new features being added
+- ✅ Document plans and roadmap
+- ✅ Document anything that needs to be addressed
+- ✅ Keep this file comprehensive and up-to-date
 
 ---
 
