@@ -21,9 +21,11 @@
 10. [Deployment](#-deployment)
 11. [Development Workflows](#-development-workflows)
 12. [Known Issues & Solutions](#-known-issues--solutions)
-13. [API Reference](#-api-reference)
-14. [Historical Sessions & Lessons Learned](#-historical-sessions--lessons-learned)
-15. [Troubleshooting](#-troubleshooting)
+13. [Common Pitfalls & Errors to Avoid](#️-common-pitfalls--errors-to-avoid)
+14. [Prevention Checklist](#️-prevention-checklist)
+15. [API Reference](#-api-reference)
+16. [Historical Sessions & Lessons Learned](#-historical-sessions--lessons-learned)
+17. [Troubleshooting](#-troubleshooting)
 
 ---
 
