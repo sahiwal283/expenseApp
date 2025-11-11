@@ -293,6 +293,23 @@ router.post('/:checklistId/booth-shipping', authorize('admin', 'coordinator', 'd
   }
 });
 
+// Delete booth shipping
+router.delete('/booth-shipping/:shippingId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { shippingId } = req.params;
+    const deleted = await checklistRepository.deleteBoothShipping(parseInt(shippingId));
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Booth shipping entry not found' });
+    }
+    
+    res.json({ message: 'Booth shipping entry deleted successfully' });
+  } catch (error) {
+    console.error('[Checklist] Error deleting booth shipping:', error);
+    res.status(500).json({ error: 'Failed to delete booth shipping' });
+  }
+});
+
 // ==========================================
 // CUSTOM CHECKLIST ITEMS
 // ==========================================

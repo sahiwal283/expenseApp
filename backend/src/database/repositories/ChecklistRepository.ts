@@ -498,6 +498,17 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
     return result.rows[0];
   }
 
+  /**
+   * Delete booth shipping entry
+   */
+  async deleteBoothShipping(id: number): Promise<boolean> {
+    const result = await this.executeQuery(
+      `DELETE FROM checklist_booth_shipping WHERE id = $1`,
+      [id]
+    );
+    return (result.rowCount || 0) > 0;
+  }
+
   // ==================== CUSTOM ITEMS ====================
 
   /**
