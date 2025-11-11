@@ -759,10 +759,40 @@ Authorization: Bearer <token>
 - ✅ Custom hooks extracted (Frontend)
 - ✅ Type safety improved (Full codebase)
 
+**Complexity Reduction Strategy:**
+
+**What Worked:**
+- ✅ **Helper Function Extraction** - Extracted 13 helper functions from DevDashboardService (368 lines → cleaner service)
+- ✅ **Utility File Organization** - Frontend utilities organized by domain (date, event, filter, OCR)
+- ✅ **Single Responsibility** - Each helper has one clear purpose
+- ✅ **Reusability** - Helpers can be used across multiple services/components
+- ✅ **Testability** - Pure functions easier to test independently
+
+**Helper Functions Created:**
+
+**Backend (`DevDashboardService.helpers.ts`):**
+- 6 alert functions: `checkErrorRateAlert`, `checkSlowResponseAlert`, `checkStaleSessionsAlert`, `checkEndpointFailureAlert`, `checkTrafficSpikeAlert`, `checkAuthFailuresAlert`
+- 7 utility functions: `parseTimeRange`, `getSystemMemoryMetrics`, `getSystemCPUMetrics`, `formatSessionDuration`, `mapEndpointToPage`, `checkOCRServiceHealth`, `calculateOCRCosts`
+
+**Frontend (`src/utils/`):**
+- `dateUtils.ts` - Date parsing/formatting (prevents timezone bugs)
+- `eventUtils.ts` - Event filtering (removes old events from dropdowns)
+- `filterUtils.ts` - Generic filtering logic
+- `ocrUtils.ts` - OCR correction tracking
+- Plus: `apiClient.ts`, `sessionManager.ts`, `expenseUtils.ts`, `reportUtils.ts`, `checklistUtils.ts`
+
+**Lessons Learned:**
+- **Extract when:** Function used in multiple places, >20 lines, complex logic, pure function
+- **Don't extract when:** Used once, tightly coupled, <5 lines, needs component state
+- **File naming:** Use `.helpers.ts` suffix for backend, domain-based names for frontend
+- **Documentation:** Always add JSDoc comments with `@param` and `@returns`
+
+**Reference:** See `docs/HELPER_FUNCTIONS.md` for complete helper function reference
+
 **For Future Development:**
-- Backend: Create repository → service → route
-- Frontend: Create feature directory → extract hooks → use shared components
-- Always: Check for existing hooks/components, use TypeScript interfaces, add JSDoc comments
+- Backend: Create repository → service → route → helpers (if needed)
+- Frontend: Create feature directory → extract hooks → use shared components → use utilities
+- Always: Check for existing helpers before creating new ones, use TypeScript interfaces, add JSDoc comments
 
 ### Session: November 10, 2025 - Production Login Failure Incident
 
@@ -871,6 +901,8 @@ ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend"
 - Nginx config: `deployment/nginx/expenseapp.conf`
 - Repository pattern: `backend/src/database/repositories/README.md`
 - OCR system: `backend/src/services/ocr/README.md`
+- Helper functions: `docs/HELPER_FUNCTIONS.md` - Complete reference for all helper functions
+- Frontend utilities: `src/utils/README.md` - Frontend utility functions guide
 
 ---
 
