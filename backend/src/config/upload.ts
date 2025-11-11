@@ -65,14 +65,20 @@ export const uploadBoothMap = multer({
   storage: boothMapStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Accept common image formats and PDFs (including phone camera formats)
+    const allowedExtensions = /jpeg|jpg|png|gif|pdf|heic|heif|webp/i;
+    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
     
-    if (mimetype && extname) {
+    // Accept any image MIME type (image/*) or PDF
+    // This handles phone cameras which may send image/heic, image/heif, image/x-png, etc.
+    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+    
+    if (extname && mimetypeOk) {
+      console.log(`[Upload] Accepting booth map: ${file.originalname} (${file.mimetype})`);
       return cb(null, true);
     } else {
-      cb(new Error('Only image files (JPEG, PNG, GIF) and PDF are allowed'));
+      console.warn(`[Upload] Rejected booth map: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
+      cb(new Error(`Invalid file type. Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed. Received: ${file.mimetype}`));
     }
   }
 });

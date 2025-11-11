@@ -3,10 +3,12 @@
  * Handles trade show checklist management (flights, hotels, car rentals, booth shipping, custom items, templates)
  */
 
-import express, { Response } from 'express';
+import express, { Response, NextFunction } from 'express';
 import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
 import { checklistRepository } from '../database/repositories';
+import multer from 'multer';
+import fs from 'fs';
 
 const router = express.Router();
 
@@ -45,31 +47,175 @@ router.put('/:checklistId', authorize('admin', 'coordinator', 'developer'), asyn
   }
 });
 
-// Upload booth map
-router.post('/:checklistId/booth-map', authorize('admin', 'coordinator', 'developer'), uploadBoothMap.single('boothMap'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { checklistId } = req.params;
-    
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    const mapUrl = `/uploads/booth-maps/${req.file.filename}`;
-
-    const checklist = await checklistRepository.updateMainFields(parseInt(checklistId), {
-      boothMapUrl: mapUrl
+// Multer error handler middleware (Express error middleware with 4 parameters)
+const handleMulterError = (err: any, req: AuthRequest, res: Response, next: NextFunction) => {
+  if (err instanceof multer.MulterError) {
+    console.error(`[Checklist] Multer error: ${err.code} - ${err.message}`, {
+      field: err.field,
+      code: err.code,
+      message: err.message
     });
-
-    console.log(`[Checklist] Booth map uploaded for checklist ${checklistId}: ${mapUrl}`);
-    res.json({ mapUrl: checklist.booth_map_url });
-  } catch (error: any) {
-    if (error.message === 'Checklist not found') {
-      return res.status(404).json({ error: 'Checklist not found' });
+    
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        error: 'File too large',
+        details: 'Maximum file size is 10MB. Please upload a smaller file.'
+      });
     }
-    console.error('[Checklist] Error uploading booth map:', error);
-    res.status(500).json({ error: 'Failed to upload booth map' });
+    
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ 
+        error: 'Unexpected file field',
+        details: `Expected field name: 'boothMap'. Received: ${err.field || 'unknown'}`
+      });
+    }
+    
+    return res.status(400).json({ 
+      error: 'File upload failed',
+      details: err.message || 'Invalid file upload. Please check file size and format.'
+    });
   }
-});
+  
+  // Handle fileFilter errors (thrown as regular Error)
+  if (err) {
+    console.error(`[Checklist] File validation error: ${err.message}`, {
+      message: err.message,
+      stack: err.stack
+    });
+    
+    return res.status(400).json({ 
+      error: 'File validation failed',
+      details: err.message || 'Invalid file type. Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed.'
+    });
+  }
+  
+  next(err);
+};
+
+// Upload booth map
+router.post('/:checklistId/booth-map', 
+  authorize('admin', 'coordinator', 'developer'), 
+  (req: AuthRequest, res: Response, next: NextFunction) => {
+    uploadBoothMap.single('boothMap')(req, res, (err: any) => {
+      if (err) {
+        return handleMulterError(err, req, res, next);
+      }
+      next();
+    });
+  },
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { checklistId } = req.params;
+      
+      // Validate checklistId
+      const checklistIdNum = parseInt(checklistId);
+      if (isNaN(checklistIdNum)) {
+        console.error(`[Checklist] Invalid checklistId: ${checklistId}`);
+        return res.status(400).json({ error: 'Invalid checklist ID' });
+      }
+
+      // Check if file was uploaded
+      if (!req.file) {
+        console.error(`[Checklist] No file uploaded for checklist ${checklistId}`);
+        return res.status(400).json({ 
+          error: 'No file uploaded',
+          details: 'Please select a file to upload.'
+        });
+      }
+
+      console.log(`[Checklist] Processing booth map upload for checklist ${checklistId}:`, {
+        originalname: req.file.originalname,
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: req.file.path
+      });
+
+      // Verify file exists on disk
+      if (!fs.existsSync(req.file.path)) {
+        console.error(`[Checklist] Uploaded file not found on disk: ${req.file.path}`);
+        return res.status(500).json({ 
+          error: 'File upload failed',
+          details: 'File was not saved correctly. Please try again.'
+        });
+      }
+
+      const mapUrl = `/uploads/booth-maps/${req.file.filename}`;
+
+      // Update checklist with map URL
+      const checklist = await checklistRepository.updateMainFields(checklistIdNum, {
+        boothMapUrl: mapUrl
+      });
+
+      console.log(`[Checklist] ✓ Booth map uploaded successfully for checklist ${checklistId}: ${mapUrl}`);
+      res.json({ mapUrl: checklist.booth_map_url });
+    } catch (error: any) {
+      // Handle specific error types
+      if (error.message === 'Checklist not found') {
+        console.error(`[Checklist] Checklist not found: ${req.params.checklistId}`);
+        return res.status(404).json({ error: 'Checklist not found' });
+      }
+      
+      // Handle file system errors
+      if (error.code === 'EACCES' || error.code === 'EPERM') {
+        console.error(`[Checklist] Permission error uploading booth map:`, {
+          message: error.message,
+          code: error.code,
+          path: req.file?.path
+        });
+        return res.status(500).json({ 
+          error: 'File upload failed',
+          details: 'Permission denied. Please contact administrator.'
+        });
+      }
+      
+      if (error.code === 'ENOENT') {
+        console.error(`[Checklist] Directory not found:`, {
+          message: error.message,
+          code: error.code,
+          path: error.path
+        });
+        return res.status(500).json({ 
+          error: 'File upload failed',
+          details: 'Upload directory not found. Please contact administrator.'
+        });
+      }
+      
+      // Handle database errors
+      if (error.code === '23503') {
+        console.error(`[Checklist] Foreign key constraint error:`, {
+          message: error.message,
+          code: error.code,
+          checklistId: req.params.checklistId
+        });
+        return res.status(400).json({ 
+          error: 'Invalid checklist',
+          details: 'The checklist does not exist or has been deleted.'
+        });
+      }
+      
+      // Log full error details for debugging
+      console.error('[Checklist] Error uploading booth map:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        checklistId: req.params.checklistId,
+        file: req.file ? {
+          filename: req.file.filename,
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          path: req.file.path
+        } : 'no file'
+      });
+      
+      res.status(500).json({ 
+        error: 'Failed to upload booth map',
+        details: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred. Please try again.'
+      });
+    }
+  }
+);
 
 // Delete booth map
 router.delete('/:checklistId/booth-map', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
