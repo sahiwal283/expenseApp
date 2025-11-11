@@ -6,4 +6,5 @@
 
 export { useEventData } from './useEventData';
 export { useEventForm } from './useEventForm';
+export { useChecklistSummary, type ChecklistSummary } from './useChecklistSummary';
 
