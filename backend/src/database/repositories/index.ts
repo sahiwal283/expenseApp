@@ -17,7 +17,7 @@ export { UserRepository, userRepository } from './UserRepository';
 export type { User, UserWithoutPassword } from './UserRepository';
 
 export { EventRepository, eventRepository } from './EventRepository';
-export type { Event, EventWithStats } from './EventRepository';
+export type { Event, EventWithStats, EventWithParticipants } from './EventRepository';
 
 export { AuditLogRepository, auditLogRepository } from './AuditLogRepository';
 export type { AuditLog, AuditLogFilters } from './AuditLogRepository';

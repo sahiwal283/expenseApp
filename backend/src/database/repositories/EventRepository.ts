@@ -10,9 +10,11 @@ import { NotFoundError } from '../../utils/errors';
 export interface Event {
   id: string;
   name: string;
+  venue: string;
+  city: string;
+  state: string;
   start_date: string;
   end_date: string;
-  location: string;
   budget: number;
   zoho_entity?: string;
   status: 'upcoming' | 'active' | 'completed' | 'cancelled';
@@ -20,8 +22,18 @@ export interface Event {
   show_end_date?: string;
   travel_start_date?: string;
   travel_end_date?: string;
+  coordinator_id?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface EventWithParticipants extends Event {
+  participants?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  }>;
 }
 
 export interface EventWithStats extends Event {
@@ -91,9 +103,11 @@ export class EventRepository extends BaseRepository<Event> {
    */
   async create(data: {
     name: string;
+    venue: string;
+    city: string;
+    state: string;
     start_date: string;
     end_date: string;
-    location: string;
     budget: number;
     zoho_entity?: string;
     status?: string;
@@ -101,25 +115,27 @@ export class EventRepository extends BaseRepository<Event> {
     show_end_date?: string;
     travel_start_date?: string;
     travel_end_date?: string;
+    coordinator_id?: string;
   }): Promise<Event> {
     const result = await this.executeQuery<Event>(
       `INSERT INTO ${this.tableName} 
-       (name, start_date, end_date, location, budget, zoho_entity, status, 
-        show_start_date, show_end_date, travel_start_date, travel_end_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       (name, venue, city, state, start_date, end_date, show_start_date, show_end_date, 
+        travel_start_date, travel_end_date, budget, coordinator_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         data.name,
+        data.venue,
+        data.city,
+        data.state,
         data.start_date,
         data.end_date,
-        data.location,
+        data.show_start_date || data.start_date,
+        data.show_end_date || data.end_date,
+        data.travel_start_date || data.start_date,
+        data.travel_end_date || data.end_date,
         data.budget,
-        data.zoho_entity || null,
-        data.status || 'upcoming',
-        data.show_start_date || null,
-        data.show_end_date || null,
-        data.travel_start_date || null,
-        data.travel_end_date || null
+        data.coordinator_id || null
       ]
     );
     return result.rows[0];
@@ -233,6 +249,150 @@ export class EventRepository extends BaseRepository<Event> {
       [status]
     );
     return parseFloat(result.rows[0].total);
+  }
+
+  /**
+   * Find all events with participants (JSON aggregation)
+   */
+  async findAllWithParticipants(): Promise<EventWithParticipants[]> {
+    const result = await this.executeQuery<EventWithParticipants>(
+      `SELECT e.*, 
+       json_agg(
+         json_build_object(
+           'id', u.id,
+           'name', u.name,
+           'email', u.email,
+           'role', u.role
+         )
+       ) FILTER (WHERE u.id IS NOT NULL) as participants
+      FROM ${this.tableName} e
+      LEFT JOIN event_participants ep ON e.id = ep.event_id
+      LEFT JOIN users u ON ep.user_id = u.id
+      GROUP BY e.id
+      ORDER BY e.start_date DESC`
+    );
+    return result.rows;
+  }
+
+  /**
+   * Find event by ID with participants (JSON aggregation)
+   */
+  async findByIdWithParticipants(id: string): Promise<EventWithParticipants | null> {
+    const result = await this.executeQuery<EventWithParticipants>(
+      `SELECT e.*, 
+       json_agg(
+         json_build_object(
+           'id', u.id,
+           'name', u.name,
+           'email', u.email,
+           'role', u.role
+         )
+       ) FILTER (WHERE u.id IS NOT NULL) as participants
+      FROM ${this.tableName} e
+      LEFT JOIN event_participants ep ON e.id = ep.event_id
+      LEFT JOIN users u ON ep.user_id = u.id
+      WHERE e.id = $1
+      GROUP BY e.id`,
+      [id]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Update event with transaction support
+   * 
+   * @param id - Event ID
+   * @param data - Event data to update
+   * @param client - Database client for transaction support
+   */
+  async updateWithTransaction(
+    id: string,
+    data: {
+      name?: string;
+      venue?: string;
+      city?: string;
+      state?: string;
+      start_date?: string;
+      end_date?: string;
+      show_start_date?: string;
+      show_end_date?: string;
+      travel_start_date?: string;
+      travel_end_date?: string;
+      budget?: number;
+      status?: string;
+    },
+    client: any
+  ): Promise<Event> {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (data.name !== undefined) {
+      fields.push(`name = $${paramIndex++}`);
+      values.push(data.name);
+    }
+    if (data.venue !== undefined) {
+      fields.push(`venue = $${paramIndex++}`);
+      values.push(data.venue);
+    }
+    if (data.city !== undefined) {
+      fields.push(`city = $${paramIndex++}`);
+      values.push(data.city);
+    }
+    if (data.state !== undefined) {
+      fields.push(`state = $${paramIndex++}`);
+      values.push(data.state);
+    }
+    if (data.start_date !== undefined) {
+      fields.push(`start_date = $${paramIndex++}`);
+      values.push(data.start_date);
+    }
+    if (data.end_date !== undefined) {
+      fields.push(`end_date = $${paramIndex++}`);
+      values.push(data.end_date);
+    }
+    if (data.show_start_date !== undefined) {
+      fields.push(`show_start_date = $${paramIndex++}`);
+      values.push(data.show_start_date);
+    }
+    if (data.show_end_date !== undefined) {
+      fields.push(`show_end_date = $${paramIndex++}`);
+      values.push(data.show_end_date);
+    }
+    if (data.travel_start_date !== undefined) {
+      fields.push(`travel_start_date = $${paramIndex++}`);
+      values.push(data.travel_start_date);
+    }
+    if (data.travel_end_date !== undefined) {
+      fields.push(`travel_end_date = $${paramIndex++}`);
+      values.push(data.travel_end_date);
+    }
+    if (data.budget !== undefined) {
+      fields.push(`budget = $${paramIndex++}`);
+      values.push(data.budget);
+    }
+    if (data.status !== undefined) {
+      fields.push(`status = $${paramIndex++}`);
+      values.push(data.status);
+    }
+
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    const result = await client.query(
+      `UPDATE ${this.tableName} 
+       SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $${paramIndex} 
+       RETURNING *`,
+      [...values, id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundError('Event', id);
+    }
+
+    return result.rows[0];
   }
 }
 
