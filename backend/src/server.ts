@@ -34,8 +34,15 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Middleware
+// Parse CORS_ORIGIN - support comma-separated origins or single origin
+const corsOrigin = process.env.CORS_ORIGIN 
+  ? (process.env.CORS_ORIGIN.includes(',') 
+      ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+      : process.env.CORS_ORIGIN.trim())
+  : '*';
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigin,
   credentials: true
 }));
 app.use(express.json());
