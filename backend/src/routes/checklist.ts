@@ -1,43 +1,14 @@
+/**
+ * Checklist Routes
+ * Handles trade show checklist management (flights, hotels, car rentals, booth shipping, custom items, templates)
+ */
+
 import express, { Response } from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { query } from '../config/database';
 import { authorize, AuthRequest } from '../middleware/auth';
+import { uploadBoothMap } from '../config/upload';
 
 const router = express.Router();
-
-// Configure multer for booth map uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/booth-maps';
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'booth-map-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const uploadBoothMap = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files (JPEG, PNG, GIF) and PDF are allowed'));
-    }
-  }
-});
 
 // Get checklist for an event (all authenticated users can view)
 router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accountant', 'salesperson'), async (req: AuthRequest, res: Response) => {
