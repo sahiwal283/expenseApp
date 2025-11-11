@@ -8,6 +8,7 @@ import axios from 'axios';
 import * as os from 'os';
 import backendPkg from '../../package.json';
 import { FRONTEND_VERSION } from '../config/version';
+import { auditLogRepository, apiRequestRepository } from '../database/repositories';
 
 export class DevDashboardService {
   /**
@@ -73,9 +74,8 @@ export class DevDashboardService {
     );
     
     // Get recent activity (last 24 hours) from api_requests
-    const recentActionsResult = await pool.query(
-      `SELECT COUNT(*) as count FROM api_requests WHERE created_at > NOW() - INTERVAL '24 hours'`
-    );
+    const stats = await apiRequestRepository.getStats('24h');
+    const recentActionsCount = stats.totalRequests;
     
     // Calculate system health (simple metric based on pending expenses)
     const totalExpenses = parseInt(expensesResult.rows[0].count);
@@ -91,7 +91,7 @@ export class DevDashboardService {
       // Frontend expects these specific field names
       total_users: parseInt(usersResult.rows[0].count),
       active_sessions: parseInt(activeSessionsResult.rows[0].count),
-      recent_actions: parseInt(recentActionsResult.rows[0].count),
+      recent_actions: recentActionsCount,
       active_alerts: alertCount,
       critical_alerts: 0,
       active_events: parseInt(eventsResult.rows[0].count),
@@ -120,7 +120,7 @@ export class DevDashboardService {
         active: parseInt(eventsResult.rows[0].count)
       },
       activity: {
-        last24h: parseInt(recentActionsResult.rows[0].count)
+        last24h: recentActionsCount
       },
       health: {
         score: healthScore,
@@ -318,63 +318,29 @@ export class DevDashboardService {
    * Get audit logs
    */
   static async getAuditLogs(limit: number = 50, action?: string, search?: string) {
-    // Check if audit_logs table exists
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'audit_logs'
-      )
-    `);
-    
-    const hasAuditTable = tableCheck.rows[0].exists;
-    
-    if (hasAuditTable) {
-      // Query actual audit log table
-      let query = `
-        SELECT 
-          id,
-          user_id,
-          user_name,
-          user_email,
-          user_role,
-          action,
-          entity_type,
-          entity_id,
-          status,
-          ip_address,
-          user_agent,
-          request_method,
-          request_path,
-          changes,
-          error_message,
-          created_at
-        FROM audit_logs
-        WHERE 1=1
-      `;
+    // Try to get audit logs using repository
+    try {
+      const logs = await auditLogRepository.findWithFilters({
+        action: action && action !== 'all' ? action : undefined,
+        limit: limit || 50
+      });
       
-      const params: string[] = [];
-      
-      if (action && action !== 'all') {
-        params.push(action);
-        query += ` AND action = $${params.length}`;
-      }
-      
-      if (search) {
-        params.push(`%${search}%`);
-        query += ` AND (user_name ILIKE $${params.length} OR action ILIKE $${params.length} OR entity_type ILIKE $${params.length})`;
-      }
-      
-      params.push(limit.toString());
-      query += ` ORDER BY created_at DESC LIMIT $${params.length}`;
-      
-      const result = await pool.query(query, params);
+      // If search is provided, filter results locally (repository doesn't support search yet)
+      const filteredLogs = search 
+        ? logs.filter(log => 
+            (log.user_name && log.user_name.toLowerCase().includes(search.toLowerCase())) ||
+            (log.action && log.action.toLowerCase().includes(search.toLowerCase())) ||
+            (log.entity_type && log.entity_type.toLowerCase().includes(search.toLowerCase()))
+          )
+        : logs;
       
       return {
-        logs: result.rows,
-        total: result.rowCount
+        logs: filteredLogs,
+        total: filteredLogs.length
       };
-    } else {
+    } catch (error) {
+      // If audit_logs table doesn't exist or query fails, fall back to simulated logs
+      console.warn('[DevDashboard] Audit logs not available, using fallback');
       // Fallback: simulate audit logs from expense activity
       let query = `
         SELECT 

@@ -7,6 +7,7 @@ import express, { Response } from 'express';
 import { query } from '../config/database';
 import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
+import { checklistRepository } from '../database/repositories';
 
 const router = express.Router();
 
@@ -15,64 +16,10 @@ router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accounta
   try {
     const { eventId } = req.params;
 
-    // Get or create checklist
-    let checklist = await query(
-      'SELECT * FROM event_checklists WHERE event_id = $1',
-      [eventId]
-    );
+    // Get or create checklist (repository handles get-or-create logic)
+    const checklistData = await checklistRepository.findByEventId(eventId);
 
-    if (checklist.rows.length === 0) {
-      // Create new checklist
-      checklist = await query(
-        `INSERT INTO event_checklists (event_id) VALUES ($1) RETURNING *`,
-        [eventId]
-      );
-      
-      const checklistId = checklist.rows[0].id;
-      
-      // Auto-apply templates to new checklist
-      const templates = await query(
-        'SELECT * FROM checklist_templates WHERE is_active = true ORDER BY position, id'
-      );
-      
-      if (templates.rows.length > 0) {
-        const insertPromises = templates.rows.map((template: any) => 
-          query(
-            `INSERT INTO checklist_custom_items (checklist_id, title, description, position, completed)
-             VALUES ($1, $2, $3, $4, false)`,
-            [checklistId, template.title, template.description, template.position]
-          )
-        );
-        
-        await Promise.all(insertPromises);
-        
-        // Mark templates as applied
-        await query(
-          'UPDATE event_checklists SET templates_applied = true WHERE id = $1',
-          [checklistId]
-        );
-      }
-    }
-
-    const checklistId = checklist.rows[0].id;
-
-    // Get all related data
-    const [flights, hotels, carRentals, boothShipping, customItems] = await Promise.all([
-      query('SELECT * FROM checklist_flights WHERE checklist_id = $1 ORDER BY id', [checklistId]),
-      query('SELECT * FROM checklist_hotels WHERE checklist_id = $1 ORDER BY id', [checklistId]),
-      query('SELECT * FROM checklist_car_rentals WHERE checklist_id = $1 ORDER BY id', [checklistId]),
-      query('SELECT * FROM checklist_booth_shipping WHERE checklist_id = $1 ORDER BY id', [checklistId]),
-      query('SELECT * FROM checklist_custom_items WHERE checklist_id = $1 ORDER BY position, id', [checklistId])
-    ]);
-
-    res.json({
-      ...checklist.rows[0],
-      flights: flights.rows,
-      hotels: hotels.rows,
-      carRentals: carRentals.rows,
-      boothShipping: boothShipping.rows,
-      customItems: customItems.rows
-    });
+    res.json(checklistData);
   } catch (error) {
     console.error('[Checklist] Error fetching checklist:', error);
     res.status(500).json({ error: 'Failed to fetch checklist' });
@@ -85,16 +32,14 @@ router.put('/:checklistId', authorize('admin', 'coordinator', 'developer'), asyn
     const { checklistId } = req.params;
     const { boothOrdered, boothNotes, electricityOrdered, electricityNotes } = req.body;
 
-    const result = await query(
-      `UPDATE event_checklists 
-       SET booth_ordered = $1, booth_notes = $2, electricity_ordered = $3, 
-           electricity_notes = $4, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5
-       RETURNING *`,
-      [boothOrdered, boothNotes, electricityOrdered, electricityNotes, checklistId]
-    );
+    const checklist = await checklistRepository.updateMainFields(parseInt(checklistId), {
+      boothOrdered,
+      boothNotes,
+      electricityOrdered,
+      electricityNotes
+    });
 
-    res.json(result.rows[0]);
+    res.json(checklist);
   } catch (error) {
     console.error('[Checklist] Error updating checklist:', error);
     res.status(500).json({ error: 'Failed to update checklist' });
@@ -112,21 +57,16 @@ router.post('/:checklistId/booth-map', authorize('admin', 'coordinator', 'develo
 
     const mapUrl = `/uploads/booth-maps/${req.file.filename}`;
 
-    const result = await query(
-      `UPDATE event_checklists 
-       SET booth_map_url = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [mapUrl, checklistId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Checklist not found' });
-    }
+    const checklist = await checklistRepository.updateMainFields(parseInt(checklistId), {
+      boothMapUrl: mapUrl
+    });
 
     console.log(`[Checklist] Booth map uploaded for checklist ${checklistId}: ${mapUrl}`);
-    res.json({ mapUrl: result.rows[0].booth_map_url });
-  } catch (error) {
+    res.json({ mapUrl: checklist.booth_map_url });
+  } catch (error: any) {
+    if (error.message === 'Checklist not found') {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
     console.error('[Checklist] Error uploading booth map:', error);
     res.status(500).json({ error: 'Failed to upload booth map' });
   }
@@ -137,21 +77,16 @@ router.delete('/:checklistId/booth-map', authorize('admin', 'coordinator', 'deve
   try {
     const { checklistId } = req.params;
 
-    const result = await query(
-      `UPDATE event_checklists 
-       SET booth_map_url = NULL, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING *`,
-      [checklistId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Checklist not found' });
-    }
+    await checklistRepository.updateMainFields(parseInt(checklistId), {
+      boothMapUrl: undefined
+    });
 
     console.log(`[Checklist] Booth map deleted for checklist ${checklistId}`);
     res.json({ message: 'Booth map deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Checklist not found') {
+      return res.status(404).json({ error: 'Checklist not found' });
+    }
     console.error('[Checklist] Error deleting booth map:', error);
     res.status(500).json({ error: 'Failed to delete booth map' });
   }
@@ -163,15 +98,17 @@ router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'develope
     const { checklistId } = req.params;
     const { attendeeId, attendeeName, carrier, confirmationNumber, notes, booked } = req.body;
 
-    const result = await query(
-      `INSERT INTO checklist_flights 
-       (checklist_id, attendee_id, attendee_name, carrier, confirmation_number, notes, booked)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [checklistId, attendeeId, attendeeName, carrier, confirmationNumber, notes, booked || false]
-    );
+    const flight = await checklistRepository.createFlight({
+      checklistId: parseInt(checklistId),
+      attendeeId,
+      attendeeName,
+      carrier,
+      confirmationNumber,
+      notes,
+      booked: booked || false
+    });
 
-    res.json(result.rows[0]);
+    res.json(flight);
   } catch (error) {
     console.error('[Checklist] Error adding flight:', error);
     res.status(500).json({ error: 'Failed to add flight' });

@@ -1,7 +1,12 @@
+/**
+ * User Routes
+ * Handles user management operations (CRUD)
+ */
+
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
+import { userRepository } from '../database/repositories';
 
 const router = Router();
 
@@ -10,10 +15,8 @@ router.use(authenticateToken);
 // Get all users
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    const result = await query(
-      'SELECT id, username, name, email, role, created_at FROM users ORDER BY created_at DESC'
-    );
-    res.json(result.rows);
+    const users = await userRepository.findAllSafe();
+    res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -24,16 +27,15 @@ router.get('/', async (req: AuthRequest, res) => {
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const result = await query(
-      'SELECT id, username, name, email, role, created_at FROM users WHERE id = $1',
-      [id]
-    );
+    const user = await userRepository.findById(id);
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    // Remove password before sending
+    const { password, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -49,14 +51,22 @@ router.post('/', authorize('admin', 'developer'), async (req: AuthRequest, res) 
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    // Check if email already exists
+    const existingUser = await userRepository.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await query(
-      'INSERT INTO users (username, password, name, email, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, name, email, role, created_at',
-      [username, hashedPassword, name, email, role]
-    );
+    const user = await userRepository.create({
+      name,
+      email,
+      password: hashedPassword,
+      role
+    });
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(user);
   } catch (error: any) {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Username or email already exists' });
@@ -72,28 +82,20 @@ router.put('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res
     const { id } = req.params;
     const { name, email, role, password } = req.body;
 
-    let updateQuery: string;
-    let queryParams: any[];
-
     if (password) {
       // If password is provided, hash it and update
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, password = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, username, name, email, role';
-      queryParams = [name, email, role, hashedPassword, id];
-    } else {
-      // If no password, update other fields only
-      updateQuery = 'UPDATE users SET name = $1, email = $2, role = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, username, name, email, role';
-      queryParams = [name, email, role, id];
+      await userRepository.updatePassword(id, hashedPassword);
     }
 
-    const result = await query(updateQuery, queryParams);
+    // Update other fields
+    const user = await userRepository.update(id, { name, email, role });
 
-    if (result.rows.length === 0) {
+    res.json(user);
+  } catch (error: any) {
+    if (error.message === 'User not found') {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    res.json(result.rows[0]);
-  } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -102,23 +104,27 @@ router.put('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res
 // Delete user (admin and developer)
 router.delete('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const { id} = req.params;
 
-    // First, check if this is the admin user (cannot delete system admin)
-    const userCheck = await query('SELECT username FROM users WHERE id = $1', [id]);
+    // Check if user exists and get email (we use email, not username in User model)
+    const user = await userRepository.findById(id);
     
-    if (userCheck.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    if (userCheck.rows[0].username === 'admin') {
+    // Cannot delete system admin
+    if (user.email === 'admin@example.com') {
       return res.status(403).json({ error: 'Cannot delete the system admin user' });
     }
 
-    const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    await userRepository.delete(id);
 
     res.json({ message: 'User deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'User not found') {
+      return res.status(404).json({ error: 'User not found' });
+    }
     console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }

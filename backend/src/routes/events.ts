@@ -1,6 +1,12 @@
+/**
+ * Event Routes
+ * Handles trade show event management (CRUD)
+ */
+
 import { Router } from 'express';
 import { query, pool } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
+import { eventRepository } from '../database/repositories';
 
 const router = Router();
 
@@ -280,14 +286,13 @@ router.delete('/:id', authorize('admin', 'coordinator'), async (req: AuthRequest
   try {
     const { id } = req.params;
 
-    const result = await query('DELETE FROM events WHERE id = $1 RETURNING id', [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
+    await eventRepository.delete(id);
 
     res.json({ message: 'Event deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Event not found') {
+      return res.status(404).json({ error: 'Event not found' });
+    }
     console.error('Error deleting event:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
