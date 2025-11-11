@@ -201,10 +201,7 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
     
     if (wasPushed && isChangingEntity) {
       const confirmed = window.confirm(
-        `⚠️ This expense has already been pushed to "${expense.zohoEntity}" Zoho Books.\n\n` +
-        `Changing the entity will allow you to push it to "${entity || 'Unassigned'}" instead, ` +
-        `but it will NOT remove it from "${expense.zohoEntity}" Zoho Books.\n\n` +
-        `Are you sure you want to change entities?`
+        buildEntityChangeConfirmation(expense.zohoEntity, entity)
       );
       
       if (!confirmed) {

@@ -26,6 +26,8 @@ interface ExpenseModalDetailsEditProps {
   onChange: (updates: Partial<EditFormData>) => void;
   uniqueCategories: string[];
   uniqueCards: string[];
+  onCancel: () => void;
+  onSave: () => void;
 }
 
 export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = ({
@@ -33,6 +35,8 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   onChange,
   uniqueCategories,
   uniqueCards,
+  onCancel,
+  onSave,
 }) => {
   return (
     <div className="space-y-4">

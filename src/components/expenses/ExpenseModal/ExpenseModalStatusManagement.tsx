@@ -14,6 +14,7 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Expense } from '../../../App';
 import { getStatusColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../../constants/appConstants';
+import { buildReimbursementConfirmation, buildMarkAsPaidConfirmation } from '../../../utils/expenseUtils';
 
 interface AuditEntry {
   action: string;

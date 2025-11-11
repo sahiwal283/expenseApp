@@ -23,7 +23,7 @@ interface RawExpense {
   ocr_text?: string | null;
   created_at: string;
   updated_at?: string;
-  duplicate_check?: string | unknown[];
+  duplicate_check?: string | unknown[] | null;
   user_name?: string;
   event_name?: string;
 }

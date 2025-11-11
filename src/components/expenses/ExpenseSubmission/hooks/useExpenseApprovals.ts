@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { Expense } from '../../../../App';
 import { api } from '../../../../utils/api';
 import { AppError } from '../../../../types/types';
+import { buildEntityChangeConfirmation } from '../../../../utils/expenseUtils';
 
 interface UseExpenseApprovalsProps {
   expenses: Expense[];
@@ -76,9 +77,7 @@ export function useExpenseApprovals({
 
     if (wasPushed && isChangingEntity) {
       const confirmed = window.confirm(
-        `⚠️ This expense was already pushed to ${expense.zohoEntity}. ` +
-          `Changing the entity to ${entity} will require you to manually update or delete the expense in ${expense.zohoEntity}'s Zoho Books. ` +
-          `\n\nAre you sure you want to change the entity?`
+        buildEntityChangeConfirmation(expense.zohoEntity, entity)
       );
       if (!confirmed) {
         return;

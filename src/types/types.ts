@@ -138,6 +138,7 @@ export interface AuditTrailEntry {
 
 // Expense Edit Form Data
 export interface ExpenseEditFormData {
+  tradeShowId: string;
   category: string;
   merchant: string;
   amount: number;

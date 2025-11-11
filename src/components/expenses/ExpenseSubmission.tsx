@@ -4,13 +4,24 @@ import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
 import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
-import { formatLocalDate, getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
+import { getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
 import { ReceiptData, AuditTrailEntry, ExpenseEditFormData, OcrV2Data, AppError } from '../../types/types';
 import { useToast, ToastContainer } from '../common/Toast';
-import { sendOCRCorrection, detectCorrections } from '../../utils/ocrCorrections';
+import { sendOCRCorrection } from '../../utils/ocrCorrections';
+import {
+  buildExpenseDeleteConfirmation,
+  buildReimbursementConfirmation,
+  buildMarkAsPaidConfirmation,
+  buildEntityChangeConfirmation,
+  expenseToApiPayload,
+} from '../../utils/expenseUtils';
+import {
+  prepareOcrCorrectionData,
+  trackOcrCorrections,
+} from '../../utils/ocrUtils';
 
 // ✅ REFACTORED: Imported extracted components
 import {
@@ -65,7 +76,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const [showReceiptUpload, setShowReceiptUpload] = useState(false);
   const [pendingReceiptFile, setPendingReceiptFile] = useState<File | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
-  const [showFullReceipt, setShowFullReceipt] = useState(true);
   const [showPendingSync, setShowPendingSync] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -80,7 +90,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // Audit trail
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
-  const [showAuditTrail, setShowAuditTrail] = useState(false);
 
   // Inline editing in modal
   const [isEditingExpense, setIsEditingExpense] = useState(false);
@@ -113,18 +122,14 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         const data = await response.json();
         const trail = data.auditTrail || [];
         setAuditTrail(trail);
-        // Auto-expand if there's history (more than just "created")
-        const hasChanges = trail.filter((entry: AuditTrailEntry) => entry.action !== 'created').length > 0;
-        setShowAuditTrail(hasChanges);
+        // Audit trail loaded
       } else {
         console.error('[Audit] Failed to fetch audit trail');
         setAuditTrail([]);
-        setShowAuditTrail(false);
       }
     } catch (error) {
       console.error('[Audit] Error fetching audit trail:', error);
       setAuditTrail([]);
-      setShowAuditTrail(false);
     } finally {
       setLoadingAudit(false);
     }
@@ -144,85 +149,29 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       
       if (api.USE_SERVER) {
         let expenseId: string | null = null;
+        const apiPayload = expenseToApiPayload(expenseData);
         
         if (editingExpense) {
           console.log('[ExpenseSubmission] Updating expense:', editingExpense.id);
-          await api.updateExpense(editingExpense.id, {
-            event_id: expenseData.tradeShowId,
-            category: expenseData.category,
-            merchant: expenseData.merchant,
-            amount: expenseData.amount,
-            date: expenseData.date,
-            description: expenseData.description,
-            card_used: expenseData.cardUsed,
-            reimbursement_required: expenseData.reimbursementRequired,
-            location: expenseData.location,
-            zoho_entity: expenseData.zohoEntity,
-          }, file || undefined);
+          await api.updateExpense(editingExpense.id, apiPayload, file || undefined);
           expenseId = editingExpense.id;
           console.log('[ExpenseSubmission] Expense updated successfully');
           addToast('✅ Expense updated successfully!', 'success');
         } else {
           console.log('[ExpenseSubmission] Creating new expense');
-          const newExpense = await api.createExpense({
-            event_id: expenseData.tradeShowId,
-            category: expenseData.category,
-            merchant: expenseData.merchant,
-            amount: expenseData.amount,
-            date: expenseData.date,
-            description: expenseData.description,
-            card_used: expenseData.cardUsed,
-            reimbursement_required: expenseData.reimbursementRequired,
-            location: expenseData.location,
-            zoho_entity: expenseData.zohoEntity || undefined,  // Auto-populated from card selection
-          }, file || pendingReceiptFile || undefined);
+          const newExpense = await api.createExpense(
+            { ...apiPayload, zoho_entity: expenseData.zohoEntity || undefined },
+            file || pendingReceiptFile || undefined
+          );
           expenseId = newExpense.id;
           console.log('[ExpenseSubmission] Expense created successfully with ID:', expenseId);
           addToast('✅ Expense saved successfully!', 'success');
         }
 
         // Track OCR corrections if OCR v2 data exists (use passed data or state)
-        const ocrDataToUse = ocrDataOverride || ocrV2Data;
-        if (ocrDataToUse && ocrDataToUse.originalValues) {
-          console.log('[OCR Correction] Checking for user corrections...');
-          console.log('[OCR Correction] Comparing original vs submitted:', {
-            original: ocrDataToUse.originalValues,
-            submitted: {
-              merchant: expenseData.merchant,
-              amount: expenseData.amount,
-              date: expenseData.date,
-              category: expenseData.category
-            }
-          });
-          const corrections = detectCorrections(ocrDataToUse.inference, {
-            merchant: expenseData.merchant,
-            amount: expenseData.amount,
-            date: expenseData.date,
-            category: expenseData.category,
-            cardLastFour: (expenseData.cardUsed?.match(/\(\.\.\.(\d{4})\)/) || [])[1] || null
-          });
-
-          if (Object.keys(corrections).length > 0) {
-            console.log('[OCR Correction] User made corrections:', corrections);
-            
-            // Send corrections to backend for continuous learning
-            await sendOCRCorrection({
-              expenseId: expenseId || undefined,
-              originalOCRText: ocrDataToUse.ocrText || '',
-              originalInference: ocrDataToUse.inference,
-              correctedFields: corrections,
-              notes: `User corrected ${Object.keys(corrections).length} field(s) during expense submission`
-            }).catch(err => {
-              console.error('[OCR Correction] Failed to send correction:', err);
-              // Don't throw - corrections are optional
-            });
-
-            console.log(`[OCR Correction] Sent ${Object.keys(corrections).length} correction(s) to backend with expense ID: ${expenseId}`);
-          } else {
-            console.log('[OCR Correction] No corrections detected - OCR was accurate!');
-          }
-        } else {
-          console.log('[OCR Correction] No OCR v2 data available for correction tracking');
+        const ocrDataToUse: OcrV2Data | null = ocrDataOverride || ocrV2Data;
+        if (ocrDataToUse) {
+          await trackOcrCorrections(ocrDataToUse, expenseData, expenseId, sendOCRCorrection);
         }
 
         // Clear OCR data after processing if we used the override
@@ -244,7 +193,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         const updatedExpenses = editingExpense
           ? expenses.map(expense => expense.id === editingExpense.id ? newExpense : expense)
           : [...expenses, newExpense];
-        setExpenses(updatedExpenses);
         localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
         addToast(`✅ Expense ${editingExpense ? 'updated' : 'saved'} successfully!`, 'success');
       }
@@ -261,11 +209,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleEditExpense = (expense: Expense, file?: File) => {
-    setEditingExpense(expense);
-    setShowForm(true);
-    if (file) setPendingReceiptFile(file);
-  };
 
   // Start inline editing in the modal
   const startInlineEdit = (expense: Expense) => {
@@ -279,7 +222,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       description: expense.description || '',
       cardUsed: expense.cardUsed || '',
       location: expense.location || '',
-      reimbursementRequired: expense.reimbursementRequired || false
+      reimbursementRequired: expense.reimbursementRequired || false,
+      zohoEntity: expense.zohoEntity || '',
     });
   };
 
@@ -350,14 +294,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     const event = events.find(e => e.id === expense.tradeShowId);
     
     const confirmed = window.confirm(
-      `⚠️ DELETE EXPENSE?\n\n` +
-      `User: ${userName}\n` +
-      `Amount: $${expense.amount.toFixed(2)}\n` +
-      `Merchant: ${expense.merchant}\n` +
-      `Category: ${expense.category}\n` +
-      `Event: ${event?.name || 'Unknown'}\n` +
-      `Date: ${formatLocalDate(expense.date, 'DISPLAY')}\n\n` +
-      `This action cannot be undone.`
+      buildExpenseDeleteConfirmation(expense, userName, event?.name)
     );
     
     if (!confirmed) return;
@@ -382,36 +319,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     setIsSaving(true);
     
     // Prepare OCR v2 data for correction tracking (but don't rely on state)
-    let ocrDataForCorrections: OcrV2Data | null = null;
-    if (receiptData.ocrV2Data) {
-      console.log('[OCR Correction] Preparing OCR v2 data for correction tracking');
-      const inference = receiptData.ocrV2Data.inference;
-      ocrDataForCorrections = {
-        inference: inference,
-        categories: receiptData.ocrV2Data.categories,
-        ocrProvider: receiptData.ocrV2Data.ocrProvider,
-        ocrText: receiptData.ocrText,
-        // Store the ORIGINAL OCR-extracted values (before user edits)
-        originalValues: {
-          merchant: inference?.merchant?.value || 'Unknown Merchant',
-          amount: inference?.amount?.value || 0,
-          date: inference?.date?.value || '',
-          category: inference?.category?.value || 'Other',
-          location: inference?.location?.value || '',
-          cardLastFour: inference?.cardLastFour?.value || null
-        }
-      };
-      console.log('[OCR Correction] Original OCR values stored:', {
-        merchant: inference?.merchant?.value,
-        amount: inference?.amount?.value,
-        category: inference?.category?.value
-      });
-      console.log('[OCR Correction] User submitted values:', {
-        merchant: receiptData.merchant,
-        amount: receiptData.total,
-        category: receiptData.category
-      });
-    }
+    const ocrDataForCorrections = prepareOcrCorrectionData(receiptData);
 
     // Save expense directly with all fields from ReceiptUpload
     const expenseData: Omit<Expense, 'id'> = {
@@ -426,6 +334,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       status: 'pending',
       location: receiptData.location || '',
       ocrText: receiptData.ocrText || '',
+      reimbursementRequired: false,
       extractedData: {
         total: receiptData.total || 0,
         category: receiptData.category || 'Other',
@@ -449,11 +358,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   const handleReimbursementApproval = async (expense: Expense, status: 'approved' | 'rejected') => {
     // Confirmation before changing reimbursement status
-    const confirmed = window.confirm(
-      `Are you sure you want to ${status === 'approved' ? 'approve' : 'reject'} this reimbursement?\n\n` +
-      `Expense: $${expense.amount.toFixed(2)} - ${expense.merchant}\n` +
-      `${status === 'approved' ? 'The user will be notified of approval.' : 'The user will be notified of rejection.'}`
-    );
+    const confirmed = window.confirm(buildReimbursementConfirmation(expense, status));
     
     if (!confirmed) return;
     
@@ -471,12 +376,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   const handleMarkAsPaid = async (expense: Expense) => {
     // Confirmation before marking as paid
-    const confirmed = window.confirm(
-      `Mark this reimbursement as PAID?\n\n` +
-      `Expense: $${expense.amount.toFixed(2)} - ${expense.merchant}\n` +
-      `User: ${users.find(u => u.id === expense.userId)?.name || 'Unknown'}\n\n` +
-      `This indicates the reimbursement has been processed and paid to the user.`
-    );
+    const userName = users.find(u => u.id === expense.userId)?.name || 'Unknown';
+    const confirmed = window.confirm(buildMarkAsPaidConfirmation(expense, userName));
     
     if (!confirmed) return;
     
@@ -499,10 +400,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     
     if (wasPushed && isChangingEntity) {
       const confirmed = window.confirm(
-        `⚠️ This expense has already been pushed to "${expense.zohoEntity}" Zoho Books.\n\n` +
-        `Changing the entity will allow you to push it to "${entity || 'Unassigned'}" instead, ` +
-        `but it will NOT remove it from "${expense.zohoEntity}" Zoho Books.\n\n` +
-        `Are you sure you want to change entities?`
+        buildEntityChangeConfirmation(expense.zohoEntity, entity)
       );
       
       if (!confirmed) {
@@ -580,7 +478,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         message: appError.message
       });
       
-      const errorMsg = appError.response?.data?.error || appError.message || 'Unknown error';
+      const errorMsg = (appError.response?.data as { error?: string })?.error || appError.message || 'Unknown error';
       
       if (errorMsg.includes('does not have Zoho Books integration configured')) {
         addToast(
@@ -711,7 +609,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               eventName={events.find(e => e.id === viewingExpense.tradeShowId)?.name}
               onClose={() => {
                 setViewingExpense(null);
-                setShowFullReceipt(true);
                 setIsEditingExpense(false);
                 setEditFormData(null);
               }}
@@ -719,18 +616,37 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
             {/* Content */}
             <div className="p-6 space-y-6">
-              <ExpenseModalDuplicateWarning duplicateCheck={viewingExpense.duplicateCheck} />
+              {viewingExpense.duplicateCheck && (
+                <ExpenseModalDuplicateWarning duplicateCheck={viewingExpense.duplicateCheck} />
+              )}
 
               {/* ✅ REFACTORED: Replaced 190 lines with 2 simplified components */}
               {!isEditingExpense ? (
                 <ExpenseModalDetailsView expense={viewingExpense} />
               ) : (
-                <ExpenseModalDetailsEdit
-                  formData={editFormData}
-                  onChange={(updates) => setEditFormData({ ...editFormData, ...updates })}
-                  uniqueCategories={uniqueCategories}
-                  uniqueCards={uniqueCards}
-                />
+                editFormData && (
+                  <ExpenseModalDetailsEdit
+                    formData={{
+                      date: editFormData.date,
+                      amount: editFormData.amount,
+                      category: editFormData.category,
+                      merchant: editFormData.merchant,
+                      cardUsed: editFormData.cardUsed,
+                      location: editFormData.location || '',
+                      description: editFormData.description || '',
+                      reimbursementRequired: editFormData.reimbursementRequired,
+                    }}
+                    onChange={(updates) => {
+                      if (editFormData) {
+                        setEditFormData({ ...editFormData, ...updates });
+                      }
+                    }}
+                    uniqueCategories={uniqueCategories}
+                    uniqueCards={uniqueCards}
+                    onCancel={cancelInlineEdit}
+                    onSave={saveInlineEdit}
+                  />
+                )
               )}
 
               {/* ✅ REFACTORED: Replaced 198 lines with ExpenseModalStatusManagement */}
@@ -740,9 +656,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 entityOptions={entityOptions}
                 auditTrail={auditTrail}
                 onReimbursementStatusChange={async (newStatus) => {
-                  await handleReimbursementApproval(viewingExpense, newStatus === 'approved' ? 'approved' : newStatus === 'rejected' ? 'rejected' : 'pending review');
                   if (newStatus === 'paid') {
                     await handleMarkAsPaid(viewingExpense);
+                  } else if (newStatus === 'approved' || newStatus === 'rejected') {
+                    await handleReimbursementApproval(viewingExpense, newStatus);
                   }
                 }}
                 onEntityChange={async (newEntity) => {
@@ -752,9 +669,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
               {/* ✅ REFACTORED: Replaced 27 lines with ExpenseModalReceipt */}
               <ExpenseModalReceipt
-                receiptUrl={viewingExpense.receiptUrl}
-                showFullReceipt={showFullReceipt}
-                onToggle={() => setShowFullReceipt(!showFullReceipt)}
+                receiptUrl={viewingExpense.receiptUrl || ''}
               />
 
               {/* ✅ REFACTORED: Replaced 110 lines with ExpenseModalAuditTrail */}
@@ -771,7 +686,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               isSaving={isSaving}
               onClose={() => {
                 setViewingExpense(null);
-                setShowFullReceipt(true);
                 setIsEditingExpense(false);
                 setEditFormData(null);
               }}

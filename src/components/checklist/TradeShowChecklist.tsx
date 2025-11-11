@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
-import { CheckCircle2, Circle, Plane, Hotel, Car, Package, Zap, Building2, AlertCircle, List } from 'lucide-react';
+import { Plane, Hotel, Car, Building2, AlertCircle, List } from 'lucide-react';
 import { BoothSection } from './sections/BoothSection';
 import { FlightsSection } from './sections/FlightsSection';
 import { HotelsSection } from './sections/HotelsSection';
 import { CarRentalsSection } from './sections/CarRentalsSection';
 import { CustomItemsSection } from './sections/CustomItemsSection';
 import { CollapsibleSection } from './CollapsibleSection';
+import { sectionHasItems } from '../../utils/checklistUtils';
 
 export interface ChecklistData {
   id: number;
@@ -134,7 +135,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         console.log('[Checklist] Loading checklist for event:', eventId);
         const data = await api.checklist.getChecklist(eventId);
         console.log('[Checklist] Checklist loaded:', data);
-        setChecklist(data);
+        setChecklist(data as ChecklistData);
       }
     } catch (error) {
       console.error('[Checklist] Error loading checklist:', error);
@@ -407,18 +408,9 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
               // Sort: incomplete sections with items first, completed sections next, empty sections last
               return sections
                 .sort((a, b) => {
-                  // Check if sections have items
-                  const aHasItems = a.key === 'booth' ? true : // Always show booth
-                                    a.key === 'flights' ? checklist.flights.length > 0 :
-                                    a.key === 'hotels' ? checklist.hotels.length > 0 :
-                                    a.key === 'car_rentals' ? checklist.carRentals.length > 0 :
-                                    a.key === 'custom' ? checklist.customItems.length > 0 : true;
-                  
-                  const bHasItems = b.key === 'booth' ? true : // Always show booth
-                                    b.key === 'flights' ? checklist.flights.length > 0 :
-                                    b.key === 'hotels' ? checklist.hotels.length > 0 :
-                                    b.key === 'car_rentals' ? checklist.carRentals.length > 0 :
-                                    b.key === 'custom' ? checklist.customItems.length > 0 : true;
+                  // Check if sections have items using helper
+                  const aHasItems = sectionHasItems(a.key, checklist);
+                  const bHasItems = sectionHasItems(b.key, checklist);
                   
                   // Empty sections go to bottom
                   if (!aHasItems && bHasItems) return 1;

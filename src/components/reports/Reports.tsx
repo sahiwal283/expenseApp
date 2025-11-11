@@ -10,6 +10,7 @@ import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { useReportsStats } from './hooks/useReportsStats';
+import { calculateCategoryAverages, calculateTradeShowBreakdown } from '../../utils/reportUtils';
 
 interface ReportsProps {
   user: User;
@@ -96,7 +97,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     // Future: call API to update expense; for now refresh list from server
     if (api.USE_SERVER) {
       const refreshed = await api.getExpenses();
-      setExpenses(refreshed || []);
+      setExpenses(Array.isArray(refreshed) ? refreshed : []);
     } else {
       const updatedExpenses = expenses.map(expense => expense.id === updatedExpense.id ? updatedExpense : expense);
       setExpenses(updatedExpenses);

@@ -15,6 +15,7 @@ import { DuplicateDetectionService } from '../services/DuplicateDetectionService
 import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { normalizeExpense } from '../utils/expenseHelpers';
+import { expenseRepository, userRepository, eventRepository } from '../database/repositories';
 
 const router = Router();
 
@@ -120,10 +121,9 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
 
   // Update expense with duplicate warnings if found
   if (duplicates.length > 0) {
-    await query(
-      'UPDATE expenses SET duplicate_check = $1 WHERE id = $2',
-      [JSON.stringify(duplicates), expense.id]
-    );
+    await expenseRepository.update(expense.id, {
+      duplicate_check: JSON.stringify(duplicates)
+    });
     console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${expense.id}`);
   }
 
@@ -190,8 +190,10 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
   }
 
   // Get old expense data for audit trail
-  const oldExpenseResult = await query('SELECT * FROM expenses WHERE id = $1', [id]);
-  const oldExpense = oldExpenseResult.rows[0];
+  const oldExpense = await expenseRepository.findById(id);
+  if (!oldExpense) {
+    return res.status(404).json({ error: 'Expense not found' });
+  }
 
   // Update expense using service layer (handles authorization)
   const expense = await expenseService.updateExpense(
@@ -255,20 +257,18 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
 
   // Update expense with duplicate warnings
   if (duplicates.length > 0) {
-    await query(
-      'UPDATE expenses SET duplicate_check = $1 WHERE id = $2',
-      [JSON.stringify(duplicates), id]
-    );
+    await expenseRepository.update(id, {
+      duplicate_check: JSON.stringify(duplicates)
+    });
     console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
     
     // Include in response
     (expense as any).duplicate_check = duplicates;
   } else {
     // Clear duplicates if no longer matching
-    await query(
-      'UPDATE expenses SET duplicate_check = NULL WHERE id = $1',
-      [id]
-    );
+    await expenseRepository.update(id, {
+      duplicate_check: null
+    });
   }
 
   console.log(`Successfully updated expense ${id}`);
@@ -286,8 +286,11 @@ router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), async
   }
 
   // Get old status for audit trail
-  const oldStatusResult = await query('SELECT status FROM expenses WHERE id = $1', [id]);
-  const oldStatus = oldStatusResult.rows[0]?.status;
+  const oldExpense = await expenseRepository.findById(id);
+  if (!oldExpense) {
+    return res.status(404).json({ error: 'Expense not found' });
+  }
+  const oldStatus = oldExpense.status;
 
   // Update status using service layer
   const expense = await expenseService.updateExpenseStatus(
@@ -337,8 +340,11 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
   const { zoho_entity } = req.body;
 
   // Get old entity for audit trail
-  const oldEntityResult = await query('SELECT zoho_entity FROM expenses WHERE id = $1', [id]);
-  const oldEntity = oldEntityResult.rows[0]?.zoho_entity;
+  const oldExpense = await expenseRepository.findById(id);
+  if (!oldExpense) {
+    return res.status(404).json({ error: 'Expense not found' });
+  }
+  const oldEntity = oldExpense.zoho_entity;
 
   // Assign entity using service layer
   const expense = await expenseService.assignZohoEntity(id, zoho_entity, req.user!.role);
@@ -367,17 +373,15 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
 
   // Update expense with duplicate warnings
   if (duplicates.length > 0) {
-    await query(
-      'UPDATE expenses SET duplicate_check = $1 WHERE id = $2',
-      [JSON.stringify(duplicates), id]
-    );
+    await expenseRepository.update(id, {
+      duplicate_check: JSON.stringify(duplicates)
+    });
     console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
     (expense as any).duplicate_check = duplicates;
   } else {
-    await query(
-      'UPDATE expenses SET duplicate_check = NULL WHERE id = $1',
-      [id]
-    );
+    await expenseRepository.update(id, {
+      duplicate_check: null
+    });
   }
 
   res.json(normalizeExpense(expense));
@@ -397,16 +401,11 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
     const { id } = req.params;
 
     // Get expense with full details
-    const result = await query(
-      `SELECT * FROM expenses WHERE id = $1`,
-      [id]
-    );
+    const expense = await expenseRepository.findById(id);
 
-    if (result.rows.length === 0) {
+    if (!expense) {
       return res.status(404).json({ error: 'Expense not found' });
     }
-
-    const expense = result.rows[0];
 
     // Check if already pushed to Zoho
     if (expense.zoho_expense_id) {
@@ -432,13 +431,13 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
     }
 
     // Get user and event details for Zoho submission
-    const userResult = await query('SELECT name FROM users WHERE id = $1', [expense.user_id]);
-    const eventResult = await query('SELECT name, start_date, end_date FROM events WHERE id = $1', [expense.event_id]);
+    const user = await userRepository.findById(expense.user_id);
+    const event = await eventRepository.findById(expense.event_id);
     
-    const userName = userResult.rows[0]?.name || 'Unknown User';
-    const eventName = eventResult.rows[0]?.name || undefined;
-    const eventStartDate = eventResult.rows[0]?.start_date || undefined;
-    const eventEndDate = eventResult.rows[0]?.end_date || undefined;
+    const userName = user?.name || 'Unknown User';
+    const eventName = event?.name || undefined;
+    const eventStartDate = event?.start_date || undefined;
+    const eventEndDate = event?.end_date || undefined;
 
     // Prepare receipt file path (if exists)
     let receiptPath = undefined;
@@ -453,7 +452,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
     const zohoResult = await zohoMultiAccountService.createExpense(expense.zoho_entity, {
       expenseId: expense.id,
       date: expense.date,
-      amount: parseFloat(expense.amount),
+      amount: expense.amount,
       category: expense.category,
       merchant: expense.merchant,
       description: expense.description || undefined,
@@ -471,9 +470,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
       
       // Store Zoho expense ID in database
       if (zohoResult.zohoExpenseId) {
-        await query('UPDATE expenses SET zoho_expense_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', 
-          [zohoResult.zohoExpenseId, expense.id]
-        );
+        await expenseRepository.updateZohoInfo(expense.id, zohoResult.zohoExpenseId);
       }
 
       // Log Zoho push in audit trail
@@ -489,12 +486,12 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
       );
 
       // Return updated expense
-      const updatedResult = await query('SELECT * FROM expenses WHERE id = $1', [id]);
+      const updatedExpense = await expenseRepository.findById(id);
       return res.json({
         success: true,
         message: `Expense pushed to ${expense.zoho_entity} Zoho Books successfully`,
         zoho_expense_id: zohoResult.zohoExpenseId,
-        expense: normalizeExpense(updatedResult.rows[0])
+        expense: normalizeExpense(updatedExpense!)
       });
     } else {
       console.error(`[Zoho:ManualPush] Failed to submit expense ${expense.id}: ${zohoResult.error}`);

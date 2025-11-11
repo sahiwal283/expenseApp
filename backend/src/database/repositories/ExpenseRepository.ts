@@ -24,6 +24,8 @@ export interface Expense {
   reimbursement_status?: string;
   zoho_entity?: string;
   zoho_expense_id?: string;
+  duplicate_check?: string | null;
+  ocr_text?: string | null;
   created_at: string;
   updated_at: string;
 }
