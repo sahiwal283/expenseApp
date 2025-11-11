@@ -89,6 +89,16 @@ export interface ChecklistCustomItem {
   updated_at: string;
 }
 
+export interface ChecklistTemplate {
+  id: number;
+  title: string;
+  description?: string;
+  position: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export class ChecklistRepository extends BaseRepository<EventChecklist> {
   protected tableName = 'event_checklists';
 
@@ -580,6 +590,132 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
       [id]
     );
     return (result.rowCount || 0) > 0;
+  }
+
+  // ==================== TEMPLATES ====================
+
+  /**
+   * Get all active templates
+   */
+  async getActiveTemplates(): Promise<ChecklistTemplate[]> {
+    const result = await this.executeQuery<ChecklistTemplate>(
+      `SELECT * FROM checklist_templates WHERE is_active = true ORDER BY position, id`
+    );
+    return result.rows;
+  }
+
+  /**
+   * Get all templates (including inactive)
+   */
+  async getAllTemplates(): Promise<ChecklistTemplate[]> {
+    const result = await this.executeQuery<ChecklistTemplate>(
+      `SELECT * FROM checklist_templates ORDER BY position, id`
+    );
+    return result.rows;
+  }
+
+  /**
+   * Create template
+   */
+  async createTemplate(data: {
+    title: string;
+    description?: string;
+    position?: number;
+  }): Promise<ChecklistTemplate> {
+    const result = await this.executeQuery<ChecklistTemplate>(
+      `INSERT INTO checklist_templates (title, description, position, is_active)
+       VALUES ($1, $2, $3, true)
+       RETURNING *`,
+      [data.title, data.description || null, data.position || 0]
+    );
+    return result.rows[0];
+  }
+
+  /**
+   * Update template
+   */
+  async updateTemplate(id: number, data: {
+    title?: string;
+    description?: string;
+    position?: number;
+    is_active?: boolean;
+  }): Promise<ChecklistTemplate> {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (data.title !== undefined) {
+      fields.push(`title = $${paramIndex++}`);
+      values.push(data.title);
+    }
+    if (data.description !== undefined) {
+      fields.push(`description = $${paramIndex++}`);
+      values.push(data.description);
+    }
+    if (data.position !== undefined) {
+      fields.push(`position = $${paramIndex++}`);
+      values.push(data.position);
+    }
+    if (data.is_active !== undefined) {
+      fields.push(`is_active = $${paramIndex++}`);
+      values.push(data.is_active);
+    }
+
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    values.push(id);
+
+    const result = await this.executeQuery<ChecklistTemplate>(
+      `UPDATE checklist_templates 
+       SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $${paramIndex}
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundError('Template', id.toString());
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Soft delete template (set is_active = false)
+   */
+  async softDeleteTemplate(id: number): Promise<boolean> {
+    const result = await this.executeQuery<ChecklistTemplate>(
+      `UPDATE checklist_templates SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    return result.rows.length > 0;
+  }
+
+  /**
+   * Apply templates to a checklist (creates custom items from templates)
+   */
+  async applyTemplatesToChecklist(checklistId: number): Promise<number> {
+    // Get all active templates
+    const templates = await this.getActiveTemplates();
+
+    // Insert each template as a custom item for this checklist
+    const insertPromises = templates.map(template =>
+      this.executeQuery(
+        `INSERT INTO checklist_custom_items (checklist_id, title, description, position, completed)
+         VALUES ($1, $2, $3, $4, false)
+         ON CONFLICT DO NOTHING`,
+        [checklistId, template.title, template.description, template.position]
+      )
+    );
+
+    await Promise.all(insertPromises);
+
+    // Mark templates as applied
+    await this.markTemplatesApplied(checklistId);
+
+    return templates.length;
   }
 }
 
