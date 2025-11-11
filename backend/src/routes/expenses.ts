@@ -1,294 +1,27 @@
-import { Router } from 'express';
-import multer from 'multer';
+/**
+ * Expense Routes
+ * Handles expense submission, approval, Zoho integration, and reimbursement workflows
+ */
+
+import { Router, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import sharp from 'sharp';
-import { createWorker } from 'tesseract.js';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
+import { upload } from '../config/upload';
 import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
 import { expenseService } from '../services/ExpenseService';
 import { DuplicateDetectionService } from '../services/DuplicateDetectionService';
 import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
+import { processOCR } from '../utils/tesseractOCR';
+import { normalizeExpense } from '../utils/expenseHelpers';
 
 const router = Router();
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = process.env.UPLOAD_DIR || 'uploads';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') }, // 10MB default (increased for phone photos)
-  fileFilter: (req, file, cb) => {
-    // Accept common image formats and PDFs (including phone camera formats)
-    const allowedExtensions = /jpeg|jpg|png|pdf|heic|heif|webp/i;
-    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
-    
-    // Accept any image MIME type (image/*) or PDF
-    // This handles phone cameras which may send image/heic, image/heif, image/x-png, etc.
-    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-
-    if (extname && mimetypeOk) {
-      console.log(`[Upload] Accepting file: ${file.originalname} (${file.mimetype})`);
-      return cb(null, true);
-    } else {
-      console.warn(`[Upload] Rejected file: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
-      cb(new Error('Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
-    }
-  }
-});
-
-// Image preprocessing function to improve OCR accuracy
-async function preprocessImage(inputPath: string): Promise<Buffer> {
-  try {
-    console.log('[OCR] Preprocessing image with Sharp...');
-    
-    // Read and preprocess the image for optimal OCR
-    const processedImage = await sharp(inputPath)
-      .grayscale() // Convert to grayscale
-      .normalize() // Normalize contrast
-      .sharpen() // Sharpen text edges
-      .median(3) // Reduce noise with median filter
-      .linear(1.2, -(128 * 1.2) + 128) // Increase contrast
-      .toBuffer();
-    
-    console.log('[OCR] Image preprocessing completed');
-    return processedImage;
-    
-  } catch (error: any) {
-    console.error('[OCR] Preprocessing error:', error.message);
-    // Return original image if preprocessing fails
-    return fs.readFileSync(inputPath);
-  }
-}
-
-// Enhanced OCR processing function with image preprocessing
-async function processOCR(filePath: string): Promise<{
-  text: string;
-  confidence: number;
-  structured: any;
-}> {
-  let worker = null;
-  try {
-    console.log('[OCR] Starting enhanced Tesseract OCR processing for:', filePath);
-    
-    // Preprocess the image for better OCR accuracy
-    const preprocessedImage = await preprocessImage(filePath);
-    
-    // Create Tesseract worker with optimized configuration
-    worker = await createWorker('eng', 1, {
-      logger: (m: any) => {
-        if (m.status === 'recognizing text') {
-          console.log(`[OCR] Progress: ${(m.progress * 100).toFixed(1)}%`);
-        }
-      }
-    });
-    
-    // Configure Tesseract for receipt processing
-    await worker.setParameters({
-      tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$.,/:- '
-    });
-    
-    // Process the preprocessed image
-    const { data } = await worker.recognize(preprocessedImage);
-    
-    console.log(`[OCR] Tesseract completed`);
-    console.log(`[OCR] Confidence: ${data.confidence.toFixed(2)}%`);
-    console.log(`[OCR] Extracted text length: ${data.text.length} characters`);
-    
-    // Extract structured data from text
-    const structured = extractStructuredData(data.text);
-    
-    return {
-      text: data.text || '',
-      confidence: data.confidence / 100 || 0, // Convert to 0-1 range
-      structured: structured
-    };
-    
-  } catch (error: any) {
-    console.error('[OCR] Tesseract processing error:', error.message);
-    return {
-      text: '',
-      confidence: 0,
-      structured: {}
-    };
-  } finally {
-    // Always terminate the worker
-    if (worker) {
-      await worker.terminate();
-    }
-  }
-}
-
-// Enhanced structured data extraction from OCR text
-function extractStructuredData(text: string): any {
-  const structured: any = {
-    merchant: null,
-    total: null,
-    date: null,
-    category: null,
-    location: null
-  };
-  
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const textLower = text.toLowerCase();
-  
-  console.log('[OCR] Extracting structured data from text...');
-  
-  // Extract merchant (first substantial line that's not a number or common header)
-  for (const line of lines.slice(0, 8)) {
-    const trimmed = line.trim();
-    // Skip lines that are just numbers, dates, or common receipt headers
-    if (trimmed.length > 3 && 
-        !/^\d+$/.test(trimmed) && 
-        !/^receipt$/i.test(trimmed) &&
-        !/^invoice$/i.test(trimmed) &&
-        !/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(trimmed)) {
-      structured.merchant = trimmed;
-      console.log(`[OCR] Detected merchant: ${trimmed}`);
-      break;
-    }
-  }
-  
-  // Enhanced amount extraction with multiple patterns
-  const amountPatterns = [
-    /total[\s:]*\$?\s*(\d+[.,]\d{2})/i,
-    /amount[\s:]*\$?\s*(\d+[.,]\d{2})/i,
-    /balance[\s:]*\$?\s*(\d+[.,]\d{2})/i,
-    /grand[\s]+total[\s:]*\$?\s*(\d+[.,]\d{2})/i,
-    /\$\s*(\d+[.,]\d{2})/,
-    /(\d+[.,]\d{2})\s*(?:USD|usd)/,
-  ];
-  
-  for (const pattern of amountPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const amount = parseFloat(match[1].replace(',', '.'));
-      // Only accept reasonable amounts (between $0.01 and $10,000)
-      if (amount >= 0.01 && amount <= 10000) {
-        structured.total = amount;
-        console.log(`[OCR] Detected amount: $${amount}`);
-        break;
-      }
-    }
-  }
-  
-  // Enhanced date extraction with multiple formats
-  const datePatterns = [
-    /(\d{1,2}[-/]\d{1,2}[-/]\d{4})/,     // MM/DD/YYYY or DD/MM/YYYY
-    /(\d{1,2}[-/]\d{1,2}[-/]\d{2})/,     // MM/DD/YY
-    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,     // YYYY/MM/DD
-    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+\d{1,2}[\s,]+\d{4}/i, // Month DD, YYYY
-    /\d{1,2}[\s]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+\d{4}/i   // DD Month YYYY
-  ];
-  
-  for (const pattern of datePatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      structured.date = match[0];
-      console.log(`[OCR] Detected date: ${match[0]}`);
-      break;
-    }
-  }
-  
-  // Enhanced category detection with more keywords
-  const categoryKeywords = {
-    'Transportation': ['hertz', 'rental', 'car rental', 'vehicle', 'uber', 'lyft', 'taxi', 'cab', 'metro', 'transit', 'parking', 'toll'],
-    'Hotels': ['hotel', 'motel', 'inn', 'resort', 'marriott', 'hilton', 'hyatt', 'holiday inn', 'best western', 'lodging', 'accommodation'],
-    'Meals': ['restaurant', 'cafe', 'coffee', 'diner', 'bistro', 'grill', 'kitchen', 'bar', 'pub', 'food', 'dining', 'breakfast', 'lunch', 'dinner'],
-    'Flights': ['airline', 'airways', 'flight', 'aviation', 'airport'],
-    'Supplies': ['office', 'supply', 'staples', 'depot', 'store', 'shop'],
-    'Entertainment': ['theater', 'cinema', 'movie', 'show', 'event', 'ticket']
-  };
-  
-  for (const [category, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(keyword => textLower.includes(keyword))) {
-      structured.category = category;
-      console.log(`[OCR] Detected category: ${category}`);
-      break;
-    }
-  }
-  
-  // Try to extract location/address
-  const locationPatterns = [
-    /\d{1,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive)/i,
-    /[A-Z][a-z]+,\s*[A-Z]{2}\s*\d{5}/  // City, ST 12345
-  ];
-  
-  for (const pattern of locationPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      structured.location = match[0];
-      console.log(`[OCR] Detected location: ${match[0]}`);
-      break;
-    }
-  }
-  
-  return structured;
-}
-
-// Helper function to convert numeric strings to numbers
-const normalizeExpense = (expense: any) => {
-  // Parse duplicate_check if it's a string (shouldn't be, but just in case)
-  let duplicateCheckValue = expense.duplicate_check;
-  if (typeof duplicateCheckValue === 'string') {
-    try {
-      duplicateCheckValue = JSON.parse(duplicateCheckValue);
-    } catch (e) {
-      console.error('[Normalize] Failed to parse duplicate_check:', e);
-      duplicateCheckValue = null;
-    }
-  }
-  
-  const normalized: any = {
-    id: expense.id,
-    userId: expense.user_id,
-    tradeShowId: expense.event_id || null,
-    amount: expense.amount ? parseFloat(expense.amount) : null,
-    category: expense.category,
-    merchant: expense.merchant,
-    date: expense.date,
-    description: expense.description,
-    cardUsed: expense.card_used || null,
-    receiptUrl: expense.receipt_url || null,
-    reimbursementRequired: expense.reimbursement_required,
-    reimbursementStatus: expense.reimbursement_status || null,
-    status: expense.status,
-    zohoEntity: expense.zoho_entity || null,
-    zohoExpenseId: expense.zoho_expense_id || null,
-    location: expense.location || null,
-    ocrText: expense.ocr_text || null,
-    createdAt: expense.created_at,
-    updatedAt: expense.updated_at,
-    duplicateCheck: duplicateCheckValue || null,
-    // Include pre-fetched JOIN fields if present
-    user_name: expense.user_name,
-    event_name: expense.event_name,
-  };
-  
-  // Debug logging for duplicate check
-  if (duplicateCheckValue) {
-    console.log(`[Normalize] Expense ${expense.id} HAS duplicateCheck:`, Array.isArray(duplicateCheckValue), duplicateCheckValue.length);
-  }
-  
-  return normalized;
-};
-
 router.use(authenticateToken);
 
+// ========== OCR PREVIEW ENDPOINT ==========
 // OCR processing endpoint (preview only, no expense creation)
 router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
   try {
@@ -298,7 +31,7 @@ router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
 
     console.log(`[OCR Preview] Processing file: ${req.file.filename}`);
 
-    // Perform OCR using EasyOCR service
+    // Perform OCR using Tesseract
     const ocrResult = await processOCR(req.file.path);
     
     if (!ocrResult.text || ocrResult.confidence === 0) {
@@ -345,8 +78,9 @@ router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
   }
 });
 
+// ========== CRUD ENDPOINTS ==========
 // Get all expenses
-router.get('/', asyncHandler(async (req: AuthRequest, res) => {
+router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { event_id, user_id, status } = req.query;
   
   // Build filters from query params
@@ -369,7 +103,7 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 // Get expense by ID
-router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
+router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   
   // Get expense with user/event details (optimized with JOINs - no extra queries!)
@@ -383,7 +117,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 // Create expense with optional receipt upload and OCR
-router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res) => {
+router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const {
     event_id,
     category,
@@ -488,7 +222,7 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
 }));
 
 // Update expense
-router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res) => {
+router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const {
     event_id,
@@ -617,8 +351,9 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
   res.json(normalizeExpense(expense));
 }));
 
-// Update expense status (pending/approved/rejected/needs further review) - NEW endpoint for detail modal
-router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+// ========== STATUS & WORKFLOW ENDPOINTS ==========
+// Update expense status (pending/approved/rejected/needs further review)
+router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -654,7 +389,7 @@ router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), async
 }));
 
 // Approve/Reject expense (accountant/admin only) - LEGACY endpoint, kept for backwards compatibility
-router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -673,7 +408,7 @@ router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), async
 }));
 
 // Assign Zoho entity (accountant only) - NO AUTO-PUSH
-router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { zoho_entity } = req.body;
 
@@ -724,6 +459,7 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
   res.json(normalizeExpense(expense));
 }));
 
+// ========== ZOHO INTEGRATION ENDPOINTS ==========
 // Manual push to Zoho Books (accountant/admin only)
 router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
@@ -849,7 +585,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
 });
 
 // Reimbursement approval (accountant only)
-router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { reimbursement_status } = req.body;
 
@@ -867,7 +603,7 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer')
 }));
 
 // Delete expense
-router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
+router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   // Get expense first to check receipt file
@@ -958,7 +694,7 @@ router.get('/zoho/accounts', authenticateToken, authorize('admin'), async (req: 
 
 // ========== AUDIT TRAIL ==========
 // GET /api/expenses/:id/audit - Get audit trail for an expense (accountant/admin/developer only)
-router.get('/:id/audit', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res) => {
+router.get('/:id/audit', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   // Verify expense exists and user has access
@@ -977,4 +713,3 @@ router.get('/:id/audit', authorize('admin', 'accountant', 'developer'), asyncHan
 }));
 
 export default router;
-
