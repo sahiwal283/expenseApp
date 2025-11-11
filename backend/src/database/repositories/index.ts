@@ -35,3 +35,6 @@ export type {
   ChecklistCustomItem
 } from './ChecklistRepository';
 
+export { RoleRepository, roleRepository } from './RoleRepository';
+export type { Role } from './RoleRepository';
+
