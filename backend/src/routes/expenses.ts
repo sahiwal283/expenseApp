@@ -14,71 +14,14 @@ import { expenseService } from '../services/ExpenseService';
 import { DuplicateDetectionService } from '../services/DuplicateDetectionService';
 import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
-import { processOCR } from '../utils/tesseractOCR';
 import { normalizeExpense } from '../utils/expenseHelpers';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-// ========== OCR PREVIEW ENDPOINT ==========
-// OCR processing endpoint (preview only, no expense creation)
-router.post('/ocr', upload.single('receipt'), async (req: AuthRequest, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    console.log(`[OCR Preview] Processing file: ${req.file.filename}`);
-
-    // Perform OCR using Tesseract
-    const ocrResult = await processOCR(req.file.path);
-    
-    if (!ocrResult.text || ocrResult.confidence === 0) {
-      console.warn('[OCR Preview] OCR returned no results');
-      // Clean up the uploaded file
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(500).json({ 
-        error: 'Failed to process receipt. Please try again or enter manually.',
-        details: 'No text could be extracted from the image'
-      });
-    }
-
-    console.log(`[OCR Preview] Success - Confidence: ${(ocrResult.confidence * 100).toFixed(2)}%`);
-    
-    // Return the temporary receipt URL and extracted data
-    const tempReceiptUrl = `/uploads/${req.file.filename}`;
-    
-    res.json({
-      success: true,
-      ocrText: ocrResult.text,
-      confidence: ocrResult.confidence,
-      structured: ocrResult.structured,
-      receiptUrl: tempReceiptUrl,
-      merchant: ocrResult.structured?.merchant || '',
-      amount: ocrResult.structured?.total || 0,
-      date: ocrResult.structured?.date || '',
-      category: ocrResult.structured?.category || '',
-      location: ocrResult.structured?.location || ''
-    });
-  } catch (error: any) {
-    console.error('[OCR Preview] Error:', error.message);
-    
-    // Clean up the uploaded file on error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    
-    res.status(500).json({ 
-      error: 'Failed to process receipt. Please try again or enter manually.',
-      details: error.message
-    });
-  }
-});
-
 // ========== CRUD ENDPOINTS ==========
+// Note: OCR processing is handled by /api/ocr/v2/process endpoint (external OCR service)
 // Get all expenses
 router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { event_id, user_id, status } = req.query;
@@ -146,19 +89,9 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
     }
   }
 
-  // Process uploaded receipt with OCR (only if file is provided and no receipt_url)
+  // Use uploaded receipt (OCR should be done via /api/ocr/v2/process before submission)
   if (req.file && !receipt_url) {
     receiptUrl = `/uploads/${req.file.filename}`;
-    
-    // Perform OCR
-    try {
-      const ocrResult = await processOCR(req.file.path);
-      console.log(`Receipt OCR completed with ${(ocrResult.confidence * 100).toFixed(2)}% confidence`);
-      // OCR data stored in receipt metadata (future enhancement)
-    } catch (ocrError) {
-      console.error('OCR processing failed:', ocrError);
-      // Continue expense creation even if OCR fails
-    }
   }
 
   // Create expense using service layer
@@ -251,18 +184,9 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
     }
   }
 
-  // Process uploaded receipt with OCR if provided
+  // Use uploaded receipt if provided
   if (req.file) {
     receiptUrl = `/uploads/${req.file.filename}`;
-    
-    // Perform OCR
-    try {
-      const ocrResult = await processOCR(req.file.path);
-      console.log(`Receipt OCR completed with ${(ocrResult.confidence * 100).toFixed(2)}% confidence`);
-    } catch (ocrError) {
-      console.error('OCR processing failed during update:', ocrError);
-      // Continue with update even if OCR fails
-    }
   }
 
   // Get old expense data for audit trail
