@@ -808,6 +808,7 @@ Receipt File (Image or PDF)
 
 #### File Structure
 
+**OCR Service Structure:**
 ```
 backend/src/services/ocr/
 ├── types.ts                      # TypeScript interfaces
@@ -815,11 +816,47 @@ backend/src/services/ocr/
 ├── paddleocr_processor.py        # Python OCR script
 ├── providers/
 │   ├── TesseractProvider.ts      # Legacy OCR (fallback)
-│   └── PaddleOCRProvider.ts      # PaddleOCR integration
+│   ├── PaddleOCRProvider.ts      # PaddleOCR integration
+│   └── EasyOCRProvider.ts        # EasyOCR integration
 ├── inference/
 │   ├── RuleBasedInferenceEngine.ts   # Field extraction logic
 │   └── LLMProvider.ts                # AI framework (not implemented)
 └── UserCorrectionService.ts      # Correction tracking
+```
+
+**Backend Architecture (Repository Pattern):**
+```
+backend/src/
+├── routes/                       # HTTP route handlers (thin controllers)
+│   ├── expenses.ts              # Uses ExpenseService
+│   ├── users.ts                 # Uses UserRepository
+│   └── events.ts                # Uses EventRepository
+├── services/                     # Business logic layer
+│   ├── ExpenseService.ts        # Expense business logic
+│   ├── DevDashboardService.ts   # Dashboard logic
+│   └── ocr/                     # OCR service modules
+└── database/repositories/        # Data access layer
+    ├── BaseRepository.ts        # Common CRUD operations
+    ├── ExpenseRepository.ts     # Expense data access
+    ├── UserRepository.ts        # User data access
+    └── EventRepository.ts       # Event data access
+```
+
+**Frontend Architecture (Component Modularization):**
+```
+src/components/
+├── expenses/
+│   ├── ExpenseSubmission.tsx    # Main component
+│   ├── ExpenseSubmission/       # Sub-components
+│   │   ├── hooks/               # Feature hooks
+│   │   └── *.tsx                # Sub-components
+│   └── ReceiptUpload/
+│       └── hooks/               # Receipt hooks
+├── admin/
+│   ├── AdminSettings.tsx
+│   └── AdminSettings/           # Settings sub-components
+└── checklist/
+    └── sections/                # Checklist sections
 ```
 
 #### API Endpoints (New v2)
@@ -8326,6 +8363,400 @@ curl http://192.168.1.201:3000/api/health
 - Verify `api.USE_SERVER` is true in sandbox environment
 - Check authentication token is valid
 - Test `/api/events` endpoint directly with curl/Postman
+
+---
+
+## 📅 Session: November 10, 2025 - Full Codebase Refactor (v1.28.0)
+
+**AI Agent:** Multiple Agents (Backend, Frontend, Docs, DevOps)  
+**Duration:** Multi-session refactor  
+**Branch:** `v1.28.0`  
+**Status:** ✅ Refactor Complete - Architecture Modernized
+
+### 🎯 Refactor Objectives
+
+**Primary Goals:**
+1. Split files >500 lines into smaller, focused modules
+2. Separate concerns (controllers, services, repositories)
+3. Extract reusable patterns (hooks, utilities, shared components)
+4. Remove legacy artifacts (old tarballs)
+5. Improve code reusability (reduce duplication)
+6. Normalize patterns across codebase
+
+**Constraints:**
+- No breaking changes to user-facing functionality
+- Maintain all existing features
+- Incremental refactor (one module at a time)
+- Test after each refactor
+
+### 📊 Files Refactored
+
+**Backend Routes (Split into Services + Repositories):**
+- `devDashboard.ts`: 1,058 lines → Split into service layer
+- `expenses.ts`: 980 lines → Split into ExpenseService + ExpenseRepository
+- `checklist.ts`: 596 lines → Maintained with Zod validation
+- `ocrV2.ts`: 437 lines → Maintained with OCR service architecture
+
+**Frontend Components (Split into Sub-components):**
+- `EventSetup.tsx`: 1,062 lines → Split into hooks + sub-components
+- `ExpenseSubmission.tsx`: 915 lines → Split into ExpenseSubmission/ + hooks/
+- `AdminSettings.tsx`: 745 lines → Split into AdminSettings/ sub-components
+- `ReceiptUpload.tsx`: 719 lines → Split into ReceiptUpload/ sub-components
+- `BoothSection.tsx`: 699 lines → Split into BoothSection/ sub-components
+- `UserManagement.tsx`: 641 lines → Split into UserManagement/ sub-components
+- `CarRentalsSection.tsx`: 615 lines → Maintained with hooks
+
+### 🏗️ Architecture Changes
+
+#### Backend Architecture: Repository Pattern
+
+**New Architecture: Routes → Services → Repositories → Database**
+
+```
+┌─────────────────┐
+│  Routes/       │  ← HTTP request handling, validation
+│  Controllers   │  ← Input sanitization, response formatting
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Services       │  ← Business logic, orchestration
+│                 │  ← Authorization checks
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Repositories   │  ← Data access layer
+│                 │  ← Query building, type safety
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  PostgreSQL     │  ← Database
+└─────────────────┘
+```
+
+**Benefits:**
+- **Separation of Concerns**: Each layer has single responsibility
+- **Code Reusability**: Common queries centralized in repositories
+- **Maintainability**: Easy to update queries in one place
+- **Testability**: Repositories can be mocked for unit testing
+- **Query Optimization**: Performance improvements in one place
+
+**Available Repositories:**
+- `BaseRepository` - Common CRUD operations
+- `ExpenseRepository` - Expense data access
+- `UserRepository` - User data access
+- `EventRepository` - Event data access
+- `AuditLogRepository` - Audit log data access
+- `ChecklistRepository` - Checklist data access
+- `ApiRequestRepository` - API analytics data access
+
+**Available Services:**
+- `ExpenseService` - Expense business logic
+- `DevDashboardService` - Developer dashboard logic
+- `ZohoMultiAccountService` - Multi-entity Zoho integration
+- `ZohoBooksService` - Zoho Books API integration
+- `OCRService` - OCR processing orchestration
+- `UserCorrectionService` - OCR correction tracking
+- `DuplicateDetectionService` - Expense duplicate detection
+- `ExpenseAuditService` - Audit trail management
+
+#### Frontend Architecture: Component Modularization
+
+**New Structure: Feature-Based Organization**
+
+```
+src/components/
+├── expenses/
+│   ├── ExpenseSubmission.tsx          ← Main component
+│   ├── ExpenseSubmission/              ← Sub-components
+│   │   ├── ExpenseSubmissionHeader.tsx
+│   │   ├── ExpenseSubmissionTable.tsx
+│   │   ├── ExpenseSubmissionEmptyState.tsx
+│   │   ├── PendingSyncModal.tsx
+│   │   └── hooks/                       ← Custom hooks
+│   │       ├── useExpenses.ts
+│   │       ├── useExpenseFilters.ts
+│   │       └── ...
+│   ├── ExpenseModal/                   ← Modal components
+│   │   ├── ExpenseModalHeader.tsx
+│   │   ├── ExpenseModalDetailsView.tsx
+│   │   └── ...
+│   ├── ReceiptUpload.tsx
+│   └── ReceiptUpload/                  ← Receipt sub-components
+│       ├── ReceiptUploadDropzone.tsx
+│       ├── ReceiptImagePreview.tsx
+│       └── hooks/
+├── admin/
+│   ├── AdminSettings.tsx
+│   ├── AdminSettings/                  ← Settings sub-components
+│   │   ├── AdminSettingsHeader.tsx
+│   │   ├── AdminSettingsTabs.tsx
+│   │   └── ...
+│   ├── UserManagement.tsx
+│   └── UserManagement/                 ← User management sub-components
+│       ├── UserManagementHeader.tsx
+│       ├── UserManagementTable.tsx
+│       └── hooks/
+└── checklist/
+    ├── TradeShowChecklist.tsx
+    └── sections/                        ← Checklist sections
+        ├── FlightsSection.tsx
+        ├── HotelsSection.tsx
+        ├── CarRentalsSection.tsx
+        └── BoothSection/
+```
+
+**Benefits:**
+- **Feature Isolation**: Each feature in its own directory
+- **Reusable Hooks**: Custom hooks extracted for shared logic
+- **Component Composition**: Small, focused components
+- **Easier Testing**: Smaller components easier to test
+- **Better Maintainability**: Clear file organization
+
+### 📁 Updated File Structure
+
+#### Backend Structure
+
+```
+backend/src/
+├── config/                    ← Configuration files
+│   ├── database.ts
+│   ├── upload.ts
+│   ├── version.ts
+│   └── zohoAccounts.ts
+├── database/
+│   ├── schema.sql             ← Base schema
+│   ├── migrations/            ← Database migrations
+│   ├── repositories/          ← Repository pattern (NEW)
+│   │   ├── BaseRepository.ts
+│   │   ├── ExpenseRepository.ts
+│   │   ├── UserRepository.ts
+│   │   ├── EventRepository.ts
+│   │   ├── AuditLogRepository.ts
+│   │   ├── ChecklistRepository.ts
+│   │   └── index.ts
+│   └── seed.ts
+├── middleware/                ← Express middleware
+│   ├── auth.ts
+│   ├── errorHandler.ts
+│   └── validation.ts
+├── routes/                    ← HTTP route handlers
+│   ├── expenses.ts            ← Thin controllers
+│   ├── users.ts
+│   ├── events.ts
+│   └── checklist.ts
+├── services/                  ← Business logic layer (NEW)
+│   ├── ExpenseService.ts
+│   ├── DevDashboardService.ts
+│   ├── zohoMultiAccountService.ts
+│   └── ocr/                   ← OCR service modules
+│       ├── OCRService.ts
+│       ├── providers/
+│       └── inference/
+├── utils/                     ← Utility functions
+│   ├── auditLogger.ts
+│   └── errors/
+└── server.ts                  ← Application entry point
+```
+
+#### Frontend Structure
+
+```
+src/
+├── components/
+│   ├── common/                ← Shared components
+│   │   ├── Badge.tsx
+│   │   ├── StatusBadge.tsx
+│   │   └── ...
+│   ├── expenses/               ← Expense feature
+│   │   ├── ExpenseSubmission.tsx
+│   │   ├── ExpenseSubmission/
+│   │   ├── ExpenseModal/
+│   │   ├── ReceiptUpload.tsx
+│   │   └── ReceiptUpload/
+│   ├── admin/                  ← Admin features
+│   │   ├── AdminSettings.tsx
+│   │   ├── AdminSettings/
+│   │   ├── UserManagement.tsx
+│   │   └── UserManagement/
+│   ├── checklist/              ← Checklist feature
+│   │   ├── TradeShowChecklist.tsx
+│   │   └── sections/
+│   └── events/                 ← Event feature
+│       ├── EventSetup.tsx
+│       └── EventSetup/
+├── hooks/                      ← Shared custom hooks
+│   ├── useUsers.ts
+│   ├── useApiError.ts
+│   └── ...
+├── utils/                      ← Utility functions
+│   ├── api.ts
+│   └── ...
+└── constants/                  ← App constants
+    └── appConstants.ts
+```
+
+### 🔄 Repository Pattern Usage
+
+**Example: Expense Management**
+
+```typescript
+// Route (thin controller)
+router.get('/expenses', authorize(...), async (req, res) => {
+  const expenses = await expenseService.getExpenses(filters);
+  res.json(expenses);
+});
+
+// Service (business logic)
+class ExpenseService {
+  async getExpenses(filters) {
+    // Authorization checks
+    // Business rules
+    return expenseRepository.findWithFilters(filters);
+  }
+}
+
+// Repository (data access)
+class ExpenseRepository extends BaseRepository {
+  async findWithFilters(filters) {
+    // Build optimized query
+    // Handle JOINs
+    // Return typed results
+  }
+}
+```
+
+**Benefits:**
+- Routes stay thin (validation + response formatting)
+- Services handle business logic
+- Repositories handle all database operations
+- Easy to test each layer independently
+- Query optimization centralized
+
+### 🎨 Component Pattern Usage
+
+**Example: Expense Submission**
+
+```typescript
+// Main component (orchestration)
+export const ExpenseSubmission = () => {
+  const { expenses, loading } = useExpenses();
+  const { filters, updateFilter } = useExpenseFilters();
+  
+  return (
+    <ExpenseSubmissionHeader />
+    <ExpenseSubmissionTable expenses={expenses} />
+  );
+};
+
+// Custom hook (data fetching)
+export const useExpenses = () => {
+  // Fetch logic
+  // State management
+  return { expenses, loading, error };
+};
+
+// Sub-component (presentation)
+export const ExpenseSubmissionTable = ({ expenses }) => {
+  // Rendering logic only
+};
+```
+
+**Benefits:**
+- Main component focuses on composition
+- Hooks handle data fetching and state
+- Sub-components handle presentation
+- Easy to test and maintain
+- Reusable across features
+
+### 📈 Refactor Impact
+
+**Code Quality Improvements:**
+- **Maintainability**: Smaller files easier to understand and modify
+- **Testability**: Isolated components and services easier to test
+- **Reusability**: Shared hooks and utilities reduce duplication
+- **Type Safety**: Proper TypeScript interfaces throughout
+- **Documentation**: JSDoc comments on all public methods
+
+**Metrics:**
+- **Backend**: Service layer + Repository pattern implemented
+- **Frontend**: Component modularization complete
+- **Hooks**: 6+ shared hooks extracted
+- **Components**: 20+ sub-components created
+- **Linter Errors**: 0 maintained throughout
+
+### 🎓 Refactor Decisions & Rationale
+
+**1. Repository Pattern for Backend**
+- **Decision**: Implement repository pattern for all database operations
+- **Rationale**: Separates data access from business logic, improves testability
+- **Impact**: All routes now use services → repositories → database
+
+**2. Service Layer for Business Logic**
+- **Decision**: Extract business logic from routes into service classes
+- **Rationale**: Routes should only handle HTTP concerns, not business rules
+- **Impact**: Authorization, validation, and orchestration in services
+
+**3. Component Modularization for Frontend**
+- **Decision**: Split large components into feature-based sub-directories
+- **Rationale**: Easier to find and modify specific features
+- **Impact**: Each feature has its own directory with components and hooks
+
+**4. Custom Hooks Extraction**
+- **Decision**: Extract repeated logic into reusable hooks
+- **Rationale**: Reduces duplication, improves consistency
+- **Impact**: Shared hooks in `hooks/` directory, feature hooks in component directories
+
+**5. TypeScript Type Safety**
+- **Decision**: Remove all `any` types, use proper interfaces
+- **Rationale**: Better compile-time error detection, IDE autocomplete
+- **Impact**: Full type safety across codebase
+
+### ✅ Refactor Completion Status
+
+**Backend:**
+- ✅ Repository pattern implemented
+- ✅ Service layer created
+- ✅ Routes refactored to use services
+- ✅ Type safety improved
+- ✅ JSDoc documentation added
+
+**Frontend:**
+- ✅ Large components split into modules
+- ✅ Custom hooks extracted
+- ✅ Feature-based organization
+- ✅ Shared components in `common/`
+- ✅ Type safety maintained
+
+**Documentation:**
+- ✅ MASTER_GUIDE.md updated
+- ✅ Architecture sections documented
+- ✅ Repository pattern documented
+- ✅ Component patterns documented
+
+### 📝 For Future Development
+
+**When Adding New Features:**
+
+1. **Backend:**
+   - Create repository for data access
+   - Create service for business logic
+   - Create route for HTTP handling
+   - Follow existing patterns
+
+2. **Frontend:**
+   - Create feature directory in `components/`
+   - Extract hooks to `hooks/` subdirectory
+   - Use shared components from `common/`
+   - Follow component composition pattern
+
+3. **Always:**
+   - Check for existing hooks/components before creating new ones
+   - Use TypeScript interfaces (no `any` types)
+   - Add JSDoc comments for public methods
+   - Follow established patterns
 
 ---
 
