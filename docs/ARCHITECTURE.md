@@ -1,7 +1,7 @@
 # Trade Show Expense App - Architecture Documentation
 
-**Last Updated:** October 24, 2025  
-**Status:** Production Active | Sandbox AI Pipeline Refinement & Bug Fixes
+**Last Updated:** November 10, 2025  
+**Status:** Production Active | Sandbox Event Checklist + Full Codebase Refactor (v1.28.0)
 
 ## 📦 Current Versions
 
@@ -9,12 +9,12 @@
 - **Frontend:** v1.4.13 (Container 202) - October 16, 2025
 - **Backend:** v1.5.1 (Container 201) - October 16, 2025
 - **Branch:** `main`
-- **URL:** http://192.168.1.138
+- **URL:** https://expapp.duckdns.org
 
 ### **Sandbox (Container 203)**
-- **Frontend:** v1.15.13 (Container 203) - October 24, 2025
-- **Backend:** v1.15.10 (Container 203) - October 24, 2025
-- **Branch:** `v1.6.0`
+- **Frontend:** v1.28.0 (Container 203) - November 10, 2025
+- **Backend:** v1.28.0 (Container 203) - November 10, 2025
+- **Branch:** `v1.28.0`
 - **URL:** http://192.168.1.144
 
 ---
@@ -25,7 +25,8 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     TRADE SHOW EXPENSE APP                          │
 │    PRODUCTION: Frontend v1.4.13 / Backend v1.5.1                    │
-│    SANDBOX: Frontend v1.13.4 / Backend v1.13.4                      │
+│    SANDBOX: Frontend v1.28.0 / Backend v1.28.0                      │
+│    Architecture: Repository Pattern + Component Modularization     │
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -49,8 +50,8 @@
           │                                     │
    ┌──────▼──────────┐              ┌──────────▼──────────┐
    │  Sandbox (203)  │              │  Production (201)   │
-   │ 192.168.1.144   │              │  192.168.1.138      │
-   │ v1.13.4 / v1.13.4│             │ v1.4.13 / v1.5.1    │
+   │ 192.168.1.144   │              │  expapp.duckdns.org │
+   │ v1.28.0 / v1.28.0│             │ v1.4.13 / v1.5.1    │
    └─────────────────┘              └─────────────────────┘
 
 Each Environment Contains:
@@ -60,6 +61,8 @@ Each Environment Contains:
 │  │   Frontend    │◄───────►│   Backend API   │                    │
 │  │  React + TS   │   JWT   │  Node/Express   │                    │
 │  │  Nginx :80    │  Auth   │  PM2 :3000      │                    │
+│  │  Feature-Based│         │  Routes→Services│                   │
+│  │  Components   │         │  →Repositories │                    │
 │  └───────────────┘         └────────┬────────┘                    │
 │          │                           │                             │
 │          │                  ┌────────┴────────┐                    │
@@ -67,8 +70,8 @@ Each Environment Contains:
 │  ┌───────▼───────┐   ┌──────▼──────┐  ┌──────▼──────┐            │
 │  │ Service Worker│   │ PostgreSQL  │  │  Tesseract  │            │
 │  │ + IndexedDB   │   │   Port 5432 │  │  OCR Engine │            │
-│  │ (Offline PWA) │   └─────────────┘  └─────────────┘            │
-│  └───────────────┘                                                │
+│  │ (Offline PWA) │   │  Migrations │  │  (Production)│            │
+│  └───────────────┘   └─────────────┘  └─────────────┘            │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -974,6 +977,55 @@ Notes:
 
 ---
 
+## Backend Architecture (v1.28.0+)
+
+**New Architecture: Repository Pattern (Routes → Services → Repositories → Database)**
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                      BACKEND ARCHITECTURE                        │
+│                    (v1.28.0 - Refactored)                        │
+└───────────────────────────────────────────────────────────────────┘
+
+Routes (HTTP Layer - Thin Controllers)
+├── routes/expenses.ts
+│   └── Uses ExpenseService
+├── routes/users.ts
+│   └── Uses UserRepository
+├── routes/events.ts
+│   └── Uses EventRepository
+└── routes/checklist.ts
+    └── Uses ChecklistRepository
+
+Services (Business Logic Layer)
+├── services/ExpenseService.ts
+│   └── Business logic, authorization, orchestration
+├── services/DevDashboardService.ts
+│   └── Dashboard logic
+├── services/zohoMultiAccountService.ts
+│   └── Multi-entity Zoho integration
+└── services/ocr/
+    ├── OCRService.ts
+    └── UserCorrectionService.ts
+
+Repositories (Data Access Layer)
+├── database/repositories/BaseRepository.ts
+│   └── Common CRUD operations
+├── database/repositories/ExpenseRepository.ts
+│   └── Expense data access, query building
+├── database/repositories/UserRepository.ts
+│   └── User data access
+├── database/repositories/EventRepository.ts
+│   └── Event data access
+├── database/repositories/ChecklistRepository.ts
+│   └── Checklist data access
+└── database/repositories/AuditLogRepository.ts
+    └── Audit log data access
+
+Database (PostgreSQL)
+└── Tables with migrations
+```
+
 ## API Architecture
 
 ```
@@ -993,7 +1045,7 @@ Notes:
 │   ├── PUT /:id                       (admin, developer)
 │   └── DELETE /:id                    (admin, developer)
 │
-├── /roles                              (NEW in v1.0.54)
+├── /roles
 │   ├── GET /                          (all roles)
 │   ├── POST /                         (admin, developer)
 │   ├── PUT /:id                       (admin, developer)
@@ -1006,19 +1058,28 @@ Notes:
 │   ├── PUT /:id                       (admin, coordinator, developer)
 │   └── DELETE /:id                    (admin, coordinator, developer)
 │
+├── /checklist (NEW v1.27.14)
+│   ├── GET /:eventId                  (get or create checklist)
+│   ├── PUT /:checklistId              (update booth/electricity)
+│   ├── POST /:checklistId/flights     (add flight)
+│   ├── POST /:checklistId/hotels      (add hotel)
+│   ├── POST /:checklistId/car-rentals (add car rental)
+│   ├── POST /:checklistId/custom-items (add custom item)
+│   └── GET /templates                 (get templates)
+│
 ├── /expenses                           (authenticated)
 │   ├── GET /                          (role-filtered)
 │   ├── GET /:id                       (role-filtered)
 │   ├── POST /                         (submit expense)
 │   │   └── Multer middleware (file upload)
 │   ├── PUT /:id                       (update expense)
-│   ├── PATCH /:id/review              (admin, accountant, developer)
+│   ├── PATCH /:id/status              (auto-approval workflow)
 │   ├── PATCH /:id/entity              (admin, accountant, developer)
 │   ├── PATCH /:id/reimbursement       (admin, accountant, developer)
 │   ├── POST /:id/zoho                 (admin, accountant, developer)
 │   └── DELETE /:id                    (admin, developer)
 │
-├── /ocr/v2                            (authenticated - v1.13.4 Sandbox)
+├── /ocr/v2                            (authenticated - Sandbox)
 │   ├── POST /process                  (upload receipt for OCR)
 │   │   └── External OCR Service call
 │   ├── POST /corrections              (store user corrections)
@@ -1033,6 +1094,7 @@ Middleware:
 ├── authenticateToken()   - JWT validation
 ├── authorize(...roles)   - Role-based access control
 ├── multer()              - File upload handling
+├── validation()          - Input validation (Zod)
 └── errorHandler()        - Global error handling
 ```
 
@@ -1183,10 +1245,11 @@ File Upload Security
 - **Backend v1.5.1** (Oct 16, 2025) - Stable production release
 
 ### **Sandbox (AI Pipeline Development)**
+- **v1.28.0** (Nov 10, 2025) - Full codebase refactor (Repository pattern + Component modularization)
+- **v1.27.14** (Nov 5, 2025) - Event Checklist System (flights, hotels, car rentals, booth, shipping)
+- **v1.18.0** (Oct 27, 2025) - Comprehensive codebase refactor (component extraction)
+- **v1.15.13** (Oct 24, 2025) - Model Training Dashboard & Audit Trail Fixes
 - **v1.13.4** (Oct 23, 2025) - External OCR + Data Pool + Model Training integration
-- **v1.13.3** (Oct 23, 2025) - Fixed frontend correction tracking (404 error)
-- **v1.13.2** (Oct 23, 2025) - Data Pool schema compliance (nested corrected_fields)
-- **v1.13.1** (Oct 23, 2025) - Initial external OCR integration
 - **v1.11.0+** - OCR correction tracking system
 
 ### **Historical Production Releases**

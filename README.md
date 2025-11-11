@@ -3,9 +3,9 @@
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
 **Production:** Frontend v1.4.13 / Backend v1.5.1 (October 16, 2025)  
-**Sandbox:** Frontend v1.27.14 / Backend v1.27.14 (November 5, 2025)  
+**Sandbox:** Frontend v1.28.0 / Backend v1.28.0 (November 10, 2025)  
 **Production Status:** ✅ Stable and Active  
-**Sandbox Status:** ✨ Event Checklist Feature Complete (v1.27.14)
+**Sandbox Status:** ✨ Event Checklist Feature Complete + Full Codebase Refactor (v1.28.0)
 
 📝 See [CHANGELOG.md](CHANGELOG.md) for complete version history  
 🏗️ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture  
