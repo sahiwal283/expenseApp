@@ -87,15 +87,35 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
-    console.log(`[ExpensePDF] Headers set. Content-Length: ${contentLength}`);
-    console.log(`[ExpensePDF] Sending PDF buffer...`);
+    // Ensure no compression or other transformations
+    res.removeHeader('Content-Encoding');
     
-    // Send PDF as binary data
-    // Use res.end() directly for binary data to avoid any middleware interference
-    res.end(pdfBuffer, 'binary', () => {
+    console.log(`[ExpensePDF] Headers set. Content-Length: ${contentLength}`);
+    console.log(`[ExpensePDF] Sending PDF buffer (${pdfBuffer.length} bytes)...`);
+    
+    // Register event listeners BEFORE sending response
+    res.on('finish', () => {
       const totalTime = Date.now() - requestStartTime;
-      console.log(`[ExpensePDF] PDF sent successfully. Total request time: ${totalTime}ms`);
+      const actualContentLength = res.getHeader('Content-Length');
+      console.log(`[ExpensePDF] ✓ Response finished. Total time: ${totalTime}ms`);
+      console.log(`[ExpensePDF] ✓ Content-Length header: ${actualContentLength}, Buffer size: ${pdfBuffer.length}`);
+      
+      if (actualContentLength !== contentLength) {
+        console.error(`[ExpensePDF] ⚠️ WARNING: Content-Length mismatch! Header: ${actualContentLength}, Buffer: ${pdfBuffer.length}`);
+      }
     });
+    
+    res.on('close', () => {
+      console.log(`[ExpensePDF] ✓ Response connection closed`);
+    });
+    
+    res.on('error', (err) => {
+      console.error(`[ExpensePDF] ✗ Response error:`, err);
+    });
+    
+    // Send PDF as binary data using res.send() for better Express compatibility
+    // res.send() handles binary buffers correctly and respects Content-Type
+    res.send(pdfBuffer);
   } catch (error: any) {
     const totalTime = Date.now() - requestStartTime;
     console.error(`[ExpensePDF] ERROR generating PDF (after ${totalTime}ms):`, {
