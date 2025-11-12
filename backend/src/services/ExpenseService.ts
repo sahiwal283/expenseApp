@@ -6,6 +6,7 @@
 
 import { expenseRepository, Expense, ExpenseWithDetails } from '../database/repositories/ExpenseRepository';
 import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors';
+import { checklistAutoCheckService } from './ChecklistAutoCheckService';
 
 class ExpenseService {
   /**
@@ -106,7 +107,7 @@ class ExpenseService {
     }
 
     // Create expense
-    return expenseRepository.create({
+    const expense = await expenseRepository.create({
       user_id: userId,
       event_id: data.eventId,
       date: data.date,
@@ -121,6 +122,16 @@ class ExpenseService {
       reimbursement_required: data.reimbursementRequired,
       zoho_entity: data.zohoEntity
     });
+
+    // Auto-check checklist items if receipt was uploaded
+    if (data.receiptUrl) {
+      checklistAutoCheckService.autoCheckFromExpense(expense).catch(error => {
+        // Log error but don't fail expense creation
+        console.error('[ExpenseService] Failed to auto-check checklist:', error);
+      });
+    }
+
+    return expense;
   }
 
   /**
@@ -205,6 +216,12 @@ class ExpenseService {
     // Update expense with new receipt URL
     const updatedExpense = await expenseRepository.update(expenseId, {
       receipt_url: newReceiptUrl
+    });
+
+    // Auto-check checklist items when receipt is updated
+    checklistAutoCheckService.autoCheckFromExpense(updatedExpense).catch(error => {
+      // Log error but don't fail receipt update
+      console.error('[ExpenseService] Failed to auto-check checklist:', error);
     });
 
     return {

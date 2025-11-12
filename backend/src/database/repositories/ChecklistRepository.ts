@@ -499,6 +499,34 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
   }
 
   /**
+   * Update booth shipping entry
+   */
+  async updateBoothShipping(id: number, data: Partial<ChecklistBoothShipping>): Promise<ChecklistBoothShipping> {
+    const fields = Object.keys(data).filter(key => key !== 'id' && key !== 'created_at' && key !== 'updated_at');
+    
+    if (fields.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
+    const values = fields.map(field => (data as any)[field]);
+
+    const result = await this.executeQuery<ChecklistBoothShipping>(
+      `UPDATE checklist_booth_shipping 
+       SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $1 
+       RETURNING *`,
+      [id, ...values]
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundError('BoothShipping', id.toString());
+    }
+
+    return result.rows[0];
+  }
+
+  /**
    * Delete booth shipping entry
    */
   async deleteBoothShipping(id: number): Promise<boolean> {
