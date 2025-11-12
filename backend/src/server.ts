@@ -37,6 +37,8 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Middleware
 // Parse CORS_ORIGIN - support comma-separated origins or single origin
+// Note: With relative API paths (same origin), CORS_ORIGIN can be '*' or specific origins
+// Same-origin requests don't require CORS, but having CORS configured doesn't hurt
 const corsOrigin = process.env.CORS_ORIGIN 
   ? (process.env.CORS_ORIGIN.includes(',') 
       ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
@@ -45,18 +47,19 @@ const corsOrigin = process.env.CORS_ORIGIN
 
 app.use(cors({
   origin: corsOrigin,
-  credentials: true,
+  credentials: true, // Required for cookies and Authorization headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400 // 24 hours - cache preflight requests
 }));
 
 // Log CORS configuration on startup
 console.log('[Server] CORS configuration:', {
   origin: corsOrigin,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  note: 'Same-origin requests (relative API paths) work regardless of CORS_ORIGIN setting'
 });
 app.use(express.json());
 app.use(requestLogger);
