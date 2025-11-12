@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { initializeUploadDirectories } from './config/upload';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import roleRoutes from './routes/roles';
@@ -110,6 +111,9 @@ app.get('/api/health', async (req, res) => {
 app.use(errorLogger);
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Initialize upload directories on startup
+initializeUploadDirectories();
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
