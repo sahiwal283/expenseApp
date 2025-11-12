@@ -76,7 +76,7 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     });
 
     // Header
-    doc.fontSize(20).font('Helvetica-Bold').text('Expense Report', { align: 'center' });
+    doc.fontSize(20).font('Helvetica-Bold').text('Expense Details', { align: 'center' });
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     doc.moveDown(1);
@@ -88,7 +88,6 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
 
     // Basic Information
     const basicInfo = [
-      { label: 'Expense ID:', value: expense.id },
       { label: 'Date:', value: new Date(expense.date).toLocaleDateString() },
       { label: 'Amount:', value: `$${parseFloat(String(expense.amount)).toFixed(2)}` },
       { label: 'Merchant:', value: expense.merchant },
@@ -129,7 +128,7 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     doc.fontSize(10);
 
     const statusInfo = [
-      { label: 'Status:', value: expense.status },
+      { label: 'Approval Status:', value: expense.status },
       { label: 'Reimbursement Required:', value: expense.reimbursement_required ? 'Yes' : 'No' },
     ];
 
@@ -149,6 +148,16 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       doc.fontSize(12).font('Helvetica-Bold').text('Zoho Integration', { underline: true });
       doc.moveDown(0.3);
       doc.fontSize(10);
+
+      // Zoho Push Status
+      let zohoPushStatus = 'Not Pushed';
+      if (expense.zoho_expense_id) {
+        zohoPushStatus = 'Pushed';
+      } else if (expense.zoho_entity) {
+        zohoPushStatus = 'Not Pushed';
+      }
+      doc.font('Helvetica-Bold').text('Zoho Push Status:', { continued: true });
+      doc.font('Helvetica').text(` ${zohoPushStatus}`);
 
       if (expense.zoho_entity) {
         doc.font('Helvetica-Bold').text('Zoho Entity:', { continued: true });
