@@ -397,7 +397,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
       )}
 
       {selectedEvent && !loading && checklist && (
-        <>
+        <div>
           {/* Progress Bar */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-3">
@@ -545,6 +545,8 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
                 .map(section => <div key={section.key}>{section.component}</div>);
             })()}
           </div>
+        </div>
+      )}
         </>
       )}
     </div>
