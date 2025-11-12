@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.14 - PDF Content and Labels Update
+// Version: 1.28.15 - PDF Single Page Consolidation and Download Debugging
 // Date: November 4, 2025
 //
 // New Features:
