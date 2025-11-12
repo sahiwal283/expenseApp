@@ -17,10 +17,33 @@ router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accounta
   try {
     const { eventId } = req.params;
 
-    // Get or create checklist (repository handles get-or-create logic)
-    const checklistData = await checklistRepository.findByEventId(eventId);
+    // Get or create checklist
+    let checklist = await checklistRepository.findByEventId(eventId);
+    
+    if (!checklist) {
+      // Create checklist if it doesn't exist
+      checklist = await checklistRepository.create(eventId);
+      console.log(`[Checklist] Created new checklist for event ${eventId}`);
+    }
 
-    res.json(checklistData);
+    // Fetch all related data in parallel
+    const [flights, hotels, carRentals, boothShipping, customItems] = await Promise.all([
+      checklistRepository.getFlights(checklist.id),
+      checklistRepository.getHotels(checklist.id),
+      checklistRepository.getCarRentals(checklist.id),
+      checklistRepository.getBoothShipping(checklist.id),
+      checklistRepository.getCustomItems(checklist.id)
+    ]);
+
+    // Return complete checklist object with all arrays
+    res.json({
+      ...checklist,
+      flights: flights || [],
+      hotels: hotels || [],
+      carRentals: carRentals || [],
+      boothShipping: boothShipping || [],
+      customItems: customItems || []
+    });
   } catch (error) {
     console.error('[Checklist] Error fetching checklist:', error);
     res.status(500).json({ error: 'Failed to fetch checklist' });
