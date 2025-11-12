@@ -109,3 +109,4 @@ export function extractCardLastFour(cardUsed: string | undefined): string | null
   return match ? match[1] : null;
 }
 
+

@@ -4,8 +4,8 @@
  * Modal displaying detailed event information including checklist.
  */
 
-import React from 'react';
-import { X, MapPin, Calendar, DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, MapPin, Calendar, DollarSign, Map, Loader2, AlertCircle } from 'lucide-react';
 import { TradeShow, User } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import { ChecklistSummary } from './ChecklistSummary';
@@ -18,6 +18,72 @@ interface EventDetailsModalProps {
   loadingChecklist: boolean;
   onClose: () => void;
 }
+
+// Booth Map Image Component with error handling
+const BoothMapImage: React.FC<{ boothMapUrl: string }> = ({ boothMapUrl }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  
+  // Defensive check: ensure boothMapUrl is a string
+  if (!boothMapUrl || typeof boothMapUrl !== 'string') {
+    return (
+      <div className="w-full h-48 bg-gray-50 rounded border border-gray-200 flex flex-col items-center justify-center p-4">
+        <AlertCircle className="w-8 h-8 text-gray-400 mb-2" />
+        <p className="text-xs text-gray-500 text-center">Invalid booth map URL</p>
+      </div>
+    );
+  }
+  
+  // Construct image URL - ensure boothMapUrl starts with / if it doesn't already
+  const normalizedUrl = boothMapUrl.startsWith('/') ? boothMapUrl : `/${boothMapUrl}`;
+  // Use same pattern as appConstants.ts - Vite handles this at build time
+  // @ts-ignore - Vite provides this at build time
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const imageUrl = `${apiBaseUrl}${normalizedUrl}`;
+  const fullImageUrl = `${apiBaseUrl}${normalizedUrl}`;
+  
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+  
+  const handleImageError = () => {
+    console.error('[EventDetailsModal] Failed to load booth map image:', imageUrl);
+    setImageError(true);
+    setImageLoading(false);
+  };
+  
+  if (imageError) {
+    return (
+      <div className="w-full h-48 bg-gray-50 rounded border border-gray-200 flex flex-col items-center justify-center p-4">
+        <AlertCircle className="w-8 h-8 text-gray-400 mb-2" />
+        <p className="text-xs text-gray-500 text-center">Failed to load booth map image</p>
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      {imageLoading && (
+        <div className="w-full h-48 bg-gray-50 rounded border border-gray-200 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        </div>
+      )}
+      <img
+        src={imageUrl}
+        alt="Booth Floor Plan"
+        className={`w-full h-48 object-contain bg-gray-50 rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity ${imageLoading ? 'hidden' : ''}`}
+        onClick={() => window.open(fullImageUrl, '_blank')}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        title="Click to view full size"
+      />
+      {!imageLoading && !imageError && (
+        <p className="text-xs text-gray-500 mt-1 text-center">Click image to view full size</p>
+      )}
+    </>
+  );
+};
 
 export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   event,
@@ -125,6 +191,23 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               <p className="text-gray-500 italic">No participants assigned yet</p>
             )}
           </div>
+
+          {/* Booth Floor Plan */}
+          {!loadingChecklist && checklistData?.booth_map_url && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
+                Booth Floor Plan
+              </h3>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Map className="w-5 h-5 text-purple-600" />
+                  <span className="font-medium text-purple-900">Booth Layout</span>
+                </div>
+                <BoothMapImage boothMapUrl={checklistData.booth_map_url} />
+              </div>
+            </div>
+          )}
 
           {/* Checklist Summary */}
           <div>

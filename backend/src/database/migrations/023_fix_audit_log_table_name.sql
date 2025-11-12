@@ -155,3 +155,4 @@ COMMENT ON COLUMN audit_logs.changes IS 'JSONB of changes made (request body)';
 COMMENT ON COLUMN audit_logs.details IS 'Legacy JSONB field for backward compatibility';
 COMMENT ON COLUMN audit_logs.error_message IS 'Error message if action failed';
 
+

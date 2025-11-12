@@ -149,3 +149,4 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, enti
 -- Add table comment
 COMMENT ON TABLE audit_logs IS 'Comprehensive audit log tracking all user actions, auth events, and system changes (renamed from audit_log for consistency)';
 
+

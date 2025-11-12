@@ -279,3 +279,4 @@ export class AuditLogRepository extends BaseRepository<AuditLog> {
 // Export singleton instance
 export const auditLogRepository = new AuditLogRepository();
 
+

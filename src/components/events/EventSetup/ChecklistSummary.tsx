@@ -4,8 +4,8 @@
  * Displays event checklist summary with travel details.
  */
 
-import React, { useState } from 'react';
-import { CheckCircle2, Circle, Plane, Hotel, Car, Map, Users2, Loader2, AlertCircle } from 'lucide-react';
+import React from 'react';
+import { CheckCircle2, Circle, Plane, Hotel, Car, Users2, Loader2 } from 'lucide-react';
 import { User } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import { ChecklistSummary as ChecklistSummaryType } from './hooks';
@@ -15,73 +15,6 @@ interface ChecklistSummaryProps {
   checklistData: ChecklistSummaryType | null;
   loadingChecklist: boolean;
 }
-
-// Booth Map Image Component with error handling
-const BoothMapImage: React.FC<{ boothMapUrl: string }> = ({ boothMapUrl }) => {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-  
-  // Defensive check: ensure boothMapUrl is a string
-  if (!boothMapUrl || typeof boothMapUrl !== 'string') {
-    return (
-      <div className="w-full h-48 bg-gray-50 rounded border border-gray-200 flex flex-col items-center justify-center p-4">
-        <AlertCircle className="w-8 h-8 text-gray-400 mb-2" />
-        <p className="text-xs text-gray-500 text-center">Invalid booth map URL</p>
-      </div>
-    );
-  }
-  
-  // Construct image URL - ensure boothMapUrl starts with / if it doesn't already
-  const normalizedUrl = boothMapUrl.startsWith('/') ? boothMapUrl : `/${boothMapUrl}`;
-  // Use same pattern as appConstants.ts - Vite handles this at build time
-  // @ts-ignore - Vite provides this at build time
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-  const imageUrl = `${apiBaseUrl}${normalizedUrl}`;
-  const fullImageUrl = `${apiBaseUrl}${normalizedUrl}`;
-  
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    setImageError(false);
-  };
-  
-  const handleImageError = () => {
-    console.error('[ChecklistSummary] Failed to load booth map image:', imageUrl);
-    setImageError(true);
-    setImageLoading(false);
-  };
-  
-  if (imageError) {
-    return (
-      <div className="w-full h-48 bg-gray-50 rounded border border-gray-200 flex flex-col items-center justify-center p-4">
-        <AlertCircle className="w-8 h-8 text-gray-400 mb-2" />
-        <p className="text-xs text-gray-500 text-center">Failed to load booth map image</p>
-        <p className="text-xs text-gray-400 text-center mt-1">URL: {imageUrl}</p>
-      </div>
-    );
-  }
-  
-  return (
-    <>
-      {imageLoading && (
-        <div className="w-full h-48 bg-gray-50 rounded border border-gray-200 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        </div>
-      )}
-      <img
-        src={imageUrl}
-        alt="Booth Map"
-        className={`w-full h-48 object-contain bg-gray-50 rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity ${imageLoading ? 'hidden' : ''}`}
-        onClick={() => window.open(fullImageUrl, '_blank')}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-        title="Click to view full size"
-      />
-      {!imageLoading && !imageError && (
-        <p className="text-xs text-gray-500 mt-1 text-center">Click image to view full size</p>
-      )}
-    </>
-  );
-};
 
 export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
   user,
@@ -119,17 +52,6 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
           )}
           <span className="text-sm text-gray-700">Booth Space Ordered</span>
         </div>
-
-        {/* Booth Map Preview */}
-        {checklistData.booth_map_url && (
-          <div className="border border-gray-200 rounded-lg p-3 bg-white">
-            <div className="flex items-center gap-2 mb-2">
-              <Map className="w-4 h-4 text-purple-600" />
-              <span className="text-xs font-medium text-gray-700">Booth Floor Plan</span>
-            </div>
-            <BoothMapImage boothMapUrl={checklistData.booth_map_url} />
-          </div>
-        )}
 
         <div className="flex items-center gap-3">
           {checklistData.electricity_ordered ? (

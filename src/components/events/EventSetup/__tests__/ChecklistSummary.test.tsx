@@ -17,14 +17,21 @@ describe('ChecklistSummary Component Tests', () => {
   const mockUser = createMockUser();
 
   describe('Data Refreshes When Modal Opens', () => {
-    it('should display updated booth map URL when checklistData changes', () => {
+    it('should display updated checklist data when checklistData changes', () => {
       const initialData = {
-        booth_ordered: true,
+        booth_ordered: false,
         electricity_ordered: false,
-        booth_map_url: '/uploads/booth-maps/old-map.jpg',
+        booth_map_url: null,
         flights: [],
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       };
 
       const { rerender } = render(
@@ -35,15 +42,13 @@ describe('ChecklistSummary Component Tests', () => {
         />
       );
 
-      // Initial map should be displayed
-      let image = screen.queryByAltText('Booth Map');
-      expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute('src', expect.stringContaining('old-map.jpg'));
+      // Initial state should show unchecked booth
+      expect(screen.getByText('Booth Space Ordered')).toBeInTheDocument();
 
-      // Update with new map URL (simulating data refresh)
+      // Update with new data (simulating data refresh)
       const updatedData = {
         ...initialData,
-        booth_map_url: '/uploads/booth-maps/new-map.jpg',
+        booth_ordered: true,
       };
 
       rerender(
@@ -54,90 +59,8 @@ describe('ChecklistSummary Component Tests', () => {
         />
       );
 
-      // New map should be displayed
-      image = screen.queryByAltText('Booth Map');
-      expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute('src', expect.stringContaining('new-map.jpg'));
-    });
-
-    it('should display booth map when it becomes available after refresh', () => {
-      const dataWithoutMap = {
-        booth_ordered: true,
-        electricity_ordered: false,
-        booth_map_url: null,
-        flights: [],
-        hotels: [],
-        carRentals: [],
-      };
-
-      const { rerender } = render(
-        <ChecklistSummary
-          user={mockUser}
-          checklistData={dataWithoutMap}
-          loadingChecklist={false}
-        />
-      );
-
-      // No map should be displayed initially
-      expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
-
-      // After refresh, map becomes available
-      const dataWithMap = {
-        ...dataWithoutMap,
-        booth_map_url: '/uploads/booth-maps/new-map.jpg',
-      };
-
-      rerender(
-        <ChecklistSummary
-          user={mockUser}
-          checklistData={dataWithMap}
-          loadingChecklist={false}
-        />
-      );
-
-      // Map should now be displayed
-      const image = screen.queryByAltText('Booth Map');
-      expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute('src', expect.stringContaining('new-map.jpg'));
-    });
-
-    it('should remove booth map when it is deleted after refresh', () => {
-      const dataWithMap = {
-        booth_ordered: true,
-        electricity_ordered: false,
-        booth_map_url: '/uploads/booth-maps/test-map.jpg',
-        flights: [],
-        hotels: [],
-        carRentals: [],
-      };
-
-      const { rerender } = render(
-        <ChecklistSummary
-          user={mockUser}
-          checklistData={dataWithMap}
-          loadingChecklist={false}
-        />
-      );
-
-      // Map should be displayed
-      expect(screen.queryByAltText('Booth Map')).toBeInTheDocument();
-
-      // After refresh, map is deleted
-      const dataWithoutMap = {
-        ...dataWithMap,
-        booth_map_url: null,
-      };
-
-      rerender(
-        <ChecklistSummary
-          user={mockUser}
-          checklistData={dataWithoutMap}
-          loadingChecklist={false}
-        />
-      );
-
-      // Map should no longer be displayed
-      expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
+      // Updated state should be reflected
+      expect(screen.getByText('Booth Space Ordered')).toBeInTheDocument();
     });
   });
 
@@ -170,7 +93,7 @@ describe('ChecklistSummary Component Tests', () => {
   });
 
   describe('Booth Map Display Integration', () => {
-    it('should render BoothMapImage when booth_map_url is available', () => {
+    it('should NOT render booth map (moved to EventDetailsModal)', () => {
       const checklistData = {
         booth_ordered: true,
         electricity_ordered: false,
@@ -178,6 +101,13 @@ describe('ChecklistSummary Component Tests', () => {
         flights: [],
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       };
 
       render(
@@ -188,18 +118,27 @@ describe('ChecklistSummary Component Tests', () => {
         />
       );
 
-      const image = screen.getByAltText('Booth Map');
-      expect(image).toBeInTheDocument();
+      // Booth map should NOT be displayed in ChecklistSummary (moved to EventDetailsModal)
+      expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
+      expect(screen.queryByAltText('Booth Floor Plan')).not.toBeInTheDocument();
+      expect(screen.queryByText('Booth Layout')).not.toBeInTheDocument();
     });
 
-    it('should not render BoothMapImage when booth_map_url is null', () => {
+    it('should not render booth map even when booth_map_url is available', () => {
       const checklistData = {
         booth_ordered: true,
         electricity_ordered: false,
-        booth_map_url: null,
+        booth_map_url: '/uploads/booth-maps/test.jpg',
         flights: [],
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       };
 
       render(
@@ -210,6 +149,7 @@ describe('ChecklistSummary Component Tests', () => {
         />
       );
 
+      // Booth map should NOT be displayed (moved to EventDetailsModal)
       expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
     });
   });
@@ -235,6 +175,13 @@ describe('ChecklistSummary Component Tests', () => {
         flights: [],
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       } as any;
 
       render(
@@ -247,6 +194,7 @@ describe('ChecklistSummary Component Tests', () => {
 
       // Should not crash
       expect(screen.getByText('Booth Space Ordered')).toBeInTheDocument();
+      // Booth map should NOT be displayed (moved to EventDetailsModal)
       expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
     });
 
@@ -258,6 +206,13 @@ describe('ChecklistSummary Component Tests', () => {
         flights: [],
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       };
 
       render(
@@ -268,7 +223,7 @@ describe('ChecklistSummary Component Tests', () => {
         />
       );
 
-      // Empty string should be treated as falsy
+      // Booth map should NOT be displayed (moved to EventDetailsModal)
       expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
     });
 
@@ -280,6 +235,13 @@ describe('ChecklistSummary Component Tests', () => {
         flights: [],
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       } as any;
 
       render(
@@ -292,8 +254,9 @@ describe('ChecklistSummary Component Tests', () => {
 
       // Should not crash - component should handle invalid type gracefully
       expect(screen.getByText('Booth Space Ordered')).toBeInTheDocument();
-      // Should show error message for invalid URL
-      expect(screen.getByText('Invalid booth map URL')).toBeInTheDocument();
+      // Booth map should NOT be displayed (moved to EventDetailsModal)
+      expect(screen.queryByAltText('Booth Map')).not.toBeInTheDocument();
+      expect(screen.queryByText('Invalid booth map URL')).not.toBeInTheDocument();
     });
 
     it('should handle missing flights array', () => {
@@ -304,6 +267,13 @@ describe('ChecklistSummary Component Tests', () => {
         // flights missing
         hotels: [],
         carRentals: [],
+        flights_booked: 0,
+        flights_total: 0,
+        hotels_booked: 0,
+        hotels_total: 0,
+        car_rentals_booked: 0,
+        car_rentals_total: 0,
+        booth_shipped: false,
       } as any;
 
       render(
@@ -316,31 +286,6 @@ describe('ChecklistSummary Component Tests', () => {
 
       // Should use optional chaining or default
       expect(screen.getByText('Booth Space Ordered')).toBeInTheDocument();
-    });
-  });
-
-  describe('Booth Map URL Handling', () => {
-    it('should pass correct booth_map_url to BoothMapImage', () => {
-      const boothMapUrl = '/uploads/booth-maps/test-map.jpg';
-      const checklistData = {
-        booth_ordered: true,
-        electricity_ordered: false,
-        booth_map_url: boothMapUrl,
-        flights: [],
-        hotels: [],
-        carRentals: [],
-      };
-
-      render(
-        <ChecklistSummary
-          user={mockUser}
-          checklistData={checklistData}
-          loadingChecklist={false}
-        />
-      );
-
-      const image = screen.getByAltText('Booth Map');
-      expect(image).toHaveAttribute('src', expect.stringContaining(boothMapUrl));
     });
   });
 });
