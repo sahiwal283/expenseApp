@@ -110,21 +110,26 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         const data = await api.getEvents();
         console.log('[Checklist] API response:', data);
         
+        // Defensive check: ensure data is an array
         if (!data) {
           console.error('[Checklist] API returned null/undefined');
+          setEvents([]);
           return;
         }
         
-        console.log('[Checklist] Loaded events:', data.length, 'events');
-        setEvents(data || []);
+        // Normalize to array if needed
+        const eventsArray = Array.isArray(data) ? data : [];
+        console.log('[Checklist] Loaded events:', eventsArray.length, 'events');
+        setEvents(eventsArray);
         
-        if (data.length > 0 && !selectedEventId) {
-          console.log('[Checklist] Auto-selecting first event:', data[0].id);
-          setSelectedEventId(data[0].id);
+        if (eventsArray.length > 0 && !selectedEventId) {
+          console.log('[Checklist] Auto-selecting first event:', eventsArray[0].id);
+          setSelectedEventId(eventsArray[0].id);
         }
       }
     } catch (error) {
       console.error('[Checklist] Error loading events:', error);
+      setEvents([]);
     }
   };
 
@@ -133,12 +138,46 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     try {
       if (api.USE_SERVER) {
         console.log('[Checklist] Loading checklist for event:', eventId);
-        const data = await api.checklist.getChecklist(eventId);
+        const data = await api.checklist.getChecklist(eventId) as unknown;
         console.log('[Checklist] Checklist loaded:', data);
-        setChecklist(data as ChecklistData);
+        
+        // Defensive normalization: ensure all arrays exist and are actually arrays
+        if (!data || typeof data !== 'object') {
+          console.warn('[Checklist] No data received from API or invalid data type');
+          setChecklist(null);
+          return;
+        }
+        
+        // Type guard: ensure data is an object with expected structure
+        const dataObj = data as Record<string, unknown>;
+        
+        // Normalize response data to ensure all arrays exist
+        const normalizedData: ChecklistData = {
+          id: typeof dataObj.id === 'number' ? dataObj.id : 0,
+          event_id: typeof dataObj.event_id === 'number' ? dataObj.event_id : 0,
+          booth_ordered: typeof dataObj.booth_ordered === 'boolean' ? dataObj.booth_ordered : false,
+          booth_notes: typeof dataObj.booth_notes === 'string' ? dataObj.booth_notes : null,
+          booth_map_url: typeof dataObj.booth_map_url === 'string' ? dataObj.booth_map_url : null,
+          electricity_ordered: typeof dataObj.electricity_ordered === 'boolean' ? dataObj.electricity_ordered : false,
+          electricity_notes: typeof dataObj.electricity_notes === 'string' ? dataObj.electricity_notes : null,
+          // Ensure flights is an array
+          flights: Array.isArray(dataObj.flights) ? dataObj.flights as FlightData[] : [],
+          // Ensure hotels is an array
+          hotels: Array.isArray(dataObj.hotels) ? dataObj.hotels as HotelData[] : [],
+          // Ensure carRentals is an array
+          carRentals: Array.isArray(dataObj.carRentals) ? dataObj.carRentals as CarRentalData[] : [],
+          // Ensure boothShipping is an array
+          boothShipping: Array.isArray(dataObj.boothShipping) ? dataObj.boothShipping as BoothShippingData[] : [],
+          // Ensure customItems is an array
+          customItems: Array.isArray(dataObj.customItems) ? dataObj.customItems as CustomItemData[] : [],
+        };
+        
+        console.log('[Checklist] Normalized checklist data:', normalizedData);
+        setChecklist(normalizedData);
       }
     } catch (error) {
       console.error('[Checklist] Error loading checklist:', error);
+      setChecklist(null);
     } finally {
       setLoading(false);
     }
