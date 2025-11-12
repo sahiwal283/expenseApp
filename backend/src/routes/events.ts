@@ -30,12 +30,37 @@ function convertEventTypes(event: EventWithParticipants) {
 
 // Get all events
 router.get('/', async (req: AuthRequest, res) => {
+  const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  console.log(`[Events] Request ${requestId} - Fetching all events`, {
+    userId: req.user?.id,
+    userRole: req.user?.role,
+    ip: req.ip || req.socket.remoteAddress,
+    origin: req.get('origin'),
+    method: req.method,
+    url: req.url
+  });
+
   try {
     const events = await eventRepository.findAllWithParticipants();
+    console.log(`[Events] Request ${requestId} - Successfully fetched ${events.length} events`);
     res.json(events.map(convertEventTypes));
-  } catch (error) {
-    console.error('Error fetching events:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error(`[Events] Request ${requestId} - Error fetching events:`, {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
+    
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Internal server error',
+        requestId: requestId,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    } else {
+      console.error(`[Events] Request ${requestId} - Cannot send error response - headers already sent`);
+    }
   }
 });
 

@@ -45,8 +45,19 @@ const corsOrigin = process.env.CORS_ORIGIN
 
 app.use(cors({
   origin: corsOrigin,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400 // 24 hours
 }));
+
+// Log CORS configuration on startup
+console.log('[Server] CORS configuration:', {
+  origin: corsOrigin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+});
 app.use(express.json());
 app.use(requestLogger);
 app.use(apiRequestLogger); // Log all API requests for analytics
@@ -107,6 +118,32 @@ app.get('/api/health', async (req, res) => {
       environment: process.env.NODE_ENV || 'development'
     });
   }
+});
+
+// Diagnostic endpoint for troubleshooting
+app.get('/api/diagnostics', (req, res) => {
+  res.json({
+    server: {
+      version: VERSION,
+      environment: process.env.NODE_ENV || 'development',
+      port: PORT,
+      timestamp: new Date().toISOString()
+    },
+    cors: {
+      origin: corsOrigin,
+      credentials: true
+    },
+    request: {
+      method: req.method,
+      path: req.path,
+      url: req.url,
+      origin: req.get('origin'),
+      referer: req.get('referer'),
+      userAgent: req.get('user-agent'),
+      ip: req.ip || req.socket.remoteAddress,
+      headers: Object.keys(req.headers)
+    }
+  });
 });
 
 // Error handling (must be after routes)

@@ -9,28 +9,62 @@ import { logAuth } from '../utils/auditLogger';
 const router = Router();
 
 router.post('/login', async (req, res) => {
+  const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  console.log(`[Auth:Login] Request ${requestId} - Login attempt started`, {
+    username: req.body.username ? 'provided' : 'missing',
+    password: req.body.password ? 'provided' : 'missing',
+    ip: req.ip || req.socket.remoteAddress,
+    userAgent: req.get('user-agent'),
+    origin: req.get('origin'),
+    method: req.method,
+    url: req.url
+  });
+
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
+      console.log(`[Auth:Login] Request ${requestId} - Missing credentials`, {
+        hasUsername: !!username,
+        hasPassword: !!password
+      });
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
+    console.log(`[Auth:Login] Request ${requestId} - Querying database for user: ${username}`);
     const result = await query(
       'SELECT id, username, password, name, email, role FROM users WHERE username = $1',
       [username]
     );
 
+    console.log(`[Auth:Login] Request ${requestId} - Database query result:`, {
+      userFound: result.rows.length > 0,
+      userId: result.rows[0]?.id
+    });
+
     if (result.rows.length === 0) {
+      console.log(`[Auth:Login] Request ${requestId} - User not found: ${username}`);
+      await logAuth('login_failed', { username }, req.ip, 'User not found').catch(err => 
+        console.error(`[Auth:Login] Failed to log auth failure:`, err)
+      );
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = result.rows[0];
+    console.log(`[Auth:Login] Request ${requestId} - Comparing password for user: ${user.id}`);
     const validPassword = await bcrypt.compare(password, user.password);
+
+    console.log(`[Auth:Login] Request ${requestId} - Password comparison result:`, {
+      valid: validPassword,
+      userId: user.id
+    });
 
     if (!validPassword) {
       // Log failed login attempt
-      await logAuth('login_failed', { username }, req.ip, 'Invalid password');
+      console.log(`[Auth:Login] Request ${requestId} - Invalid password for user: ${username}`);
+      await logAuth('login_failed', { username }, req.ip, 'Invalid password').catch(err => 
+        console.error(`[Auth:Login] Failed to log auth failure:`, err)
+      );
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -62,7 +96,15 @@ router.post('/login', async (req, res) => {
       username: user.username, 
       email: user.email, 
       role: user.role 
-    }, req.ip);
+    }, req.ip).catch(err => 
+      console.error(`[Auth:Login] Failed to log auth success:`, err)
+    );
+
+    console.log(`[Auth:Login] Request ${requestId} - Login successful for user: ${user.username}`, {
+      userId: user.id,
+      role: user.role,
+      tokenGenerated: !!token
+    });
 
     res.json({
       token,
@@ -74,9 +116,24 @@ router.post('/login', async (req, res) => {
         role: user.role
       }
     });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error(`[Auth:Login] Request ${requestId} - Login error:`, {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
+    
+    // Ensure error response is sent
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Internal server error',
+        requestId: requestId,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    } else {
+      console.error(`[Auth:Login] Request ${requestId} - Cannot send error response - headers already sent`);
+    }
   }
 });
 
