@@ -44,13 +44,17 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
   // Use checklist hook
   const { checklistData, loadingChecklist, loadChecklistSummary } = useChecklistSummary();
 
-  // Load checklist when viewing event details
+  // Load checklist when viewing event details (refresh when modal opens)
   useEffect(() => {
     if (viewingEvent) {
+      console.log('[EventSetup] Loading checklist for event:', viewingEvent.id);
       const participantCount = viewingEvent.participants?.length || 0;
       loadChecklistSummary(viewingEvent.id, participantCount);
+    } else {
+      // Clear checklist data when modal closes
+      console.log('[EventSetup] Clearing checklist data (modal closed)');
     }
-  }, [viewingEvent, loadChecklistSummary]);
+  }, [viewingEvent?.id, loadChecklistSummary]); // Use viewingEvent?.id to trigger refresh when event changes
 
 
   // Wrapper functions to handle hook integration

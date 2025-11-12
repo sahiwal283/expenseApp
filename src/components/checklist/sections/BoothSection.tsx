@@ -3,6 +3,7 @@ import { ChecklistData, BoothShippingData } from '../TradeShowChecklist';
 import { api } from '../../../utils/api';
 import { User, TradeShow, Expense } from '../../../App';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
+import { ReceiptsViewerModal } from '../ReceiptsViewerModal';
 import {
   BoothOrderCard,
   ElectricityOrderCard,
@@ -19,18 +20,16 @@ interface BoothSectionProps {
   saving: boolean;
 }
 
-interface ReceiptStatus {
-  booth: Expense[];
-  electricity: Expense[];
-  booth_shipping: Expense[];
-}
-
 export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, event, onUpdate, onReload, saving }) => {
   const [boothNotes, setBoothNotes] = useState(checklist.booth_notes || '');
   const [electricityNotes, setElectricityNotes] = useState(checklist.electricity_notes || '');
   const [showReceiptUpload, setShowReceiptUpload] = useState<'booth' | 'electricity' | 'booth_shipping' | null>(null);
   const [uploadingMap, setUploadingMap] = useState(false);
   const boothMapInputRef = useRef<HTMLInputElement>(null);
+  
+  // Receipt viewer modal state
+  const [viewingReceipts, setViewingReceipts] = useState<Expense[]>([]);
+  const [showReceiptsModal, setShowReceiptsModal] = useState(false);
   
   // Booth shipping state - support multiple shipments
   const [showAddShipmentForm, setShowAddShipmentForm] = useState(false);
@@ -48,10 +47,13 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
   // Use receipts hook
   const { receiptStatus, loadReceipts } = useBoothReceipts(event);
 
-  const handleReceiptCreated = () => {
+  const handleReceiptCreated = async () => {
     setShowReceiptUpload(null);
-    onReload();
-    loadReceipts(); // Reload receipt status
+    // Reload checklist data
+    await onReload();
+    // Reload receipt status - wait for it to complete
+    await loadReceipts();
+    console.log('[BoothSection] Receipt created and data refreshed');
   };
 
   const handleBoothToggle = async () => {
@@ -160,11 +162,17 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
     }
   };
 
-  const handleDeleteShipment = async (shipmentId: string) => {
+  const handleDeleteShipment = async (shipmentId: string | number) => {
     if (!confirm('Are you sure you want to delete this shipment?')) return;
 
     try {
-      await api.checklist.deleteBoothShipping(shipmentId);
+      // Convert to number if it's a string
+      const id = typeof shipmentId === 'string' ? parseInt(shipmentId, 10) : shipmentId;
+      if (isNaN(id)) {
+        console.error('[BoothSection] Invalid shipment ID:', shipmentId);
+        return;
+      }
+      await api.checklist.deleteBoothShipping(id);
       onReload();
     } catch (error) {
       console.error('[BoothSection] Error deleting shipment:', error);
@@ -206,9 +214,10 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
           saving={saving}
           receiptCount={receiptStatus.booth.length}
           onViewReceipt={() => {
-            const expense = receiptStatus.booth[0];
-            if (expense?.receiptUrl) {
-              window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${expense.receiptUrl}`, '_blank');
+            const receipts = receiptStatus.booth.filter(e => e.receiptUrl);
+            if (receipts.length > 0) {
+              setViewingReceipts(receipts);
+              setShowReceiptsModal(true);
             }
           }}
           onUploadReceipt={() => setShowReceiptUpload('booth')}
@@ -232,9 +241,10 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
           saving={saving}
           receiptCount={receiptStatus.electricity.length}
           onViewReceipt={() => {
-            const expense = receiptStatus.electricity[0];
-            if (expense?.receiptUrl) {
-              window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${expense.receiptUrl}`, '_blank');
+            const receipts = receiptStatus.electricity.filter(e => e.receiptUrl);
+            if (receipts.length > 0) {
+              setViewingReceipts(receipts);
+              setShowReceiptsModal(true);
             }
           }}
           onUploadReceipt={() => setShowReceiptUpload('electricity')}
@@ -252,9 +262,10 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
           onToggleShipped={toggleShipped}
           receiptCount={receiptStatus.booth_shipping.length}
           onViewReceipt={() => {
-            const expense = receiptStatus.booth_shipping[0];
-            if (expense?.receiptUrl) {
-              window.open(`${import.meta.env.VITE_API_BASE_URL || '/api'}${expense.receiptUrl}`, '_blank');
+            const receipts = receiptStatus.booth_shipping.filter(e => e.receiptUrl);
+            if (receipts.length > 0) {
+              setViewingReceipts(receipts);
+              setShowReceiptsModal(true);
             }
           }}
           onUploadReceipt={() => setShowReceiptUpload('booth_shipping')}
@@ -271,6 +282,16 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
         onExpenseCreated={handleReceiptCreated}
       />
     )}
+
+    {/* Receipts Viewer Modal */}
+    <ReceiptsViewerModal
+      receipts={viewingReceipts}
+      isOpen={showReceiptsModal}
+      onClose={() => {
+        setShowReceiptsModal(false);
+        setViewingReceipts([]);
+      }}
+    />
     </>
   );
 };

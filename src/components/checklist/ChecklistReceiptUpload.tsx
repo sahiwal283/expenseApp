@@ -38,7 +38,15 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     merchant: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    description: attendeeName ? `${attendeeName} - ${section}` : '',
+    description: attendeeName 
+      ? `${attendeeName} - ${section}` 
+      : section === 'electricity' 
+        ? 'Electricity' 
+        : section === 'booth' 
+          ? 'Booth' 
+          : section === 'booth_shipping'
+            ? 'Booth Shipping'
+            : section.replace(/_/g, ' '),
     cardUsed: '',
     zohoEntity: '',
     receiptUrl: '' // Store receipt URL from OCR
