@@ -32,7 +32,7 @@ export function useBoothReceipts(event: TradeShow): UseBoothReceiptsReturn {
     try {
       setLoadingReceipts(true);
       console.log('[useBoothReceipts] Loading receipts for event:', event.id);
-      const expenses = await api.getExpenses({ event_id: event.id });
+      const expenses = await api.getExpenses({ event_id: event.id }) as Expense[];
       console.log('[useBoothReceipts] Loaded expenses:', expenses.length);
       
       // Categorize expenses by checklist section

@@ -146,7 +146,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ user, onNavigate }) 
                     <button
                       onClick={() => {
                         // Extract page name from link
-                        let page = task.link.replace('/', '');
+                        const page = task.link.replace('/', '');
                         
                         // Use sessionStorage to pass tab information (more reliable than hash for navigation)
                         if (task.type === 'pending_users' && page === 'settings') {

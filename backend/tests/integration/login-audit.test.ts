@@ -17,10 +17,10 @@ import jwt from 'jsonwebtoken';
 describe('Login and Audit Logging Integration Tests', () => {
   let dbAvailable = false;
   let testUserId: string | null = null;
-  let testUsername = 'test_audit_user';
-  let testPassword = 'TestPassword123!';
-  let testUserEmail = 'test_audit@example.com';
-  let testUserRole = 'developer';
+  const testUsername = 'test_audit_user';
+  const testPassword = 'TestPassword123!';
+  const testUserEmail = 'test_audit@example.com';
+  const testUserRole = 'developer';
 
   beforeAll(async () => {
     try {

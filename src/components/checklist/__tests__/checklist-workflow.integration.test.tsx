@@ -485,7 +485,7 @@ describe('Checklist Workflow Integration Tests', () => {
   describe('Comprehensive Checklist State', () => {
     it('should track complete checklist state throughout workflow', async () => {
       // Initial state
-      let checklistState = {
+      const checklistState = {
         flights: [],
         hotels: [],
         carRentals: [],

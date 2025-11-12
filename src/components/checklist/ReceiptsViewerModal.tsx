@@ -32,6 +32,11 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
     setCurrentIndex((prev) => (prev === receipts.length - 1 ? 0 : prev + 1));
   }, [receipts.length]);
 
+  // Update ref when receipts length changes
+  useEffect(() => {
+    receiptsLengthRef.current = receipts.length;
+  }, [receipts.length]);
+
   // Reset to first receipt when modal opens or receipts change
   useEffect(() => {
     if (isOpen && receipts.length > 0) {
@@ -45,18 +50,16 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
-        // Use functional form of setState to avoid closure issues
+        // Use functional form of setState with ref to avoid closure issues
         setCurrentIndex((prev) => {
-          // Get current receipts length from closure-safe source
-          const receiptsLength = receipts.length;
-          return prev === 0 ? receiptsLength - 1 : prev - 1;
+          const receiptsLength = receiptsLengthRef.current;
+          return receiptsLength > 0 ? (prev === 0 ? receiptsLength - 1 : prev - 1) : 0;
         });
       } else if (e.key === 'ArrowRight') {
-        // Use functional form of setState to avoid closure issues
+        // Use functional form of setState with ref to avoid closure issues
         setCurrentIndex((prev) => {
-          // Get current receipts length from closure-safe source
-          const receiptsLength = receipts.length;
-          return prev === receiptsLength - 1 ? 0 : prev + 1;
+          const receiptsLength = receiptsLengthRef.current;
+          return receiptsLength > 0 ? (prev === receiptsLength - 1 ? 0 : prev + 1) : 0;
         });
       } else if (e.key === 'Escape') {
         onClose();
@@ -65,11 +68,13 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, receipts.length]); // Only depend on receipts.length, not the handlers
+  }, [isOpen, onClose]); // No need to depend on receipts.length since we use ref
 
   if (!isOpen || receipts.length === 0) return null;
 
-  const currentReceipt = receipts[currentIndex];
+  // Safety check: ensure currentIndex is within bounds
+  const safeIndex = Math.max(0, Math.min(currentIndex, receipts.length - 1));
+  const currentReceipt = receipts[safeIndex];
   // @ts-ignore - Vite provides this at build time
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const imageUrl = currentReceipt.receiptUrl 

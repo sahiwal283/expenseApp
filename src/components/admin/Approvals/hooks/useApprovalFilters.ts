@@ -28,7 +28,7 @@ export function useApprovalFilters(expenses: Expense[]) {
 
   // Filter and sort expenses (pending items at top)
   const filteredExpenses = useMemo(() => {
-    let filtered = expenses.filter(expense => {
+    const filtered = expenses.filter(expense => {
       const matchesSearch = searchTerm === '' || 
         expense.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||

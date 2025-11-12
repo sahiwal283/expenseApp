@@ -450,9 +450,9 @@ Manager Agent (Task Assignment & Coordination)
 **Communication:**
 - Receives handoffs from Reviewer Agent (approved code only)
 - Reports to Manager Agent on test results
-- Handoffs to Backend/Frontend Agents for bug fixes
+- **If tests PASS:** Handoffs directly to DevOps Agent (NO Reviewer approval needed)
+- **If tests FAIL:** Handoffs to Manager Agent, Reviewer Agent, or original agent (depending on issue)
 - Handoffs to Docs Agent for test documentation
-- Handoffs to DevOps Agent after testing complete
 
 **Test File Management:**
 - Follow `docs/TESTING_STRATEGY.md` guidelines
@@ -649,7 +649,8 @@ When completing work, agents MUST provide:
    - If approved: Handoff to Testing Agent
    - If changes needed: Handoff back to original agent
 4. **Testing Agent tests approved code**
-5. **Testing Agent hands off to DevOps Agent** (if deployment needed)
+   - **If tests PASS:** Handoff directly to DevOps Agent (NO need for Reviewer approval again)
+   - **If tests FAIL:** Handoff to Manager Agent, Reviewer Agent, or original agent (depending on issue)
 
 **With Changes Needed:**
 1. Agent makes changes
@@ -660,9 +661,13 @@ When completing work, agents MUST provide:
 6. Reviewer Agent approves
 7. Reviewer Agent hands off to Testing Agent
 8. Testing Agent tests
-9. Testing Agent hands off to DevOps Agent
+   - **If tests PASS:** Handoff directly to DevOps Agent
+   - **If tests FAIL:** Handoff to Manager/Reviewer/original agent
 
-**NEVER skip Reviewer Agent or Testing Agent**
+**CRITICAL RULES:**
+- **NEVER skip Reviewer Agent or Testing Agent**
+- **NO second Reviewer approval needed after tests pass** - Testing Agent can handoff directly to DevOps
+- **If tests fail, Testing Agent escalates** - Don't go back to Reviewer unless Reviewer needs to see the failure
 
 ### Handoff Scenarios
 
@@ -687,9 +692,18 @@ When completing work, agents MUST provide:
 - Original Agent Should: Fix issues, handoff to Reviewer again
 
 **Testing Agent → DevOps Agent**
-- When: Tests pass, ready for deployment
+- When: **Tests PASS**, ready for deployment
 - Must Include: Version numbers, deployment notes, test results
 - DevOps Agent Should: Deploy to sandbox, verify, prepare for production
+- **NO Reviewer approval needed** - If tests pass, go directly to DevOps
+
+**Testing Agent → Manager/Reviewer/Original Agent**
+- When: **Tests FAIL** or issues found
+- Must Include: What failed, error details, test results, suggested fix
+- Testing Agent Should: Handoff to appropriate agent based on issue type
+  - **Code quality issues:** Handoff to Reviewer Agent
+  - **Bug in implementation:** Handoff to original agent (Backend/Frontend)
+  - **Unclear issues:** Handoff to Manager Agent
 
 **Any Agent → Docs Agent**
 - When: Architecture changes, new features, bug fixes
@@ -820,6 +834,7 @@ When completing work, agents MUST provide:
 4. **Gatekeeper role** - Only approved code goes to Testing
 5. **Handoff to Testing Agent** - After approval
 6. **Handoff back to agent** - If changes needed
+7. **NO second approval needed** - Once approved and tests pass, Testing goes directly to DevOps
 
 ### Testing Agent Rules
 
@@ -829,6 +844,8 @@ When completing work, agents MUST provide:
 4. **Document test failures** - Clear bug reports
 5. **Coverage goals** - Aim for high coverage on critical paths
 6. **Manage test file clutter** - Consolidate, use shared utilities, delete empty files
+7. **If tests PASS:** Handoff directly to DevOps Agent (NO Reviewer approval needed)
+8. **If tests FAIL:** Handoff to Manager/Reviewer/original agent based on issue type
 
 ### DevOps Agent Rules
 
