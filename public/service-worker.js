@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.0 - Download Expense PDF & Toast Notification Fix
+// Version: 1.28.1 - Booth Map Upload Fix
 // Date: November 4, 2025
 //
 // New Features:
