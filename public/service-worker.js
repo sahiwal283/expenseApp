@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.12 - PDF Download Failures Fix
+// Version: 1.28.13 - PDF Security Headers and Blank Page Fix
 // Date: November 4, 2025
 //
 // New Features:
