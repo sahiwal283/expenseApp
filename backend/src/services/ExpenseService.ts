@@ -176,6 +176,44 @@ class ExpenseService {
   }
 
   /**
+   * Update expense receipt
+   * Handles receipt file replacement with transaction safety
+   */
+  async updateExpenseReceipt(
+    expenseId: string,
+    userId: string,
+    userRole: string,
+    newReceiptUrl: string
+  ): Promise<{ expense: Expense; oldReceiptUrl: string | null }> {
+    // Get existing expense
+    const expense = await this.getExpenseById(expenseId);
+
+    // Authorization check
+    const isAdmin = userRole === 'admin' || userRole === 'accountant' || userRole === 'developer';
+    if (!isAdmin && expense.user_id !== userId) {
+      throw new AuthorizationError('You can only update receipts for your own expenses');
+    }
+
+    // Users can't update approved/rejected expenses
+    if (!isAdmin && expense.status !== 'pending') {
+      throw new ValidationError('Cannot update receipts for expenses that have been approved or rejected');
+    }
+
+    // Store old receipt URL before update
+    const oldReceiptUrl = expense.receipt_url || null;
+
+    // Update expense with new receipt URL
+    const updatedExpense = await expenseRepository.update(expenseId, {
+      receipt_url: newReceiptUrl
+    });
+
+    return {
+      expense: updatedExpense,
+      oldReceiptUrl
+    };
+  }
+
+  /**
    * Delete expense
    */
   async deleteExpense(expenseId: string, userId: string, userRole: string): Promise<void> {

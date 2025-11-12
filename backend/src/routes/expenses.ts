@@ -95,6 +95,141 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   });
 }));
 
+// Update expense receipt (must come before /:id route)
+router.put('/:id/receipt', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  
+  try {
+    // Validate file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: 'No file uploaded',
+        details: 'Please select a receipt file to upload.'
+      });
+    }
+
+    // Get expense to check authorization and get old receipt URL
+    const expense = await expenseService.getExpenseById(id);
+    
+    // Authorization check
+    const isAdmin = req.user!.role === 'admin' || req.user!.role === 'accountant' || req.user!.role === 'developer';
+    if (!isAdmin && expense.user_id !== req.user!.id) {
+      return res.status(403).json({ 
+        error: 'Unauthorized',
+        details: 'You can only update receipts for your own expenses'
+      });
+    }
+
+    // Users can't update approved/rejected expenses
+    if (!isAdmin && expense.status !== 'pending') {
+      return res.status(400).json({ 
+        error: 'Cannot update receipt',
+        details: 'Cannot update receipts for expenses that have been approved or rejected'
+      });
+    }
+
+    // Store old receipt URL and path for deletion
+    const oldReceiptUrl = expense.receipt_url || null;
+    let oldReceiptPath: string | null = null;
+
+    // Build path to old receipt file if it exists
+    if (oldReceiptUrl) {
+      let receiptPath = oldReceiptUrl;
+      if (receiptPath.startsWith('/uploads/')) {
+        receiptPath = receiptPath.substring('/uploads/'.length);
+      } else if (receiptPath.startsWith('/api/uploads/')) {
+        receiptPath = receiptPath.substring('/api/uploads/'.length);
+      }
+      const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+      oldReceiptPath = path.join(uploadDir, receiptPath);
+    }
+
+    // New receipt URL
+    const newReceiptUrl = `/uploads/${req.file.filename}`;
+
+    // Update expense receipt (transaction-safe: updates DB first)
+    const result = await expenseService.updateExpenseReceipt(
+      id,
+      req.user!.id,
+      req.user!.role,
+      newReceiptUrl
+    );
+
+    // Delete old receipt file AFTER successful database update
+    if (oldReceiptPath && fs.existsSync(oldReceiptPath)) {
+      try {
+        fs.unlinkSync(oldReceiptPath);
+        console.log(`[ExpenseReceipt] Deleted old receipt file: ${oldReceiptPath}`);
+      } catch (deleteError: any) {
+        // Log error but don't fail the request - file deletion is cleanup
+        console.error(`[ExpenseReceipt] Failed to delete old receipt file: ${oldReceiptPath}`, deleteError);
+        // Note: Old file will remain on disk, but expense record is updated
+      }
+    }
+
+    // Log receipt replacement in audit trail
+    await ExpenseAuditService.logChange(
+      id,
+      req.user!.id,
+      req.user!.username || 'Unknown User',
+      'receipt_replaced',
+      {
+        receipt_url: {
+          old: oldReceiptUrl,
+          new: newReceiptUrl
+        }
+      }
+    );
+
+    console.log(`[ExpenseReceipt] Receipt replaced for expense ${id} by ${req.user!.username}`);
+    
+    // Return updated expense
+    const updatedExpense = await expenseService.getExpenseByIdWithDetails(id);
+    res.json({
+      ...normalizeExpense(updatedExpense),
+      user_name: updatedExpense.user_name,
+      event_name: updatedExpense.event_name,
+      message: 'Receipt updated successfully'
+    });
+  } catch (error: any) {
+    // If database update failed, delete the newly uploaded file to prevent orphaned files
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log(`[ExpenseReceipt] Cleaned up failed upload: ${req.file.path}`);
+      } catch (cleanupError) {
+        console.error(`[ExpenseReceipt] Failed to cleanup failed upload: ${req.file.path}`, cleanupError);
+      }
+    }
+
+    // Handle specific error types
+    if (error.message === 'Expense not found') {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    
+    if (error.message === 'You can only update receipts for your own expenses') {
+      return res.status(403).json({ error: 'Unauthorized', details: error.message });
+    }
+    
+    if (error.message === 'Cannot update receipts for expenses that have been approved or rejected') {
+      return res.status(400).json({ error: 'Cannot update receipt', details: error.message });
+    }
+
+    // Log full error details
+    console.error('[ExpenseReceipt] Error updating receipt:', {
+      message: error.message,
+      stack: error.stack,
+      expenseId: id,
+      userId: req.user!.id
+    });
+
+    res.status(500).json({ 
+      error: 'Failed to update receipt',
+      details: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred. Please try again.'
+    });
+  }
+}));
+
 // Create expense with optional receipt upload and OCR
 router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const {

@@ -11,7 +11,7 @@ export interface AuditLogEntry {
   expenseId: string;
   userId: string;
   userName: string;
-  action: 'created' | 'updated' | 'status_changed' | 'entity_assigned' | 'pushed_to_zoho';
+  action: 'created' | 'updated' | 'status_changed' | 'entity_assigned' | 'pushed_to_zoho' | 'receipt_replaced';
   changes: Record<string, { old: any; new: any }>;
   timestamp: string;
 }
