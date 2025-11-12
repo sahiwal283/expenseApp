@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.2 - TypeScript Receipt Filtering Fix
+// Version: 1.28.3 - Booth Map Display Fix
 // Date: November 4, 2025
 //
 // New Features:
