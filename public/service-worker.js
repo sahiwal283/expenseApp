@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.10 - PDF Download Endpoint Improvements
+// Version: 1.28.11 - Checklist Auto-Check Service
 // Date: November 4, 2025
 //
 // New Features:
