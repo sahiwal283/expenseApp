@@ -19,6 +19,7 @@ import learningAnalyticsRoutes from './routes/learningAnalytics';
 import modelRetrainingRoutes from './routes/modelRetraining';
 import trainingSyncRoutes from './routes/trainingSync';
 import checklistRoutes from './routes/checklist';
+import userChecklistRoutes from './routes/userChecklist';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -73,6 +74,7 @@ app.use('/api/learning', authenticateToken, sessionTracker, learningAnalyticsRou
 app.use('/api/retraining', authenticateToken, sessionTracker, modelRetrainingRoutes);
 app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRoutes);
 app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
+app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 
 // Health check (with database connectivity test)
 app.get('/api/health', async (req, res) => {

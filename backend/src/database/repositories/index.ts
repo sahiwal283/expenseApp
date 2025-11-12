@@ -38,3 +38,6 @@ export type {
 export { RoleRepository, roleRepository } from './RoleRepository';
 export type { Role } from './RoleRepository';
 
+export { UserChecklistRepository, userChecklistRepository } from './UserChecklistRepository';
+export type { UserChecklistItem } from './UserChecklistRepository';
+
