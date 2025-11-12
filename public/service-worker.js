@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.5 - Event Dropdown Filter Buttons Removal
+// Version: 1.28.6 - Checklist Loading Fix
 // Date: November 4, 2025
 //
 // New Features:
