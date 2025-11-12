@@ -168,8 +168,8 @@ describe('Booth Map Upload Tests', () => {
       };
 
       expect(file.destination).toBe(expectedPath);
-      expect(file.path).toContain('booth-maps');
-      expect(file.path).toContain(file.filename);
+      expect(file.path.includes('booth-maps')).toBe(true);
+      expect(file.path.includes(file.filename)).toBe(true);
 
       console.log('✅ Files saved to correct directory');
     });
