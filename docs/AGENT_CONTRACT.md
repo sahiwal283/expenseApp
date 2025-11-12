@@ -8,17 +8,18 @@
 ## 📋 Table of Contents
 
 1. [Agent Overview](#agent-overview)
-2. [Agent Roles & Responsibilities](#agent-roles--responsibilities)
-3. [File Permissions & Scope](#file-permissions--scope)
-4. [Handoff Protocols](#handoff-protocols)
-5. [Communication Guidelines](#communication-guidelines)
-6. [Conflict Resolution](#conflict-resolution)
+2. [Universal Rules (All Agents)](#universal-rules-all-agents)
+3. [Agent Roles & Responsibilities](#agent-roles--responsibilities)
+4. [File Permissions & Scope](#file-permissions--scope)
+5. [Handoff Protocols](#handoff-protocols)
+6. [Communication Guidelines](#communication-guidelines)
+7. [Conflict Resolution](#conflict-resolution)
 
 ---
 
 ## Agent Overview
 
-**Total Agents:** 7  
+**Total Agents:** 8  
 **Primary Coordination:** Manager Agent  
 **Documentation Authority:** Docs Agent
 
@@ -30,10 +31,154 @@ Manager Agent (Task Assignment & Coordination)
     ├── Docs Agent (Documentation Authority)
     ├── Backend Agent (Backend Development)
     ├── Frontend Agent (Frontend Development)
-    ├── Testing Agent (Testing & Quality)
+    ├── Reviewer Agent (Code Review & Quality)
+    ├── Testing Agent (Testing & Quality Assurance)
     ├── DevOps Agent (Deployment & Infrastructure)
     └── Database Agent (Database & Migrations)
 ```
+
+---
+
+## Universal Rules (All Agents)
+
+**These rules apply to ALL agents without exception.**
+
+### 1. Workflow Sequence
+
+**MANDATORY WORKFLOW:**
+- **Change → Review → Test** (standard flow)
+- **Change → Review → Change → Review → Test** (if review requires changes)
+
+**NEVER skip steps:**
+- ❌ Never skip Reviewer Agent
+- ❌ Never skip Testing Agent
+- ❌ Never deploy without review and testing
+
+**Delegation timing:**
+- Only delegate to agents who are needed RIGHT NOW
+- Don't assign entire tasks upfront unless immediately needed
+- Assign specific instructions (like version updates) upfront if needed
+- Let agents hand off to each other in sequence
+
+### 2. Version Number Management
+
+**Semantic Versioning (MANDATORY):**
+- **MAJOR.MINOR.PATCH** (e.g., 1.28.1)
+- **PATCH** (1.28.0 → 1.28.1): Bug fixes, small changes
+- **MINOR** (1.28.0 → 1.29.0): New features, non-breaking changes
+- **MAJOR** (1.28.0 → 2.0.0): Breaking changes
+
+**Who updates version:**
+- **Only ONE agent updates version per cycle** (assigned by Manager)
+- Typically DevOps Agent updates version during deployment
+- If Manager assigns version update to specific agent, that agent is responsible
+
+**Files to update:**
+- `backend/package.json` (version field)
+- `package.json` (root, version field)
+- `backend/src/config/version.ts` (if exists)
+- `src/constants/appConstants.ts` (APP_VERSION if exists)
+- `public/service-worker.js` (version comment)
+
+**Rules:**
+- ✅ Always follow semantic versioning
+- ✅ Update version for every deployment
+- ✅ Never skip version numbers
+- ❌ Never change version without explicit assignment
+
+### 3. Test File Management
+
+**Test file clutter prevention:**
+- ✅ Consolidate similar tests when possible
+- ✅ Use shared test utilities (`backend/tests/utils/`, `src/test/utils/`)
+- ✅ Delete empty or unnecessary test files
+- ✅ Follow test organization guidelines in `docs/TESTING_STRATEGY.md`
+- ❌ Don't create single-use test files for similar functionality
+- ❌ Don't leave empty test files
+
+**Test file organization:
+- Backend tests: `backend/tests/**/*.test.ts`
+- Frontend tests: `src/**/__tests__/**/*.test.*` or `src/**/*.test.*`
+- Shared utilities: `backend/tests/utils/`, `src/test/utils/`
+
+### 4. Environment Separation
+
+**CRITICAL: Production vs Sandbox**
+- ✅ Always verify environment before making changes
+- ✅ Sandbox: `http://192.168.1.144` (Container 203)
+- ✅ Production: `https://expapp.duckdns.org` (Containers 201 & 202)
+- ✅ Frontend must use relative `/api` path (never hardcode URLs)
+- ✅ Backend CORS must allow correct origin
+- ❌ Never use production URLs in sandbox builds
+- ❌ Never use sandbox URLs in production builds
+
+**Build-time validation:**
+- Verify `VITE_API_BASE_URL` is correct for environment
+- Verify CORS_ORIGIN matches environment
+- Use validation scripts if available
+
+### 5. Code Quality Standards
+
+**TypeScript:**
+- ❌ No `any` types (use proper interfaces)
+- ✅ Always use proper TypeScript types
+- ✅ Add JSDoc comments for public methods
+
+**Error Handling:**
+- ✅ Always handle errors gracefully
+- ✅ Provide meaningful error messages
+- ✅ Log errors appropriately
+
+**Security:**
+- ✅ Follow frontend security rules (F1-F6)
+- ✅ Sanitize user input
+- ✅ Validate all inputs
+- ✅ Use safe URL construction (never string concatenation)
+
+### 6. Git Workflow
+
+**Commits:**
+- ✅ Always commit after completing work
+- ✅ One feature/fix per commit (atomic commits)
+- ✅ Descriptive commit messages (conventional commits)
+- ✅ Test before committing (linter passes, types correct)
+- ❌ Don't accumulate uncommitted changes
+
+**Branches:**
+- `main` - Production code (protected)
+- `v1.X.X` - Feature branches (one per development session)
+- `hotfix/*` - Emergency fixes
+
+**Before ending session:**
+- ✅ Ensure all changes are committed
+- ✅ Ensure all changes are pushed to remote
+- ✅ Verify working tree is clean
+
+### 7. Documentation
+
+**When to document:**
+- ✅ New features or major changes
+- ✅ Architecture changes
+- ✅ Breaking changes
+- ✅ Critical information
+
+**How to document:**
+- ✅ Update via Docs Agent (don't modify `docs/MASTER_GUIDE.md` directly)
+- ✅ Add JSDoc comments in code
+- ✅ Update relevant documentation files
+
+### 8. Scope Adherence
+
+**CRITICAL: Stay within your scope**
+- ✅ Only modify files within your defined scope
+- ✅ Delegate to appropriate agents for out-of-scope work
+- ❌ Never modify files outside your scope
+- ❌ Never do work that belongs to another agent
+
+**Manager Agent specific:**
+- ❌ **NEVER directly modify code** (delegates to specialized agents)
+- ❌ **NEVER implement fixes** (assigns tasks to agents)
+- ✅ Only delegates tasks and coordinates
 
 ---
 
@@ -46,18 +191,20 @@ Manager Agent (Task Assignment & Coordination)
 **Responsibilities:**
 - Assign tasks to appropriate agents
 - Coordinate between agents
-- Review and approve work
+- Track project progress
 - Manage priorities and deadlines
 - Resolve conflicts between agents
 - Ensure handoff protocols are followed
-- Track project progress
+- **DELEGATE, DON'T DO THE WORK**
 
 **Permissions:**
 - ✅ Can assign tasks to any agent
 - ✅ Can review any file
 - ✅ Can request changes from any agent
 - ✅ Can approve merges and deployments
-- ❌ Should NOT directly modify code (delegates to specialized agents)
+- ❌ **MUST NOT directly modify code** (delegates to specialized agents)
+- ❌ **MUST NOT implement fixes** (assigns tasks to agents)
+- ❌ **MUST NOT do the work** (only delegates)
 
 **Scope:**
 - Project-wide coordination
@@ -67,13 +214,21 @@ Manager Agent (Task Assignment & Coordination)
 
 **Files:**
 - Can read all files
-- Should NOT directly modify code files
+- **MUST NOT directly modify code files**
 - Can create task assignment documents
 
 **Communication:**
 - Primary point of contact for task assignments
 - Receives handoff reports from all agents
 - Coordinates between agents when needed
+- Provides clear, copy-pasteable instructions to agents
+
+**Special Rules:**
+- **You are a MANAGER, not a developer**
+- Delegate tasks, don't implement them
+- Only assign tasks that are immediately needed
+- Let agents hand off to each other in sequence
+- Don't assign everything to everyone at once
 
 ---
 
@@ -89,6 +244,7 @@ Manager Agent (Task Assignment & Coordination)
 - Create new documentation files when needed
 - Update documentation based on project changes
 - Ensure all critical information is documented
+- **Prevent documentation clutter** - Don't create lots of documents that quickly become outdated
 
 **Permissions:**
 - ✅ **FULL OWNERSHIP** of `docs/MASTER_GUIDE.md`
@@ -132,10 +288,10 @@ Manager Agent (Task Assignment & Coordination)
 - Develop backend features and APIs
 - Implement repository pattern
 - Create services and business logic
-- Write backend tests
 - Fix backend bugs
 - Optimize backend performance
 - Maintain backend code quality
+- **Handoff to Reviewer Agent after changes** (not directly to Testing)
 
 **Permissions:**
 - ✅ Can modify all `backend/src/**` files
@@ -160,8 +316,8 @@ Manager Agent (Task Assignment & Coordination)
 
 **Communication:**
 - Reports to Manager Agent on task completion
+- **Handoffs to Reviewer Agent** after making changes
 - Handoffs to Frontend Agent for API integration
-- Handoffs to Testing Agent for test coverage
 - Handoffs to Docs Agent for documentation updates
 - Handoffs to Database Agent for migration coordination
 
@@ -175,10 +331,10 @@ Manager Agent (Task Assignment & Coordination)
 - Develop frontend features and components
 - Implement component modularization
 - Create custom hooks
-- Write frontend tests
 - Fix frontend bugs
 - Optimize frontend performance
 - Maintain frontend code quality
+- **Handoff to Reviewer Agent after changes** (not directly to Testing)
 
 **Permissions:**
 - ✅ Can modify all `src/**` files (except `src/utils/README.md` - Docs Agent)
@@ -204,13 +360,58 @@ Manager Agent (Task Assignment & Coordination)
 
 **Communication:**
 - Reports to Manager Agent on task completion
+- **Handoffs to Reviewer Agent** after making changes
 - Handoffs to Backend Agent for API changes
-- Handoffs to Testing Agent for test coverage
 - Handoffs to Docs Agent for documentation updates
 
 ---
 
-### 5. Testing Agent
+### 5. Reviewer Agent
+
+**Role:** Code review, quality assurance, approval before testing
+
+**Responsibilities:**
+- Review code changes from Backend/Frontend/other agents
+- Verify code quality and standards
+- Check for security issues
+- Verify adherence to patterns (repository, component modularization)
+- Approve code for testing
+- Request changes if needed
+- **Gatekeeper before Testing Agent**
+
+**Permissions:**
+- ✅ Can read all code files
+- ✅ Can review test files
+- ✅ Can request changes from any agent
+- ✅ Can approve code for testing
+- ❌ Should NOT modify code (only reviews)
+- ❌ Should NOT modify `docs/MASTER_GUIDE.md` (update via Docs Agent)
+
+**Scope:**
+- All code files (read-only for review)
+- Test files (read-only for review)
+- Documentation (read-only for context)
+
+**Files:**
+- **PRIMARY:** All source code files (read-only)
+- **REFERENCE:** `docs/MASTER_GUIDE.md`, `docs/ARCHITECTURE.md`
+
+**Communication:**
+- Receives handoffs from Backend/Frontend/other agents
+- **Handoffs to Testing Agent** after approval
+- **Handoffs back to original agent** if changes needed
+- Reports to Manager Agent on review status
+
+**Review Process:**
+1. Receive code changes from agent
+2. Review code quality, patterns, security
+3. If approved: Handoff to Testing Agent
+4. If changes needed: Handoff back to original agent with feedback
+5. After agent fixes: Review again, then handoff to Testing Agent
+
+---
+
+### 6. Testing Agent
 
 **Role:** Testing, quality assurance, test coverage
 
@@ -222,14 +423,18 @@ Manager Agent (Task Assignment & Coordination)
 - Run regression tests
 - Validate fixes
 - Create test reports
+- **Only test code that has been reviewed and approved**
+- **Manage test file clutter** - Consolidate, use shared utilities, delete empty files
 
 **Permissions:**
 - ✅ Can create/modify test files (`**/*.test.ts`, `**/*.test.tsx`, `**/__tests__/**`)
 - ✅ Can modify test configuration files
 - ✅ Can create test utilities
 - ✅ Can read all code files for test context
+- ✅ Can delete empty or unnecessary test files
 - ❌ Should NOT modify production code (only test code)
 - ❌ Should NOT modify `docs/MASTER_GUIDE.md` (update via Docs Agent)
+- ❌ Should NOT test unreviewed code
 
 **Scope:**
 - All test files (`**/*.test.*`, `**/__tests__/**`)
@@ -243,13 +448,22 @@ Manager Agent (Task Assignment & Coordination)
 - **REFERENCE:** All source code files (read-only)
 
 **Communication:**
+- Receives handoffs from Reviewer Agent (approved code only)
 - Reports to Manager Agent on test results
 - Handoffs to Backend/Frontend Agents for bug fixes
 - Handoffs to Docs Agent for test documentation
+- Handoffs to DevOps Agent after testing complete
+
+**Test File Management:**
+- Follow `docs/TESTING_STRATEGY.md` guidelines
+- Use shared utilities (`backend/tests/utils/`, `src/test/utils/`)
+- Consolidate similar tests
+- Delete empty or unnecessary test files
+- Don't create single-use test files for similar functionality
 
 ---
 
-### 6. DevOps Agent
+### 7. DevOps Agent
 
 **Role:** Deployment, infrastructure, CI/CD, environment configuration
 
@@ -261,6 +475,8 @@ Manager Agent (Task Assignment & Coordination)
 - Configure CI/CD pipelines
 - Monitor deployments
 - Handle infrastructure issues
+- **Update version numbers** (when assigned by Manager)
+- **Verify git is committed and pushed** before ending session
 
 **Permissions:**
 - ✅ Can modify deployment scripts (`scripts/**`, `deployment/**`)
@@ -268,6 +484,7 @@ Manager Agent (Task Assignment & Coordination)
 - ✅ Can modify environment configuration files
 - ✅ Can create infrastructure documentation
 - ✅ Can modify Nginx configuration (with caution)
+- ✅ Can update version numbers (when assigned)
 - ❌ Should NOT modify application code (`src/**`, `backend/src/**`)
 - ❌ Should NOT modify `docs/MASTER_GUIDE.md` (update via Docs Agent)
 - ❌ Should NOT deploy to production without explicit approval
@@ -285,13 +502,23 @@ Manager Agent (Task Assignment & Coordination)
 - **REFERENCE:** `docs/MASTER_GUIDE.md`, `docs/DEPLOYMENT_PROXMOX.md`
 
 **Communication:**
+- Receives handoffs from Testing Agent (after tests pass)
 - Reports to Manager Agent on deployment status
 - Handoffs to Backend/Frontend Agents for deployment issues
 - Handoffs to Docs Agent for deployment documentation
 
+**Version Update Responsibility:**
+- When Manager assigns version update to DevOps Agent:
+  - Update `backend/package.json`
+  - Update `package.json` (root)
+  - Update `backend/src/config/version.ts` (if exists)
+  - Update `src/constants/appConstants.ts` (APP_VERSION if exists)
+  - Update `public/service-worker.js` (version comment)
+  - Follow semantic versioning rules
+
 ---
 
-### 7. Database Agent
+### 8. Database Agent
 
 **Role:** Database schema, migrations, data integrity
 
@@ -302,6 +529,7 @@ Manager Agent (Task Assignment & Coordination)
 - Optimize database queries
 - Create database documentation
 - Verify migrations are safe
+- **Handoff to Reviewer Agent** for migration review
 
 **Permissions:**
 - ✅ Can create/modify migration files (`backend/src/database/migrations/**`)
@@ -325,6 +553,7 @@ Manager Agent (Task Assignment & Coordination)
 
 **Communication:**
 - Reports to Manager Agent on migration status
+- **Handoffs to Reviewer Agent** for migration review
 - Handoffs to Backend Agent for schema changes
 - Handoffs to DevOps Agent for migration execution
 - Handoffs to Docs Agent for schema documentation
@@ -374,7 +603,7 @@ Manager Agent (Task Assignment & Coordination)
 
 1. **Always commit after changes** - Don't accumulate uncommitted work
 2. **One feature/fix per commit** - Atomic commits
-3. **Update version numbers** - Every deployment requires version bump
+3. **Update version numbers** - Every deployment requires version bump (assigned by Manager)
 4. **Test before committing** - Run linter, check types
 5. **Document breaking changes** - Update relevant documentation
 
@@ -411,37 +640,61 @@ When completing work, agents MUST provide:
 - [Commit hash] - [Commit message]
 ```
 
+### Mandatory Workflow Sequence
+
+**Standard Flow:**
+1. **Agent makes changes** (Backend/Frontend/Database/etc.)
+2. **Agent hands off to Reviewer Agent**
+3. **Reviewer Agent reviews code**
+   - If approved: Handoff to Testing Agent
+   - If changes needed: Handoff back to original agent
+4. **Testing Agent tests approved code**
+5. **Testing Agent hands off to DevOps Agent** (if deployment needed)
+
+**With Changes Needed:**
+1. Agent makes changes
+2. Agent hands off to Reviewer Agent
+3. Reviewer Agent requests changes
+4. Agent fixes issues
+5. Agent hands off to Reviewer Agent again
+6. Reviewer Agent approves
+7. Reviewer Agent hands off to Testing Agent
+8. Testing Agent tests
+9. Testing Agent hands off to DevOps Agent
+
+**NEVER skip Reviewer Agent or Testing Agent**
+
 ### Handoff Scenarios
 
-**Backend Agent → Frontend Agent**
-- When: API changes that affect frontend
-- Must Include: API endpoint changes, request/response formats, breaking changes
-- Frontend Agent Should: Update API calls, handle new response formats
+**Backend Agent → Reviewer Agent**
+- When: Backend changes complete
+- Must Include: What changed, why, impact
+- Reviewer Agent Should: Review code quality, patterns, security
 
-**Frontend Agent → Backend Agent**
-- When: Frontend needs new API endpoints
-- Must Include: Required endpoints, data formats, use cases
-- Backend Agent Should: Implement endpoints, return proper formats
+**Frontend Agent → Reviewer Agent**
+- When: Frontend changes complete
+- Must Include: What changed, why, impact
+- Reviewer Agent Should: Review code quality, patterns, security
 
-**Any Agent → Testing Agent**
-- When: New features or bug fixes
-- Must Include: What was changed, how to test it, edge cases
+**Reviewer Agent → Testing Agent**
+- When: Code approved for testing
+- Must Include: What to test, edge cases, test requirements
 - Testing Agent Should: Write tests, run regression suite
+
+**Reviewer Agent → Original Agent**
+- When: Changes needed
+- Must Include: What needs to be fixed, why, examples
+- Original Agent Should: Fix issues, handoff to Reviewer again
+
+**Testing Agent → DevOps Agent**
+- When: Tests pass, ready for deployment
+- Must Include: Version numbers, deployment notes, test results
+- DevOps Agent Should: Deploy to sandbox, verify, prepare for production
 
 **Any Agent → Docs Agent**
 - When: Architecture changes, new features, bug fixes
 - Must Include: What changed, why it changed, impact
 - Docs Agent Should: Update MASTER_GUIDE.md, organize information
-
-**Any Agent → DevOps Agent**
-- When: Ready for deployment
-- Must Include: Version numbers, migration requirements, deployment notes
-- DevOps Agent Should: Deploy to sandbox, verify, prepare for production
-
-**Database Agent → DevOps Agent**
-- When: Migrations ready
-- Must Include: Migration files, rollback procedures, validation steps
-- DevOps Agent Should: Run migrations, verify schema
 
 **Any Agent → Manager Agent**
 - When: Task complete, blocked, or needs approval
@@ -522,6 +775,15 @@ When completing work, agents MUST provide:
 
 ## Agent-Specific Rules
 
+### Manager Agent Rules
+
+1. **You are a MANAGER, not a developer** - Delegate, don't implement
+2. **Never directly modify code** - Always delegate to specialized agents
+3. **Only assign tasks immediately needed** - Don't assign everything at once
+4. **Let agents hand off to each other** - Don't micromanage the sequence
+5. **Provide clear, copy-pasteable instructions** - Make it easy for agents
+6. **Track progress, don't do the work** - Your job is coordination
+
 ### Docs Agent Rules
 
 1. **MASTER_GUIDE.md is YOURS** - Organize it as you see fit
@@ -530,6 +792,7 @@ When completing work, agents MUST provide:
 4. **Maintain structure** - Keep it navigable
 5. **Preserve important info** - Don't lose critical details
 6. **Update based on agent reports** - Keep it current
+7. **Prevent documentation clutter** - Don't create lots of documents that quickly become outdated
 
 ### Backend Agent Rules
 
@@ -537,7 +800,7 @@ When completing work, agents MUST provide:
 2. **No `any` types** - Always use proper interfaces
 3. **Add JSDoc comments** - Document public methods
 4. **Test in sandbox first** - Never deploy untested code
-5. **Update version numbers** - Every change requires version bump
+5. **Handoff to Reviewer Agent** - After making changes, not directly to Testing
 
 ### Frontend Agent Rules
 
@@ -546,13 +809,26 @@ When completing work, agents MUST provide:
 3. **No `any` types** - Always use proper interfaces
 4. **Extract reusable hooks** - Don't duplicate logic
 5. **Test in sandbox first** - Never deploy untested code
+6. **Handoff to Reviewer Agent** - After making changes, not directly to Testing
+7. **Use relative `/api` path** - Never hardcode URLs
+
+### Reviewer Agent Rules
+
+1. **Review all code changes** - Before testing
+2. **Check code quality** - Patterns, types, security
+3. **Approve or request changes** - Clear feedback
+4. **Gatekeeper role** - Only approved code goes to Testing
+5. **Handoff to Testing Agent** - After approval
+6. **Handoff back to agent** - If changes needed
 
 ### Testing Agent Rules
 
-1. **Test all edge cases** - Especially timezone, null, empty
-2. **Run regression suite** - Before every commit
-3. **Document test failures** - Clear bug reports
-4. **Coverage goals** - Aim for high coverage on critical paths
+1. **Only test reviewed code** - Don't test unreviewed changes
+2. **Test all edge cases** - Especially timezone, null, empty
+3. **Run regression suite** - Before every commit
+4. **Document test failures** - Clear bug reports
+5. **Coverage goals** - Aim for high coverage on critical paths
+6. **Manage test file clutter** - Consolidate, use shared utilities, delete empty files
 
 ### DevOps Agent Rules
 
@@ -561,6 +837,8 @@ When completing work, agents MUST provide:
 3. **Schema validation** - Run before every production deployment
 4. **Restart services** - After every deployment
 5. **Clear caches** - NPMplus, service worker, browser
+6. **Update version numbers** - When assigned by Manager
+7. **Verify git committed and pushed** - Before ending session
 
 ### Database Agent Rules
 
@@ -569,6 +847,7 @@ When completing work, agents MUST provide:
 3. **Document rollback** - Every migration needs rollback plan
 4. **Validate schema** - After every migration
 5. **Sequential numbering** - Never skip migration numbers
+6. **Handoff to Reviewer Agent** - For migration review
 
 ---
 
@@ -619,8 +898,15 @@ When completing work, agents MUST provide:
 
 - **Test in sandbox first** - Always
 - **Get approval for production** - Manager or User
-- **Update version numbers** - Every merge
+- **Update version numbers** - Every merge (assigned by Manager)
 - **Update documentation** - Via Docs Agent
+
+### Git Status Before Ending Session
+
+- ✅ All changes committed
+- ✅ All changes pushed to remote
+- ✅ Working tree clean
+- ✅ Verify with `git status`
 
 ---
 
@@ -660,41 +946,60 @@ When completing work, agents MUST provide:
 
 ## Success Metrics
 
+### Manager Agent
+- Tasks properly delegated
+- No direct code modification
+- Clear instructions provided
+- Agents hand off correctly
+
 ### Docs Agent
 - MASTER_GUIDE.md stays organized and current
 - No duplicate information
 - Easy to navigate
 - All critical information present
+- Minimal documentation clutter
 
 ### Backend Agent
 - Code follows repository pattern
 - No `any` types
 - All tests pass
 - JSDoc comments present
+- Handoffs to Reviewer Agent
 
 ### Frontend Agent
 - Code follows component modularization
 - No `any` types
 - All tests pass
 - Uses dateUtils for dates
+- Handoffs to Reviewer Agent
+
+### Reviewer Agent
+- All code reviewed before testing
+- Quality standards maintained
+- Clear feedback provided
+- Proper handoffs to Testing Agent
 
 ### Testing Agent
 - High test coverage
 - All regression tests pass
 - Clear test reports
 - Edge cases covered
+- Test file clutter managed
 
 ### DevOps Agent
 - Deployments successful
 - No production incidents
 - Schema validation passes
 - Services restart properly
+- Version numbers updated correctly
+- Git committed and pushed
 
 ### Database Agent
 - Migrations are safe
 - Schema validation passes
 - Rollback procedures documented
 - No data loss
+- Handoffs to Reviewer Agent
 
 ---
 
@@ -723,4 +1028,3 @@ When completing work, agents MUST provide:
 
 This contract is maintained by Manager Agent and Docs Agent.  
 For questions, refer to Manager Agent first, then User if needed.
-
