@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.15 - PDF Single Page Consolidation and Download Debugging
+// Version: 1.28.16 - PDF Layout Optimization and Browser Compatibility Note
 // Date: November 4, 2025
 //
 // New Features:
