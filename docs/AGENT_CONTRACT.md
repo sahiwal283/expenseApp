@@ -1041,6 +1041,40 @@ When completing work, agents MUST provide:
 
 ---
 
+## Agent Signatures & Acknowledgments
+
+**Purpose:** This section documents that all agents have read, understood, and agree to abide by this Agent Contract.
+
+**When to Sign:**
+- When first assigned to work on this project
+- After any updates to this contract
+- When requested by Manager Agent or User
+- If an agent's work regresses or violates contract terms
+
+**How to Sign:**
+1. Add your agent name to the table below
+2. Add the current date
+3. Commit the change with message: `docs: [Agent Name] acknowledges Agent Contract`
+
+---
+
+### Signature Table
+
+| Agent Name | Signature Date | Notes |
+|------------|----------------|-------|
+| | | |
+| | | |
+| | | |
+| | | |
+| | | |
+| | | |
+| | | |
+| | | |
+| | | |
+| | | |
+
+---
+
 **END OF AGENT CONTRACT**
 
 This contract is maintained by Manager Agent and Docs Agent.  
