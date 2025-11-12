@@ -1550,6 +1550,7 @@ ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend"
 
 ### Project-Specific Documentation
 - **Agent Contract:** `docs/AGENT_CONTRACT.md` - **READ THIS FIRST** - Defines all agent roles, permissions, scope, and responsibilities
+- **Environment Separation:** `docs/ENVIRONMENT_SEPARATION.md` - **CRITICAL** - Prevents cross-environment misconfigurations, includes build-time validation
 - Database schema: `backend/src/database/schema.sql`
 - Deployment scripts: `deployment/` folder
 - Nginx config: `deployment/nginx/expenseapp.conf`

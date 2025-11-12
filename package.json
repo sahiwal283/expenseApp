@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "prebuild:sandbox": "node scripts/validate-env.js --mode development",
     "build:sandbox": "vite build --mode development",
+    "prebuild:production": "node scripts/validate-env.js --mode production",
     "build:production": "vite build --mode production",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
