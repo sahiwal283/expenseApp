@@ -76,14 +76,14 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     });
 
     // Header
-    doc.fontSize(20).font('Helvetica-Bold').text('Expense Details', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
-    doc.moveDown(1);
+    doc.fontSize(18).font('Helvetica-Bold').text('Expense Details', { align: 'center' }); // Reduced from 20
+    doc.moveDown(0.3); // Reduced spacing
+    doc.fontSize(9).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' }); // Reduced from 10
+    doc.moveDown(0.5); // Reduced spacing
 
     // Expense Details Section
-    doc.fontSize(14).font('Helvetica-Bold').text('Expense Details', { underline: true });
-    doc.moveDown(0.5);
+    doc.fontSize(13).font('Helvetica-Bold').text('Expense Details', { underline: true }); // Reduced from 14
+    doc.moveDown(0.3); // Reduced spacing
     doc.fontSize(10).font('Helvetica');
 
     // Basic Information
@@ -120,11 +120,11 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       doc.moveDown(0.3);
     }
 
-    doc.moveDown(0.5);
+    doc.moveDown(0.3); // Reduced spacing
 
     // Status Information
     doc.fontSize(12).font('Helvetica-Bold').text('Status Information', { underline: true });
-    doc.moveDown(0.3);
+    doc.moveDown(0.2); // Reduced spacing
     doc.fontSize(10);
 
     const statusInfo = [
@@ -141,7 +141,7 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       doc.font('Helvetica').text(` ${value || 'N/A'}`);
     });
 
-    doc.moveDown(0.5);
+    doc.moveDown(0.3); // Reduced spacing
 
     // Zoho Integration Information
     if (expense.zoho_entity || expense.zoho_expense_id) {
@@ -169,34 +169,39 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
         doc.font('Helvetica').text(` ${expense.zoho_expense_id}`);
       }
 
-      doc.moveDown(0.5);
+      doc.moveDown(0.3); // Reduced spacing
     }
 
     // Event Information
     if (expense.event_name) {
       doc.fontSize(12).font('Helvetica-Bold').text('Event Information', { underline: true });
-      doc.moveDown(0.3);
+      doc.moveDown(0.2); // Reduced spacing
       doc.fontSize(10);
       doc.font('Helvetica-Bold').text('Event Name:', { continued: true });
       doc.font('Helvetica').text(` ${expense.event_name}`);
-      doc.moveDown(0.5);
+      doc.moveDown(0.3); // Reduced spacing
     }
 
     // User Information
     if (expense.user_name) {
       doc.fontSize(12).font('Helvetica-Bold').text('User Information', { underline: true });
-      doc.moveDown(0.3);
+      doc.moveDown(0.2); // Reduced spacing
       doc.fontSize(10);
       doc.font('Helvetica-Bold').text('Submitted By:', { continued: true });
       doc.font('Helvetica').text(` ${expense.user_name}`);
-      doc.moveDown(0.5);
+      doc.moveDown(0.3); // Reduced spacing
     }
 
     // Receipt Image Section
     if (expense.receipt_url) {
-      doc.addPage();
-      doc.fontSize(14).font('Helvetica-Bold').text('Receipt', { underline: true });
-      doc.moveDown(0.5);
+      // Check available space before adding receipt section
+      const currentY = doc.y;
+      const pageHeight = doc.page.height;
+      const bottomMargin = doc.page.margins.bottom;
+      const availableSpace = pageHeight - currentY - bottomMargin - 50; // Reserve 50 points for footer
+      
+      doc.fontSize(13).font('Helvetica-Bold').text('Receipt', { underline: true }); // Reduced from 14
+      doc.moveDown(0.3); // Reduced spacing
 
       try {
         // Get the file path from the receipt URL
@@ -220,10 +225,16 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
 
           if (isImage) {
             // For images, embed them in the PDF
-            // Get image dimensions to fit on page
+            // Get image dimensions to fit on remaining page space
             const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+            const currentY = doc.y;
+            const pageHeight = doc.page.height;
+            const bottomMargin = doc.page.margins.bottom;
+            const availableHeight = pageHeight - currentY - bottomMargin - 30; // Reserve 30 points for footer
+            
+            // Use available space, but cap at reasonable max height
             const maxImageWidth = pageWidth;
-            const maxImageHeight = 400; // Max height for receipt image
+            const maxImageHeight = Math.min(availableHeight, 300); // Reduced from 400 to fit on one page
 
             // Add image to PDF
             doc.image(fullPath, {

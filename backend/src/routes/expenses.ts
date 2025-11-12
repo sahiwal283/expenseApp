@@ -98,12 +98,26 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
     // Ensure no compression or other transformations
     res.removeHeader('Content-Encoding');
     
+    // Log all headers before sending
     console.log(`[ExpensePDF] Headers set:`);
     console.log(`  - Content-Type: ${res.getHeader('Content-Type')}`);
     console.log(`  - Content-Disposition: ${res.getHeader('Content-Disposition')}`);
     console.log(`  - Content-Length: ${contentLength}`);
     console.log(`  - X-Content-Type-Options: ${res.getHeader('X-Content-Type-Options')}`);
     console.log(`  - X-Download-Options: ${res.getHeader('X-Download-Options')}`);
+    console.log(`  - Cache-Control: ${res.getHeader('Cache-Control')}`);
+    console.log(`  - Pragma: ${res.getHeader('Pragma')}`);
+    console.log(`  - Expires: ${res.getHeader('Expires')}`);
+    
+    // Log request details for debugging
+    console.log(`[ExpensePDF] Request details:`);
+    console.log(`  - Method: ${req.method}`);
+    console.log(`  - URL: ${req.url}`);
+    console.log(`  - Original URL: ${req.originalUrl}`);
+    console.log(`  - Protocol: ${req.protocol}`);
+    console.log(`  - Secure: ${req.secure}`);
+    console.log(`  - Headers: ${JSON.stringify(req.headers, null, 2)}`);
+    
     console.log(`[ExpensePDF] Sending PDF buffer (${pdfBuffer.length} bytes)...`);
     
     // Register event listeners BEFORE sending response
