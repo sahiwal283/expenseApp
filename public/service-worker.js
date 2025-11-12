@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.9 - Receipt Update API Implementation
+// Version: 1.28.10 - PDF Download Endpoint Improvements
 // Date: November 4, 2025
 //
 // New Features:
