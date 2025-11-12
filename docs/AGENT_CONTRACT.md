@@ -1072,7 +1072,7 @@ When completing work, agents MUST provide:
 | Reviewer Agent | January 29, 2025 | Contract read and acknowledged. Committed to code review, quality assurance, and gatekeeper role before Testing Agent. |
 | Testing Agent | November 12, 2025 | Contract read and acknowledged. Committed to testing only reviewed code, managing test file clutter, and proper handoff protocols (DevOps on pass, escalation on fail). |
 | Testing Agent | November 12, 2025 | Contract read, understood, and signed. Ready to begin testing work. Committed to: testing only reviewed/approved code, writing comprehensive tests (unit/integration/E2E), managing test file clutter, proper handoff to DevOps on pass or escalation on fail, and following all testing guidelines in TESTING_STRATEGY.md. |
-| | | |
+| Testing Agent | January 29, 2025 | Contract read, understood, and signed. Committed to: testing only reviewed/approved code, writing comprehensive tests (unit/integration/E2E), managing test file clutter, proper handoff to DevOps on pass or escalation on fail, following TESTING_STRATEGY.md guidelines, using shared test utilities, consolidating similar tests, and maintaining high test coverage. Ready to begin testing work immediately. |
 | | | |
 | | | |
 | | | |
