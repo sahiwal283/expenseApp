@@ -24,7 +24,10 @@ function normalizeEndpoint(path: string): string {
  */
 export const apiRequestLogger = (req: AuthRequest, res: Response, next: NextFunction) => {
   // Skip logging for PDF endpoints and other binary responses
-  if (req.path.endsWith('/pdf') || req.path.endsWith('.pdf')) {
+  // Check both path and originalUrl to catch PDF endpoints regardless of route mounting
+  const pathToCheck = req.path || req.originalUrl || '';
+  if (pathToCheck.endsWith('/pdf') || pathToCheck.endsWith('.pdf') || pathToCheck.includes('/pdf')) {
+    console.log(`[APIRequestLogger] Skipping PDF endpoint: ${pathToCheck}`);
     return next();
   }
 
