@@ -1315,6 +1315,7 @@ type(scope): description
 - `GET /api/expenses` - Get expenses (with filters)
 - `POST /api/expenses` - Create expense
 - `PUT /api/expenses/:id` - Update expense
+- `PUT /api/expenses/:id/receipt` - Update expense receipt (v1.28.9)
 - `DELETE /api/expenses/:id` - Delete expense
 
 **Events:**
@@ -1329,6 +1330,10 @@ type(scope): description
 - `POST /api/checklist/:id/flights` - Add flight
 - `POST /api/checklist/:id/hotels` - Add hotel
 - `POST /api/checklist/:id/car-rentals` - Add car rental
+- `GET /api/checklist/user/:eventId` - Get user checklist for event (v1.28.3)
+- `POST /api/checklist/user/:eventId/items` - Create user checklist item (v1.28.3)
+- `PUT /api/checklist/user/:eventId/items/:id` - Update user checklist item (v1.28.3)
+- `DELETE /api/checklist/user/:eventId/items/:id` - Delete user checklist item (v1.28.3)
 
 **OCR:**
 - `POST /api/ocr/v2/process` - Process receipt with OCR
