@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.16 - PDF Layout Optimization and Browser Compatibility Note
+// Version: 1.29.0 - Production Release
 // Date: November 4, 2025
 //
 // New Features:
