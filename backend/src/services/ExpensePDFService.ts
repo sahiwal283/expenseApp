@@ -21,10 +21,10 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     console.log('[ExpensePDF] Starting PDF generation for expense:', expense.id);
     const startTime = Date.now();
     
-    // Create PDF document
+    // Create PDF document with reduced margins for more space
     const doc = new PDFDocument({
       size: 'LETTER',
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      margins: { top: 30, bottom: 30, left: 40, right: 40 } // Reduced margins for more content space
     });
 
     const buffers: Buffer[] = [];
@@ -75,18 +75,18 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       reject(error);
     });
 
-    // Header
-    doc.fontSize(18).font('Helvetica-Bold').text('Expense Details', { align: 'center' }); // Reduced from 20
+    // Header - compact
+    doc.fontSize(16).font('Helvetica-Bold').text('Expense Details', { align: 'center' }); // Reduced from 18
+    doc.moveDown(0.2); // Minimal spacing
+    doc.fontSize(8).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' }); // Reduced from 9
     doc.moveDown(0.3); // Reduced spacing
-    doc.fontSize(9).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' }); // Reduced from 10
-    doc.moveDown(0.5); // Reduced spacing
 
-    // Expense Details Section
-    doc.fontSize(13).font('Helvetica-Bold').text('Expense Details', { underline: true }); // Reduced from 14
-    doc.moveDown(0.3); // Reduced spacing
-    doc.fontSize(10).font('Helvetica');
+    // Expense Details Section - compact layout
+    doc.fontSize(11).font('Helvetica-Bold').text('Expense Details', { underline: true }); // Reduced from 13
+    doc.moveDown(0.15); // Minimal spacing
+    doc.fontSize(9).font('Helvetica'); // Reduced from 10
 
-    // Basic Information
+    // Basic Information - compact
     const basicInfo = [
       { label: 'Date:', value: new Date(expense.date).toLocaleDateString() },
       { label: 'Amount:', value: `$${parseFloat(String(expense.amount)).toFixed(2)}` },
@@ -99,33 +99,33 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       doc.font('Helvetica').text(` ${value || 'N/A'}`);
     });
 
-    doc.moveDown(0.5);
+    doc.moveDown(0.2); // Reduced spacing
 
-    // Additional Information
+    // Additional Information - compact
     if (expense.description) {
       doc.font('Helvetica-Bold').text('Description:', { continued: true });
       doc.font('Helvetica').text(` ${expense.description}`);
-      doc.moveDown(0.3);
+      doc.moveDown(0.15); // Reduced spacing
     }
 
     if (expense.location) {
       doc.font('Helvetica-Bold').text('Location:', { continued: true });
       doc.font('Helvetica').text(` ${expense.location}`);
-      doc.moveDown(0.3);
+      doc.moveDown(0.15); // Reduced spacing
     }
 
     if (expense.card_used) {
       doc.font('Helvetica-Bold').text('Card Used:', { continued: true });
       doc.font('Helvetica').text(` ${expense.card_used}`);
-      doc.moveDown(0.3);
+      doc.moveDown(0.15); // Reduced spacing
     }
 
-    doc.moveDown(0.3); // Reduced spacing
-
-    // Status Information
-    doc.fontSize(12).font('Helvetica-Bold').text('Status Information', { underline: true });
     doc.moveDown(0.2); // Reduced spacing
-    doc.fontSize(10);
+
+    // Status Information - compact
+    doc.fontSize(10).font('Helvetica-Bold').text('Status Information', { underline: true }); // Reduced from 12
+    doc.moveDown(0.1); // Minimal spacing
+    doc.fontSize(9); // Reduced from 10
 
     const statusInfo = [
       { label: 'Approval Status:', value: expense.status },
@@ -141,12 +141,12 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       doc.font('Helvetica').text(` ${value || 'N/A'}`);
     });
 
-    doc.moveDown(0.3); // Reduced spacing
+    doc.moveDown(0.2); // Reduced spacing
 
-    // Zoho Integration Information - Always show this section
-    doc.fontSize(12).font('Helvetica-Bold').text('Zoho Integration', { underline: true });
-    doc.moveDown(0.3);
-    doc.fontSize(10);
+    // Zoho Integration Information - Always show this section - compact
+    doc.fontSize(10).font('Helvetica-Bold').text('Zoho Integration', { underline: true }); // Reduced from 12
+    doc.moveDown(0.1); // Minimal spacing
+    doc.fontSize(9); // Reduced from 10
 
     // Zoho Push Status
     let zohoPushStatus = 'Not Pushed';
@@ -171,38 +171,38 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       doc.font('Helvetica').text(` ${expense.zoho_expense_id}`);
     }
 
-    doc.moveDown(0.3); // Reduced spacing
+    doc.moveDown(0.2); // Reduced spacing
 
-    // Event Information
+    // Event Information - compact
     if (expense.event_name) {
-      doc.fontSize(12).font('Helvetica-Bold').text('Event Information', { underline: true });
-      doc.moveDown(0.2); // Reduced spacing
-      doc.fontSize(10);
+      doc.fontSize(10).font('Helvetica-Bold').text('Event Information', { underline: true }); // Reduced from 12
+      doc.moveDown(0.1); // Minimal spacing
+      doc.fontSize(9); // Reduced from 10
       doc.font('Helvetica-Bold').text('Event Name:', { continued: true });
       doc.font('Helvetica').text(` ${expense.event_name}`);
-      doc.moveDown(0.3); // Reduced spacing
+      doc.moveDown(0.2); // Reduced spacing
     }
 
-    // User Information
+    // User Information - compact
     if (expense.user_name) {
-      doc.fontSize(12).font('Helvetica-Bold').text('User Information', { underline: true });
-      doc.moveDown(0.2); // Reduced spacing
-      doc.fontSize(10);
+      doc.fontSize(10).font('Helvetica-Bold').text('User Information', { underline: true }); // Reduced from 12
+      doc.moveDown(0.1); // Minimal spacing
+      doc.fontSize(9); // Reduced from 10
       doc.font('Helvetica-Bold').text('Submitted By:', { continued: true });
       doc.font('Helvetica').text(` ${expense.user_name}`);
-      doc.moveDown(0.3); // Reduced spacing
+      doc.moveDown(0.2); // Reduced spacing
     }
 
-    // Receipt Image Section
+    // Receipt Image Section - Optimized for larger image
     if (expense.receipt_url) {
       // Check available space before adding receipt section
       const currentY = doc.y;
       const pageHeight = doc.page.height;
       const bottomMargin = doc.page.margins.bottom;
-      const availableSpace = pageHeight - currentY - bottomMargin - 50; // Reserve 50 points for footer
+      const availableSpace = pageHeight - currentY - bottomMargin - 20; // Reserve only 20 points for footer
       
-      doc.fontSize(13).font('Helvetica-Bold').text('Receipt', { underline: true }); // Reduced from 14
-      doc.moveDown(0.3); // Reduced spacing
+      doc.fontSize(11).font('Helvetica-Bold').text('Receipt', { underline: true }); // Reduced from 13
+      doc.moveDown(0.15); // Minimal spacing
 
       try {
         // Get the file path from the receipt URL
@@ -225,19 +225,21 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
           const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif'].includes(ext);
 
           if (isImage) {
-            // For images, embed them in the PDF
-            // Get image dimensions to fit on remaining page space
+            // For images, embed them in the PDF - use maximum available space
             const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-            const currentY = doc.y;
+            const currentYAfterHeader = doc.y;
             const pageHeight = doc.page.height;
             const bottomMargin = doc.page.margins.bottom;
-            const availableHeight = pageHeight - currentY - bottomMargin - 30; // Reserve 30 points for footer
+            // Use almost all available space - reserve only 20 points for footer
+            const availableHeight = pageHeight - currentYAfterHeader - bottomMargin - 20;
             
-            // Use available space, but cap at reasonable max height
+            // Use maximum available space for image (no artificial cap)
             const maxImageWidth = pageWidth;
-            const maxImageHeight = Math.min(availableHeight, 300); // Reduced from 400 to fit on one page
+            const maxImageHeight = availableHeight; // Use all available height for larger image
 
-            // Add image to PDF
+            console.log(`[ExpensePDF] Receipt image sizing: width=${maxImageWidth.toFixed(0)}, height=${maxImageHeight.toFixed(0)}, available=${availableHeight.toFixed(0)}`);
+
+            // Add image to PDF - larger and more prominent
             doc.image(fullPath, {
               fit: [maxImageWidth, maxImageHeight],
               align: 'center'
@@ -279,10 +281,9 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
       }
     }
 
-    // Footer - add after content to prevent blank pages
-    // Use normal text flow instead of fixed position to avoid page breaks
-    doc.moveDown(1);
-    doc.fontSize(8).font('Helvetica').text(
+    // Footer - compact, minimal spacing
+    doc.moveDown(0.5); // Reduced spacing
+    doc.fontSize(7).font('Helvetica').text( // Reduced from 8
       `Generated by Expense Management System`,
       { align: 'center' }
     );
