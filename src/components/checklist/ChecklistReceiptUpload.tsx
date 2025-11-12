@@ -23,7 +23,7 @@ const SECTION_CATEGORIES = {
 };
 
 export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
-  user,
+  user: _user, // Reserved for future use (e.g., user-specific settings)
   event,
   section,
   attendeeName,
@@ -32,7 +32,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [ocrData, setOcrData] = useState<any>(null);
+  const [_ocrData, setOcrData] = useState<any>(null); // Reserved for future use (e.g., OCR correction tracking)
   const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
   const [formData, setFormData] = useState({
     merchant: '',
@@ -58,7 +58,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     (async () => {
       if (api.USE_SERVER) {
         try {
-          const settings = await api.getSettings();
+          const settings = await api.getSettings() as { cardOptions?: Array<{name: string; lastFour: string; entity?: string | null}> };
           setCardOptions(settings.cardOptions || []);
         } catch (error) {
           console.error('[ChecklistReceiptUpload] Failed to load card options:', error);

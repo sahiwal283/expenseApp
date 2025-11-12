@@ -4,7 +4,7 @@
  * Modal for viewing multiple receipts in a gallery/carousel format.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Expense } from '../../App';
 
@@ -20,6 +20,8 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
   onClose
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Use ref to store latest receipts length to avoid closure issues
+  const receiptsLengthRef = useRef(receipts.length);
 
   // Navigation handlers (using useCallback to avoid stale closures)
   const handlePrevious = useCallback(() => {
@@ -43,9 +45,19 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
-        handlePrevious();
+        // Use functional form of setState to avoid closure issues
+        setCurrentIndex((prev) => {
+          // Get current receipts length from closure-safe source
+          const receiptsLength = receipts.length;
+          return prev === 0 ? receiptsLength - 1 : prev - 1;
+        });
       } else if (e.key === 'ArrowRight') {
-        handleNext();
+        // Use functional form of setState to avoid closure issues
+        setCurrentIndex((prev) => {
+          // Get current receipts length from closure-safe source
+          const receiptsLength = receipts.length;
+          return prev === receiptsLength - 1 ? 0 : prev + 1;
+        });
       } else if (e.key === 'Escape') {
         onClose();
       }
@@ -53,7 +65,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, handlePrevious, handleNext]);
+  }, [isOpen, onClose, receipts.length]); // Only depend on receipts.length, not the handlers
 
   if (!isOpen || receipts.length === 0) return null;
 
