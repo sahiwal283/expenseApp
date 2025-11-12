@@ -7,6 +7,293 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.16] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Optimization & Diagnostics
+
+### Fixed
+- **PDF Download Failures** - Fixed PDF download reliability issues
+  - Skip `apiRequestLogger` for PDF endpoints to prevent binary data corruption
+  - Improved binary handling for PDF responses
+  - Added comprehensive logging for PDF generation debugging
+  - Fixed "Insecure download blocked" warning by adding security headers
+  - Removed blank third page from expense PDF generation
+- **PDF Layout Issues** - Optimized PDF layout and content
+  - Enlarged receipt image for better visibility
+  - Reduced white space for more compact layout
+  - Consolidated PDF to single page (removed unnecessary pages)
+  - Always show Zoho Integration section in PDF
+  - Display 'Unassigned' for unassigned expenses in PDF
+- **Login/Data Loading Diagnostics** - Added comprehensive logging and diagnostics
+  - Enhanced error logging for login failures
+  - Improved diagnostics for data loading issues
+  - Better error messages for troubleshooting
+
+### Added
+- **PDF Content Updates** - Enhanced PDF content and labels
+  - Updated expense PDF content structure
+  - Improved label clarity and organization
+  - Better formatting for expense details
+- **Browser Compatibility Note** - Added documentation for browser compatibility
+- **CORS Documentation** - Added note about CORS and relative API paths
+
+### Changed
+- **PDF Generation** - Improved PDF generation reliability
+  - Better Promise handling for PDF generation
+  - Enhanced download debugging capabilities
+  - Improved PDF endpoint detection in `apiRequestLogger`
+
+### Technical Details
+- **Security Headers**: Added proper headers to fix browser download warnings
+- **Binary Handling**: Improved handling of binary PDF data
+- **Logging**: Enhanced logging for PDF generation and download processes
+- **Backward Compatibility**: All changes maintain existing API contracts
+
+### Versions
+- Frontend: v1.28.16
+- Backend: v1.28.16
+- Git Branch: `v1.28.0`
+- Status: ✅ Ready for production deployment
+
+### Migration Notes
+- No database migrations required
+- No breaking API changes
+- Existing clients work without modification
+- PDF downloads now more reliable across browsers
+
+---
+
+## [1.28.15] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Single Page Consolidation
+
+### Fixed
+- **PDF Blank Pages** - Removed blank third page from expense PDF generation
+- **PDF Security Headers** - Added security headers to fix 'Insecure download blocked' warning
+
+### Changed
+- **PDF Layout** - Consolidated PDF to single page
+  - Removed unnecessary page breaks
+  - More compact and efficient PDF generation
+  - Enhanced download debugging capabilities
+
+---
+
+## [1.28.14] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Content Updates
+
+### Changed
+- **PDF Content** - Updated expense PDF content and labels
+  - Improved content structure
+  - Better label organization
+  - Enhanced formatting
+
+---
+
+## [1.28.13] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Security & Blank Page Fix
+
+### Fixed
+- **PDF Blank Page** - Removed blank third page from expense PDF generation
+- **Security Headers** - Added security headers to fix 'Insecure download blocked' warning for PDFs
+
+---
+
+## [1.28.12] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Download Failures Fix
+
+### Fixed
+- **PDF Download Failures** - Fixed PDF download reliability
+  - Skip `apiRequestLogger` for PDFs to prevent binary data corruption
+  - Improved binary handling for PDF responses
+  - Enhanced PDF endpoint detection in `apiRequestLogger`
+
+---
+
+## [1.28.11] - 2025-11-12 (Sandbox) ✨ MINOR - Checklist Auto-Check Service
+
+### Added
+- **Auto-Check Checklist Items** - Automatic checklist item completion when receipts are uploaded
+  - When a receipt is uploaded for a checklist item (hotel, car rental, etc.), the item is automatically marked as complete
+  - Reduces manual checklist management
+  - Improves workflow efficiency
+
+---
+
+## [1.28.10] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Download Improvements
+
+### Fixed
+- **PDF Download Reliability** - Improved PDF download endpoint
+  - Enhanced download reliability
+  - Added comprehensive logging for debugging
+
+---
+
+## [1.28.9] - 2025-11-12 (Sandbox) ✨ MINOR - Receipt Update API
+
+### Added
+- **Receipt Update API** - New endpoint to update expense receipt with change tracking
+  - `PUT /api/expenses/:id/receipt` - Update expense receipt
+  - Tracks changes to receipt uploads
+  - Maintains audit trail for receipt updates
+
+---
+
+## [1.28.8] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Generation Fix
+
+### Fixed
+- **PDF Generation** - Fixed expense PDF download to return valid PDF files
+  - Improved Promise handling for PDF generation
+  - Better error handling for PDF creation
+
+---
+
+## [1.28.7] - 2025-11-12 (Sandbox) 🔧 PATCH - Booth Map Modal Fix
+
+### Fixed
+- **Booth Map Modal** - Fixed booth map modal functionality
+  - Improved modal display and interaction
+  - Better error handling
+
+---
+
+## [1.28.6] - 2025-11-12 (Sandbox) 🔧 PATCH - Checklist Loading Fix
+
+### Fixed
+- **Checklist Loading** - Fixed checklist loading issues
+  - Improved loading reliability
+  - Better error handling
+
+---
+
+## [1.28.5] - 2025-11-12 (Sandbox) 🔧 PATCH - Event Dropdown Filter Removal
+
+### Changed
+- **Event Dropdown** - Removed filter buttons from event dropdown
+  - Simplified UI
+  - Cleaner interface
+
+---
+
+## [1.28.4] - 2025-11-12 (Sandbox) 🔧 PATCH - Schema Fix
+
+### Fixed
+- **Schema Mismatch** - Fixed schema mismatch in checklist items
+  - Changed from `item_id` to `item_type` for proper schema alignment
+  - Updated repository tests to use `dbQuery` mock correctly
+  - Added comprehensive tests for schema fix
+
+---
+
+## [1.28.3] - 2025-11-12 (Sandbox) ✨ MINOR - User Checklist API & Booth Map Display
+
+### Added
+- **User Checklist API Endpoints** - New API endpoints for user-facing checklists
+  - `GET /api/checklist/user/:eventId` - Get user checklist for event
+  - `POST /api/checklist/user/:eventId/items` - Create user checklist item
+  - `PUT /api/checklist/user/:eventId/items/:id` - Update user checklist item
+  - `DELETE /api/checklist/user/:eventId/items/:id` - Delete user checklist item
+- **User Checklist Items Table** - New database table for user-facing checklists
+  - `user_checklist_items` table added
+  - Supports user-specific checklist management
+
+### Fixed
+- **Booth Map Display** - Fixed booth map display in checklist
+  - Improved map rendering
+  - Better error handling
+
+### Testing
+- **Comprehensive Tests** - Added comprehensive tests for booth map display
+  - EventDetailsModal tests
+  - ChecklistSummary tests updated for booth map move
+
+---
+
+## [1.28.2] - 2025-11-12 (Sandbox) 🔧 PATCH - TypeScript Receipt Filtering Fix
+
+### Fixed
+- **Receipt Filtering** - Fixed TypeScript issues in receipt filtering
+  - Improved type safety
+  - Better error handling
+
+### Testing
+- **Receipt Filtering Tests** - Added comprehensive receipt filtering tests
+- **Multi-Receipt Viewer Tests** - Added comprehensive multi-receipt viewer modal tests
+
+---
+
+## [1.28.1] - 2025-11-11 (Sandbox) 🔧 PATCH - Booth Map Upload Fix
+
+### Fixed
+- **Booth Map Upload** - Fixed booth map upload functionality
+  - Improved upload reliability
+  - Better error handling
+
+---
+
+## [1.28.0] - 2025-11-10 (Sandbox) 🏗️ MAJOR - Full Codebase Refactor & Agent System
+
+### Major Changes
+- **Full Codebase Refactor** - Comprehensive refactoring across entire codebase
+  - Split large files into smaller, focused modules
+  - Separated concerns (controllers, services, repositories)
+  - Extracted reusable patterns (hooks, utilities, shared components)
+  - Removed legacy artifacts
+  - Improved code reusability
+
+### Added
+- **Agent Contract System** - Comprehensive agent coordination system
+  - `docs/AGENT_CONTRACT.md` - Defines all agent roles, permissions, scope, and responsibilities
+  - 8 agent roles: Manager, Docs, Backend, Frontend, Reviewer, Testing, DevOps, Database
+  - Clear handoff protocols and communication guidelines
+  - Agent signature system for accountability
+- **Environment Separation Guide** - Prevents cross-environment misconfigurations
+  - `docs/ENVIRONMENT_SEPARATION.md` - Comprehensive guide for production vs sandbox
+  - Build-time validation script (`scripts/validate-env.js`)
+  - Prevents sandbox builds with production URLs
+  - Prevents production builds with sandbox URLs
+  - Deployment checklists and troubleshooting guides
+- **Build-Time Validation** - Automatic environment validation before builds
+  - `prebuild:sandbox` hook validates sandbox configuration
+  - `prebuild:production` hook validates production configuration
+  - Prevents misconfigurations that could cause production failures
+
+### Architecture Changes
+- **Repository Pattern** - Implemented repository pattern in backend
+  - Routes → Services → Repositories
+  - Centralized data access logic
+  - Improved testability
+- **Component Modularization** - Frontend component organization
+  - Feature-based component structure
+  - Extracted reusable hooks
+  - Better code organization
+- **Helper Function Extraction** - Reduced complexity in service files
+  - Extracted 13 helper functions from DevDashboardService
+  - Created `DevDashboardService.helpers.ts`
+  - Improved maintainability and testability
+
+### Files Refactored
+**Backend:**
+- `devDashboard.ts`: 1,058 lines → Split into service layer
+- `expenses.ts`: 980 lines → Split into ExpenseService + ExpenseRepository
+- `checklist.ts`: 596 lines → Maintained with Zod validation
+- `ocrV2.ts`: 437 lines → Maintained with OCR service architecture
+
+**Frontend:**
+- `EventSetup.tsx`: 1,062 lines → Split into hooks + sub-components
+- `ExpenseSubmission.tsx`: 915 lines → Split into ExpenseSubmission/ + hooks/
+- `AdminSettings.tsx`: 745 lines → Split into AdminSettings/ sub-components
+- `ReceiptUpload.tsx`: 719 lines → Split into ReceiptUpload/ sub-components
+- `BoothSection.tsx`: 699 lines → Split into BoothSection/ sub-components
+- `UserManagement.tsx`: 641 lines → Split into UserManagement/ sub-components
+
+### Versions
+- Frontend: v1.28.0
+- Backend: v1.28.0
+- Git Branch: `v1.28.0`
+- Status: ✅ Refactor Complete - Architecture Modernized
+
+### Migration Notes
+- No database migrations required
+- No breaking API changes
+- Existing clients work without modification
+- Improved code organization and maintainability
+
+---
+
 ## [1.27.15] - 2025-11-05 (Sandbox) 🔧 PATCH - Checklist Validation & Type Safety
 
 ### Fixed

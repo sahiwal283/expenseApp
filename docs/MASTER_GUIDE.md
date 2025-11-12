@@ -1,7 +1,7 @@
 # 🤖 MASTER GUIDE - ExpenseApp
 
-**Last Updated:** November 10, 2025 (17:00 PST)  
-**Status:** ✅ Production Active | 🔬 Sandbox Trade Show Checklist Feature (v1.28.0)
+**Last Updated:** November 12, 2025  
+**Status:** ✅ Production Active | 🔬 Sandbox v1.28.16 - PDF Optimization & Diagnostics
 
 **Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on ExpenseApp. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
 
@@ -43,11 +43,11 @@
 - **Last Updated:** October 16, 2025
 
 **Sandbox (Container 203)**
-- **Frontend:** v1.28.0 (Container 203)
-- **Backend:** v1.28.0 (Container 203)
+- **Frontend:** v1.28.16 (Container 203)
+- **Backend:** v1.28.16 (Container 203)
 - **Branch:** `v1.28.0`
-- **Status:** 🔬 Trade Show Checklist Feature + Full Codebase Refactor
-- **Last Updated:** November 10, 2025
+- **Status:** 🔬 PDF Optimization, Checklist Features, Full Codebase Refactor
+- **Last Updated:** November 12, 2025
 
 ### Container Mapping (MEMORIZE THIS!)
 - **Container 201** = **PRODUCTION Backend** (Live users, real financial data)
