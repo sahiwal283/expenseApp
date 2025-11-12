@@ -143,34 +143,35 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
 
     doc.moveDown(0.3); // Reduced spacing
 
-    // Zoho Integration Information
-    if (expense.zoho_entity || expense.zoho_expense_id) {
-      doc.fontSize(12).font('Helvetica-Bold').text('Zoho Integration', { underline: true });
-      doc.moveDown(0.3);
-      doc.fontSize(10);
+    // Zoho Integration Information - Always show this section
+    doc.fontSize(12).font('Helvetica-Bold').text('Zoho Integration', { underline: true });
+    doc.moveDown(0.3);
+    doc.fontSize(10);
 
-      // Zoho Push Status
-      let zohoPushStatus = 'Not Pushed';
-      if (expense.zoho_expense_id) {
-        zohoPushStatus = 'Pushed';
-      } else if (expense.zoho_entity) {
-        zohoPushStatus = 'Not Pushed';
-      }
-      doc.font('Helvetica-Bold').text('Zoho Push Status:', { continued: true });
-      doc.font('Helvetica').text(` ${zohoPushStatus}`);
-
-      if (expense.zoho_entity) {
-        doc.font('Helvetica-Bold').text('Zoho Entity:', { continued: true });
-        doc.font('Helvetica').text(` ${expense.zoho_entity}`);
-      }
-
-      if (expense.zoho_expense_id) {
-        doc.font('Helvetica-Bold').text('Zoho Expense ID:', { continued: true });
-        doc.font('Helvetica').text(` ${expense.zoho_expense_id}`);
-      }
-
-      doc.moveDown(0.3); // Reduced spacing
+    // Zoho Push Status
+    let zohoPushStatus = 'Not Pushed';
+    if (expense.zoho_expense_id) {
+      zohoPushStatus = 'Pushed';
+    } else if (expense.zoho_entity) {
+      zohoPushStatus = 'Not Pushed';
     }
+    doc.font('Helvetica-Bold').text('Zoho Push Status:', { continued: true });
+    doc.font('Helvetica').text(` ${zohoPushStatus}`);
+
+    // Zoho Entity - Always show, display "Unassigned" if not assigned
+    const zohoEntity = expense.zoho_entity && expense.zoho_entity.trim() !== '' 
+      ? expense.zoho_entity 
+      : 'Unassigned';
+    doc.font('Helvetica-Bold').text('Zoho Entity:', { continued: true });
+    doc.font('Helvetica').text(` ${zohoEntity}`);
+
+    // Zoho Expense ID - Only show if it exists
+    if (expense.zoho_expense_id) {
+      doc.font('Helvetica-Bold').text('Zoho Expense ID:', { continued: true });
+      doc.font('Helvetica').text(` ${expense.zoho_expense_id}`);
+    }
+
+    doc.moveDown(0.3); // Reduced spacing
 
     // Event Information
     if (expense.event_name) {
