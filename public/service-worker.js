@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.13 - PDF Security Headers and Blank Page Fix
+// Version: 1.28.14 - PDF Content and Labels Update
 // Date: November 4, 2025
 //
 // New Features:
