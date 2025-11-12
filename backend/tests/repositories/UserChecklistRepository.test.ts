@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { userChecklistRepository } from '../../src/database/repositories/UserChecklistRepository';
-import { pool } from '../../src/config/database';
+import { query as dbQuery } from '../../src/config/database';
 import { NotFoundError } from '../../src/utils/errors';
 
 /**
@@ -16,7 +16,8 @@ import { NotFoundError } from '../../src/utils/errors';
 vi.mock('../../src/config/database', () => ({
   pool: {
     query: vi.fn()
-  }
+  },
+  query: vi.fn() // Mock dbQuery function
 }));
 
 describe('UserChecklistRepository - itemType Parameter Tests', () => {
@@ -39,7 +40,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -52,7 +53,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
 
       expect(result).toBeDefined();
       expect(result?.item_type).toBe('guidelines');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $3'),
         [userId, eventId, 'guidelines']
       );
@@ -69,7 +70,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -82,7 +83,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
 
       expect(result).toBeDefined();
       expect(result?.item_type).toBe('packing_list');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $3'),
         [userId, eventId, 'packing_list']
       );
@@ -99,7 +100,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -112,7 +113,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
 
       expect(result).toBeDefined();
       expect(result?.item_type).toBe('custom_item_123');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $3'),
         [userId, eventId, 'custom_item_123']
       );
@@ -130,7 +131,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -144,7 +145,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       expect(result).toBeDefined();
       expect(result?.item_type).toBe(specialItemType);
       // Verify special characters are passed correctly to database
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $3'),
         [userId, eventId, specialItemType]
       );
@@ -162,7 +163,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -176,14 +177,14 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       expect(result).toBeDefined();
       expect(result?.item_type).toBe(unicodeItemType);
       // Verify unicode characters are passed correctly to database
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $3'),
         [userId, eventId, unicodeItemType]
       );
     });
 
     it('should return null if item not found', async () => {
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [],
         rowCount: 0
       } as any);
@@ -210,7 +211,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -223,7 +224,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       });
 
       expect(result.item_type).toBe('guidelines');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type'),
         [userId, eventId, 'guidelines', true]
       );
@@ -240,7 +241,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -253,7 +254,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       });
 
       expect(result.item_type).toBe('packing_list');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type'),
         [userId, eventId, 'packing_list', false]
       );
@@ -270,7 +271,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -283,7 +284,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       });
 
       expect(result.item_type).toBe('custom_item_123');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('ON CONFLICT (user_id, event_id, item_type)'),
         [userId, eventId, 'custom_item_123', true]
       );
@@ -305,7 +306,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [updatedItem],
         rowCount: 1
       } as any);
@@ -319,7 +320,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
 
       expect(result.completed).toBe(true);
       // Verify ON CONFLICT clause handles item_type correctly
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('ON CONFLICT (user_id, event_id, item_type)'),
         [userId, eventId, 'guidelines', true]
       );
@@ -338,7 +339,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
         updated_at: new Date().toISOString()
       };
 
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [mockItem],
         rowCount: 1
       } as any);
@@ -351,14 +352,14 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       );
 
       expect(result.item_type).toBe('guidelines');
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $4'),
         [true, userId, eventId, 'guidelines']
       );
     });
 
     it('should throw NotFoundError if item does not exist', async () => {
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [],
         rowCount: 0
       } as any);
@@ -371,7 +372,7 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
 
   describe('deleteItem', () => {
     it('should delete item with specific itemType', async () => {
-      vi.mocked(pool.query).mockResolvedValue({
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [],
         rowCount: 1
       } as any);
@@ -383,25 +384,32 @@ describe('UserChecklistRepository - itemType Parameter Tests', () => {
       );
 
       expect(result).toBe(true);
-      expect(pool.query).toHaveBeenCalledWith(
+      expect(dbQuery).toHaveBeenCalledWith(
         expect.stringContaining('item_type = $3'),
         [userId, eventId, 'guidelines']
       );
     });
 
     it('should return false if item does not exist', async () => {
-      vi.mocked(pool.query).mockResolvedValue({
+      // Mock successful query with 0 rows (item doesn't exist)
+      vi.mocked(dbQuery).mockResolvedValue({
         rows: [],
         rowCount: 0
       } as any);
 
+      // BaseRepository.executeQuery wraps dbQuery, so we need to ensure it doesn't throw
       const result = await userChecklistRepository.deleteItem(
         userId,
         eventId,
         'nonexistent'
       );
 
+      // deleteItem returns true if rowCount > 0, false otherwise
       expect(result).toBe(false);
+      expect(dbQuery).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE'),
+        [userId, eventId, 'nonexistent']
+      );
     });
   });
 });
