@@ -1068,7 +1068,8 @@ When completing work, agents MUST provide:
 | Backend Agent | January 15, 2025 | Contract read and acknowledged. Committed to backend development scope, repository pattern, no `any` types, JSDoc comments, and proper handoff to Reviewer Agent. |
 | DevOps Agent | November 12, 2025 | Contract read and acknowledged. Committed to deployment responsibilities, version management, infrastructure configuration, and verifying git is committed and pushed before ending sessions. |
 | Database Agent | November 12, 2025 | Contract read and acknowledged. Committed to database schema design, migration safety, data integrity, and proper handoff protocols. |
-| | | |
+| Reviewer Agent | January 29, 2025 | Contract read and acknowledged. Committed to code review, quality assurance, and gatekeeper role before Testing Agent. |
+| Testing Agent | November 12, 2025 | Contract read and acknowledged. Committed to testing only reviewed code, managing test file clutter, and proper handoff protocols (DevOps on pass, escalation on fail). |
 | | | |
 | | | |
 | | | |
