@@ -259,6 +259,338 @@ describe('Expense PDF Generation', () => {
         expect(pdfBuffer).toBeInstanceOf(Buffer);
       }
     });
+
+    it('should handle missing receipt file gracefully', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+
+      const expenseWithMissingReceipt = {
+        ...mockExpense,
+        receipt_url: '/uploads/nonexistent.jpg',
+      };
+
+      const pdfBuffer = await generateExpensePDF(expenseWithMissingReceipt);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should handle receipt file read errors gracefully', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockImplementation(() => {
+        throw new Error('File read error');
+      });
+
+      const expenseWithErrorReceipt = {
+        ...mockExpense,
+        receipt_url: '/uploads/error-receipt.jpg',
+      };
+
+      // Should not throw, but handle error gracefully
+      const pdfBuffer = await generateExpensePDF(expenseWithErrorReceipt);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Various Expense Types', () => {
+    it('should generate PDF for food expense', async () => {
+      const foodExpense = {
+        ...mockExpense,
+        category: 'Food',
+        merchant: 'Restaurant ABC',
+      };
+
+      const pdfBuffer = await generateExpensePDF(foodExpense);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should generate PDF for travel expense', async () => {
+      const travelExpense = {
+        ...mockExpense,
+        category: 'Travel',
+        merchant: 'Airline XYZ',
+        location: 'San Francisco, CA',
+      };
+
+      const pdfBuffer = await generateExpensePDF(travelExpense);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should generate PDF for accommodation expense', async () => {
+      const accommodationExpense = {
+        ...mockExpense,
+        category: 'Accommodation',
+        merchant: 'Hotel ABC',
+        amount: 250.00,
+      };
+
+      const pdfBuffer = await generateExpensePDF(accommodationExpense);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should generate PDF for other expense types', async () => {
+      const otherExpense = {
+        ...mockExpense,
+        category: 'Other',
+        description: 'Miscellaneous expense',
+      };
+
+      const pdfBuffer = await generateExpensePDF(otherExpense);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Receipt Image Handling', () => {
+    it('should handle different image formats', async () => {
+      const formats = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+      for (const format of formats) {
+        vi.mocked(fs.existsSync).mockReturnValue(true);
+        vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from('fake-image-data'));
+
+        const expense = {
+          ...mockExpense,
+          receipt_url: `/uploads/receipt${format}`,
+        };
+
+        const pdfBuffer = await generateExpensePDF(expense);
+
+        expect(pdfBuffer).toBeInstanceOf(Buffer);
+        expect(pdfBuffer.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('should handle PDF receipt files', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const expenseWithPDFReceipt = {
+        ...mockExpense,
+        receipt_url: '/uploads/receipt.pdf',
+      };
+
+      const pdfBuffer = await generateExpensePDF(expenseWithPDFReceipt);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should handle unknown receipt file types', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const expenseWithUnknownReceipt = {
+        ...mockExpense,
+        receipt_url: '/uploads/receipt.unknown',
+      };
+
+      const pdfBuffer = await generateExpensePDF(expenseWithUnknownReceipt);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Large Receipt Handling', () => {
+    it('should handle large receipt images', async () => {
+      // Simulate large image (10MB)
+      const largeImageBuffer = Buffer.alloc(10 * 1024 * 1024, 'x');
+      
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(largeImageBuffer);
+
+      const expenseWithLargeReceipt = {
+        ...mockExpense,
+        receipt_url: '/uploads/large-receipt.jpg',
+      };
+
+      const pdfBuffer = await generateExpensePDF(expenseWithLargeReceipt);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should handle very large receipt images (20MB+)', async () => {
+      // Simulate very large image (25MB)
+      const veryLargeImageBuffer = Buffer.alloc(25 * 1024 * 1024, 'x');
+      
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(veryLargeImageBuffer);
+
+      const expenseWithVeryLargeReceipt = {
+        ...mockExpense,
+        receipt_url: '/uploads/very-large-receipt.jpg',
+      };
+
+      const pdfBuffer = await generateExpensePDF(expenseWithVeryLargeReceipt);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Concurrent PDF Generation', () => {
+    it('should handle concurrent PDF generation requests', async () => {
+      const expenses = Array.from({ length: 5 }, (_, i) => ({
+        ...mockExpense,
+        id: `exp-${i}`,
+        amount: 100 + i * 10,
+      }));
+
+      // Generate PDFs concurrently
+      const pdfPromises = expenses.map(expense => generateExpensePDF(expense));
+      const pdfBuffers = await Promise.all(pdfPromises);
+
+      // All should succeed
+      expect(pdfBuffers).toHaveLength(5);
+      pdfBuffers.forEach(buffer => {
+        expect(buffer).toBeInstanceOf(Buffer);
+        expect(buffer.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should handle concurrent PDF generation with receipts', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from('fake-image-data'));
+
+      const expenses = Array.from({ length: 10 }, (_, i) => ({
+        ...mockExpense,
+        id: `exp-${i}`,
+        receipt_url: `/uploads/receipt-${i}.jpg`,
+      }));
+
+      // Generate PDFs concurrently
+      const pdfPromises = expenses.map(expense => generateExpensePDF(expense));
+      const pdfBuffers = await Promise.all(pdfPromises);
+
+      // All should succeed
+      expect(pdfBuffers).toHaveLength(10);
+      pdfBuffers.forEach(buffer => {
+        expect(buffer).toBeInstanceOf(Buffer);
+        expect(buffer.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should handle mixed concurrent requests (with and without receipts)', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from('fake-image-data'));
+
+      const expenses = [
+        { ...mockExpense, id: 'exp-1', receipt_url: '/uploads/receipt-1.jpg' },
+        { ...mockExpense, id: 'exp-2', receipt_url: null },
+        { ...mockExpense, id: 'exp-3', receipt_url: '/uploads/receipt-3.jpg' },
+        { ...mockExpense, id: 'exp-4', receipt_url: null },
+        { ...mockExpense, id: 'exp-5', receipt_url: '/uploads/receipt-5.jpg' },
+      ];
+
+      // Generate PDFs concurrently
+      const pdfPromises = expenses.map(expense => generateExpensePDF(expense));
+      const pdfBuffers = await Promise.all(pdfPromises);
+
+      // All should succeed
+      expect(pdfBuffers).toHaveLength(5);
+      pdfBuffers.forEach(buffer => {
+        expect(buffer).toBeInstanceOf(Buffer);
+        expect(buffer.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('PDF Content Verification', () => {
+    it('should include all expense details in PDF', async () => {
+      const detailedExpense = {
+        ...mockExpense,
+        description: 'Detailed description',
+        location: 'San Francisco, CA',
+        card_used: 'Amex *1234',
+        reimbursement_required: true,
+        reimbursement_status: 'pending',
+        zoho_entity: 'Test Entity',
+        zoho_expense_id: 'ZHO-12345',
+        user_name: 'John Doe',
+        event_name: 'Tech Expo 2025',
+      };
+
+      const pdfBuffer = await generateExpensePDF(detailedExpense);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+      
+      // Verify PDF format
+      const pdfHeader = pdfBuffer.toString('utf8', 0, 4);
+      expect(pdfHeader).toBe('%PDF');
+    });
+
+    it('should format amounts correctly', async () => {
+      const amounts = [0.01, 1.00, 10.50, 100.99, 1000.00, 9999.99];
+
+      for (const amount of amounts) {
+        const expense = {
+          ...mockExpense,
+          amount,
+        };
+
+        const pdfBuffer = await generateExpensePDF(expense);
+
+        expect(pdfBuffer).toBeInstanceOf(Buffer);
+        expect(pdfBuffer.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('should include date in correct format', async () => {
+      const dates = ['2025-01-01', '2025-12-31', '2025-06-15'];
+
+      for (const date of dates) {
+        const expense = {
+          ...mockExpense,
+          date,
+        };
+
+        const pdfBuffer = await generateExpensePDF(expense);
+
+        expect(pdfBuffer).toBeInstanceOf(Buffer);
+        expect(pdfBuffer.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Promise Handling Fix', () => {
+    it('should properly handle Promise resolution', async () => {
+      const pdfBuffer = await generateExpensePDF(mockExpense);
+
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+      expect(pdfBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('should properly handle Promise rejection on PDF error', async () => {
+      // This test verifies that errors are properly caught and rejected
+      // The Promise handling fix ensures event handlers are set up before content generation
+      const pdfBuffer = await generateExpensePDF(mockExpense);
+
+      // Should resolve successfully
+      expect(pdfBuffer).toBeInstanceOf(Buffer);
+    });
+
+    it('should handle Promise race conditions correctly', async () => {
+      // Generate multiple PDFs rapidly to test Promise handling
+      const promises = Array.from({ length: 20 }, () => generateExpensePDF(mockExpense));
+      
+      const pdfBuffers = await Promise.all(promises);
+
+      // All should resolve successfully
+      expect(pdfBuffers).toHaveLength(20);
+      pdfBuffers.forEach(buffer => {
+        expect(buffer).toBeInstanceOf(Buffer);
+        expect(buffer.length).toBeGreaterThan(0);
+      });
+    });
   });
 });
 

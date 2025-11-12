@@ -54,7 +54,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       // Clear checklist data when modal closes
       console.log('[EventSetup] Clearing checklist data (modal closed)');
     }
-  }, [viewingEvent?.id, loadChecklistSummary]); // Use viewingEvent?.id to trigger refresh when event changes
+  }, [viewingEvent?.id, loadChecklistSummary]); // loadChecklistSummary is now stable via useCallback
 
 
   // Wrapper functions to handle hook integration

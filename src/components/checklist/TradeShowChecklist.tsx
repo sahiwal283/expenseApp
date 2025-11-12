@@ -88,12 +88,10 @@ interface TradeShowChecklistProps {
 }
 
 type ChecklistTab = 'admin' | 'user';
-type EventFilter = 'all' | 'my';
 
 export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) => {
   const isPrivilegedUser = user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
   const [activeTab, setActiveTab] = useState<ChecklistTab>(isPrivilegedUser ? 'admin' : 'user');
-  const [eventFilter, setEventFilter] = useState<EventFilter>('all');
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
@@ -104,7 +102,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     if (activeTab === 'admin') {
       loadEvents();
     }
-  }, [activeTab, eventFilter]);
+  }, [activeTab]);
 
   useEffect(() => {
     if (selectedEventId) {
@@ -127,15 +125,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         }
         
         // Normalize to array if needed
-        let eventsArray = Array.isArray(data) ? data : [];
-        
-        // Filter events based on eventFilter
-        if (eventFilter === 'my' && user.id) {
-          // Filter to only events where user is a participant
-          eventsArray = eventsArray.filter((event: TradeShow) => 
-            event.participants?.some(p => p.id === user.id)
-          );
-        }
+        const eventsArray = Array.isArray(data) ? data : [];
         
         console.log('[Checklist] Loaded events:', eventsArray.length, 'events');
         setEvents(eventsArray);
@@ -307,39 +297,8 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         <UserChecklist user={user} />
       ) : (
         <>
-          {/* Event Filter (Admin Checklist only) */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">Show:</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEventFilter('all')}
-                  className={`
-                    px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                    ${eventFilter === 'all'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }
-                  `}
-                >
-                  All Events
-                </button>
-                <button
-                  onClick={() => setEventFilter('my')}
-                  className={`
-                    px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                    ${eventFilter === 'my'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }
-                  `}
-                >
-                  My Events
-                </button>
-              </div>
-            </div>
-            
-            {/* Event Selector */}
+          {/* Event Selector (Admin Checklist only) */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-4">
             <div className="w-full sm:w-auto">
               <select
                 value={selectedEventId || ''}

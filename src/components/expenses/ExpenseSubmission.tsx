@@ -286,6 +286,30 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
+  // Handle receipt upload in edit mode
+  const handleReceiptUpload = async (file: File) => {
+    if (!viewingExpense) return;
+
+    try {
+      // Use dedicated receipt update endpoint for better transaction safety
+      const updatedExpense = await api.updateExpenseReceipt(viewingExpense.id, file) as Expense;
+      
+      // Update the viewing expense with the new receipt URL
+      setViewingExpense(updatedExpense);
+      
+      // Reload data to refresh the list
+      await reloadData();
+      
+      // Refresh audit trail
+      await fetchAuditTrail(viewingExpense.id);
+      
+      addToast('✅ Receipt uploaded successfully!', 'success');
+    } catch (error) {
+      console.error('[ExpenseSubmission] Error uploading receipt:', error);
+      throw error; // Re-throw to let component handle error display
+    }
+  };
+
   const handleDeleteExpense = async (expenseId: string) => {
     const expense = expenses.find(e => e.id === expenseId);
     if (!expense) return;
@@ -645,6 +669,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                     uniqueCards={uniqueCards}
                     onCancel={cancelInlineEdit}
                     onSave={saveInlineEdit}
+                    receiptUrl={viewingExpense.receiptUrl}
+                    onReceiptUpload={handleReceiptUpload}
                   />
                 )
               )}

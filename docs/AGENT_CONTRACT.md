@@ -93,8 +93,11 @@ Manager Agent (Task Assignment & Coordination)
 - ✅ Use shared test utilities (`backend/tests/utils/`, `src/test/utils/`)
 - ✅ Delete empty or unnecessary test files
 - ✅ Follow test organization guidelines in `docs/TESTING_STRATEGY.md`
+- ✅ **Delete one-off test files after they're no longer needed**
+- ✅ **Minimize file creation - reuse existing test files when possible**
 - ❌ Don't create single-use test files for similar functionality
 - ❌ Don't leave empty test files
+- ❌ Don't create new files for one-off tests - add to existing test files
 
 **Test file organization:
 - Backend tests: `backend/tests/**/*.test.ts`
@@ -843,9 +846,11 @@ When completing work, agents MUST provide:
 3. **Run regression suite** - Before every commit
 4. **Document test failures** - Clear bug reports
 5. **Coverage goals** - Aim for high coverage on critical paths
-6. **Manage test file clutter** - Consolidate, use shared utilities, delete empty files
-7. **If tests PASS:** Handoff directly to DevOps Agent (NO Reviewer approval needed)
-8. **If tests FAIL:** Handoff to Manager/Reviewer/original agent based on issue type
+6. **Minimize test file creation** - Reuse existing test files, don't create one-offs
+7. **Delete unused test files** - Remove test files that are no longer needed
+8. **Manage test file clutter** - Consolidate, use shared utilities, delete empty files
+9. **If tests PASS:** Handoff directly to DevOps Agent (NO Reviewer approval needed)
+10. **If tests FAIL:** Handoff to Manager/Reviewer/original agent based on issue type
 
 ### DevOps Agent Rules
 
@@ -1073,7 +1078,7 @@ When completing work, agents MUST provide:
 | Testing Agent | November 12, 2025 | Contract read and acknowledged. Committed to testing only reviewed code, managing test file clutter, and proper handoff protocols (DevOps on pass, escalation on fail). |
 | Testing Agent | November 12, 2025 | Contract read, understood, and signed. Ready to begin testing work. Committed to: testing only reviewed/approved code, writing comprehensive tests (unit/integration/E2E), managing test file clutter, proper handoff to DevOps on pass or escalation on fail, and following all testing guidelines in TESTING_STRATEGY.md. |
 | Testing Agent | January 29, 2025 | Contract read, understood, and signed. Committed to: testing only reviewed/approved code, writing comprehensive tests (unit/integration/E2E), managing test file clutter, proper handoff to DevOps on pass or escalation on fail, following TESTING_STRATEGY.md guidelines, using shared test utilities, consolidating similar tests, and maintaining high test coverage. Ready to begin testing work immediately. |
-| | | |
+| Testing Agent | January 29, 2025 | Contract read, understood, and signed. All documentation reviewed including AGENT_CONTRACT.md, MASTER_GUIDE.md, TESTING_STRATEGY.md, ARCHITECTURE.md, and TESTING_VALIDATION_GUIDE.md. Committed to: testing only reviewed/approved code, writing comprehensive tests (unit/integration/E2E), managing test file clutter, proper handoff to DevOps on pass or escalation on fail, following TESTING_STRATEGY.md guidelines, using shared test utilities, consolidating similar tests, maintaining high test coverage, and following all universal rules. Ready to begin testing work immediately. |
 | | | |
 | | | |
 | | | |

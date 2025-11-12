@@ -4,7 +4,7 @@
  * Handles loading and managing checklist summary data for events.
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { api } from '../../../../utils/api';
 
 export interface ChecklistSummary {
@@ -59,7 +59,7 @@ export function useChecklistSummary(): UseChecklistSummaryReturn {
   const [checklistData, setChecklistData] = useState<ChecklistSummary | null>(null);
   const [loadingChecklist, setLoadingChecklist] = useState(false);
 
-  const loadChecklistSummary = async (eventId: string, participantCount: number) => {
+  const loadChecklistSummary = useCallback(async (eventId: string, participantCount: number) => {
     setLoadingChecklist(true);
     try {
       const data = await api.checklist.getChecklist(eventId) as unknown;
@@ -115,7 +115,7 @@ export function useChecklistSummary(): UseChecklistSummaryReturn {
     } finally {
       setLoadingChecklist(false);
     }
-  };
+  }, []);
 
   return {
     checklistData,

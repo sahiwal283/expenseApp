@@ -5,8 +5,8 @@
  * Modal footer with Close/Edit/Download or Cancel/Save buttons
  */
 
-import React, { useState } from 'react';
-import { CheckCircle, Loader2, Download } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { CheckCircle, Loader2, Download, Info } from 'lucide-react';
 
 interface ExpenseModalFooterProps {
   isEditingExpense: boolean;
@@ -30,6 +30,12 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
   onDownloadPDF,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Detect if user is using Chrome
+  const isChrome = useMemo(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes('chrome') && !userAgent.includes('edg') && !userAgent.includes('opr');
+  }, []);
 
   const handleDownload = async () => {
     if (!expenseId || !onDownloadPDF) return;
@@ -56,24 +62,55 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
             Close
           </button>
           {expenseId && onDownloadPDF && (
-            <button
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              aria-label="Download expense PDF"
-            >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  <span>Download Expense</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="relative group">
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  aria-label="Download expense PDF"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Download Expense</span>
+                    </>
+                  )}
+                </button>
+                
+                {/* Browser Compatibility Tooltip */}
+                <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block z-50 w-64">
+                  <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold mb-1">Browser Compatibility</p>
+                        <p className="text-gray-300">
+                          {isChrome 
+                            ? 'Works with Chrome. Support for other browsers coming soon.'
+                            : 'Currently only works with Chrome. Support for other browsers coming soon.'}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Tooltip arrow */}
+                    <div className="absolute top-full right-4 -mt-1">
+                      <div className="w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Compatibility Note (always visible, small text) */}
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Info className="w-3 h-3" />
+                <span className="hidden sm:inline">Chrome only</span>
+              </div>
+            </div>
           )}
           <button
             onClick={onEdit}

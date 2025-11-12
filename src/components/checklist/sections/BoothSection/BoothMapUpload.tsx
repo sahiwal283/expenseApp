@@ -4,8 +4,9 @@
  * Booth map upload and display component.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Map, Upload, X } from 'lucide-react';
+import { BoothMapViewer } from '../../../common/BoothMapViewer';
 
 interface BoothMapUploadProps {
   boothMapUrl: string | null;
@@ -22,6 +23,8 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
   onMapUpload,
   onDeleteMap
 }) => {
+  const [showBoothMapViewer, setShowBoothMapViewer] = useState(false);
+
   return (
     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
       <div className="flex items-center justify-between mb-2">
@@ -41,16 +44,20 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
       </div>
       
       {boothMapUrl ? (
-        <div className="relative group">
-          <img
-            src={`${import.meta.env.VITE_API_BASE_URL || '/api'}${boothMapUrl}`}
-            alt="Booth Map"
-            className="w-full h-32 object-contain bg-white rounded border border-gray-200"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity rounded flex items-center justify-center">
+        <div className="space-y-2">
+          <div className="relative group">
+            <img
+              src={`${import.meta.env.VITE_API_BASE_URL || '/api'}${boothMapUrl}`}
+              alt="Booth Map"
+              className="w-full h-32 object-contain bg-white rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => setShowBoothMapViewer(true)}
+              title="Click to view full size"
+            />
+          </div>
+          <div className="flex gap-2">
             <button
               onClick={() => boothMapInputRef.current?.click()}
-              className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1.5 bg-white text-gray-700 rounded-lg shadow-lg text-sm flex items-center gap-1"
+              className="flex-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors"
             >
               <Upload className="w-4 h-4" />
               Replace
@@ -80,6 +87,15 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
       <p className="text-xs text-gray-500 mt-1">
         Upload booth layout/map (JPG, PNG, GIF, PDF • Max 10MB)
       </p>
+
+      {/* Booth Map Viewer Modal */}
+      {boothMapUrl && (
+        <BoothMapViewer
+          boothMapUrl={boothMapUrl}
+          isOpen={showBoothMapViewer}
+          onClose={() => setShowBoothMapViewer(false)}
+        />
+      )}
     </div>
   );
 };

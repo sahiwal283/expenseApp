@@ -10,6 +10,7 @@ import { TradeShow, User } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import { ChecklistSummary } from './ChecklistSummary';
 import { ChecklistSummary as ChecklistSummaryType } from './hooks';
+import { BoothMapViewer } from '../../common/BoothMapViewer';
 
 interface EventDetailsModalProps {
   event: TradeShow;
@@ -20,7 +21,7 @@ interface EventDetailsModalProps {
 }
 
 // Booth Map Image Component with error handling
-const BoothMapImage: React.FC<{ boothMapUrl: string }> = ({ boothMapUrl }) => {
+const BoothMapImage: React.FC<{ boothMapUrl: string; onViewFullSize: () => void }> = ({ boothMapUrl, onViewFullSize }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   
@@ -40,7 +41,6 @@ const BoothMapImage: React.FC<{ boothMapUrl: string }> = ({ boothMapUrl }) => {
   // @ts-ignore - Vite provides this at build time
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const imageUrl = `${apiBaseUrl}${normalizedUrl}`;
-  const fullImageUrl = `${apiBaseUrl}${normalizedUrl}`;
   
   const handleImageLoad = () => {
     setImageLoading(false);
@@ -73,7 +73,7 @@ const BoothMapImage: React.FC<{ boothMapUrl: string }> = ({ boothMapUrl }) => {
         src={imageUrl}
         alt="Booth Floor Plan"
         className={`w-full h-48 object-contain bg-gray-50 rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity ${imageLoading ? 'hidden' : ''}`}
-        onClick={() => window.open(fullImageUrl, '_blank')}
+        onClick={onViewFullSize}
         onLoad={handleImageLoad}
         onError={handleImageError}
         title="Click to view full size"
@@ -92,6 +92,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   loadingChecklist,
   onClose
 }) => {
+  const [showBoothMapViewer, setShowBoothMapViewer] = useState(false);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -204,7 +206,10 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   <Map className="w-5 h-5 text-purple-600" />
                   <span className="font-medium text-purple-900">Booth Layout</span>
                 </div>
-                <BoothMapImage boothMapUrl={checklistData.booth_map_url} />
+                <BoothMapImage 
+                  boothMapUrl={checklistData.booth_map_url} 
+                  onViewFullSize={() => setShowBoothMapViewer(true)}
+                />
               </div>
             </div>
           )}
@@ -231,6 +236,15 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Booth Map Viewer Modal */}
+      {checklistData?.booth_map_url && (
+        <BoothMapViewer
+          boothMapUrl={checklistData.booth_map_url}
+          isOpen={showBoothMapViewer}
+          onClose={() => setShowBoothMapViewer(false)}
+        />
+      )}
     </div>
   );
 };

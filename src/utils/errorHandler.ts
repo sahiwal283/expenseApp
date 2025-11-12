@@ -27,27 +27,88 @@ export class AppError extends Error {
  * Parse API error response
  */
 export function parseApiError(error: any): string {
-  // Check for network errors
-  if (!error.response) {
-    return ERROR_MESSAGES.NETWORK_ERROR;
+  // Check for network errors first (fetch failures, CORS, connection refused, etc.)
+  // Network errors don't have a response object and typically have:
+  // - message: "Failed to fetch" or "NetworkError when attempting to fetch resource"
+  // - name: "TypeError" or "NetworkError"
+  if (error instanceof Error) {
+    const errorMessage = error.message.toLowerCase();
+    const errorName = error.name.toLowerCase();
+    
+    // Check for network-related error messages
+    if (
+      errorMessage.includes('failed to fetch') ||
+      errorMessage.includes('networkerror') ||
+      errorMessage.includes('network error') ||
+      errorMessage.includes('load failed') ||
+      errorMessage.includes('connection refused') ||
+      errorMessage.includes('cors') ||
+      errorName === 'typeerror' ||
+      errorName === 'networkerror'
+    ) {
+      return ERROR_MESSAGES.NETWORK_ERROR;
+    }
   }
-
-  // Check for specific HTTP status codes
-  const status = error.response?.status;
-  switch (status) {
-    case 401:
-      return ERROR_MESSAGES.UNAUTHORIZED;
-    case 404:
-      return ERROR_MESSAGES.NOT_FOUND;
-    case 400:
-      return error.response?.data?.error || ERROR_MESSAGES.VALIDATION_ERROR;
-    case 500:
-    case 502:
-    case 503:
-      return ERROR_MESSAGES.SERVER_ERROR;
-    default:
-      return error.response?.data?.error || error.message || ERROR_MESSAGES.SERVER_ERROR;
+  
+  // Check for AppError instances (from apiClient)
+  if (error instanceof AppError) {
+    // Network-related error codes
+    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT') {
+      return error.code === 'TIMEOUT' 
+        ? 'Request timeout. Please check your connection and try again.'
+        : ERROR_MESSAGES.NETWORK_ERROR;
+    }
+    
+    // HTTP status codes
+    if (error.statusCode) {
+      switch (error.statusCode) {
+        case 401:
+          return ERROR_MESSAGES.UNAUTHORIZED;
+        case 404:
+          return ERROR_MESSAGES.NOT_FOUND;
+        case 400:
+          return error.message || ERROR_MESSAGES.VALIDATION_ERROR;
+        case 500:
+        case 502:
+        case 503:
+          return ERROR_MESSAGES.SERVER_ERROR;
+        default:
+          return error.message || ERROR_MESSAGES.SERVER_ERROR;
+      }
+    }
+    
+    // Return AppError message if available
+    if (error.message) {
+      return error.message;
+    }
   }
+  
+  // Check for legacy error format with response object
+  if (error.response) {
+    const status = error.response?.status;
+    switch (status) {
+      case 401:
+        return ERROR_MESSAGES.UNAUTHORIZED;
+      case 404:
+        return ERROR_MESSAGES.NOT_FOUND;
+      case 400:
+        return error.response?.data?.error || ERROR_MESSAGES.VALIDATION_ERROR;
+      case 500:
+      case 502:
+      case 503:
+        return ERROR_MESSAGES.SERVER_ERROR;
+      default:
+        return error.response?.data?.error || error.message || ERROR_MESSAGES.SERVER_ERROR;
+    }
+  }
+  
+  // Fallback: check for error message
+  if (error?.message) {
+    return error.message;
+  }
+  
+  // Final fallback
+  return ERROR_MESSAGES.SERVER_ERROR;
 }
 
 /**

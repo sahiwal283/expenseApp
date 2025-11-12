@@ -4,13 +4,13 @@
  * @version 0.8.0
  */
 
-import { AppError, parseApiError } from './errorHandler';
+import { AppError } from './errorHandler';
 import { API_CONFIG, STORAGE_KEYS } from '../constants/appConstants';
 import { sessionManager } from './sessionManager';
 
 // ========== Types ==========
 export interface ApiResponse<T = unknown> {
-  data: T;
+  data: T | unknown;
   status: number;
   headers: Headers;
 }
@@ -56,8 +56,17 @@ class ApiClient {
   private onUnauthorized: (() => void) | null = null;
 
   constructor() {
+    // @ts-ignore - Vite provides this at build time
     this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
     this.defaultTimeout = API_CONFIG.TIMEOUT;
+    
+    // Log API base URL in development mode for debugging
+    // @ts-ignore - Vite provides this at build time
+    if (import.meta.env.DEV) {
+      console.log('[API Client] Initialized with base URL:', this.baseURL);
+      // @ts-ignore - Vite provides this at build time
+      console.log('[API Client] Environment variable VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || '(not set, using default /api)');
+    }
   }
 
   /**
@@ -134,10 +143,40 @@ class ApiClient {
     } catch (error: unknown) {
       clearTimeout(timeoutId);
       
+      // Handle timeout
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new AppError('Request timeout', 'TIMEOUT', 408);
+        throw new AppError('Request timeout. Please check your connection and try again.', 'TIMEOUT', 408);
       }
       
+      // Handle network errors (CORS, connection refused, DNS failure, etc.)
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        const errorName = error.name.toLowerCase();
+        
+        if (
+          errorMessage.includes('failed to fetch') ||
+          errorMessage.includes('networkerror') ||
+          errorMessage.includes('network error') ||
+          errorMessage.includes('load failed') ||
+          errorMessage.includes('connection refused') ||
+          errorMessage.includes('cors') ||
+          errorName === 'typeerror' ||
+          errorName === 'networkerror'
+        ) {
+          console.error('[API] Network error detected:', {
+            url,
+            message: error.message,
+            name: error.name,
+          });
+          throw new AppError(
+            'Network error. Please check your connection and ensure the API server is running.',
+            'NETWORK_ERROR',
+            0 // No HTTP status for network errors
+          );
+        }
+      }
+      
+      // Re-throw other errors as-is
       throw error;
     }
   }
@@ -157,17 +196,18 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const errorMessage = data?.error || data?.message || response.statusText;
+      const errorData = data as Record<string, unknown> | null;
+      const errorMessage = (errorData?.error || errorData?.message || response.statusText) as string;
       throw new AppError(
         errorMessage,
         'API_ERROR',
         response.status,
-        data
+        errorData
       );
     }
 
     return {
-      data,
+      data: data as unknown as T,
       status: response.status,
       headers: response.headers,
     };
@@ -192,13 +232,25 @@ class ApiClient {
       const url = this.buildURL(path, config.params);
       const headers = this.buildHeaders(config);
 
+      // Log request in development mode for debugging
+      // @ts-ignore - Vite provides this at build time
+      if (import.meta.env.DEV) {
+        const headersObj = headers as Record<string, string>;
+        console.log('[API] Request:', {
+          method: config.method || 'GET',
+          url,
+          hasAuth: !!headersObj['Authorization'],
+        });
+      }
+
       const response = await this.fetchWithTimeout(url, {
         ...config,
         headers,
       });
 
       const result = await this.handleResponse<T>(response);
-      return result.data;
+      // Type assertion needed because data comes from JSON parsing
+      return (result.data as unknown) as T;
     } catch (error: unknown) {
       // Handle authentication errors
       // 401 = Token expired/invalid (from backend auth middleware)
@@ -292,7 +344,8 @@ class ApiClient {
       });
 
       const result = await this.handleResponse<T>(response);
-      return result.data;
+      // Type assertion needed because data comes from JSON parsing
+      return (result.data as unknown) as T;
     } catch (error: unknown) {
       // Handle authentication errors
       // 401 = Token expired/invalid - force logout

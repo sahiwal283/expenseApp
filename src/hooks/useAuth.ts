@@ -22,8 +22,8 @@ export const useAuth = () => {
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
       if (api.USE_SERVER) {
-        const data = await api.login(username, password);
-        const serverUser = data?.user as User | undefined;
+        const data = await api.login(username, password) as { user?: User; token?: string };
+        const serverUser = data?.user;
         if (data?.token && serverUser) {
           TokenManager.setToken(data.token);
           setUser(serverUser);
@@ -41,8 +41,13 @@ export const useAuth = () => {
       setUser(foundUser);
       localStorage.setItem('tradeshow_current_user', JSON.stringify(foundUser));
       return true;
-    } catch {
-      return false;
+    } catch (error: unknown) {
+      // Log error for debugging
+      console.error('[useAuth] Login error:', error);
+      
+      // Re-throw error so calling component can display appropriate message
+      // This allows LoginForm to distinguish between network errors and auth failures
+      throw error;
     }
   }, []);
 

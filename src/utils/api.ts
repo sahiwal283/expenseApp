@@ -57,6 +57,11 @@ export const api = {
     }
     return apiClient.put(`/expenses/${id}`, payload);
   },
+
+  // Update expense receipt (dedicated endpoint for receipt-only updates)
+  updateExpenseReceipt: async (expenseId: string, file: File) => {
+    return apiClient.upload(`/expenses/${expenseId}/receipt`, {}, file, 'receipt', 'PUT');
+  },
   
   // Update expense status (pending/approved/rejected/needs further review)
   updateExpenseStatus: (id: string, payload: { status: 'pending' | 'approved' | 'rejected' | 'needs further review' }) =>
@@ -77,53 +82,242 @@ export const api = {
   
   deleteExpense: (id: string) => apiClient.delete(`/expenses/${id}`),
   
-  // Download expense PDF
+  // Download expense PDF (cross-browser compatible with enhanced debugging)
   downloadExpensePDF: async (expenseId: string) => {
+    console.log('[downloadExpensePDF] Starting PDF download for expense:', expenseId);
+    
     const token = TokenManager.getToken();
     if (!token) {
       throw new Error('Authentication required. Please log in again.');
     }
 
     const baseURL = apiClient.getBaseURL();
-    const response = await fetch(`${baseURL}/expenses/${expenseId}/pdf`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+    const currentProtocol = window.location.protocol;
+    const currentOrigin = window.location.origin;
+    
+    // Build secure URL - relative URLs automatically use page protocol (avoids mixed content)
+    let pdfUrl = `${baseURL}/expenses/${expenseId}/pdf`;
+    
+    // Log URL information for debugging
+    console.log('[downloadExpensePDF] URL info:', {
+      baseURL,
+      pdfUrl,
+      currentProtocol,
+      currentOrigin,
+      isRelative: !pdfUrl.startsWith('http'),
     });
+    
+    // Fix mixed content: if page is HTTPS but API URL is HTTP, upgrade to HTTPS
+    if (currentProtocol === 'https:' && pdfUrl.startsWith('http://')) {
+      pdfUrl = pdfUrl.replace('http://', 'https://');
+      console.warn('[downloadExpensePDF] Upgraded HTTP to HTTPS to avoid mixed content warning');
+    }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = 'Failed to download expense PDF';
+    // Detect browser for Arc-specific handling
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isArc = userAgent.includes('arc') || userAgent.includes('the browser company');
+    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+    console.log('[downloadExpensePDF] Browser detection:', { isArc, isChrome, userAgent: userAgent.substring(0, 50) });
+
+    try {
+      console.log('[downloadExpensePDF] Fetching PDF from:', pdfUrl);
+      const response = await fetch(pdfUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        // Use same-origin credentials to ensure secure request handling
+        credentials: 'same-origin',
+      });
+
+      console.log('[downloadExpensePDF] Response status:', response.status, response.statusText);
+      console.log('[downloadExpensePDF] Response headers:', {
+        'content-type': response.headers.get('content-type'),
+        'content-disposition': response.headers.get('content-disposition'),
+        'content-length': response.headers.get('content-length'),
+        'x-content-type-options': response.headers.get('x-content-type-options'),
+        'x-download-options': response.headers.get('x-download-options'),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'Failed to download expense PDF';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        console.error('[downloadExpensePDF] HTTP error:', response.status, errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Verify Content-Type is PDF
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        console.error('[downloadExpensePDF] Invalid Content-Type:', contentType);
+        console.warn('[downloadExpensePDF] Expected application/pdf but got:', contentType);
+        // Don't throw - some servers may not set Content-Type correctly
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `expense-${expenseId}.pdf`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      console.log('[downloadExpensePDF] Filename:', filename);
+
+      // Convert response to blob with explicit PDF type
+      console.log('[downloadExpensePDF] Converting response to blob...');
+      const blob = await response.blob();
+      console.log('[downloadExpensePDF] Blob created:', {
+        size: blob.size,
+        type: blob.type,
+      });
+      
+      // Verify blob is not empty
+      if (blob.size === 0) {
+        throw new Error('Downloaded PDF is empty. Please try again.');
+      }
+      
+      // Check if blob starts with PDF header (first 4 bytes should be %PDF)
+      // Read first 4 bytes as ArrayBuffer to check PDF header
+      const blobSlice = blob.slice(0, 4);
+      const arrayBuffer = await blobSlice.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const pdfHeader = String.fromCharCode(...uint8Array);
+      
+      console.log('[downloadExpensePDF] PDF header check:', {
+        header: pdfHeader,
+        bytes: Array.from(uint8Array).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '),
+      });
+      
+      if (!pdfHeader.startsWith('%PDF')) {
+        console.error('[downloadExpensePDF] Invalid PDF header. First 4 bytes:', pdfHeader);
+        // Try to read as text to see what we got (might be an error message)
+        try {
+          const textBlob = await blob.text();
+          console.error('[downloadExpensePDF] Response text (first 200 chars):', textBlob.substring(0, 200));
+          // Check if it's a JSON error
+          try {
+            const errorData = JSON.parse(textBlob);
+            throw new Error(errorData.error || errorData.message || 'Downloaded file is not a valid PDF');
+          } catch {
+            throw new Error('Downloaded file is not a valid PDF. Please check server logs.');
+          }
+        } catch (textError) {
+          throw new Error('Downloaded file is not a valid PDF. Please check server logs.');
+        }
+      }
+      
+      console.log('[downloadExpensePDF] PDF header validated successfully');
+      
+      // Ensure blob has correct MIME type
+      const pdfBlob = blob.type === 'application/pdf' 
+        ? blob 
+        : new Blob([blob], { type: 'application/pdf' });
+      
+      console.log('[downloadExpensePDF] PDF blob ready:', {
+        size: pdfBlob.size,
+        type: pdfBlob.type,
+      });
+      
+      // Cross-browser compatible download method
+      const blobUrl = window.URL.createObjectURL(pdfBlob);
+      console.log('[downloadExpensePDF] Blob URL created:', blobUrl.substring(0, 50) + '...');
+      
+      let link: HTMLAnchorElement | null = null;
+      let downloadSuccess = false;
+      
       try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorData.message || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
+        // Create download link with all necessary attributes for cross-browser compatibility
+        link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        link.style.display = 'none';
+        link.setAttribute('rel', 'noopener noreferrer');
+        
+        // Arc browser may need additional attributes
+        if (isArc) {
+          link.setAttribute('target', '_self'); // Keep in same window
+          console.log('[downloadExpensePDF] Arc browser detected - using Arc-specific settings');
+        }
+        
+        // Some browsers (including Arc) may require the link to be in the DOM before clicking
+        document.body.appendChild(link);
+        console.log('[downloadExpensePDF] Link appended to DOM');
+        
+        // Small delay to ensure DOM is ready (especially for Arc)
+        await new Promise(resolve => setTimeout(resolve, isArc ? 100 : 50));
+        
+        // Trigger download - use multiple methods for maximum compatibility
+        console.log('[downloadExpensePDF] Triggering download...');
+        
+        // Method 1: Direct click (works in most browsers)
+        if (typeof link.click === 'function') {
+          link.click();
+          console.log('[downloadExpensePDF] Used link.click() method');
+        } else {
+          // Method 2: MouseEvent (fallback for older browsers)
+          const clickEvent = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+            buttons: 1,
+          });
+          link.dispatchEvent(clickEvent);
+          console.log('[downloadExpensePDF] Used MouseEvent dispatch method');
+        }
+        
+        downloadSuccess = true;
+        console.log('[downloadExpensePDF] Download triggered successfully');
+        
+        // Increased delay for Arc browser and other browsers that need more time
+        const cleanupDelay = isArc ? 2000 : 1000; // 2 seconds for Arc, 1 second for others
+        setTimeout(() => {
+          try {
+            if (link && document.body.contains(link)) {
+              document.body.removeChild(link);
+              console.log('[downloadExpensePDF] Link removed from DOM');
+            }
+            window.URL.revokeObjectURL(blobUrl);
+            console.log('[downloadExpensePDF] Blob URL revoked');
+          } catch (cleanupError) {
+            // Non-critical cleanup error - download may have already started
+            console.warn('[downloadExpensePDF] Cleanup error (non-critical):', cleanupError);
+          }
+        }, cleanupDelay);
+        
+      } catch (error) {
+        console.error('[downloadExpensePDF] Error during download trigger:', error);
+        // Cleanup on error
+        if (link && document.body.contains(link)) {
+          try {
+            document.body.removeChild(link);
+          } catch (removeError) {
+            console.warn('[downloadExpensePDF] Error removing link:', removeError);
+          }
+        }
+        window.URL.revokeObjectURL(blobUrl);
+        
+        // Provide helpful error message
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[downloadExpensePDF] Download failed:', errorMessage);
+        throw new Error(`Failed to download PDF: ${errorMessage}. Please check your browser settings or try a different browser.`);
       }
-      throw new Error(errorMessage);
-    }
-
-    // Get filename from Content-Disposition header or use default
-    const contentDisposition = response.headers.get('content-disposition');
-    let filename = `expense-${expenseId}.pdf`;
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-      if (filenameMatch && filenameMatch[1]) {
-        filename = filenameMatch[1].replace(/['"]/g, '');
+      
+      if (!downloadSuccess) {
+        throw new Error('Download trigger failed. Please check browser console for details.');
       }
+      
+    } catch (error) {
+      console.error('[downloadExpensePDF] Fatal error:', error);
+      throw error;
     }
-
-    // Convert response to blob and trigger download
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
   },
 
   // Settings

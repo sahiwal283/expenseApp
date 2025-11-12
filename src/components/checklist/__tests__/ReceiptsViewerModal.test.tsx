@@ -687,5 +687,192 @@ describe('ReceiptsViewerModal Component Tests', () => {
       });
     });
   });
+
+  describe('Closure Fix - Keyboard Navigation with Ref Pattern', () => {
+    it('should navigate correctly with ArrowRight when receipts array changes', async () => {
+      const { rerender } = render(
+        <ReceiptsViewerModal
+          receipts={mockReceipts.slice(0, 2)}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Verify initial state
+      expect(screen.getByText(/Receipt 1 of 2/)).toBeInTheDocument();
+
+      // Navigate to second receipt
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 2 of 2/)).toBeInTheDocument();
+      });
+
+      // Change receipts array (add more receipts) - simulates data refresh
+      const updatedReceipts: Expense[] = [
+        ...mockReceipts.slice(0, 2),
+        createMockExpense('exp-3', '/uploads/receipts/receipt3.jpg', 'Merchant 3', 100.00),
+        createMockExpense('exp-4', '/uploads/receipts/receipt4.jpg', 'Merchant 4', 125.00),
+      ];
+
+      rerender(
+        <ReceiptsViewerModal
+          receipts={updatedReceipts}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Should reset to first receipt when array changes
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 1 of 4/)).toBeInTheDocument();
+      });
+
+      // Keyboard navigation should work with new array length
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 2 of 4/)).toBeInTheDocument();
+      });
+    });
+
+    it('should use ref pattern to avoid stale closure in keyboard handler', async () => {
+      const { rerender } = render(
+        <ReceiptsViewerModal
+          receipts={mockReceipts.slice(0, 2)}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Navigate to second receipt
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 2 of 2/)).toBeInTheDocument();
+      });
+
+      // Change receipts array to have 5 receipts
+      const expandedReceipts: Expense[] = [
+        ...mockReceipts.slice(0, 2),
+        createMockExpense('exp-3', '/uploads/receipts/receipt3.jpg', 'Merchant 3', 100.00),
+        createMockExpense('exp-4', '/uploads/receipts/receipt4.jpg', 'Merchant 4', 125.00),
+        createMockExpense('exp-5', '/uploads/receipts/receipt5.jpg', 'Merchant 5', 150.00),
+      ];
+
+      rerender(
+        <ReceiptsViewerModal
+          receipts={expandedReceipts}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Should reset to first
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 1 of 5/)).toBeInTheDocument();
+      });
+
+      // Keyboard handler should use ref (current length 5), not stale closure (old length 2)
+      // Navigate to last receipt (index 4)
+      for (let i = 0; i < 4; i++) {
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 5 of 5/)).toBeInTheDocument();
+      });
+
+      // Wrap around should work with correct length (5)
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      await waitFor(() => {
+        expect(screen.getByText(/Receipt 1 of 5/)).toBeInTheDocument();
+      });
+    });
+
+    it('should handle receipts array changing from multiple to empty', async () => {
+      const { rerender } = render(
+        <ReceiptsViewerModal
+          receipts={mockReceipts.slice(0, 2)}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Verify modal is open
+      expect(screen.getByText(/Receipt 1 of 2/)).toBeInTheDocument();
+
+      // Change to empty array
+      rerender(
+        <ReceiptsViewerModal
+          receipts={[]}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Modal should not render (empty array check)
+      await waitFor(() => {
+        expect(screen.queryByText(/Receipt/)).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Expense Details Display Enhancement', () => {
+    it('should display all expense fields correctly', () => {
+      const expense: Expense = createMockExpense('exp-1', '/uploads/receipt1.jpg', 'Test Restaurant', 125.50);
+      // Override additional fields
+      Object.assign(expense, {
+        category: 'Food',
+        description: 'Team lunch',
+        location: 'San Francisco, CA',
+        cardUsed: 'Haute CC',
+        status: 'approved',
+        reimbursementRequired: true,
+        reimbursementStatus: 'pending',
+        zohoEntity: 'haute',
+        zohoExpenseId: 'ZHO-12345',
+      });
+
+      render(
+        <ReceiptsViewerModal
+          receipts={[expense]}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Verify all fields are displayed
+      expect(screen.getByText('Test Restaurant')).toBeInTheDocument();
+      expect(screen.getByText('$125.50')).toBeInTheDocument();
+      expect(screen.getByText('Food')).toBeInTheDocument();
+      expect(screen.getByText('Haute CC')).toBeInTheDocument();
+      expect(screen.getByText('San Francisco, CA')).toBeInTheDocument();
+      expect(screen.getByText('Team lunch')).toBeInTheDocument();
+    });
+
+    it('should update expense details when navigating between receipts', async () => {
+      const receipts: Expense[] = [
+        createMockExpense('exp-1', '/uploads/receipt1.jpg', 'Merchant 1'),
+        createMockExpense('exp-2', '/uploads/receipt2.jpg', 'Merchant 2')
+      ];
+
+      render(
+        <ReceiptsViewerModal
+          receipts={receipts}
+          isOpen={true}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Should show first receipt
+      expect(screen.getByText('Merchant 1')).toBeInTheDocument();
+
+      // Navigate to second receipt
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+
+      // Should now show second receipt
+      await waitFor(() => {
+        expect(screen.getByText('Merchant 2')).toBeInTheDocument();
+      });
+    });
+  });
 });
 

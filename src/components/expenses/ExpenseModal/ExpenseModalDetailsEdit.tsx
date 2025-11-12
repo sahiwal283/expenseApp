@@ -7,8 +7,9 @@
  * SIMPLIFICATION: Separated from view mode, uses cleaner prop interface
  */
 
-import React from 'react';
-import { Edit2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Edit2, Upload, Loader2, Receipt, X, AlertCircle } from 'lucide-react';
+import { ConfirmModal } from '../../common/ConfirmModal';
 
 interface EditFormData {
   date: string;
@@ -28,6 +29,8 @@ interface ExpenseModalDetailsEditProps {
   uniqueCards: string[];
   onCancel: () => void;
   onSave: () => void;
+  receiptUrl?: string;
+  onReceiptUpload?: (file: File) => Promise<void>;
 }
 
 export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = ({
@@ -37,7 +40,70 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   uniqueCards,
   onCancel,
   onSave,
+  receiptUrl,
+  onReceiptUpload,
 }) => {
+  const [showReplaceWarning, setShowReplaceWarning] = useState(false);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Please upload an image file (JPEG, PNG, GIF) or PDF');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadError(null);
+    setUploadingReceipt(true);
+
+    try {
+      if (onReceiptUpload) {
+        await onReceiptUpload(file);
+        // Clear any previous errors on success
+        setUploadError(null);
+      }
+    } catch (error) {
+      console.error('[ExpenseModalDetailsEdit] Error uploading receipt:', error);
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload receipt');
+    } finally {
+      setUploadingReceipt(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleAddReceipt = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleReplaceReceipt = () => {
+    setShowReplaceWarning(true);
+  };
+
+  const handleConfirmReplace = () => {
+    setShowReplaceWarning(false);
+    fileInputRef.current?.click();
+  };
+
+  // Construct receipt image URL
+  const receiptImageUrl = receiptUrl 
+    ? receiptUrl.replace(/^\/uploads/, '/api/uploads')
+    : null;
+
   return (
     <div className="space-y-4">
       {/* Edit Mode Banner */}
@@ -155,6 +221,111 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
           Reimbursement Required (Personal Card)
         </label>
       </div>
+
+      {/* Receipt Management */}
+      {onReceiptUpload && (
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-3">Receipt</label>
+          
+          {/* Current Receipt Display */}
+          {receiptImageUrl ? (
+            <div className="space-y-3">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-purple-600" />
+                    <span className="text-sm font-medium text-gray-900">Current Receipt</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <img
+                    src={receiptImageUrl}
+                    alt="Current receipt"
+                    className="w-full h-auto max-h-48 object-contain rounded"
+                  />
+                </div>
+              </div>
+              
+              {/* Replace Button */}
+              <button
+                onClick={handleReplaceReceipt}
+                disabled={uploadingReceipt}
+                className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploadingReceipt ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Replace Receipt</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            /* Add Receipt Button */
+            <button
+              onClick={handleAddReceipt}
+              disabled={uploadingReceipt}
+              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 text-gray-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {uploadingReceipt ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span>Add Receipt</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Upload Error */}
+          {uploadError && (
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-red-800 font-medium">Upload Failed</p>
+                <p className="text-xs text-red-700 mt-1">{uploadError}</p>
+              </div>
+              <button
+                onClick={() => setUploadError(null)}
+                className="p-1 hover:bg-red-100 rounded transition-colors"
+                aria-label="Dismiss error"
+              >
+                <X className="w-4 h-4 text-red-600" />
+              </button>
+            </div>
+          )}
+
+          {/* File Input (Hidden) */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
+      )}
+
+      {/* Replace Receipt Warning Modal */}
+      <ConfirmModal
+        isOpen={showReplaceWarning}
+        title="Replace Receipt"
+        message="Are you sure you want to replace the current receipt? This action cannot be undone."
+        confirmText="Confirm Replace"
+        cancelText="Cancel"
+        variant="warning"
+        onConfirm={handleConfirmReplace}
+        onCancel={() => setShowReplaceWarning(false)}
+      />
     </div>
   );
 };

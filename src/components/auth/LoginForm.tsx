@@ -25,12 +25,42 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
     
-    const success = await onLogin(username, password);
-    if (!success) {
-      setError('Invalid username or password');
+    try {
+      const success = await onLogin(username, password);
+      if (!success) {
+        setError('Invalid username or password');
+      }
+    } catch (error: unknown) {
+      // Handle network errors and other exceptions
+      console.error('[LoginForm] Login error:', error);
+      
+      // Import error handler to get user-friendly messages
+      let errorMessage = 'Failed to log in. Please try again.';
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        // Check for network-related errors
+        if (
+          errorMsg.includes('failed to fetch') ||
+          errorMsg.includes('networkerror') ||
+          errorMsg.includes('network error') ||
+          errorMsg.includes('load failed') ||
+          errorMsg.includes('connection refused') ||
+          errorMsg.includes('cors')
+        ) {
+          errorMessage = 'Network error. Please check your connection and ensure the API server is running.';
+        } else if (errorMsg.includes('timeout')) {
+          errorMessage = 'Request timeout. Please check your connection and try again.';
+        } else {
+          // Try to use error message if it's user-friendly
+          errorMessage = error.message || errorMessage;
+        }
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   // Sandbox test accounts
