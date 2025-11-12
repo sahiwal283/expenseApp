@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.4 - ItemType Schema Fix
+// Version: 1.28.5 - Event Dropdown Filter Buttons Removal
 // Date: November 4, 2025
 //
 // New Features:
