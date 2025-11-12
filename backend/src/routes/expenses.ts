@@ -80,9 +80,17 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
     
     // Set response headers for PDF download
     const contentLength = pdfBuffer.length.toString();
+    
+    // Required headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="expense-${id}.pdf"`);
     res.setHeader('Content-Length', contentLength);
+    
+    // Security headers to prevent "Insecure download blocked" warning
+    res.setHeader('X-Content-Type-Options', 'nosniff'); // Prevents MIME type sniffing
+    res.setHeader('X-Download-Options', 'noopen'); // Prevents opening in browser context
+    
+    // Cache control headers
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -90,7 +98,12 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
     // Ensure no compression or other transformations
     res.removeHeader('Content-Encoding');
     
-    console.log(`[ExpensePDF] Headers set. Content-Length: ${contentLength}`);
+    console.log(`[ExpensePDF] Headers set:`);
+    console.log(`  - Content-Type: ${res.getHeader('Content-Type')}`);
+    console.log(`  - Content-Disposition: ${res.getHeader('Content-Disposition')}`);
+    console.log(`  - Content-Length: ${contentLength}`);
+    console.log(`  - X-Content-Type-Options: ${res.getHeader('X-Content-Type-Options')}`);
+    console.log(`  - X-Download-Options: ${res.getHeader('X-Download-Options')}`);
     console.log(`[ExpensePDF] Sending PDF buffer (${pdfBuffer.length} bytes)...`);
     
     // Register event listeners BEFORE sending response
