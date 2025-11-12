@@ -29,6 +29,7 @@
 | 021 | `021_add_booth_map.sql` | Add booth_map_url to event_checklists | ✅ Applied |
 | 022 | `022_add_car_rental_assignment.sql` | Add rental_type and assignment fields to car rentals | ✅ Applied |
 | 023 | `023_fix_audit_log_table_name.sql` | Rename audit_log to audit_logs to match code expectations | ✅ Applied |
+| 024 | `024_create_user_checklist_items.sql` | Create user-facing checklist items table (guidelines, packing lists) | ✅ Applied |
 
 ## Notes
 
@@ -56,8 +57,8 @@
 
 ## Adding New Migrations
 
-1. **Filename Format:** `NNN_descriptive_name.sql` (e.g., `024_add_new_feature.sql`)
-2. **Sequential Numbering:** Use next available number (currently 024)
+1. **Filename Format:** `NNN_descriptive_name.sql` (e.g., `025_add_new_feature.sql`)
+2. **Sequential Numbering:** Use next available number (currently 025)
 3. **Idempotency:** Always use `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE IF NOT EXISTS`, etc.
 4. **Testing:** Test on sandbox database before production
 5. **Documentation:** Update this README with description
