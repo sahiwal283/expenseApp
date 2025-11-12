@@ -18,6 +18,9 @@ import { NotFoundError } from '../utils/errors';
  */
 export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
+    console.log('[ExpensePDF] Starting PDF generation for expense:', expense.id);
+    const startTime = Date.now();
+    
     // Create PDF document
     const doc = new PDFDocument({
       size: 'LETTER',
@@ -25,22 +28,50 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     });
 
     const buffers: Buffer[] = [];
+    let dataChunks = 0;
+    let totalBytes = 0;
     
     // Set up event handlers BEFORE generating content
     doc.on('data', (chunk: Buffer) => {
       buffers.push(chunk);
+      dataChunks++;
+      totalBytes += chunk.length;
+      console.log(`[ExpensePDF] Received data chunk ${dataChunks}, size: ${chunk.length} bytes, total: ${totalBytes} bytes`);
     });
     
     doc.on('end', () => {
       try {
+        console.log(`[ExpensePDF] PDF generation complete. Total chunks: ${dataChunks}, Total bytes: ${totalBytes}`);
         const pdfBuffer = Buffer.concat(buffers);
+        const bufferSize = pdfBuffer.length;
+        const generationTime = Date.now() - startTime;
+        
+        console.log(`[ExpensePDF] PDF buffer created. Size: ${bufferSize} bytes, Generation time: ${generationTime}ms`);
+        
+        if (bufferSize === 0) {
+          console.error('[ExpensePDF] ERROR: Generated PDF buffer is empty!');
+          reject(new Error('Generated PDF buffer is empty'));
+          return;
+        }
+        
+        // Validate PDF header (PDF files start with %PDF)
+        if (pdfBuffer.length < 4 || pdfBuffer.toString('ascii', 0, 4) !== '%PDF') {
+          console.error('[ExpensePDF] ERROR: Generated buffer does not have valid PDF header!');
+          console.error('[ExpensePDF] First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'));
+          reject(new Error('Generated buffer is not a valid PDF'));
+          return;
+        }
+        
+        console.log('[ExpensePDF] PDF validation passed. Ready to send.');
         resolve(pdfBuffer);
       } catch (error) {
+        console.error('[ExpensePDF] ERROR in end handler:', error);
         reject(error);
       }
     });
     
     doc.on('error', (error) => {
+      console.error('[ExpensePDF] ERROR during PDF generation:', error);
       reject(error);
     });
 
@@ -236,6 +267,8 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     );
 
     // Finalize PDF - this triggers the 'end' event
+    console.log('[ExpensePDF] Calling doc.end() to finalize PDF...');
     doc.end();
+    console.log('[ExpensePDF] doc.end() called. Waiting for PDF generation to complete...');
   });
 }

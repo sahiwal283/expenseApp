@@ -50,34 +50,69 @@ router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
 // Get expense PDF (must come before /:id route)
 router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'developer', 'salesperson'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  const requestStartTime = Date.now();
+  
+  console.log(`[ExpensePDF] PDF download request received for expense: ${id}`);
   
   try {
     // Get expense with user/event details
+    console.log(`[ExpensePDF] Fetching expense details for: ${id}`);
     const expense = await expenseService.getExpenseByIdWithDetails(id);
+    console.log(`[ExpensePDF] Expense fetched successfully: ${expense.id}`);
     
     // Generate PDF
+    console.log(`[ExpensePDF] Starting PDF generation...`);
     const pdfBuffer = await generateExpensePDF(expense);
+    console.log(`[ExpensePDF] PDF generation completed. Buffer size: ${pdfBuffer.length} bytes`);
     
     // Validate PDF buffer
     if (!pdfBuffer || pdfBuffer.length === 0) {
-      console.error('[ExpensePDF] Generated PDF buffer is empty');
+      console.error('[ExpensePDF] ERROR: Generated PDF buffer is empty');
       return res.status(500).json({ error: 'Failed to generate PDF' });
     }
     
+    // Validate PDF header
+    if (pdfBuffer.length < 4 || pdfBuffer.toString('ascii', 0, 4) !== '%PDF') {
+      console.error('[ExpensePDF] ERROR: Generated buffer does not have valid PDF header');
+      console.error('[ExpensePDF] First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'));
+      return res.status(500).json({ error: 'Generated PDF is invalid' });
+    }
+    
     // Set response headers for PDF download
+    const contentLength = pdfBuffer.length.toString();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="expense-${id}.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length.toString());
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Length', contentLength);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    console.log(`[ExpensePDF] Headers set. Content-Length: ${contentLength}`);
+    console.log(`[ExpensePDF] Sending PDF buffer...`);
     
     // Send PDF as binary data
-    res.send(pdfBuffer);
-  } catch (error: any) {
-    console.error('[ExpensePDF] Error generating PDF:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate PDF',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    // Use res.end() directly for binary data to avoid any middleware interference
+    res.end(pdfBuffer, 'binary', () => {
+      const totalTime = Date.now() - requestStartTime;
+      console.log(`[ExpensePDF] PDF sent successfully. Total request time: ${totalTime}ms`);
     });
+  } catch (error: any) {
+    const totalTime = Date.now() - requestStartTime;
+    console.error(`[ExpensePDF] ERROR generating PDF (after ${totalTime}ms):`, {
+      message: error.message,
+      stack: error.stack,
+      expenseId: id
+    });
+    
+    // Only send error response if headers haven't been sent
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to generate PDF',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    } else {
+      console.error('[ExpensePDF] ERROR: Cannot send error response - headers already sent');
+    }
   }
 }));
 
