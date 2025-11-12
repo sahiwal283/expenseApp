@@ -35,7 +35,7 @@ router.get('/:eventId', asyncHandler(async (req: AuthRequest, res: Response) => 
 }));
 
 /**
- * PUT /api/user-checklist/:eventId/item/:itemId
+ * PUT /api/user-checklist/:eventId/item/:itemType
  * Mark a checklist item as complete or incomplete
  * 
  * Request body:
@@ -45,8 +45,8 @@ router.get('/:eventId', asyncHandler(async (req: AuthRequest, res: Response) => 
  * 
  * Authorization: User must be a participant of the event (or admin/coordinator/developer)
  */
-router.put('/:eventId/item/:itemId', asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { eventId, itemId } = req.params;
+router.put('/:eventId/item/:itemType', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { eventId, itemType } = req.params;
   const userId = req.user!.id;
   const { completed } = req.body;
 
@@ -58,18 +58,21 @@ router.put('/:eventId/item/:itemId', asyncHandler(async (req: AuthRequest, res: 
     });
   }
 
-  const itemIdNum = parseInt(itemId);
-  if (isNaN(itemIdNum)) {
+  // Validate itemType
+  if (!itemType || itemType.trim().length === 0) {
     return res.status(400).json({ 
-      error: 'Invalid item ID',
-      details: 'itemId must be a valid number'
+      error: 'Invalid item type',
+      details: 'itemType must be a non-empty string'
     });
   }
+
+  // Decode itemType (URL may encode special characters)
+  const decodedItemType = decodeURIComponent(itemType);
 
   const updatedItem = await userChecklistService.updateItemCompletion(
     userId,
     eventId,
-    itemIdNum,
+    decodedItemType,
     completed
   );
 

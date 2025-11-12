@@ -40,7 +40,7 @@ class UserChecklistService {
   async updateItemCompletion(
     userId: string,
     eventId: string,
-    itemId: number,
+    itemType: string,
     completed: boolean
   ): Promise<UserChecklistItem> {
     // Verify event exists
@@ -55,20 +55,25 @@ class UserChecklistService {
       throw new AuthorizationError('You can only update checklist items for events you participate in');
     }
 
+    // Validate itemType is not empty
+    if (!itemType || typeof itemType !== 'string' || itemType.trim().length === 0) {
+      throw new ValidationError('itemType must be a non-empty string');
+    }
+
     // Check if item exists, if not create it
-    let userItem = await userChecklistRepository.findByUserEventAndItem(userId, eventId, itemId);
+    let userItem = await userChecklistRepository.findByUserEventAndItemType(userId, eventId, itemType);
     
     if (!userItem) {
       // Create new user checklist item
       userItem = await userChecklistRepository.upsert({
         userId,
         eventId,
-        itemId,
+        itemType,
         completed
       });
     } else {
       // Update existing item
-      userItem = await userChecklistRepository.updateCompletion(userId, eventId, itemId, completed);
+      userItem = await userChecklistRepository.updateCompletion(userId, eventId, itemType, completed);
     }
 
     return userItem;
