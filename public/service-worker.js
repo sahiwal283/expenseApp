@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.6 - Checklist Loading Fix
+// Version: 1.28.7 - Booth Map Modal Functionality Fix
 // Date: November 4, 2025
 //
 // New Features:
