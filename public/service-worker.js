@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.3 - Booth Map Display Fix
+// Version: 1.28.4 - ItemType Schema Fix
 // Date: November 4, 2025
 //
 // New Features:
