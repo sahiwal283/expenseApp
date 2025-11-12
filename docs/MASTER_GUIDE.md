@@ -5,6 +5,8 @@
 
 **Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on ExpenseApp. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
 
+**⚠️ IMPORTANT:** Before working on this project, read `docs/AGENT_CONTRACT.md` to understand your role, permissions, scope, and responsibilities.
+
 ---
 
 ## 📋 Table of Contents
@@ -1547,6 +1549,7 @@ ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend"
 - **Zoho Books API**: https://www.zoho.com/books/api/v3/
 
 ### Project-Specific Documentation
+- **Agent Contract:** `docs/AGENT_CONTRACT.md` - **READ THIS FIRST** - Defines all agent roles, permissions, scope, and responsibilities
 - Database schema: `backend/src/database/schema.sql`
 - Deployment scripts: `deployment/` folder
 - Nginx config: `deployment/nginx/expenseapp.conf`
