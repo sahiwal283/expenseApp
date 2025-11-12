@@ -51,19 +51,34 @@ router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
 router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'developer', 'salesperson'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   
-  // Get expense with user/event details
-  const expense = await expenseService.getExpenseByIdWithDetails(id);
-  
-  // Generate PDF
-  const pdfBuffer = await generateExpensePDF(expense);
-  
-  // Set response headers
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="expense-${id}.pdf"`);
-  res.setHeader('Content-Length', pdfBuffer.length.toString());
-  
-  // Send PDF
-  res.send(pdfBuffer);
+  try {
+    // Get expense with user/event details
+    const expense = await expenseService.getExpenseByIdWithDetails(id);
+    
+    // Generate PDF
+    const pdfBuffer = await generateExpensePDF(expense);
+    
+    // Validate PDF buffer
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      console.error('[ExpensePDF] Generated PDF buffer is empty');
+      return res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+    
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="expense-${id}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length.toString());
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    // Send PDF as binary data
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error('[ExpensePDF] Error generating PDF:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 }));
 
 // Get expense by ID
