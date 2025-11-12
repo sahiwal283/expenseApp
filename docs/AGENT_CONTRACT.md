@@ -1065,6 +1065,7 @@ When completing work, agents MUST provide:
 | Manager Agent | January 28, 2025 | Contract read and acknowledged. Committed to delegation-only role, no direct code modification. |
 | Docs Agent | November 10, 2025 | Contract read and acknowledged. Committed to maintaining MASTER_GUIDE.md and organizing all documentation. |
 | Frontend Agent | January 15, 2025 | Contract read and acknowledged. Committed to frontend development scope, component modularization, and proper handoff protocols. |
+| Backend Agent | January 15, 2025 | Contract read and acknowledged. Committed to backend development scope, repository pattern, no `any` types, JSDoc comments, and proper handoff to Reviewer Agent. |
 | DevOps Agent | November 12, 2025 | Contract read and acknowledged. Committed to deployment responsibilities, version management, infrastructure configuration, and verifying git is committed and pushed before ending sessions. |
 | Database Agent | November 12, 2025 | Contract read and acknowledged. Committed to database schema design, migration safety, data integrity, and proper handoff protocols. |
 | | | |
