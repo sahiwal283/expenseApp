@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.28.8 - PDF Generation Promise Handling Fix
+// Version: 1.28.9 - Receipt Update API Implementation
 // Date: November 4, 2025
 //
 // New Features:
