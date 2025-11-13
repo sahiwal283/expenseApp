@@ -72,12 +72,13 @@ SELECT
     environment,
     COUNT(*) as total_corrections,
     COUNT(DISTINCT user_id) as unique_users,
-    array_agg(DISTINCT unnest(fields_corrected)) as all_corrected_fields,
+    array_agg(DISTINCT field) FILTER (WHERE field IS NOT NULL) as all_corrected_fields,
     AVG(ocr_confidence) as avg_original_confidence,
     COUNT(*) FILTER (WHERE used_in_training = TRUE) as used_in_training_count,
     DATE_TRUNC('day', MIN(created_at)) as first_correction_date,
     DATE_TRUNC('day', MAX(created_at)) as last_correction_date
-FROM ocr_corrections
+FROM ocr_corrections,
+LATERAL unnest(fields_corrected) as field
 GROUP BY environment;
 
 -- Grant permissions (adjust as needed)
