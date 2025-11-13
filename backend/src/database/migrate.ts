@@ -19,7 +19,7 @@ async function runMigrations() {
     const migrationsDir = path.join(__dirname, 'migrations');
     if (fs.existsSync(migrationsDir)) {
       const migrationFiles = fs.readdirSync(migrationsDir)
-        .filter(f => f.endsWith('.sql'))
+        .filter(f => f.endsWith('.sql') && !f.startsWith('._')) // Exclude macOS resource fork files
         .sort(); // Run in alphabetical order
       
       if (migrationFiles.length > 0) {
