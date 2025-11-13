@@ -71,6 +71,13 @@ export interface Expense {
   zohoExpenseId?: string;
   location?: string;
   ocrText?: string;
+  duplicateCheck?: Array<{
+    id: string;
+    amount: number;
+    merchant: string;
+    date: string;
+    similarity: number;
+  }> | null;
   extractedData?: {
     total: number;
     category: string;

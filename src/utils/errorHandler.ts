@@ -196,6 +196,9 @@ export function validateFormData<T extends Record<string, any>>(
   let hasErrors = false;
 
   for (const [field, validator] of Object.entries(rules)) {
+    // Skip if validator is undefined
+    if (!validator) continue;
+    
     const error = validator(data[field as keyof T]);
     if (error) {
       errors[field] = error;

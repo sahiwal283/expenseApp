@@ -383,7 +383,7 @@ describe('EventDetailsModal Component Tests', () => {
       }, { timeout: 2000 });
     });
 
-    it('should allow clicking image to view full size', async () => {
+    it('should allow clicking image to open BoothMapViewer modal', async () => {
       const boothMapUrl = '/uploads/booth-maps/test.jpg';
       const checklistData = {
         booth_ordered: true,
@@ -400,10 +400,6 @@ describe('EventDetailsModal Component Tests', () => {
         car_rentals_total: 0,
         booth_shipped: false,
       };
-
-      // Mock window.open
-      const mockOpen = vi.fn();
-      window.open = mockOpen;
 
       render(
         <EventDetailsModal
@@ -434,8 +430,12 @@ describe('EventDetailsModal Component Tests', () => {
       // Click image
       await userEvent.click(image);
 
-      // Should open image in new window
-      expect(mockOpen).toHaveBeenCalled();
+      // Should open BoothMapViewer modal (not window.open)
+      await waitFor(() => {
+        // Look for BoothMapViewer modal header
+        const modalHeaders = screen.getAllByText('Booth Floor Plan');
+        expect(modalHeaders.length).toBeGreaterThan(1); // One in EventDetailsModal, one in BoothMapViewer
+      });
     });
   });
 

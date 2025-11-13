@@ -129,7 +129,8 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
       render(<EventSetup user={mockUser} />);
 
       // Find and click "Details" button
-      const detailsButton = screen.getByRole('button', { name: /details/i });
+      // The button text is "Details" with an Info icon, so we search by accessible name
+      const detailsButton = await screen.findByRole('button', { name: /details/i });
       await userEvent.click(detailsButton);
 
       // Wait for modal to open and checklist loading function to be called
@@ -164,7 +165,7 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
 
       render(<EventSetup user={mockUser} />);
 
-      const detailsButton = screen.getByRole('button', { name: /details/i });
+      const detailsButton = await screen.findByRole('button', { name: /details/i });
       await userEvent.click(detailsButton);
 
       await waitFor(() => {
@@ -196,7 +197,7 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
 
       render(<EventSetup user={mockUser} />);
 
-      const detailsButton = screen.getByRole('button', { name: /details/i });
+      const detailsButton = await screen.findByRole('button', { name: /details/i });
       await userEvent.click(detailsButton);
 
       // Wait for initial load
@@ -275,7 +276,7 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
       const { rerender } = render(<EventSetup user={mockUser} />);
 
       // Open first event
-      const detailsButtons = screen.getAllByRole('button', { name: /details/i });
+      const detailsButtons = await screen.findAllByRole('button', { name: /details/i });
       await userEvent.click(detailsButtons[0]);
 
       await waitFor(() => {
@@ -292,7 +293,7 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
         expect(newDetailsButtons.length).toBeGreaterThan(0);
       });
 
-      const newDetailsButtons = screen.getAllByRole('button', { name: /details/i });
+      const newDetailsButtons = await screen.findAllByRole('button', { name: /details/i });
       await userEvent.click(newDetailsButtons[1]);
 
       await waitFor(() => {
