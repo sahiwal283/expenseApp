@@ -82,6 +82,12 @@ LATERAL unnest(fields_corrected) as field
 GROUP BY environment;
 
 -- Grant permissions (adjust as needed)
-GRANT SELECT ON ocr_training_ready_corrections TO expense_sandbox;
-GRANT SELECT ON ocr_correction_stats_by_env TO expense_sandbox;
+-- Note: expense_sandbox role may not exist in all environments
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'expense_sandbox') THEN
+        GRANT SELECT ON ocr_training_ready_corrections TO expense_sandbox;
+        GRANT SELECT ON ocr_correction_stats_by_env TO expense_sandbox;
+    END IF;
+END $$;
 
