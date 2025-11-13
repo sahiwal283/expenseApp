@@ -614,26 +614,36 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
     }
   );
 
-  // Check for potential duplicates
-  const duplicates = await DuplicateDetectionService.checkForDuplicates(
-    expense.merchant,
-    expense.amount,
-    expense.date,
-    req.user!.id,
-    id
-  );
+  // Check for potential duplicates (non-blocking - don't fail if column doesn't exist)
+  try {
+    const duplicates = await DuplicateDetectionService.checkForDuplicates(
+      expense.merchant,
+      expense.amount,
+      expense.date,
+      req.user!.id,
+      id
+    );
 
-  // Update expense with duplicate warnings
-  if (duplicates.length > 0) {
-    await expenseRepository.update(id, {
-      duplicate_check: JSON.stringify(duplicates)
-    });
-    console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
-    (expense as any).duplicate_check = duplicates;
-  } else {
-    await expenseRepository.update(id, {
-      duplicate_check: null
-    });
+    // Update expense with duplicate warnings (only if column exists)
+    if (duplicates.length > 0) {
+      await expenseRepository.update(id, {
+        duplicate_check: JSON.stringify(duplicates)
+      });
+      console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
+      (expense as any).duplicate_check = duplicates;
+    } else {
+      await expenseRepository.update(id, {
+        duplicate_check: null
+      });
+    }
+  } catch (duplicateError: any) {
+    // Non-blocking: If duplicate_check column doesn't exist or update fails, log but don't fail the request
+    if (duplicateError?.message?.includes('duplicate_check') || duplicateError?.context?.originalMessage?.includes('duplicate_check')) {
+      console.warn(`[DuplicateCheck] Skipping duplicate check update - column may not exist: ${duplicateError.message}`);
+    } else {
+      // Re-throw if it's a different error
+      throw duplicateError;
+    }
   }
 
   res.json(normalizeExpense(expense));
