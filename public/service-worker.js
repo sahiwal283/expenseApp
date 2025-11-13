@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.29.0 - Production Release
+// Version: 1.29.1 - Production Release
 // Date: November 4, 2025
 //
 // New Features:

@@ -292,6 +292,293 @@ describe('ExpenseRepository', () => {
       );
       expect(result).toEqual(mockExpense);
     });
+
+    it('should handle empty object (all undefined)', async () => {
+      vi.mocked(dbQuery).mockResolvedValueOnce({
+        rows: [mockExpense],
+        command: 'SELECT',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', {});
+
+      // Should call findById instead of UPDATE
+      expect(dbQuery).toHaveBeenCalledWith(
+        'SELECT * FROM expenses WHERE id = $1',
+        ['exp-123']
+      );
+      expect(result).toEqual(mockExpense);
+    });
+
+    it('should handle mixed null and undefined values', async () => {
+      const updates = {
+        zoho_expense_id: null, // Should be included (clear field)
+        zoho_entity: null, // Should be included (clear field)
+        merchant: undefined, // Should be filtered out
+        amount: undefined, // Should be filtered out
+        status: 'approved' as const, // Should be included
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, zoho_expense_id: null, zoho_entity: null, status: 'approved' }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      // Verify query includes null values but not undefined
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryString).toContain('zoho_expense_id');
+      expect(queryString).toContain('zoho_entity');
+      expect(queryString).toContain('status');
+      expect(queryString).not.toContain('merchant');
+      expect(queryString).not.toContain('amount');
+      expect(queryValues).toContain(null);
+      expect(queryValues).toContain('approved');
+      expect(queryValues).not.toContain(undefined);
+    });
+
+    it('should clear duplicate_check field with null', async () => {
+      const updates = {
+        duplicate_check: null, // Should clear the field
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, duplicate_check: null }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryString).toContain('duplicate_check');
+      expect(queryValues).toContain(null);
+    });
+
+    it('should set duplicate_check field with defined value', async () => {
+      const duplicateData = JSON.stringify([{ id: 'exp-456', similarity: 0.95 }]);
+      const updates = {
+        duplicate_check: duplicateData,
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, duplicate_check: duplicateData }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryString).toContain('duplicate_check');
+      expect(queryValues).toContain(duplicateData);
+    });
+
+    it('should use parameterized queries to prevent SQL injection', async () => {
+      const maliciousInput = "'; DROP TABLE expenses; --";
+      const updates = {
+        merchant: maliciousInput,
+        description: maliciousInput,
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, merchant: maliciousInput, description: maliciousInput }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      // Verify parameterized query (uses $1, $2, etc. placeholders)
+      expect(queryString).toMatch(/\$\d+/);
+      // Verify malicious input is in values array, not in query string
+      expect(queryString).not.toContain(maliciousInput);
+      expect(queryValues).toContain(maliciousInput);
+    });
+
+    it('should throw NotFoundError when updating non-existent expense with all undefined', async () => {
+      vi.mocked(dbQuery).mockResolvedValueOnce({
+        rows: [],
+        command: 'SELECT',
+        rowCount: 0,
+        oid: 0,
+        fields: [],
+      });
+
+      await expect(
+        repository.update('non-existent', {
+          status: undefined,
+          amount: undefined,
+        })
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should update multiple fields with defined values', async () => {
+      const updates = {
+        merchant: 'Updated Merchant',
+        amount: 200.00,
+        category: 'Updated Category',
+        description: 'Updated Description',
+        location: 'Updated Location',
+        card_used: 'Updated Card',
+        reimbursement_required: true,
+        zoho_entity: 'haute',
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, ...updates }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      expect(result.merchant).toBe('Updated Merchant');
+      expect(result.amount).toBe(200.00);
+      expect(result.category).toBe('Updated Category');
+      expect(result.description).toBe('Updated Description');
+      expect(result.location).toBe('Updated Location');
+      expect(result.card_used).toBe('Updated Card');
+      expect(result.reimbursement_required).toBe(true);
+      expect(result.zoho_entity).toBe('haute');
+    });
+
+    it('should handle null values for all nullable fields', async () => {
+      const updates = {
+        zoho_expense_id: null,
+        zoho_entity: null,
+        duplicate_check: null,
+        description: null,
+        location: null,
+        receipt_url: null,
+        reimbursement_status: null,
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, ...updates }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      // Verify all null values are included
+      expect(queryString).toContain('zoho_expense_id');
+      expect(queryString).toContain('zoho_entity');
+      expect(queryString).toContain('duplicate_check');
+      expect(queryString).toContain('description');
+      expect(queryString).toContain('location');
+      expect(queryString).toContain('receipt_url');
+      expect(queryString).toContain('reimbursement_status');
+      
+      // Count null values in query values
+      const nullCount = queryValues.filter(v => v === null).length;
+      expect(nullCount).toBeGreaterThanOrEqual(7);
+    });
+
+    it('should filter out id field even if provided', async () => {
+      const updates = {
+        id: 'should-be-ignored',
+        merchant: 'Updated Merchant',
+        status: 'approved' as const,
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, merchant: 'Updated Merchant', status: 'approved' }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+
+      // Verify id is not in SET clause (it's only in WHERE clause)
+      expect(queryString).toContain('WHERE id = $1');
+      expect(queryString).not.toMatch(/SET.*id\s*=/);
+    });
+
+    it('should handle boolean false values correctly', async () => {
+      const updates = {
+        reimbursement_required: false,
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, reimbursement_required: false }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryString).toContain('reimbursement_required');
+      expect(queryValues).toContain(false);
+    });
+
+    it('should handle zero and empty string values correctly', async () => {
+      const updates = {
+        amount: 0,
+        description: '',
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, amount: 0, description: '' }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryValues).toContain(0);
+      expect(queryValues).toContain('');
+    });
   });
 
   describe('updateStatus', () => {
