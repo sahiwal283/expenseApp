@@ -4,9 +4,9 @@
 -- 1. Drop the existing role check constraint
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 
--- 2. Add new constraint that includes 'pending'
+-- 2. Add new constraint that includes 'pending' and 'developer'
 ALTER TABLE users ADD CONSTRAINT users_role_check 
-  CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson', 'pending'));
+  CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson', 'developer', 'pending'));
 
 -- 3. Update existing users with NULL roles or registration_pending = true to 'pending'
 UPDATE users 
