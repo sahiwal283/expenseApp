@@ -90,7 +90,7 @@ export class ExpenseRepository extends BaseRepository<Expense> {
     const filteredData: Partial<Expense> = {};
     for (const [key, value] of Object.entries(data)) {
       if (key !== 'id' && value !== undefined) {
-        filteredData[key as keyof Expense] = value;
+        filteredData[key as keyof Expense] = value as any;
       }
     }
 
