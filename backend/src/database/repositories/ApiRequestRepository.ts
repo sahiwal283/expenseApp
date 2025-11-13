@@ -52,21 +52,19 @@ export class ApiRequestRepository extends BaseRepository<ApiRequest> {
   }): Promise<ApiRequest> {
     const result = await this.executeQuery<ApiRequest>(
       `INSERT INTO ${this.tableName} 
-       (user_id, method, path, status_code, response_time_ms, ip_address, 
-        user_agent, error_message, request_body, response_body, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       (user_id, method, endpoint, status_code, response_time_ms, ip_address, 
+        user_agent, error_message, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         data.userId || null,
         data.method,
-        data.path,
+        data.path, // path parameter maps to endpoint column
         data.statusCode,
         data.responseTimeMs,
         data.ipAddress || null,
         data.userAgent || null,
         data.errorMessage || null,
-        data.requestBody ? JSON.stringify(data.requestBody) : null,
-        data.responseBody ? JSON.stringify(data.responseBody) : null,
         data.metadata ? JSON.stringify(data.metadata) : null
       ]
     );
@@ -88,12 +86,12 @@ export class ApiRequestRepository extends BaseRepository<ApiRequest> {
   }
 
   /**
-   * Find requests by path
+   * Find requests by endpoint (path)
    */
   async findByPath(path: string, limit: number = 100): Promise<ApiRequest[]> {
     const result = await this.executeQuery<ApiRequest>(
       `SELECT * FROM ${this.tableName} 
-       WHERE path = $1 
+       WHERE endpoint = $1 
        ORDER BY created_at DESC 
        LIMIT $2`,
       [path, limit]
@@ -168,25 +166,25 @@ export class ApiRequestRepository extends BaseRepository<ApiRequest> {
       count: parseInt(row.count, 10)
     }));
 
-    // Requests by path (top 10)
+    // Requests by endpoint (top 10) - Note: column is 'endpoint' not 'path'
     const pathResult = await this.executeQuery<{
-      path: string;
+      endpoint: string;
       count: string;
       avg_response_time: string;
     }>(
       `SELECT 
-        path, 
+        endpoint, 
         COUNT(*) as count,
         AVG(response_time_ms) as avg_response_time
        FROM ${this.tableName} 
        WHERE created_at >= NOW() - INTERVAL '${interval}'
-       GROUP BY path 
+       GROUP BY endpoint 
        ORDER BY count DESC 
        LIMIT 10`
     );
 
     const requestsByPath = pathResult.rows.map(row => ({
-      path: row.path,
+      path: row.endpoint, // Map endpoint to path for API response
       count: parseInt(row.count, 10),
       avg_response_time: parseFloat(row.avg_response_time)
     }));
@@ -232,7 +230,7 @@ export class ApiRequestRepository extends BaseRepository<ApiRequest> {
 
     const result = await this.executeQuery<any>(
       `SELECT 
-        path,
+        endpoint,
         method,
         COUNT(*) as count,
         AVG(response_time_ms) as avg_response_time,
@@ -242,13 +240,13 @@ export class ApiRequestRepository extends BaseRepository<ApiRequest> {
         (COUNT(CASE WHEN status_code >= 500 THEN 1 END)::float / COUNT(*)::float * 100) as error_rate
        FROM ${this.tableName} 
        WHERE created_at >= NOW() - INTERVAL '${interval}'
-       GROUP BY path, method 
+       GROUP BY endpoint, method 
        ORDER BY count DESC 
        LIMIT 20`
     );
 
     return result.rows.map(row => ({
-      path: row.path,
+      path: row.endpoint, // Map endpoint to path for API response
       method: row.method,
       count: parseInt(row.count, 10),
       avgResponseTime: parseFloat(row.avg_response_time),
