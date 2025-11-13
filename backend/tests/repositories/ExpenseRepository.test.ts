@@ -206,6 +206,92 @@ describe('ExpenseRepository', () => {
         expect.anything()
       );
     });
+
+    it('should filter out undefined values from update data', async () => {
+      const updates = {
+        status: 'approved' as const,
+        amount: undefined, // Should be filtered out
+        zoho_expense_id: undefined, // Should be filtered out
+        merchant: 'Updated Merchant',
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, status: 'approved', merchant: 'Updated Merchant' }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      // Verify the query was called with only defined values
+      expect(dbQuery).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE expenses'),
+        expect.arrayContaining([
+          'exp-123',
+          'approved',
+          'Updated Merchant',
+        ])
+      );
+
+      // Verify undefined values were not included in the query
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryString).not.toContain('amount');
+      expect(queryString).not.toContain('zoho_expense_id');
+      expect(queryValues).not.toContain(undefined);
+    });
+
+    it('should allow null values for clearing fields', async () => {
+      const updates = {
+        zoho_expense_id: null, // Should be included (for clearing the field)
+        zoho_entity: null, // Should be included
+      };
+
+      vi.mocked(dbQuery).mockResolvedValue({
+        rows: [{ ...mockExpense, zoho_expense_id: null, zoho_entity: null }],
+        command: 'UPDATE',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', updates);
+
+      // Verify null values were included in the query
+      const callArgs = vi.mocked(dbQuery).mock.calls[0];
+      const queryString = callArgs[0] as string;
+      const queryValues = callArgs[1] as any[];
+
+      expect(queryString).toContain('zoho_expense_id');
+      expect(queryString).toContain('zoho_entity');
+      expect(queryValues).toContain(null);
+    });
+
+    it('should return current expense if all values are undefined', async () => {
+      vi.mocked(dbQuery).mockResolvedValueOnce({
+        rows: [mockExpense],
+        command: 'SELECT',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      });
+
+      const result = await repository.update('exp-123', {
+        status: undefined,
+        amount: undefined,
+      });
+
+      // Should call findById instead of UPDATE (via executeQuery)
+      expect(dbQuery).toHaveBeenCalledWith(
+        'SELECT * FROM expenses WHERE id = $1',
+        ['exp-123']
+      );
+      expect(result).toEqual(mockExpense);
+    });
   });
 
   describe('updateStatus', () => {

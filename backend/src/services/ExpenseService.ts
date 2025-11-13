@@ -352,7 +352,7 @@ class ExpenseService {
     
     if (currentExpense.zoho_entity !== entityValue && currentExpense.zoho_expense_id) {
       console.log(`[Entity Change] Clearing zoho_expense_id for expense ${expenseId} (was pushed to ${currentExpense.zoho_entity}, now changing to ${entityValue || 'Unassigned'})`);
-      updates.zoho_expense_id = undefined; // Clear the Zoho expense ID to allow re-push
+      updates.zoho_expense_id = null; // Clear the Zoho expense ID to allow re-push (use null, not undefined)
     }
 
     // AUTOMATIC APPROVAL LOGIC

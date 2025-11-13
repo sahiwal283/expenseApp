@@ -82,11 +82,30 @@ export class ExpenseRepository extends BaseRepository<Expense> {
 
   /**
    * Update expense
+   * Filters out undefined values to prevent SQL errors
+   * Allows null values for clearing fields (e.g., zoho_expense_id)
    */
   async update(id: string, data: Partial<Expense>): Promise<Expense> {
-    const fields = Object.keys(data).filter(key => key !== 'id');
+    // Filter out undefined values but keep null values (for clearing fields)
+    const filteredData: Partial<Expense> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (key !== 'id' && value !== undefined) {
+        filteredData[key as keyof Expense] = value;
+      }
+    }
+
+    // If no fields to update after filtering, return current expense
+    const fields = Object.keys(filteredData);
+    if (fields.length === 0) {
+      const current = await this.findById(id);
+      if (!current) {
+        throw new NotFoundError('Expense', id);
+      }
+      return current;
+    }
+
     const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
-    const values = fields.map(field => (data as any)[field]);
+    const values = fields.map(field => (filteredData as any)[field]);
 
     const result = await this.executeQuery<Expense>(
       `UPDATE ${this.tableName} 

@@ -30,6 +30,7 @@
 | 022 | `022_add_car_rental_assignment.sql` | Add rental_type and assignment fields to car rentals | ✅ Applied |
 | 023 | `023_fix_audit_log_table_name.sql` | Rename audit_log to audit_logs to match code expectations | ✅ Applied |
 | 024 | `024_create_user_checklist_items.sql` | Create user-facing checklist items table (guidelines, packing lists) | ✅ Applied |
+| 025 | `025_create_schema_migrations_table.sql` | Create migration tracking table for explicit migration management | ✅ Applied |
 
 ## Notes
 
@@ -57,8 +58,8 @@
 
 ## Adding New Migrations
 
-1. **Filename Format:** `NNN_descriptive_name.sql` (e.g., `025_add_new_feature.sql`)
-2. **Sequential Numbering:** Use next available number (currently 025)
+1. **Filename Format:** `NNN_descriptive_name.sql` (e.g., `026_add_new_feature.sql`)
+2. **Sequential Numbering:** Use next available number (currently 026)
 3. **Idempotency:** Always use `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE IF NOT EXISTS`, etc.
 4. **Testing:** Test on sandbox database before production
 5. **Documentation:** Update this README with description
@@ -76,6 +77,36 @@ cd backend && npm run migrate
 # Or manually
 ts-node src/database/migrate.ts
 ```
+
+### Migration Tracking System (Migration 025+)
+
+**New System:** Explicit migration tracking via `schema_migrations` table.
+
+**How It Works:**
+1. Migration 025 creates `schema_migrations` tracking table
+2. `migrate.ts` checks tracking table before running migrations
+3. Only migrations not in tracking table are executed
+4. Each successfully applied migration is recorded in tracking table
+
+**Benefits:**
+- ✅ Faster deployments (only new migrations run)
+- ✅ Clear visibility of applied migrations
+- ✅ More reliable than error-code handling
+- ✅ Better for production environments
+
+**Backward Compatibility:**
+- System works with or without tracking table
+- Fresh databases: Uses legacy error-code approach until migration 025 runs
+- Existing databases: After migration 025, uses explicit tracking
+
+**Marking Existing Migrations:**
+For existing databases, run the one-time script to mark migrations 002-024 as applied:
+
+```bash
+ts-node src/database/scripts/mark-existing-migrations.ts
+```
+
+This prevents re-running old migrations on databases that already have them applied.
 
 ## Best Practices (Preventing Schema Mismatches)
 
