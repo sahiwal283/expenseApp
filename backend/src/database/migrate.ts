@@ -39,6 +39,9 @@ async function runMigrations() {
             // Log warning but continue with other migrations
             if (migrationError.code === '42710' || migrationError.code === '42P07') {
               console.log(`  ⚠ Already applied (skipped): ${file}`);
+            } else if (migrationError.code === '42501') {
+              // Permission denied - log warning but continue (may need manual intervention)
+              console.log(`  ⚠ Permission denied (skipped): ${file} - ${migrationError.message}`);
             } else {
               console.error(`  ✗ Failed to apply ${file}:`, migrationError.message);
               throw migrationError;
