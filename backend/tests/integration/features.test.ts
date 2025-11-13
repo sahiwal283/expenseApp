@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { pool } from '../../src/config/database';
 import { auditLogRepository } from '../../src/database/repositories/AuditLogRepository';
 import { expenseRepository } from '../../src/database/repositories/ExpenseRepository';
