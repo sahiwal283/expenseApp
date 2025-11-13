@@ -624,17 +624,31 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
       id
     );
 
-    // Update expense with duplicate warnings (only if column exists)
-    if (duplicates.length > 0) {
-      await expenseRepository.update(id, {
-        duplicate_check: JSON.stringify(duplicates)
-      });
-      console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
-      (expense as any).duplicate_check = duplicates;
+    // Only update duplicate_check if column exists (check first)
+    const hasDuplicateCheckColumn = await query(
+      `SELECT column_name FROM information_schema.columns 
+       WHERE table_name = 'expenses' AND column_name = 'duplicate_check'`
+    ).then(result => result.rows.length > 0).catch(() => false);
+
+    if (hasDuplicateCheckColumn) {
+      // Update expense with duplicate warnings (only if column exists)
+      if (duplicates.length > 0) {
+        await expenseRepository.update(id, {
+          duplicate_check: JSON.stringify(duplicates)
+        });
+        console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
+        (expense as any).duplicate_check = duplicates;
+      } else {
+        await expenseRepository.update(id, {
+          duplicate_check: null
+        });
+      }
     } else {
-      await expenseRepository.update(id, {
-        duplicate_check: null
-      });
+      // Column doesn't exist - just include in response without updating database
+      if (duplicates.length > 0) {
+        console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id} (duplicate_check column not available)`);
+        (expense as any).duplicate_check = duplicates;
+      }
     }
   } catch (duplicateError: any) {
     // Non-blocking: If duplicate_check column doesn't exist or update fails, log but don't fail the request
