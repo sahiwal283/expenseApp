@@ -7,6 +7,129 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.29.0] - 2025-11-12 (Production) ✨ MINOR - Production Release
+
+### Release Summary
+**Production Release** - Consolidates all features and fixes from v1.28.0 through v1.28.16 for production deployment.
+
+### Major Features
+- **PDF Generation System** - Complete PDF optimization and reliability improvements
+  - Optimized PDF layout with enlarged receipt images and reduced white space
+  - Single page PDF consolidation
+  - Enhanced PDF content and labels
+  - Improved PDF download reliability across browsers
+  - Security headers for secure PDF downloads
+- **Checklist System Enhancements** - Comprehensive checklist management
+  - Auto-check checklist items when receipts are uploaded
+  - User checklist API endpoints for user-facing checklists
+  - Booth map display and management improvements
+  - Schema fixes and type safety improvements
+- **Full Codebase Refactor** - Architecture modernization
+  - Repository pattern implementation (Backend)
+  - Component modularization (Frontend)
+  - Helper function extraction for reduced complexity
+  - Improved code organization and maintainability
+- **Agent Contract System** - Comprehensive agent coordination
+  - Agent Contract documentation with roles and responsibilities
+  - Environment separation guide with build-time validation
+  - Clear handoff protocols and communication guidelines
+
+### Fixed
+- **PDF Download Failures** - Fixed PDF download reliability issues
+  - Skip `apiRequestLogger` for PDF endpoints to prevent binary data corruption
+  - Improved binary handling for PDF responses
+  - Fixed "Insecure download blocked" warning by adding security headers
+  - Removed blank third page from expense PDF generation
+- **PDF Layout Issues** - Optimized PDF layout and content
+  - Enlarged receipt image for better visibility
+  - Reduced white space for more compact layout
+  - Consolidated PDF to single page (removed unnecessary pages)
+  - Always show Zoho Integration section in PDF
+  - Display 'Unassigned' for unassigned expenses in PDF
+- **Login/Data Loading Issues** - Added comprehensive logging and diagnostics
+  - Enhanced error logging for login failures
+  - Improved diagnostics for data loading issues
+  - Better error messages for troubleshooting
+- **Frontend API URL Issues** - Fixed hardcoded API URLs
+  - Fixed relative paths for sandbox/production
+  - Improved CORS configuration
+  - Better API client configuration
+- **Checklist Issues** - Multiple checklist fixes
+  - Fixed checklist loading issues
+  - Fixed booth map modal functionality
+  - Fixed schema mismatch (item_id → item_type)
+  - Fixed TypeScript receipt filtering issues
+  - Fixed booth map upload functionality
+
+### Added
+- **Receipt Update API** - New endpoint to update expense receipt with change tracking
+  - `PUT /api/expenses/:id/receipt` - Update expense receipt
+  - Tracks changes to receipt uploads
+  - Maintains audit trail for receipt updates
+- **User Checklist API Endpoints** - New API endpoints for user-facing checklists
+  - `GET /api/checklist/user/:eventId` - Get user checklist for event
+  - `POST /api/checklist/user/:eventId/items` - Create user checklist item
+  - `PUT /api/checklist/user/:eventId/items/:id` - Update user checklist item
+  - `DELETE /api/checklist/user/:eventId/items/:id` - Delete user checklist item
+- **User Checklist Items Table** - New database table for user-facing checklists
+  - `user_checklist_items` table added
+  - Supports user-specific checklist management
+- **Build-Time Validation** - Automatic environment validation before builds
+  - `prebuild:sandbox` hook validates sandbox configuration
+  - `prebuild:production` hook validates production configuration
+  - Prevents misconfigurations that could cause production failures
+- **Browser Compatibility Notes** - Added documentation for browser compatibility
+- **CORS Documentation** - Added note about CORS and relative API paths
+- **Comprehensive Test Coverage** - Added tests for new features
+  - Receipt filtering tests
+  - Multi-receipt viewer modal tests
+  - Booth map display tests
+  - EventDetailsModal tests
+  - ChecklistSummary tests
+
+### Changed
+- **PDF Generation** - Improved PDF generation reliability
+  - Better Promise handling for PDF generation
+  - Enhanced download debugging capabilities
+  - Improved PDF endpoint detection in `apiRequestLogger`
+- **Event Dropdown** - Removed filter buttons from event dropdown
+  - Simplified UI
+  - Cleaner interface
+- **Architecture** - Modernized codebase architecture
+  - Repository pattern (Backend)
+  - Component modularization (Frontend)
+  - Helper function extraction
+  - Better code organization
+
+### Technical Details
+- **Security Headers**: Added proper headers to fix browser download warnings
+- **Binary Handling**: Improved handling of binary PDF data
+- **Logging**: Enhanced logging for PDF generation and download processes
+- **Type Safety**: Improved TypeScript type safety across codebase
+- **Backward Compatibility**: All changes maintain existing API contracts
+
+### Versions
+- Frontend: v1.29.0
+- Backend: v1.29.0
+- Git Branch: `main` (merged from `v1.28.0`)
+- Status: ✅ Production Release - Ready for Deployment
+
+### Migration Notes
+- **No database migrations required** - All migrations handled separately
+- **No breaking API changes** - All changes are backward compatible
+- **Existing clients work without modification** - Full backward compatibility
+- **PDF downloads now more reliable** - Improved across all browsers
+- **Build-time validation** - Prevents environment misconfigurations
+
+### Deployment Notes
+- **Version Bump**: Minor version bump (1.28.16 → 1.29.0) for production release
+- **Git Operations**: All changes committed and merged to main
+- **Remote**: GitHub updated with all commits
+- **Linter**: 112 linter errors (non-blocking, TypeScript test type definitions)
+- **Ready**: ✅ Ready for production deployment
+
+---
+
 ## [1.28.16] - 2025-11-12 (Sandbox) 🔧 PATCH - PDF Optimization & Diagnostics
 
 ### Fixed
