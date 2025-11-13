@@ -9,9 +9,18 @@ ALTER TABLE users ADD CONSTRAINT users_role_check
   CHECK (role IN ('admin', 'accountant', 'coordinator', 'salesperson', 'developer', 'pending'));
 
 -- 3. Update existing users with NULL roles or registration_pending = true to 'pending'
-UPDATE users 
-SET role = 'pending' 
-WHERE role IS NULL OR registration_pending = TRUE;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'registration_pending') THEN
+        UPDATE users 
+        SET role = 'pending' 
+        WHERE role IS NULL OR registration_pending = TRUE;
+    ELSE
+        UPDATE users 
+        SET role = 'pending' 
+        WHERE role IS NULL;
+    END IF;
+END $$;
 
 -- 4. Make role column NOT NULL (since we now always have a role)
 ALTER TABLE users ALTER COLUMN role SET NOT NULL;
