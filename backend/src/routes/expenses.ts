@@ -498,29 +498,50 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
     }
   }
 
-  // Always check for potential duplicates on update
-  const duplicates = await DuplicateDetectionService.checkForDuplicates(
-    merchant || expense.merchant,
-    amount ? parseFloat(amount) : expense.amount,
-    date || expense.date,
-    req.user!.id,
-    id
-  );
+  // Always check for potential duplicates on update (non-blocking - don't fail if column doesn't exist)
+  try {
+    const duplicates = await DuplicateDetectionService.checkForDuplicates(
+      merchant || expense.merchant,
+      amount ? parseFloat(amount) : expense.amount,
+      date || expense.date,
+      req.user!.id,
+      id
+    );
 
-  // Update expense with duplicate warnings
-  if (duplicates.length > 0) {
-    await expenseRepository.update(id, {
-      duplicate_check: JSON.stringify(duplicates)
-    });
-    console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
-    
-    // Include in response
-    (expense as any).duplicate_check = duplicates;
-  } else {
-    // Clear duplicates if no longer matching
-    await expenseRepository.update(id, {
-      duplicate_check: null
-    });
+    // Only update duplicate_check if column exists (check first)
+    const hasDuplicateCheckColumn = await query(
+      `SELECT column_name FROM information_schema.columns 
+       WHERE table_name = 'expenses' AND column_name = 'duplicate_check'`
+    ).then(result => result.rows.length > 0).catch(() => false);
+
+    if (hasDuplicateCheckColumn) {
+      // Update expense with duplicate warnings (only if column exists)
+      if (duplicates.length > 0) {
+        await expenseRepository.update(id, {
+          duplicate_check: JSON.stringify(duplicates)
+        });
+        console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
+        (expense as any).duplicate_check = duplicates;
+      } else {
+        await expenseRepository.update(id, {
+          duplicate_check: null
+        });
+      }
+    } else {
+      // Column doesn't exist - just include in response without updating database
+      if (duplicates.length > 0) {
+        console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id} (duplicate_check column not available)`);
+        (expense as any).duplicate_check = duplicates;
+      }
+    }
+  } catch (duplicateError: any) {
+    // Non-blocking: If duplicate_check column doesn't exist or update fails, log but don't fail the request
+    if (duplicateError?.message?.includes('duplicate_check') || duplicateError?.context?.originalMessage?.includes('duplicate_check')) {
+      console.warn(`[DuplicateCheck] Skipping duplicate check update - column may not exist: ${duplicateError.message}`);
+    } else {
+      // Re-throw if it's a different error
+      throw duplicateError;
+    }
   }
 
   console.log(`Successfully updated expense ${id}`);
