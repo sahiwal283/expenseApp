@@ -557,6 +557,35 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
+  // A reply on a 'needs further review' expense can trigger a backend
+  // auto-transition back to pending upstream. reloadData() refreshes the
+  // `expenses` list but not the independent `viewingExpense` state, so the
+  // open modal would otherwise keep showing the stale status (and the
+  // "will send this back for review" warning) until closed and reopened.
+  // Mirrors handleStatusChange's pattern of pairing the list reload with an
+  // explicit setViewingExpense for the currently-open expense.
+  const handleMessageSent = async () => {
+    const targetExpenseId = viewingExpense?.id;
+    try {
+      const [, freshExpenses] = await Promise.all([
+        reloadData(),
+        targetExpenseId ? (api.getExpenses() as Promise<Expense[]>) : Promise.resolve(null),
+      ]);
+      if (!targetExpenseId || !freshExpenses) return;
+      const updatedExpense = freshExpenses.find((e) => e.id === targetExpenseId);
+      if (updatedExpense) {
+        // Functional update: only apply if the modal is still open on the
+        // same expense — the user may have closed it (or navigated to a
+        // different one) while the request was in flight.
+        setViewingExpense((current) =>
+          current && current.id === targetExpenseId ? updatedExpense : current
+        );
+      }
+    } catch (error) {
+      console.error('[Message Sent] Failed to refresh expense:', error);
+    }
+  };
+
   const handleAssignEntity = async (expense: Expense, entity: string) => {
     // Warn if changing entity on an already-pushed expense
     const wasPushed = expense.zohoExpenseId || pushedExpenses.has(expense.id);
@@ -941,7 +970,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 expenseId={viewingExpense.id}
                 currentUserRole={user.role}
                 expenseStatus={viewingExpense.status}
-                onSent={reloadData}
+                onSent={handleMessageSent}
               />
 
               {/* ✅ REFACTORED: Replaced 27 lines with ExpenseModalReceipt */}
