@@ -1,0 +1,101 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../../src/services/midas', () => ({
+  getMidasClient: vi.fn(),
+  getExpenseBackend: vi.fn(() => 'midas'),
+  getMidasMode: vi.fn(() => 'live'),
+}));
+vi.mock('../../src/services/expenseStore', () => ({ getExpenseStore: vi.fn() }));
+vi.mock('../../src/database/repositories/ExpenseMessageNotificationRepository', () => ({
+  markThreadRead: vi.fn().mockResolvedValue(1),
+  listUnread: vi.fn().mockResolvedValue([]),
+}));
+
+import { getMidasClient } from '../../src/services/midas';
+import { getExpenseStore } from '../../src/services/expenseStore';
+import { markThreadRead } from '../../src/database/repositories/ExpenseMessageNotificationRepository';
+import { ExpenseMessageService } from '../../src/services/ExpenseMessageService';
+
+const salesperson = { id: 'u1', email: 'u@x.com', name: 'U', role: 'salesperson', username: 'u' };
+const accountant = { id: 'a1', email: 'a@x.com', name: 'A', role: 'accountant', username: 'a' };
+
+describe('ExpenseMessageService', () => {
+  let client: any;
+  let store: any;
+  let service: ExpenseMessageService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    client = {
+      listExpenseMessages: vi.fn().mockResolvedValue([]),
+      postExpenseMessage: vi.fn().mockResolvedValue({ id: 'm1', body: 'hi' }),
+    };
+    store = { getById: vi.fn().mockResolvedValue({ id: 'ts-1', midasExpenseId: 'midas-1' }) };
+    (getMidasClient as any).mockReturnValue(client);
+    (getExpenseStore as any).mockReturnValue(store);
+    service = new ExpenseMessageService();
+  });
+
+  it('resolves the trade-show id to the Midas id before reading', async () => {
+    await service.getThread('ts-1', salesperson as any);
+    expect(store.getById).toHaveBeenCalledWith('ts-1', salesperson);
+    expect(client.listExpenseMessages).toHaveBeenCalledWith('midas-1');
+  });
+
+  it('throws NOT_FOUND when the actor cannot see the expense', async () => {
+    store.getById.mockResolvedValue(null);
+    await expect(service.getThread('ts-1', salesperson as any)).rejects.toThrow(/not found/i);
+    expect(client.listExpenseMessages).not.toHaveBeenCalled();
+  });
+
+  it('throws when the expense has no Midas id', async () => {
+    store.getById.mockResolvedValue({ id: 'ts-1' });
+    await expect(service.getThread('ts-1', salesperson as any)).rejects.toThrow(/not linked/i);
+  });
+
+  it('sends actor headers derived from the trade-show user', async () => {
+    await service.postMessage('ts-1', { body: 'because buyers' }, salesperson as any);
+    expect(client.postExpenseMessage).toHaveBeenCalledWith(
+      'midas-1',
+      { body: 'because buyers', requestType: null },
+      expect.objectContaining({
+        email: 'u@x.com',
+        externalUserId: 'u1',
+        name: 'U',
+      })
+    );
+  });
+
+  it('rejects requestType from a salesperson', async () => {
+    await expect(
+      service.postMessage('ts-1', { body: 'x', requestType: 'info_request' }, salesperson as any)
+    ).rejects.toThrow(/not permitted/i);
+    expect(client.postExpenseMessage).not.toHaveBeenCalled();
+  });
+
+  it('allows requestType from an accountant', async () => {
+    await service.postMessage('ts-1', { body: 'x', requestType: 'info_request' }, accountant as any);
+    expect(client.postExpenseMessage).toHaveBeenCalledWith(
+      'midas-1',
+      { body: 'x', requestType: 'info_request' },
+      expect.anything()
+    );
+  });
+
+  it('flags the viewer own messages by email, not by user id', async () => {
+    client.listExpenseMessages.mockResolvedValue([
+      { id: 'm1', body: 'from them', sender: { id: 'midas-a', name: 'Dana', role: 'accountant', email: 'a@x.com' } },
+      { id: 'm2', body: 'from me', sender: { id: 'midas-u', name: 'U', role: 'user', email: 'U@X.com' } },
+    ]);
+
+    const thread = await service.getThread('ts-1', salesperson as any);
+
+    // Midas ids never equal trade-show ids; the match is on email, case-insensitively.
+    expect(thread.map((m) => m.isMine)).toEqual([false, true]);
+  });
+
+  it('marks the thread read against the Midas expense id', async () => {
+    await service.markRead('ts-1', salesperson as any);
+    expect(markThreadRead).toHaveBeenCalledWith('u1', 'midas-1');
+  });
+});
