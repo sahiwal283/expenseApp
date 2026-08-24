@@ -1173,11 +1173,16 @@ export interface NotificationRow {
 }
 
 /**
- * Insert a batch, skipping any message already recorded. Returns how many rows
- * were genuinely new — a replayed batch returns 0 rather than double-notifying.
+ * Insert a batch, skipping any message already recorded. Returns the ids
+ * actually inserted — a replayed batch returns [] rather than double-notifying.
+ *
+ * The caller pushes only for these ids. Pushing for the whole batch instead
+ * would walk straight past the UNIQUE constraint: if the insert succeeds and
+ * the cursor write then fails, the next tick re-reads the same window and
+ * re-notifies every user.
  */
-export async function recordNotifications(rows: NotificationInsert[]): Promise<number> {
-  if (rows.length === 0) return 0;
+export async function recordNotifications(rows: NotificationInsert[]): Promise<string[]> {
+  if (rows.length === 0) return [];
 
   const values: unknown[] = [];
   const tuples = rows.map((r, i) => {
@@ -1194,10 +1199,11 @@ export async function recordNotifications(rows: NotificationInsert[]): Promise<n
        (user_id, midas_message_id, midas_expense_id, expense_ref_id,
         sender_name, sender_role, body_snippet, request_type, message_created_at)
      VALUES ${tuples.join(', ')}
-     ON CONFLICT (midas_message_id) DO NOTHING`,
+     ON CONFLICT (midas_message_id) DO NOTHING
+     RETURNING midas_message_id`,
     values
   );
-  return result.rowCount || 0;
+  return (result.rows as Array<{ midas_message_id: string }>).map((r) => r.midas_message_id);
 }
 
 export async function listUnread(userId: string): Promise<NotificationRow[]> {
@@ -2223,8 +2229,12 @@ export class ExpenseMessageScanner {
 
         if (!seeding) {
           const rows = await this.toNotifications(result.messages);
-          await recordNotifications(rows);
+          // Push only for rows that were genuinely new. Pushing for the whole
+          // batch would re-notify everyone whenever a cursor write fails after
+          // a successful insert.
+          const insertedIds = new Set(await recordNotifications(rows));
           for (const row of rows) {
+            if (!insertedIds.has(row.midasMessageId)) continue;
             void pushService.sendToUser(row.userId, {
               title: row.requestType ? 'Action required on your expense' : 'New message on your expense',
               body: `${row.senderName}: ${row.bodySnippet}`,
