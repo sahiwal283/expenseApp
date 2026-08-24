@@ -300,7 +300,17 @@ import { truncateExcerpt } from './notifyMessages';
 import { resolveMessageRecipient } from './messageRecipients';
 import { decideThreadPost } from './expenseThread';
 
-const SENDER_COLUMNS = { id: true, name: true, role: true, email: true } as const;
+/**
+ * Sender email is opt-in. The session-auth route has never returned it, and
+ * selecting it unconditionally would widen that response shape — a behaviour
+ * change this refactor must not make. The Ext boundary opts in deliberately
+ * because a consumer keys its own users by email.
+ */
+function senderColumns(includeEmail: boolean) {
+  return { id: true, name: true, role: true, email: includeEmail } as const;
+}
+
+const SENDER_COLUMNS = senderColumns(false);
 
 /**
  * Thread messages oldest-first. When includeInternal is false the internalNote
@@ -308,11 +318,11 @@ const SENDER_COLUMNS = { id: true, name: true, role: true, email: true } as cons
  */
 export async function listThread(
   expenseId: string,
-  opts: { includeInternal: boolean },
+  opts: { includeInternal: boolean; includeSenderEmail?: boolean },
 ) {
   const rows = await db.query.expenseMessages.findMany({
     where: eq(expenseMessages.expenseId, expenseId),
-    with: { sender: { columns: SENDER_COLUMNS } },
+    with: { sender: { columns: senderColumns(opts.includeSenderEmail === true) } },
     orderBy: [asc(expenseMessages.createdAt)],
   });
   return opts.includeInternal
@@ -683,7 +693,12 @@ async function loadScopedExpense(req: { params: { id: string }; appConnection?: 
 router.get('/expenses/:id/messages', requireScope('messages:read'), asyncHandler(async (req, res) => {
   await loadScopedExpense(req as never);
   // Ext consumers never see internal notes — see Decision 3 in the design doc.
-  const rows = await listThread(req.params.id, { includeInternal: false });
+  // Sender email IS included: a consumer keys its own users by email, and Midas
+  // user ids mean nothing to it (see toExtMessageDto).
+  const rows = await listThread(req.params.id, {
+    includeInternal: false,
+    includeSenderEmail: true,
+  });
   res.json({ messages: rows.map((r) => toExtMessageDto(r as never)) });
 }));
 
