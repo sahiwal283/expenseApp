@@ -31,6 +31,7 @@ import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { travelReminderService } from './services/TravelReminderService';
+import { expenseMessageScanner } from './services/ExpenseMessageScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
 import { runMigrations } from './database/migrate';
@@ -205,6 +206,10 @@ const startServer = () => {
 
     // Flight check-in / departure push reminders (no-op if push not configured)
     travelReminderService.start();
+
+    // Poll Midas for new expense messages and notify owners (idles unless
+    // EXPENSE_MESSAGING_ENABLED=true)
+    expenseMessageScanner.start();
 
     // Zoho CRM lead sync — daily; idles until ZOHO_CRM_REFRESH_TOKEN is set
     zohoCrmLeadsService.startScheduler();
