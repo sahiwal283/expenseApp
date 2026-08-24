@@ -173,7 +173,13 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                           onClick={() => {
                             setShowNotifications(false);
                             // Same deep link the push notification uses (Task 11).
-                            window.location.hash = `expense=${n.expense_ref_id || ''}`;
+                            // expense_ref_id is the expense's PUBLIC id; without
+                            // it there is nothing that could resolve, so land on
+                            // Expenses without a hash rather than one the
+                            // #expense= handler will just clear and ignore.
+                            if (n.expense_ref_id) {
+                              window.location.hash = `expense=${n.expense_ref_id}`;
+                            }
                             onNavigate?.('expenses');
                           }}
                           className="block w-full px-4 py-3 text-left hover:bg-stone-50"

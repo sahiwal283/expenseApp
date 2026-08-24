@@ -937,9 +937,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               />
 
               <ExpenseModalMessages
+                key={viewingExpense.id}
                 expenseId={viewingExpense.id}
                 currentUserRole={user.role}
                 expenseStatus={viewingExpense.status}
+                onSent={reloadData}
               />
 
               {/* ✅ REFACTORED: Replaced 27 lines with ExpenseModalReceipt */}

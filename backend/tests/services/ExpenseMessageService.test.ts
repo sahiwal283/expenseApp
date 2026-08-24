@@ -30,7 +30,9 @@ describe('ExpenseMessageService', () => {
       listExpenseMessages: vi.fn().mockResolvedValue([]),
       postExpenseMessage: vi.fn().mockResolvedValue({ id: 'm1', body: 'hi' }),
     };
-    store = { getById: vi.fn().mockResolvedValue({ id: 'ts-1', midasExpenseId: 'midas-1' }) };
+    store = {
+      getById: vi.fn().mockResolvedValue({ id: 'ts-1', midasExpenseId: 'midas-1', userId: salesperson.id }),
+    };
     (getMidasClient as any).mockReturnValue(client);
     (getExpenseStore as any).mockReturnValue(store);
     service = new ExpenseMessageService();
@@ -49,7 +51,7 @@ describe('ExpenseMessageService', () => {
   });
 
   it('throws when the expense has no Midas id', async () => {
-    store.getById.mockResolvedValue({ id: 'ts-1' });
+    store.getById.mockResolvedValue({ id: 'ts-1', userId: salesperson.id });
     await expect(service.getThread('ts-1', salesperson as any)).rejects.toThrow(/not linked/i);
   });
 
@@ -97,5 +99,45 @@ describe('ExpenseMessageService', () => {
   it('marks the thread read against the Midas expense id', async () => {
     await service.markRead('ts-1', salesperson as any);
     expect(markThreadRead).toHaveBeenCalledWith('u1', 'midas-1');
+  });
+
+  it('strips sender.email from the returned thread', async () => {
+    client.listExpenseMessages.mockResolvedValue([
+      { id: 'm1', body: 'hi', sender: { id: 'midas-a', name: 'Dana', role: 'accountant', email: 'a@x.com' } },
+    ]);
+    const thread = await service.getThread('ts-1', salesperson as any);
+    expect(thread[0].sender.email).toBeNull();
+  });
+
+  describe('authorization', () => {
+    it('allows the expense owner to read and reply', async () => {
+      store.getById.mockResolvedValue({ id: 'ts-1', midasExpenseId: 'midas-1', userId: salesperson.id });
+
+      await expect(service.getThread('ts-1', salesperson as any)).resolves.toBeDefined();
+      await expect(
+        service.postMessage('ts-1', { body: 'hi' }, salesperson as any)
+      ).resolves.toBeDefined();
+    });
+
+    it('allows a privileged non-owner to read and reply', async () => {
+      store.getById.mockResolvedValue({ id: 'ts-1', midasExpenseId: 'midas-1', userId: 'someone-else' });
+
+      await expect(service.getThread('ts-1', accountant as any)).resolves.toBeDefined();
+      await expect(
+        service.postMessage('ts-1', { body: 'hi' }, accountant as any)
+      ).resolves.toBeDefined();
+    });
+
+    it('hides the thread from an unrelated non-privileged user behind the same not-found error', async () => {
+      store.getById.mockResolvedValue({ id: 'ts-1', midasExpenseId: 'midas-1', userId: 'someone-else' });
+
+      await expect(service.getThread('ts-1', salesperson as any)).rejects.toThrow(/not found/i);
+      expect(client.listExpenseMessages).not.toHaveBeenCalled();
+
+      await expect(
+        service.postMessage('ts-1', { body: 'hi' }, salesperson as any)
+      ).rejects.toThrow(/not found/i);
+      expect(client.postExpenseMessage).not.toHaveBeenCalled();
+    });
   });
 });

@@ -6,10 +6,11 @@
  *      by. midasDtoToTsExpense publishes sourceRefId as the public id, so the
  *      frontend never sees a Midas id and must not have to.
  *   2. Gate requestType by Trade Show role before it reaches Ext.
- *
- * Authorization for reading the expense itself is inherited from the expense
- * store, which already enforces per-user access — reimplementing it here would
- * be a second copy to drift.
+ *   3. Authorize access to the thread itself. getExpenseStore().getById()
+ *      does NOT enforce per-user access — both MidasExpenseStore and
+ *      LocalExpenseStore ignore the actor argument entirely — so
+ *      resolveMidasId is the only gate a private accountant<->submitter
+ *      conversation has. It must run for both reads and writes.
  */
 
 import { getMidasClient, getExpenseBackend, getMidasMode } from './midas';
@@ -46,6 +47,14 @@ export class ExpenseMessageService {
   private async resolveMidasId(expenseId: string, actor: ExpenseActor): Promise<string> {
     const expense = await getExpenseStore().getById(expenseId, actor);
     if (!expense) throw new Error('Expense not found');
+    const isOwner = expense.userId === actor.id;
+    if (!isOwner && !PRIVILEGED_ROLES.has(actor.role)) {
+      // Same message a genuinely missing expense throws — a distinct
+      // "forbidden" response would let a caller confirm the expense UUID
+      // exists just by trying it, which is exactly what this gate exists
+      // to prevent.
+      throw new Error('Expense not found');
+    }
     if (!expense.midasExpenseId) throw new Error('Expense is not linked to Midas');
     return expense.midasExpenseId;
   }
@@ -67,6 +76,9 @@ export class ExpenseMessageService {
     const mine = actor.email.trim().toLowerCase();
     return messages.map((m) => ({
       ...m,
+      // sender.email is only needed to compute isMine — it must not leak to
+      // the browser (and from there into the IndexedDB message cache).
+      sender: { ...m.sender, email: null },
       isMine: !!m.sender.email && m.sender.email.trim().toLowerCase() === mine,
     }));
   }

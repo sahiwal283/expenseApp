@@ -155,6 +155,43 @@ describe('ExpenseMessageScanner', () => {
     expect(setCursor).toHaveBeenCalledWith('trade_show', 'cursor-head');
   });
 
+  it('marks a fresh deployment seeded on an empty first run, so the next real batch notifies', async () => {
+    // Scan 1: brand-new deployment, no cursor row yet, feed genuinely empty
+    // (the normal state right after rollout).
+    (getCursor as any).mockResolvedValueOnce(null);
+    client.listMessagesSince.mockResolvedValueOnce({ messages: [], nextCursor: null });
+
+    await scanner.scan();
+
+    // Without this, no row is ever written and the next scan would still
+    // see cursor === null (indistinguishable from "never scanned") and
+    // silently skip the first real batch as backlog.
+    expect(setCursor).toHaveBeenCalledWith('trade_show', '');
+    expect(recordNotifications).not.toHaveBeenCalled();
+    expect(pushService.sendToUser).not.toHaveBeenCalled();
+
+    // Scan 2: a real message arrives. getCursor now returns the empty-string
+    // sentinel written above — not null — so seeding must read as false.
+    // Restore the default "genuinely inserted" implementation explicitly —
+    // an earlier test in this file permanently overrides the module mock to
+    // reject, and vi.clearAllMocks() in beforeEach resets call history, not
+    // implementations.
+    (recordNotifications as any).mockImplementation(
+      async (rows: Array<{ midasMessageId: string }>) => rows.map((r) => r.midasMessageId)
+    );
+    (getCursor as any).mockResolvedValueOnce('');
+    client.listMessagesSince.mockResolvedValueOnce({
+      messages: [feedMessage()], nextCursor: 'cursor-1',
+    });
+
+    await scanner.scan();
+
+    expect(recordNotifications).toHaveBeenCalledOnce();
+    expect(pushService.sendToUser).toHaveBeenCalledWith('ts-user-1', expect.objectContaining({
+      url: '/#expense=ts-e1',
+    }));
+  });
+
   it('seeding walks full pages to the head before stopping', async () => {
     (getCursor as any).mockResolvedValue(null);
     process.env.MIDAS_MESSAGE_SCAN_PAGE_SIZE = '1';

@@ -17,12 +17,16 @@ interface Props {
   expenseId: string;
   currentUserRole: string;
   expenseStatus: string;
+  /** Called after a reply sends successfully. A reply can flip the expense's
+   *  status upstream (e.g. out of "needs further review"), and this panel
+   *  has no other way to tell the modal/list that happened. */
+  onSent?: () => void;
 }
 
 export const ExpenseModalMessages: React.FC<Props> = ({
-  expenseId, currentUserRole, expenseStatus,
+  expenseId, currentUserRole, expenseStatus, onSent,
 }) => {
-  const { messages, loading, error, fromCache, isOffline, send, sending } =
+  const { messages, loading, error, fromCache, isOffline, send, sending, messagingUnavailable } =
     useExpenseMessages(expenseId, true);
   const [draft, setDraft] = React.useState('');
   const [requestType, setRequestType] = React.useState<string>('');
@@ -37,8 +41,13 @@ export const ExpenseModalMessages: React.FC<Props> = ({
     if (ok) {
       setDraft('');
       setRequestType('');
+      onSent?.();
     }
   };
+
+  // Messaging is switched off for this deployment — show nothing rather than
+  // a panel whose composer always fails.
+  if (messagingUnavailable) return null;
 
   return (
     <div className="rounded-card border border-stone-200 bg-white">

@@ -99,7 +99,13 @@ export interface Expense {
 
 function App() {
   const { user, login, logout, bootstrapDone } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  // A push notification click lands here as a cold entry point (`/#expense=<id>`,
+  // no in-app onNavigate call to carry it). ExpenseSubmission is the only
+  // component that reads that hash, so it must be the page mounted on first
+  // paint or the click silently opens the dashboard instead.
+  const [currentPage, setCurrentPage] = useState(() =>
+    window.location.hash.startsWith('#expense=') ? 'expenses' : 'dashboard'
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);

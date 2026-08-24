@@ -33,6 +33,10 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
   const [fromCache, setFromCache] = useState(false);
   const [sending, setSending] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  // True once a load has come back 501: this deployment has messaging
+  // switched off entirely, as opposed to a thread that is simply empty. The
+  // component uses this to render nothing rather than a half-working panel.
+  const [messagingUnavailable, setMessagingUnavailable] = useState(false);
   // Which expense the messages currently in state actually belong to. React
   // does not reset state on a prop change alone, so when expenseId changes
   // while the hook stays mounted (e.g. a notification deep link swaps the
@@ -59,6 +63,7 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
     setFromCache(false);
     setLoadedFor(null);
     setError(null);
+    setMessagingUnavailable(false);
   }, [expenseId]);
 
   const load = useCallback(async () => {
@@ -75,15 +80,20 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
       setMessages(next);
       setFromCache(false);
       setLoadedFor(expenseId);
+      setMessagingUnavailable(false);
       void offlineDb.setCachedExpenseMessages(expenseId, next);
     } catch (e: unknown) {
       const status = e instanceof AppError ? e.statusCode : undefined;
       if (status === 501) {
-        // Messaging is switched off for this deployment; an empty thread is
-        // the honest answer, not an error.
+        // Messaging is switched off for this deployment — distinct from a
+        // thread that is merely empty. The component checks this flag and
+        // renders nothing at all, rather than a live composer whose Send
+        // always fails.
         setMessages([]);
         setLoadedFor(expenseId);
+        setMessagingUnavailable(true);
       } else {
+        setMessagingUnavailable(false);
         const cached = await offlineDb.getCachedExpenseMessages(expenseId);
         if (cached) {
           setMessages(cached.messages as ExpenseMessage[]);
@@ -123,7 +133,14 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
       await load();
       return true;
     } catch (e: unknown) {
-      const code = e instanceof AppError ? e.code : undefined;
+      // e.code is always 'API_ERROR' — apiClient.handleResponse hardcodes it
+      // on every failure. The real upstream code (propagated by the backend
+      // fail() helper) rides in the parsed response body instead, which
+      // handleResponse stores verbatim as AppError.details.
+      const code =
+        e instanceof AppError
+          ? (e.details as { error?: { code?: string } } | undefined)?.error?.code
+          : undefined;
       setError(
         code === 'SUBMITTER_AMBIGUOUS'
           ? 'Your account could not be matched in Midas. Ask an admin to check your email and username.'
@@ -139,5 +156,8 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
     }
   }, [expenseId, load]);
 
-  return { messages, loading, error, fromCache, isOffline, send, sending, reload: load };
+  return {
+    messages, loading, error, fromCache, isOffline, send, sending,
+    messagingUnavailable, reload: load,
+  };
 }

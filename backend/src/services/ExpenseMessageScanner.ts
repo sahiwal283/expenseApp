@@ -12,6 +12,7 @@
  */
 
 import { getMidasClient } from './midas';
+import { isMessagingEnabled } from './ExpenseMessageService';
 import { query } from '../config/database';
 import { pushService } from './PushService';
 import {
@@ -46,8 +47,11 @@ export class ExpenseMessageScanner {
 
   start(): void {
     if (this.timer) return;
-    if (process.env.EXPENSE_MESSAGING_ENABLED !== 'true') {
-      console.log('[ExpenseMessages] EXPENSE_MESSAGING_ENABLED not set — scanner idle');
+    // Same three-condition gate the routes use — EXPENSE_MESSAGING_ENABLED
+    // alone is not enough: with MIDAS_MODE=disabled this used to start
+    // anyway and throw-and-log getMidasClient() every tick.
+    if (!isMessagingEnabled()) {
+      console.log('[ExpenseMessages] Messaging not enabled — scanner idle');
       return;
     }
     setTimeout(() => this.scan().catch(() => undefined), STARTUP_DELAY_MS);
@@ -77,13 +81,31 @@ export class ExpenseMessageScanner {
       // push every past message at every user the moment the feature is
       // switched on.
       const seeding = cursor === null;
+      // Whether this call has durably advanced the watermark yet. Lets the
+      // empty-page branch below tell "the very first page of a fresh seed,
+      // nothing written yet" apart from "a later empty page reached after
+      // real history was already consumed within this same walk" — only the
+      // former needs the extra write.
+      let advanced = false;
       const size = pageSize();
 
       for (let page = 0; page < MAX_PAGES; page += 1) {
-        const result = await client.listMessagesSince(SOURCE_APP, cursor ?? undefined, size);
+        const result = await client.listMessagesSince(SOURCE_APP, cursor || undefined, size);
 
-        // Nothing new. Leave the watermark exactly where it was.
-        if (result.messages.length === 0) return;
+        if (result.messages.length === 0) {
+          // A fresh deployment with a genuinely empty feed would otherwise
+          // never write a cursor row at all (no setCursor call below ever
+          // runs), leaving getCursor() returning null forever — indistinguishable
+          // from "never scanned" — so `seeding` stays true and the first real
+          // batch that eventually arrives gets walked past unnotified. Mark
+          // this deployment seeded now: there is no backlog to skip, since
+          // the feed was empty when we looked.
+          if (seeding && !advanced) {
+            await setCursor(SOURCE_APP, result.nextCursor ?? '');
+          }
+          // Nothing new. Leave the watermark exactly where it was otherwise.
+          return;
+        }
 
         if (!seeding) {
           const rows = await this.toNotifications(result.messages);
@@ -101,8 +123,12 @@ export class ExpenseMessageScanner {
               body: `${row.senderName}: ${row.bodySnippet}`,
               // This app has no path router — deep links are hashes read by
               // ExpenseSubmission (#new-expense, #event=…). A /expenses/:id URL
-              // would just land on the dashboard.
-              url: `/#expense=${row.expenseRefId ?? row.midasExpenseId}`,
+              // would just land on the dashboard. row.expenseRefId is the
+              // expense's PUBLIC id (midasExpenseId never is — the frontend
+              // never sees Midas ids) — omit the link entirely rather than
+              // emit one built from midasExpenseId that can never match an
+              // expense and would just get silently cleared on open.
+              url: row.expenseRefId ? `/#expense=${row.expenseRefId}` : undefined,
             });
           }
         }
@@ -114,6 +140,7 @@ export class ExpenseMessageScanner {
         if (result.nextCursor) {
           await setCursor(SOURCE_APP, result.nextCursor);
           cursor = result.nextCursor;
+          advanced = true;
         }
 
         // A short page means we reached the head.

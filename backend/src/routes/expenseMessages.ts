@@ -9,6 +9,7 @@ import type { AuthRequest } from '../middleware/auth';
 import { userRepository } from '../database/repositories/UserRepository';
 import type { ExpenseActor } from '../services/expenseStore';
 import { expenseMessageService, isMessagingEnabled } from '../services/ExpenseMessageService';
+import { MidasApiError } from '../services/midas/MidasTypes';
 
 const router = Router({ mergeParams: true });
 
@@ -47,7 +48,13 @@ function fail(res: Response, error: unknown) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message } });
   }
   console.error('[ExpenseMessages]', error);
-  return res.status(502).json({ error: { code: 'UPSTREAM_ERROR', message } });
+  // MidasApiError carries the real upstream code (e.g. SUBMITTER_AMBIGUOUS,
+  // MISSING_SCOPE, USER_NOT_FOUND) — collapsing every failure to the same
+  // UPSTREAM_ERROR made those cases undebuggable for the caller. Anything
+  // else (a plain Error, a network failure) still falls back to the generic
+  // code.
+  const code = error instanceof MidasApiError ? error.code : 'UPSTREAM_ERROR';
+  return res.status(502).json({ error: { code, message } });
 }
 
 router.get('/:id/messages', async (req: AuthRequest, res: Response) => {
