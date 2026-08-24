@@ -75,6 +75,13 @@ export interface CachedPicklists {
   cachedAt: number;
 }
 
+/** Read-only mirror of a Midas thread, so a user on a show floor can still read it. */
+export interface CachedExpenseMessages {
+  expenseId: string;
+  messages: any[];
+  cachedAt: number;
+}
+
 // ========== DATABASE CLASS ==========
 
 export class OfflineDatabase extends Dexie {
@@ -85,6 +92,7 @@ export class OfflineDatabase extends Dexie {
   cachedUsers!: Table<CachedUser, string>;
   syncMetadata!: Table<SyncMetadata, string>;
   cachedPicklists!: Table<CachedPicklists, string>;
+  cachedExpenseMessages!: Table<CachedExpenseMessages, string>;
 
   constructor() {
     super('ExpenseAppOfflineDB');
@@ -102,6 +110,12 @@ export class OfflineDatabase extends Dexie {
     // new store is declared here.
     this.version(2).stores({
       cachedPicklists: 'key'
+    });
+
+    // v3 adds the expense message thread cache. Dexie carries v1/v2 tables
+    // forward, so only the new store is declared here.
+    this.version(3).stores({
+      cachedExpenseMessages: 'expenseId'
     });
   }
 
@@ -123,6 +137,26 @@ export class OfflineDatabase extends Dexie {
     } catch (error) {
       // A failed cache write must not break a working online session.
       console.error('[offlineDb] Failed to cache picklists:', error);
+    }
+  }
+
+  // ========== EXPENSE MESSAGE CACHE ==========
+
+  async getCachedExpenseMessages(expenseId: string): Promise<CachedExpenseMessages | null> {
+    try {
+      return (await this.cachedExpenseMessages.get(expenseId)) ?? null;
+    } catch (error) {
+      console.error('[offlineDb] Failed to read cached messages:', error);
+      return null;
+    }
+  }
+
+  async setCachedExpenseMessages(expenseId: string, messages: any[]): Promise<void> {
+    try {
+      await this.cachedExpenseMessages.put({ expenseId, messages, cachedAt: Date.now() });
+    } catch (error) {
+      // A failed cache write must not break a working online session.
+      console.error('[offlineDb] Failed to cache messages:', error);
     }
   }
 
