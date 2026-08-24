@@ -382,9 +382,15 @@ it is dead UI for them.
 
 ### Service worker
 
-`PushService` already sends `{title, body, url}` and the existing worker handles
-notification clicks; the message payload sets `url` to the expense deep link. Confirm the
-click handler routes it; if not, that is a small addition rather than new infrastructure.
+No change required. `public/push-sw.js` already reads `payload.url` and opens it on
+`notificationclick`, and `PushService` already sends `{title, body, url}`.
+
+The payload uses `/#expense=<id>`, **not** `/expenses/<id>`: this app has no path router —
+`App.tsx` holds a `currentPage` string and deep links are hashes read by
+`ExpenseSubmission`. Making that hash open the expense modal is a one-branch addition to
+an effect already handling `#new-expense` and `#event=`. Note also that when a window is
+already open the worker focuses it without navigating; that is pre-existing and out of
+scope.
 
 ## Configuration
 
