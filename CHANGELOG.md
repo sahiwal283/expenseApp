@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-08-24 - Expense message threads
+
+### Added
+- Expense message threads inside the expense modal. When an accountant asks a question about an expense in Midas, the submitter now sees it in the app and can answer there — previously their only signal was an expense that silently read "Needs Further Review" with no stated reason.
+- Notification bell now surfaces unread expense messages, with persisted read state. This is the first time the bell does anything for salespeople; it previously only listed pending approvals for approver roles.
+- Web push for new messages, delivered by a background poller (`ExpenseMessageScanner`). Midas has no outbound webhooks, so delivery is a pull; the poller records a notification row per message and pushes only for rows it actually inserted.
+- `#expense=<id>` deep link, so a push or a bell row opens that expense's modal directly.
+- Trade Show accountants can attach a message when they set an expense to "Needs Further Review", closing a gap where that status change carried no explanation at all.
+
+### Changed
+- Replying to an open request sends the expense back for review automatically — Midas resolves the request and returns the expense to pending. The composer says so before you send.
+- Threads are cached in IndexedDB and readable offline. Replies are deliberately **not** queued offline: a queued reply that fails on replay would leave a user believing they had answered while the expense stayed parked and reimbursement stalled, so the composer is disabled instead.
+
+### Security
+- Expense message routes carry an explicit owner-or-privileged check. The expense store's `getById` accepts an actor but ignores it, so relying on it would have let any authenticated user read and post into another person's accountant conversation given only an expense UUID. Unauthorized access returns the same not-found response as a missing expense, so it cannot be used to probe which expense ids exist.
+
+### Requires
+- Midas v1.3.0 or later, with `messages:read` and `messages:write` granted to the `trade_show` connection.
+- `EXPENSE_MESSAGING_ENABLED=true` (also requires `EXPENSE_BACKEND=midas` and `MIDAS_MODE` not `disabled`). Migration `038` creates `expense_message_notifications` and `midas_message_sync_state`.
+
+
 ## [2.10.0] - 2026-08-01 - Real analytics: time-aware verdicts, honest charts, offline fixes
 
 ### Changed
