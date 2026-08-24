@@ -23,6 +23,9 @@ import {
   MidasWarning,
   MidasPaymentMethod,
   MidasVocabularyHealth,
+  MidasMessageDto,
+  MidasMessageFeedResult,
+  MidasPostMessageInput,
 } from './MidasTypes';
 
 function actorHeaders(actor?: MidasActor): Record<string, string> {
@@ -291,6 +294,55 @@ export class MidasClient {
     try {
       const res = await this.http.get('/health/vocabulary');
       return await this.parse<MidasVocabularyHealth>(res.status, res.data, [200]);
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  async listExpenseMessages(expenseId: string): Promise<MidasMessageDto[]> {
+    try {
+      const res = await this.http.get(`/expenses/${expenseId}/messages`);
+      const data = await this.parse<{ messages: MidasMessageDto[] }>(
+        res.status, res.data, [200], res.headers as Record<string, unknown>
+      );
+      return data.messages || [];
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  async postExpenseMessage(
+    expenseId: string,
+    input: MidasPostMessageInput,
+    actor: MidasActor
+  ): Promise<MidasMessageDto> {
+    try {
+      const res = await this.http.post(
+        `/expenses/${expenseId}/messages`,
+        input,
+        { headers: actorHeaders(actor) }
+      );
+      const data = await this.parse<{ message: MidasMessageDto }>(
+        res.status, res.data, [201], res.headers as Record<string, unknown>
+      );
+      return data.message;
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  async listMessagesSince(
+    sourceApp: string,
+    cursor: string | undefined,
+    limit: number
+  ): Promise<MidasMessageFeedResult> {
+    try {
+      const res = await this.http.get('/messages', {
+        params: { sourceApp, since: cursor, limit },
+      });
+      return await this.parse<MidasMessageFeedResult>(
+        res.status, res.data, [200], res.headers as Record<string, unknown>
+      );
     } catch (e) {
       return toMidasError(e);
     }

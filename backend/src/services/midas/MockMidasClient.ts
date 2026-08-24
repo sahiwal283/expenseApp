@@ -22,6 +22,10 @@ import {
   MidasReceiptDto,
   MidasWarning,
   MidasApiError,
+  MidasFeedMessage,
+  MidasMessageDto,
+  MidasMessageFeedResult,
+  MidasPostMessageInput,
 } from './MidasTypes';
 
 function midasUrl(webBase: string, id: string): string {
@@ -374,5 +378,75 @@ export class MockMidasClient {
         zohoEnabled: companies.filter((c) => c.zohoEnabled).length,
       },
     };
+  }
+
+  /** expenseId -> ordered messages. Mirrors Midas thread ordering. */
+  private messages = new Map<string, MidasFeedMessage[]>();
+  private messageSeq = 0;
+
+  async listExpenseMessages(expenseId: string): Promise<MidasMessageDto[]> {
+    return (this.messages.get(expenseId) || []).map(({ expense: _e, ...m }) => m);
+  }
+
+  async postExpenseMessage(
+    expenseId: string,
+    input: MidasPostMessageInput,
+    actor: MidasActor
+  ): Promise<MidasMessageDto> {
+    this.messageSeq += 1;
+    const seq = this.messageSeq;
+    const created: MidasFeedMessage = {
+      id: `mock-message-${seq}`,
+      body: input.body,
+      sender: {
+        id: actor.externalUserId,
+        name: actor.name || 'Mock User',
+        role: 'accountant',
+        email: actor.email,
+      },
+      isSystem: false,
+      requestType: input.requestType ?? null,
+      isResolved: false,
+      resolvedAt: null,
+      // Deterministic, ordered timestamps — real time would make cursor tests flaky.
+      createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString(),
+      expense: {
+        id: expenseId,
+        sourceRefId: `ref-${expenseId}`,
+        ownerUserId: 'mock-owner',
+        externalUserId: 'mock-owner',
+        merchant: 'Mock Merchant',
+        amount: '10.00',
+        status: 'pending',
+      },
+    };
+    const thread = this.messages.get(expenseId) || [];
+    thread.push(created);
+    this.messages.set(expenseId, thread);
+    const { expense: _e, ...dto } = created;
+    return dto;
+  }
+
+  async listMessagesSince(
+    _sourceApp: string,
+    cursor: string | undefined,
+    limit: number
+  ): Promise<MidasMessageFeedResult> {
+    const all = [...this.messages.values()].flat()
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+
+    const after = cursor
+      ? all.filter((m) => m.createdAt > JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')).c)
+      : all;
+
+    const page = after.slice(0, limit);
+    // Same contract as the real feed: a resume point whenever rows were
+    // returned, null only on an empty page.
+    const last = page[page.length - 1];
+    const nextCursor = last
+      ? Buffer.from(JSON.stringify({ c: last.createdAt, i: last.id }), 'utf8').toString('base64url')
+      : null;
+
+    return { messages: page, nextCursor };
   }
 }

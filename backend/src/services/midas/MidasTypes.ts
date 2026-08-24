@@ -330,3 +330,40 @@ export interface MidasClientConfig {
   webBaseUrl: string;
   timeoutMs: number;
 }
+
+/** Ext GET/POST /expenses/:id/messages (scopes messages:read / messages:write). */
+export interface MidasMessageDto {
+  id: string;
+  body: string;
+  /** `email` is the only field that joins a Midas sender to a Trade Show user. */
+  sender: { id: string | null; name: string; role: string | null; email: string | null };
+  isSystem: boolean;
+  requestType: string | null;
+  isResolved: boolean;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+/** A row from Ext GET /messages — a thread message plus its expense context. */
+export interface MidasFeedMessage extends MidasMessageDto {
+  expense: {
+    id: string;
+    sourceRefId: string | null;
+    /** Midas user id of the submitter; compare with sender.id to spot self-sends. */
+    ownerUserId: string;
+    externalUserId: string | null;
+    merchant: string;
+    amount: string | number;
+    status: MidasExpenseStatus;
+  };
+}
+
+export interface MidasMessageFeedResult {
+  messages: MidasFeedMessage[];
+  nextCursor: string | null;
+}
+
+export interface MidasPostMessageInput {
+  body: string;
+  requestType?: string | null;
+}
