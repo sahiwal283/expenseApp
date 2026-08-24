@@ -2447,6 +2447,8 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
   const [fromCache, setFromCache] = useState(false);
   const [sending, setSending] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  /** Which expense the currently-held `messages` actually belong to. */
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const markedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -2468,6 +2470,7 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
       const next = res.messages || [];
       setMessages(next);
       setFromCache(false);
+      setLoadedFor(expenseId);
       void offlineDb.setCachedExpenseMessages(expenseId, next);
     } catch (e: unknown) {
       const status = e instanceof AppError ? e.statusCode : undefined;
@@ -2475,11 +2478,13 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
         // Messaging is switched off for this deployment; an empty thread is
         // the honest answer, not an error.
         setMessages([]);
+        setLoadedFor(expenseId);
       } else {
         const cached = await offlineDb.getCachedExpenseMessages(expenseId);
         if (cached) {
           setMessages(cached.messages as ExpenseMessage[]);
           setFromCache(true);
+          setLoadedFor(expenseId);
         } else {
           setError('Could not load messages');
         }
@@ -2491,15 +2496,26 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
 
   useEffect(() => { void load(); }, [load]);
 
+  // React keeps state across a prop change, so without this reset the mark-read
+  // effect below would fire for a NEW expense while `messages` still describes
+  // the previous one — clearing a badge for messages the user never saw.
+  useEffect(() => {
+    setMessages([]);
+    setFromCache(false);
+    setLoadedFor(null);
+    setError(null);
+  }, [expenseId]);
+
   // Mark read only once the thread has actually rendered with content — never
   // on a background cache fill, which would clear the badge unseen.
   useEffect(() => {
     if (!expenseId || !enabled || fromCache) return;
+    if (loadedFor !== expenseId) return;   // messages are not this expense's yet
     if (messages.length === 0) return;
     if (markedRef.current === expenseId) return;
     markedRef.current = expenseId;
     apiClient.post(`/expenses/${expenseId}/messages/read`).catch(() => undefined);
-  }, [expenseId, enabled, fromCache, messages.length]);
+  }, [expenseId, enabled, fromCache, loadedFor, messages.length]);
 
   const send = useCallback(async (body: string, requestType?: string | null) => {
     if (!expenseId) return false;
