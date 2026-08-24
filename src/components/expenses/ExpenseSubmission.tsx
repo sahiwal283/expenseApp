@@ -39,6 +39,7 @@ import {
   ExpenseModalDetailsView,
   ExpenseModalDetailsEdit,
   ExpenseModalStatusManagement,
+  ExpenseModalMessages,
 } from './ExpenseModal';
 import {
   ExpenseSubmissionHeader,
@@ -170,12 +171,27 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         // Deep link from a notification: land on pending approvals
         setStatusFilter('pending');
         history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else if (window.location.hash.startsWith('#expense=')) {
+        // Deep link from a message notification: land on that expense's
+        // modal. `expenses` loads asynchronously, so if this fires before
+        // the list has arrived, wait for it — the effect re-runs when
+        // `expenses` changes (see dependency array below) rather than
+        // clearing the hash before the target could ever be found.
+        if (expenses.length > 0) {
+          const targetId = window.location.hash.replace('#expense=', '');
+          const target = expenses.find((e) => e.id === targetId);
+          if (target) {
+            setViewingExpense(target);
+          }
+          // Clear the hash either way so it cannot re-fire on the next mount.
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
       }
     };
     openFromHash();
     window.addEventListener('hashchange', openFromHash);
     return () => window.removeEventListener('hashchange', openFromHash);
-  }, []);
+  }, [expenses]);
 
   // Fetch audit trail when viewing expense (accountant/admin/developer only)
   const fetchAuditTrail = async (expenseId: string) => {
@@ -918,6 +934,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 }
                 isPushing={pushingExpenseId === viewingExpense.id}
                 isPushed={pushedExpenses.has(viewingExpense.id)}
+              />
+
+              <ExpenseModalMessages
+                expenseId={viewingExpense.id}
+                currentUserRole={user.role}
+                expenseStatus={viewingExpense.status}
               />
 
               {/* ✅ REFACTORED: Replaced 27 lines with ExpenseModalReceipt */}

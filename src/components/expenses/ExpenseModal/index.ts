@@ -13,4 +13,5 @@ export { ExpenseModalDuplicateWarning } from './ExpenseModalDuplicateWarning';
 export { ExpenseModalDetailsView } from './ExpenseModalDetailsView';
 export { ExpenseModalDetailsEdit } from './ExpenseModalDetailsEdit';
 export { ExpenseModalStatusManagement } from './ExpenseModalStatusManagement';
+export { ExpenseModalMessages } from './ExpenseModalMessages';
 
