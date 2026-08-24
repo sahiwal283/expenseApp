@@ -87,8 +87,15 @@ export class ExpenseMessageScanner {
 
         if (!seeding) {
           const rows = await this.toNotifications(result.messages);
-          await recordNotifications(rows);
+          // Push only for rows genuinely inserted this call. Pushing for
+          // every row in `rows` regardless of what was written would
+          // re-notify on every redelivery once the cursor and the insert
+          // fall out of lockstep (insert succeeds, setCursor fails or the
+          // process dies before it runs) — the UNIQUE constraint protects
+          // the stored row, not the push send layered on top of it.
+          const insertedIds = new Set(await recordNotifications(rows));
           for (const row of rows) {
+            if (!insertedIds.has(row.midasMessageId)) continue;
             void pushService.sendToUser(row.userId, {
               title: row.requestType ? 'Action required on your expense' : 'New message on your expense',
               body: `${row.senderName}: ${row.bodySnippet}`,

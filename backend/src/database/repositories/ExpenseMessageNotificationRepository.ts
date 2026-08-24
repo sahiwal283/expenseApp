@@ -33,11 +33,18 @@ export interface NotificationRow {
 }
 
 /**
- * Insert a batch, skipping any message already recorded. Returns how many rows
- * were genuinely new — a replayed batch returns 0 rather than double-notifying.
+ * Insert a batch, skipping any message already recorded. Returns the ids
+ * actually inserted — a replayed batch returns [] rather than re-notifying.
+ *
+ * The caller (ExpenseMessageScanner) uses this to gate push sends: pushing
+ * for every row in the input batch, rather than only the ids this function
+ * reports back, would re-notify on every redelivery once the cursor and the
+ * insert fall out of lockstep (e.g. insert succeeds, then setCursor fails or
+ * the process dies before it runs) — the UNIQUE constraint only protects the
+ * stored notification row, not anything downstream of it.
  */
-export async function recordNotifications(rows: NotificationInsert[]): Promise<number> {
-  if (rows.length === 0) return 0;
+export async function recordNotifications(rows: NotificationInsert[]): Promise<string[]> {
+  if (rows.length === 0) return [];
 
   const values: unknown[] = [];
   const tuples = rows.map((r, i) => {
@@ -54,10 +61,11 @@ export async function recordNotifications(rows: NotificationInsert[]): Promise<n
        (user_id, midas_message_id, midas_expense_id, expense_ref_id,
         sender_name, sender_role, body_snippet, request_type, message_created_at)
      VALUES ${tuples.join(', ')}
-     ON CONFLICT (midas_message_id) DO NOTHING`,
+     ON CONFLICT (midas_message_id) DO NOTHING
+     RETURNING midas_message_id`,
     values
   );
-  return result.rowCount || 0;
+  return result.rows.map((r: { midas_message_id: string }) => r.midas_message_id);
 }
 
 export async function listUnread(userId: string): Promise<NotificationRow[]> {

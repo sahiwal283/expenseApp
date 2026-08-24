@@ -20,8 +20,28 @@ describe('ExpenseMessageNotificationRepository', () => {
 
   it('records nothing and issues no query for an empty batch', async () => {
     const inserted = await recordNotifications([]);
-    expect(inserted).toBe(0);
+    expect(inserted).toEqual([]);
     expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('reports the ids actually inserted', async () => {
+    mockQuery.mockResolvedValue({ rowCount: 1, rows: [{ midas_message_id: 'm1' }] });
+    const inserted = await recordNotifications([{
+      userId: 'u1',
+      midasMessageId: 'm1',
+      midasExpenseId: 'e1',
+      expenseRefId: 'r1',
+      senderName: 'Dana',
+      senderRole: 'accountant',
+      bodySnippet: 'What was this for?',
+      requestType: 'info_request',
+      messageCreatedAt: '2026-08-24T10:00:00.000Z',
+    }]);
+
+    expect(inserted).toEqual(['m1']);
+    const sql = mockQuery.mock.calls[0][0] as string;
+    expect(sql).toContain('ON CONFLICT (midas_message_id) DO NOTHING');
+    expect(sql).toContain('RETURNING midas_message_id');
   });
 
   it('ignores conflicts so a replayed batch inserts nothing new', async () => {
@@ -38,9 +58,10 @@ describe('ExpenseMessageNotificationRepository', () => {
       messageCreatedAt: '2026-08-24T10:00:00.000Z',
     }]);
 
-    expect(inserted).toBe(0);
+    expect(inserted).toEqual([]);
     const sql = mockQuery.mock.calls[0][0] as string;
     expect(sql).toContain('ON CONFLICT (midas_message_id) DO NOTHING');
+    expect(sql).toContain('RETURNING midas_message_id');
   });
 
   it('lists only unread rows for the user, newest first', async () => {

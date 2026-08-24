@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../src/services/midas', () => ({ getMidasClient: vi.fn() }));
 vi.mock('../../src/database/repositories/ExpenseMessageNotificationRepository', () => ({
-  recordNotifications: vi.fn().mockResolvedValue(1),
+  // Default: whatever gets recorded was genuinely new. Individual tests that
+  // care about the id list (or about a redelivery inserting nothing) override
+  // this per-case.
+  recordNotifications: vi.fn().mockImplementation(
+    async (rows: Array<{ midasMessageId: string }>) => rows.map((r) => r.midasMessageId)
+  ),
   getCursor: vi.fn().mockResolvedValue('cursor-0'),
   setCursor: vi.fn().mockResolvedValue(undefined),
 }));
@@ -168,5 +173,23 @@ describe('ExpenseMessageScanner', () => {
     client.listMessagesSince.mockRejectedValue(new Error('ECONNREFUSED'));
     await expect(scanner.scan()).resolves.toBeUndefined();
     expect(setCursor).not.toHaveBeenCalled();
+  });
+
+  it('does not push again when the message was already recorded', async () => {
+    // Regression: recordNotifications reporting 0 rows inserted (e.g. this
+    // exact window was already recorded on a prior tick, but setCursor never
+    // ran last time — insert succeeded, then the process died or the cursor
+    // write failed) must not re-fire push for every row in the batch. Only
+    // ids recordNotifications actually reports as newly inserted may push.
+    (recordNotifications as any).mockResolvedValue([]);
+    client.listMessagesSince.mockResolvedValue({ messages: [feedMessage()], nextCursor: 'cursor-1' });
+
+    await scanner.scan();
+
+    expect(recordNotifications).toHaveBeenCalledOnce();
+    expect(pushService.sendToUser).not.toHaveBeenCalled();
+    // The batch is still durable (recordNotifications resolved, it just
+    // reported nothing new) — the watermark must still advance.
+    expect(setCursor).toHaveBeenCalledWith('trade_show', 'cursor-1');
   });
 });
