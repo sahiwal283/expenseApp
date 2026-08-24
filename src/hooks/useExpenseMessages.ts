@@ -33,6 +33,15 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
   const [fromCache, setFromCache] = useState(false);
   const [sending, setSending] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  // Which expense the messages currently in state actually belong to. React
+  // does not reset state on a prop change alone, so when expenseId changes
+  // while the hook stays mounted (e.g. a notification deep link swaps the
+  // modal from expense A to B without unmounting), `messages`/`fromCache`
+  // still describe the previous expense for at least one render. Gating the
+  // mark-read effect and cache-fallback purely on `expenseId` let it fire
+  // `POST /expenses/B/messages/read` using A's stale (non-empty) message
+  // list — clearing B's unread badge before the user ever saw B's thread.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const markedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +49,17 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
     // composer is not briefly enabled while offline on first render.
     return networkMonitor.addListener((state) => setIsOffline(!state.isOnline), true);
   }, []);
+
+  // Stale messages from a previous expense must never drive the read
+  // receipt (or be shown under the new expense's header, even for a single
+  // render). Clear everything the instant the id changes, before the load
+  // effect below has a chance to fetch/re-populate it for the new id.
+  useEffect(() => {
+    setMessages([]);
+    setFromCache(false);
+    setLoadedFor(null);
+    setError(null);
+  }, [expenseId]);
 
   const load = useCallback(async () => {
     if (!expenseId || !enabled) return;
@@ -54,6 +74,7 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
       const next = res.messages || [];
       setMessages(next);
       setFromCache(false);
+      setLoadedFor(expenseId);
       void offlineDb.setCachedExpenseMessages(expenseId, next);
     } catch (e: unknown) {
       const status = e instanceof AppError ? e.statusCode : undefined;
@@ -61,13 +82,16 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
         // Messaging is switched off for this deployment; an empty thread is
         // the honest answer, not an error.
         setMessages([]);
+        setLoadedFor(expenseId);
       } else {
         const cached = await offlineDb.getCachedExpenseMessages(expenseId);
         if (cached) {
           setMessages(cached.messages as ExpenseMessage[]);
           setFromCache(true);
+          setLoadedFor(expenseId);
         } else {
           setError('Could not load messages');
+          // Nothing valid loaded for this id — leave loadedFor as-is.
         }
       }
     } finally {
@@ -77,15 +101,18 @@ export function useExpenseMessages(expenseId: string | null, enabled: boolean) {
 
   useEffect(() => { void load(); }, [load]);
 
-  // Mark read only once the thread has actually rendered with content — never
-  // on a background cache fill, which would clear the badge unseen.
+  // Mark read only once the thread has actually rendered with content for
+  // THIS expense — never on a background cache fill, and never using
+  // another expense's still-in-state messages, either of which would clear
+  // the badge for messages the user never saw.
   useEffect(() => {
     if (!expenseId || !enabled || fromCache) return;
+    if (loadedFor !== expenseId) return; // messages in state are not this expense's yet
     if (messages.length === 0) return;
     if (markedRef.current === expenseId) return;
     markedRef.current = expenseId;
     apiClient.post(`/expenses/${expenseId}/messages/read`).catch(() => undefined);
-  }, [expenseId, enabled, fromCache, messages.length]);
+  }, [expenseId, enabled, fromCache, loadedFor, messages.length]);
 
   const send = useCallback(async (body: string, requestType?: string | null) => {
     if (!expenseId) return false;
