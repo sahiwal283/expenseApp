@@ -2,6 +2,7 @@ import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
+import { apiClient } from '../../utils/apiClient';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { IS_SANDBOX } from '../../constants/appEnv';
 
@@ -20,7 +21,8 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
   // Check for unread notifications
   const [notifications, setNotifications] = React.useState<any[]>([]);
   const [previousNotificationCount, setPreviousNotificationCount] = React.useState(0);
-  
+  const [unreadMessages, setUnreadMessages] = React.useState<any[]>([]);
+
   React.useEffect(() => {
     (async () => {
       if (api.USE_SERVER) {
@@ -51,11 +53,30 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
     })();
   }, [user.role, previousNotificationCount]);
 
+  // Message notifications are real rows with persisted read state, unlike the
+  // derived pending-expense list above. Salespeople see the bell for the first
+  // time because of this.
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await apiClient.get<{ notifications: any[] }>('/expense-messages/unread');
+        if (!cancelled) setUnreadMessages(res.notifications || []);
+      } catch {
+        if (!cancelled) setUnreadMessages([]);
+      }
+    };
+    void load();
+    const timer = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
   // Escape closes the notifications panel
   useEscapeKey(() => setShowNotifications(false), showNotifications);
 
-  const hasUnreadNotifications = notifications.length > 0 && !hasViewedNotifications;
-  
+  const hasUnreadNotifications =
+    unreadMessages.length > 0 || (notifications.length > 0 && !hasViewedNotifications);
+
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
     if (!showNotifications) {
@@ -143,6 +164,33 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                       </span>
                     )}
                   </div>
+                  {unreadMessages.length > 0 && (
+                    <div className="border-b border-stone-100">
+                      {unreadMessages.map((n) => (
+                        <button
+                          key={n.id}
+                          type="button"
+                          onClick={() => {
+                            setShowNotifications(false);
+                            // Same deep link the push notification uses (Task 11).
+                            window.location.hash = `expense=${n.expense_ref_id || ''}`;
+                            onNavigate?.('expenses');
+                          }}
+                          className="block w-full px-4 py-3 text-left hover:bg-stone-50"
+                        >
+                          <p className="text-sm font-semibold text-stone-900">
+                            {n.request_type ? 'Action required' : 'New message'} · {n.sender_name}
+                          </p>
+                          <p className="mt-0.5 line-clamp-2 text-sm text-stone-600">
+                            {n.body_snippet}
+                          </p>
+                          <p className="mt-1 text-[11px] text-stone-400">
+                            {new Date(n.message_created_at).toLocaleString()}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.length > 0 ? (
                       notifications.map((expense: Expense, index: number) => (
