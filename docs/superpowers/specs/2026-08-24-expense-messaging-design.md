@@ -36,8 +36,10 @@ and zero explanation.
 - Internal accountant-only notes in Trade Show. They stay a Midas-UI feature; mirroring
   them adds a leak risk (`internalNote` reaching a submitter) for a use case not asked for.
 - Queued offline replies. Deferred deliberately (see Decisions).
-- Notifying Trade Show accountants when a user replies. The reply auto-transitions the
-  expense to `pending`, which the existing approver bell already surfaces.
+- Notifying Trade Show accountants when a user replies. Two mechanisms already cover it:
+  the reply auto-transitions the expense to `pending`, which the existing Trade Show
+  approver bell surfaces, and as of Midas PR #5 `postToThread` notifies the claiming
+  reviewer in Midas via `resolveMessageRecipient`. A third channel would be noise.
 - Fixing `GET /ext/expenses/:id`'s missing `sourceApp` scoping. Real, pre-existing, unrelated.
 
 ## Decisions
@@ -104,22 +106,64 @@ user's expense visibly leaves "Needs Further Review" with **no new status-sync c
 
 ### Extraction (do this first)
 
-Move thread logic out of `apps/api/src/routes/messages.ts` into
-`apps/api/src/lib/expenseThread.ts`:
+> **Baseline note.** This section was revised against Midas `c65a4a8` (PR #5,
+> `feat/expense-messaging-notifications`), which landed after the first draft of this
+> spec. `routes/messages.ts` now also audits every post and notifies the other party.
+> The extraction must carry that behavior, not just the auto-transition.
+
+Midas's test harness runs **pure unit tests only** — `vitest.config.ts` includes
+`src/__tests__/**`, coverage targets `src/lib/**`, and zero tests import `db/index`. The
+codebase's answer to "logic that needs the database" is an established split: a pure
+decision module plus a `*Db.ts` companion (`closedPeriods.ts`/`closedPeriodsDb.ts`,
+`pendingCompletion.ts`/`pendingCompletionDb.ts`, `categorySyncPlan.ts`/`categorySyncDb.ts`).
+
+Follow it. Two files:
+
+**`apps/api/src/lib/expenseThread.ts` — pure, no db/env imports.**
+
+```ts
+export interface ThreadPostDecision {
+  /** Resolve open requests + flip awaiting_info → pending. */
+  transitionsToPending: boolean;
+  /** Whether this sender may set requestType at all. */
+  mayRequestInfo: boolean;
+}
+
+export function decideThreadPost(input: {
+  status: string;
+  senderId: string;
+  senderRole: UserRole;
+  ownerId: string;
+}): ThreadPostDecision;
+
+/** Whether this viewer may read the thread, and whether internal notes are visible. */
+export function decideThreadAccess(input: {
+  viewerId: string;
+  viewerRole: UserRole;
+  ownerId: string;
+}): { allowed: boolean; includeInternal: boolean };
+```
+
+**`apps/api/src/lib/expenseThreadDb.ts` — db orchestration over those decisions.**
 
 - `listThread(expenseId, { includeInternal })` — ordered messages with sender
   `{id, name, role}`.
-- `postToThread({ expenseId, senderId, body, requestType })` — inserts; if the expense
-  is `awaiting_info` **and the sender is the owner**, resolves all open `requestType`
-  messages, sets status `pending`, writes the `user_responded` audit entry.
+- `postToThread({ expenseId, senderId, senderRole, body, requestType })` — inserts the
+  message, then, in this order:
+  1. if `decideThreadPost(...).transitionsToPending`, resolve all open `requestType`
+     messages, set status `pending`, write the `user_responded` audit entry;
+  2. write the `message.posted` audit entry with `truncateExcerpt(body)` —
+     `expense_messages` is the canonical conversation record, so every post is audited;
+  3. resolve the recipient via the existing `resolveMessageRecipient` and call
+     `notifyUser(recipient, 'message', {...}, { email: false })`.
 
 `routes/messages.ts` becomes a thin session-auth wrapper; the Ext routes become a thin
-API-key wrapper. **One state machine, two doors.** Duplicating the auto-transition would
-let the surfaces drift, and a drifted state machine means expenses silently stuck in
-`awaiting_info`.
+API-key wrapper. **One state machine, two doors.** Duplicating this would let the surfaces
+drift, and a drifted state machine means expenses silently stuck in `awaiting_info` — or,
+now, an Ext reply that never notifies the reviewer waiting on it.
 
-This is a pure refactor with no behavior change. The existing `routes/messages.ts` tests
-must pass unchanged — that is the proof.
+This is a pure refactor with no behavior change. The existing `routes/messages.ts` and
+`messageRecipients` tests must pass unchanged — that is the proof.
 
 ### Scopes
 
@@ -155,9 +199,12 @@ cannot assert it.
 
 Two guards:
 
-- **`requestType` requires a privileged sender.** If the resolved Midas user's role is
-  `user`, a supplied `requestType` is rejected `403`. Otherwise a salesperson could mark
-  their own expense as needing info.
+- **`requestType` requires a privileged sender.** Privilege is
+  `roleAllowed(role, ['accountant', 'admin'])` — the predicate `routes/messages.ts` now
+  uses, which also passes `developer` and, deliberately, does **not** pass every non-`user`
+  role (partners must not reach into other people's conversations). A sender failing it
+  who supplies `requestType` is rejected `403`. Otherwise a salesperson could mark their
+  own expense as needing info.
 - **Auto-provisioning is disabled on this path.** `resolveExtUser` creates a Midas user
   when `EXT_AUTO_PROVISION_USERS` is on — right for expense creation, wrong here. Posting
   a message must never conjure an account. Unknown actor → `422 USER_NOT_FOUND`.
@@ -374,15 +421,23 @@ Governing rule: **a messaging failure must never break expense review.**
 
 Both repos use Vitest.
 
-**Midas** — the extraction is the risk, so it carries the weight:
+**Midas** — the extraction is the risk, so it carries the weight. Tests are pure by
+convention (no db imports), so the decision logic is what gets tested directly:
 
-- Unit tests on `lib/expenseThread.ts` covering the auto-transition matrix: owner replies
-  on `awaiting_info` → resolves + flips to `pending`; non-owner replies → no transition;
-  owner replies on `approved` → no transition; multiple open requests all resolve.
-- Ext route tests: scope enforcement, cross-`sourceApp` 404, `requestType` rejected for
-  role `user`, no auto-provisioning on the message path, and explicitly that
-  `internalNote` appears nowhere in an Ext response.
-- Existing `routes/messages.ts` tests pass unchanged.
+- `decideThreadPost` matrix in `src/__tests__/expenseThread.test.ts`: owner replies on
+  `awaiting_info` → `transitionsToPending`; non-owner replies on `awaiting_info` → not;
+  owner replies on `approved` → not; accountant/admin/developer → `mayRequestInfo`; `user`
+  and `partner` → not.
+- `decideThreadAccess`: owner allowed without internal notes; accountant/admin/developer
+  allowed with them; unrelated `user` denied; partner denied.
+- `requireScope` coverage for the two new scopes, extending the existing
+  `extScopes.test.ts` pattern.
+- Existing `routes/messages.ts` and `messageRecipients` tests pass unchanged.
+
+Route-level concerns that the pure harness cannot reach — cross-`sourceApp` 404, no
+auto-provisioning on the message path, and `internalNote` absent from Ext responses — are
+verified by extending `src/scripts/ext-smoke.ts`, the repo's existing live-API smoke
+script, rather than by inventing a db-backed test harness this codebase does not have.
 
 **Trade Show:**
 
