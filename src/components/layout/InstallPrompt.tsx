@@ -101,7 +101,7 @@ export const InstallPrompt: React.FC = () => {
             className="h-10 w-10 shrink-0 rounded-lg"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-stone-900">Install ExpenseApp</p>
+            <p className="text-sm font-semibold text-stone-900">Install Argo</p>
             <p className="truncate text-xs text-stone-500">
               One tap from your home screen — and flight reminders need it on iPhone
             </p>

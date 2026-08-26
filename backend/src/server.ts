@@ -149,7 +149,7 @@ app.get('/health', async (_req, res) => {
 // Platform meta/version (no auth)
 app.get('/api/meta/version', (_req, res) => {
   res.json({
-    name: 'Trade Show Expense Management App',
+    name: 'Argo',
     slug: process.env.APP_SLUG || 'trade-show',
     version: VERSION,
     build: process.env.APP_BUILD || 'dev',
