@@ -188,6 +188,21 @@ export interface MoveRequest {
   idempotency_key?: string | null;
 }
 
+export interface BulkMoveResult {
+  movedBooths: number;
+  movedContainers: number;
+  movedComponents: number;
+  /**
+   * Components belonging to this booth that did NOT move, because they are
+   * currently inside a container that is not part of it. They are physically
+   * elsewhere, so moving them would be a lie — but the UI must say so rather
+   * than let the crew discover it at the venue. Always 0 for container and
+   * component moves; only booth-level moves can strand anything.
+   */
+  strandedComponents: number;
+  movementIds: string[];
+}
+
 // ========== Display labels ==========
 
 /** Turn a snake_case enum into a sentence — never show raw enums to a user. */
@@ -239,14 +254,15 @@ export const boothApi = {
   deleteLocation: (id: string) => apiClient.delete(`/inventory-locations/${id}`),
 
   // Booths
-  listBooths: (filters: { q?: string; status?: string; location_id?: string } = {}) =>
+  listBooths: (filters: { q?: string; status?: string; location_id?: string; is_active?: boolean } = {}) =>
     apiClient.get(`/booths${qs(filters)}`) as Promise<Booth[]>,
   getBooth: (id: string) => apiClient.get(`/booths/${id}`) as Promise<Booth>,
   createBooth: (data: Partial<Booth>) => apiClient.post('/booths', data) as Promise<Booth>,
   updateBooth: (id: string, data: Partial<Booth>) =>
     apiClient.patch(`/booths/${id}`, data) as Promise<Booth>,
   deleteBooth: (id: string) => apiClient.delete(`/booths/${id}`),
-  moveBooth: (id: string, data: MoveRequest) => apiClient.post(`/booths/${id}/move`, data),
+  moveBooth: (id: string, data: MoveRequest) =>
+    apiClient.post(`/booths/${id}/move`, data) as Promise<BulkMoveResult>,
 
   // Containers
   listContainers: (boothId: string) =>
@@ -258,7 +274,7 @@ export const boothApi = {
     apiClient.patch(`/booth-containers/${id}`, data) as Promise<BoothContainer>,
   deleteContainer: (id: string) => apiClient.delete(`/booth-containers/${id}`),
   moveContainer: (id: string, data: MoveRequest) =>
-    apiClient.post(`/booth-containers/${id}/move`, data),
+    apiClient.post(`/booth-containers/${id}/move`, data) as Promise<BulkMoveResult>,
 
   // Components
   listComponents: (boothId: string, filters: {
@@ -270,7 +286,7 @@ export const boothApi = {
     apiClient.patch(`/booth-components/${id}`, data) as Promise<BoothComponent>,
   deleteComponent: (id: string) => apiClient.delete(`/booth-components/${id}`),
   moveComponent: (id: string, data: MoveRequest) =>
-    apiClient.post(`/booth-components/${id}/move`, data),
+    apiClient.post(`/booth-components/${id}/move`, data) as Promise<BulkMoveResult>,
   reportComponent: (id: string, data: {
     kind: 'damage' | 'missing'; condition?: string; notes?: string;
     event_id?: string; idempotency_key?: string;
