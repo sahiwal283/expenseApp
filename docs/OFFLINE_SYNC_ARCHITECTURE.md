@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the comprehensive offline-first architecture implementation for the ExpenseApp, designed specifically for trade show environments with intermittent connectivity.
+This document outlines the comprehensive offline-first architecture implementation for Argo, designed specifically for trade show environments with intermittent connectivity.
 
 ## Problem Statement
 

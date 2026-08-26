@@ -1,7 +1,7 @@
 # Developer Dashboard - Complete Documentation
 
 ## Overview
-The Developer Dashboard is a comprehensive monitoring and analytics platform integrated into the ExpenseApp. It provides full visibility into system health, user activity, security events, and application performance without requiring direct server access.
+The Developer Dashboard is a comprehensive monitoring and analytics platform integrated into Argo. It provides full visibility into system health, user activity, security events, and application performance without requiring direct server access.
 
 ## Features
 
