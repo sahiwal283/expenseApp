@@ -24,6 +24,7 @@ AK_CT=111
 AK_API="http://192.168.1.164:9000/api/v3"
 PROD_REDIRECT="https://expapp.duckdns.org/api/auth/oidc/callback"
 SANDBOX_REDIRECT="http://192.168.1.144/api/auth/oidc/callback"
+ARGO_REDIRECT="https://argo.booute.duckdns.org/api/auth/oidc/callback"
 ISSUER="https://auth.booute.duckdns.org/application/o/trade-show/"
 
 echo "=== 1/6 Bootstrap API token (via manage.py shell as akadmin) ==="
@@ -51,19 +52,25 @@ SIGNING_KEY=$(echo "$TEMPLATE" | python3 -c "import json,sys; r=json.load(sys.st
 PROP_MAPPINGS=$(echo "$TEMPLATE" | python3 -c "import json,sys; r=json.load(sys.stdin)['results'][0]; print(json.dumps(r.get('property_mappings', [])))")
 echo "OK template read (authorization_flow=$AUTH_FLOW)"
 
-echo "=== 3/6 Create or update provider 'Trade Show App' ==="
-EXISTING=$(AK GET "/providers/oauth2/?name=Trade%20Show%20App")
-PROVIDER_BODY=$(python3 - "$AUTH_FLOW" "$INVAL_FLOW" "$SIGNING_KEY" "$PROP_MAPPINGS" "$PROD_REDIRECT" "$SANDBOX_REDIRECT" <<'PY'
+echo "=== 3/6 Create or update provider 'Argo' (display name; slug/client id untouched) ==="
+# Look up the existing provider via the application's stable slug/FK, not by
+# display name: the name is changing (Trade Show App -> Argo) in this run, so
+# a name= filter would stop matching on the very next run and create a
+# duplicate provider (new client_id/secret) instead of updating in place.
+EXISTING_APP=$(AK GET "/core/applications/trade-show/" 2>/dev/null || echo '{}')
+EXISTING_PROVIDER_PK=$(echo "$EXISTING_APP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('provider') or '')" 2>/dev/null || echo '')
+PROVIDER_BODY=$(python3 - "$AUTH_FLOW" "$INVAL_FLOW" "$SIGNING_KEY" "$PROP_MAPPINGS" "$PROD_REDIRECT" "$SANDBOX_REDIRECT" "$ARGO_REDIRECT" <<'PY'
 import json, sys
-auth_flow, inval_flow, signing_key, prop_mappings, prod_uri, sandbox_uri = sys.argv[1:7]
+auth_flow, inval_flow, signing_key, prop_mappings, prod_uri, sandbox_uri, argo_uri = sys.argv[1:8]
 body = {
-    "name": "Trade Show App",
+    "name": "Argo",
     "authorization_flow": auth_flow,
     "client_type": "confidential",
     "sub_mode": "user_uuid",
     "redirect_uris": [
         {"matching_mode": "strict", "url": prod_uri},
         {"matching_mode": "strict", "url": sandbox_uri},
+        {"matching_mode": "strict", "url": argo_uri},
     ],
     "property_mappings": json.loads(prop_mappings),
 }
@@ -74,26 +81,59 @@ if signing_key:
 print(json.dumps(body))
 PY
 )
-COUNT=$(echo "$EXISTING" | python3 -c "import json,sys; print(json.load(sys.stdin)['pagination']['count'])")
-if [ "$COUNT" = "0" ]; then
-  PROVIDER=$(AK POST "/providers/oauth2/" "$PROVIDER_BODY")
+if [ -n "$EXISTING_PROVIDER_PK" ]; then
+  # Try the full update (name + redirect_uris) first. Authentik enforces a
+  # unique name on OAuth2Provider, and this instance already has an
+  # unrelated provider named "Argo" (pk 10, no application attached, seen
+  # 2026-08-26 — same argo.booute.duckdns.org callback, but not ours; do NOT
+  # touch it here, that decision belongs to a human, not this script). If the
+  # rename collides with it, fall back to updating redirect_uris only so the
+  # Task-6-blocking part still lands, and warn loudly instead of dying silent.
+  set +e
+  RAW=$(ssh "$PROXMOX" "pct exec $AK_CT -- curl -s -w '\\nHTTP_STATUS:%{http_code}' -X PATCH '$AK_API/providers/oauth2/$EXISTING_PROVIDER_PK/' -H 'Authorization: Bearer $TOKEN' -H 'Content-Type: application/json' -d '$PROVIDER_BODY'")
+  set -e
+  HTTP_STATUS=$(echo "$RAW" | tail -1 | sed 's/^HTTP_STATUS://')
+  RESP_BODY=$(echo "$RAW" | sed '$d')
+  if [ "$HTTP_STATUS" = "200" ]; then
+    PROVIDER="$RESP_BODY"
+  elif echo "$RESP_BODY" | grep -q "provider with this name already exists"; then
+    echo "WARNING: could not rename provider to 'Argo' - name is already taken by a" >&2
+    echo "WARNING: different, unrelated OAuth2 provider in this Authentik instance." >&2
+    echo "WARNING: NOT touching that provider automatically; needs a human decision" >&2
+    echo "WARNING: (rename/delete the other one, or pick a different name here)." >&2
+    echo "WARNING: Falling back to redirect_uris-only update; provider display" >&2
+    echo "WARNING: name stays 'Trade Show App' for now (the application's display" >&2
+    echo "WARNING: name below still becomes 'Argo' - that's what users see)." >&2
+    NO_NAME_BODY=$(echo "$PROVIDER_BODY" | python3 -c "import json,sys; b=json.load(sys.stdin); b.pop('name', None); print(json.dumps(b))")
+    PROVIDER=$(AK PATCH "/providers/oauth2/$EXISTING_PROVIDER_PK/" "$NO_NAME_BODY")
+  else
+    echo "ERROR: provider update failed (HTTP $HTTP_STATUS): $RESP_BODY" >&2
+    exit 1
+  fi
 else
-  PK=$(echo "$EXISTING" | python3 -c "import json,sys; print(json.load(sys.stdin)['results'][0]['pk'])")
-  PROVIDER=$(AK PATCH "/providers/oauth2/$PK/" "$PROVIDER_BODY")
+  # Fresh install fallback only (no application yet to read a provider FK from).
+  EXISTING=$(AK GET "/providers/oauth2/?name=Argo")
+  COUNT=$(echo "$EXISTING" | python3 -c "import json,sys; print(json.load(sys.stdin)['pagination']['count'])")
+  if [ "$COUNT" = "0" ]; then
+    PROVIDER=$(AK POST "/providers/oauth2/" "$PROVIDER_BODY")
+  else
+    PK=$(echo "$EXISTING" | python3 -c "import json,sys; print(json.load(sys.stdin)['results'][0]['pk'])")
+    PROVIDER=$(AK PATCH "/providers/oauth2/$PK/" "$PROVIDER_BODY")
+  fi
 fi
 PROVIDER_PK=$(echo "$PROVIDER" | python3 -c "import json,sys; print(json.load(sys.stdin)['pk'])")
 CLIENT_ID=$(echo "$PROVIDER" | python3 -c "import json,sys; print(json.load(sys.stdin)['client_id'])")
 CLIENT_SECRET=$(echo "$PROVIDER" | python3 -c "import json,sys; print(json.load(sys.stdin)['client_secret'])")
 echo "OK provider pk=$PROVIDER_PK client_id=$CLIENT_ID"
 
-echo "=== 4/6 Create or update application 'trade-show' ==="
-APP_BODY="{\"name\": \"Trade Show App\", \"slug\": \"trade-show\", \"provider\": $PROVIDER_PK, \"meta_launch_url\": \"https://expapp.duckdns.org\"}"
+echo "=== 4/6 Create or update application 'trade-show' (display name Argo; slug untouched) ==="
+APP_BODY="{\"name\": \"Argo\", \"slug\": \"trade-show\", \"provider\": $PROVIDER_PK, \"meta_launch_url\": \"https://expapp.duckdns.org\"}"
 if AK GET "/core/applications/trade-show/" >/dev/null 2>&1; then
   AK PATCH "/core/applications/trade-show/" "$APP_BODY" >/dev/null
 else
   AK POST "/core/applications/" "$APP_BODY" >/dev/null
 fi
-echo "OK application slug=trade-show (issuer $ISSUER)"
+echo "OK application slug=trade-show, name=Argo (issuer $ISSUER)"
 
 echo "=== 5/6 Write env to containers (sandbox 2600 + prod 2220) ==="
 # The service is started by systemd with EnvironmentFile=/etc/expenseapp/backend.env
