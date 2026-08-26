@@ -9,6 +9,7 @@ import { query } from '../config/database';
 import { boothContainerRepository } from '../database/repositories/BoothContainerRepository';
 import { boothMovementRepository } from '../database/repositories/BoothMovementRepository';
 import { boothMovementService } from '../services/booth/BoothMovementService';
+import { boothInventoryService } from '../services/booth/BoothInventoryService';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
 import { validateContainerBody } from '../validation/boothValidation';
 
@@ -83,6 +84,24 @@ router.get('/:id/movements', authorize(...READ_ROLES), asyncHandler(async (req: 
   const { limit } = req.query;
   res.json(await boothMovementRepository.findByContainer(req.params.id, {
     limit: limit ? Number(limit) : undefined,
+  }));
+}));
+
+// Bulk move: field operations, not catalog management — setup crew move
+// things, so this uses READ_ROLES (the reads-plus-field-ops tier), not
+// WRITE_ROLES.
+router.post('/:id/move', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { to_location_id, to_status, event_id, notes, idempotency_key } = req.body;
+  if (!to_location_id && !to_status) {
+    throw new ValidationError('to_location_id or to_status is required');
+  }
+  res.json(await boothInventoryService.moveContainer(req.params.id, {
+    toLocationId: to_location_id ?? null,
+    toStatus: to_status ?? null,
+    eventId: event_id ?? null,
+    notes: notes ?? null,
+    idempotencyKey: idempotency_key ?? null,
+    performedBy: req.user!.id,
   }));
 }));
 
