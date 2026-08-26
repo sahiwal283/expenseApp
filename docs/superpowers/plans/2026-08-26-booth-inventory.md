@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS booth_movements (
   from_condition     VARCHAR(50),
   to_condition       VARCHAR(50),
   event_id           UUID REFERENCES events(id) ON DELETE SET NULL,
-  performed_by       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  performed_by       UUID REFERENCES users(id) ON DELETE SET NULL,
   notes              TEXT,
   idempotency_key    VARCHAR(128),
   created_at         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

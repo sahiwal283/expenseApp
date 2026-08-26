@@ -149,7 +149,7 @@ Immutable. Rows are inserted, never updated or deleted.
 | `from_status`, `to_status` | |
 | `from_condition`, `to_condition` | |
 | `event_id` | FK → `events` — "what moved for Expo West?" |
-| `performed_by` | FK → `users`, required |
+| `performed_by` | FK → `users`, `ON DELETE SET NULL`, nullable — a deleted user must not cascade away the history they recorded |
 | `notes` | |
 | `idempotency_key` | `VARCHAR(64)` nullable, **unique where not null** |
 | `created_at` | |
