@@ -6702,7 +6702,7 @@ import { boothApi } from '../boothApi';
 
 vi.mock('../offlineDb', () => ({
   offlineDb: {
-    addToSyncQueue: vi.fn(),
+    addToQueue: vi.fn(),
     updateQueueItem: vi.fn(),
     markQueueItemSynced: vi.fn(),
     markQueueItemFailed: vi.fn(),
@@ -7015,11 +7015,13 @@ In `PackingChecklist.tsx`, import `networkMonitor` and `syncManager`. In `toggle
 
 ```typescript
     if (!networkMonitor.isOnline()) {
+      // queueAction(action, entity, data, localId?) — it generates and stores
+      // its OWN idempotencyKey on the queue item, which is what syncBoothMovement
+      // replays with. Do NOT try to pass one in; there is no options parameter.
       await syncManager.queueAction(
         'CREATE', 'booth_movement',
         { op: currentlyPacked ? 'unpack' : 'pack',
-          containerId, componentIds: [componentId], eventId },
-        { idempotencyKey: idempotency_key }
+          containerId, componentIds: [componentId], eventId }
       );
       setData((prev) => prev && {
         ...prev,
@@ -7032,7 +7034,7 @@ In `PackingChecklist.tsx`, import `networkMonitor` and `syncManager`. In `toggle
     }
 ```
 
-Check `syncManager`'s existing public enqueue method name and signature before writing this — use whatever it already exposes (it wraps `offlineDb.addToSyncQueue`) rather than adding a new one. Render a queued badge in the header when offline, using the existing sync-status event subscription:
+**Already verified against the real code:** `syncManager.queueAction(action, entity, data, localId?)` is public, and it internally calls `generateUUID()` to set `idempotencyKey` on the queue item before delegating to `offlineDb.addToQueue(...)` (note: `addToQueue`, not `addToSyncQueue`). `networkMonitor.isOnline()` is a method, not a property. The only change `queueAction` needs is widening its `entity` parameter type to include the two new entities. Render a queued badge in the header when offline, using the existing sync-status event subscription:
 
 ```tsx
         {!online && (
