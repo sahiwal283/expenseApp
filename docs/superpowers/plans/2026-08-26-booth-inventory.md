@@ -576,7 +576,7 @@ export class InventoryLocationRepository extends BaseRepository<InventoryLocatio
 
     if (!cols.length) {
       const existing = await this.findById(id);
-      if (!existing) throw new NotFoundError('Location not found');
+      if (!existing) throw new NotFoundError('Location', id);
       return existing;
     }
 
@@ -590,7 +590,7 @@ export class InventoryLocationRepository extends BaseRepository<InventoryLocatio
         RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Location not found');
+    if (!result.rows[0]) throw new NotFoundError('Location', id);
     return result.rows[0];
   }
 
@@ -601,7 +601,7 @@ export class InventoryLocationRepository extends BaseRepository<InventoryLocatio
         WHERE id = $1 RETURNING id`,
       [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Location not found');
+    if (!result.rows[0]) throw new NotFoundError('Location', id);
   }
 }
 
@@ -650,7 +650,7 @@ router.get('/', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, 
 
 router.get('/:id', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
   const location = await inventoryLocationRepository.findById(req.params.id);
-  if (!location) throw new NotFoundError('Location not found');
+  if (!location) throw new NotFoundError('Location', req.params.id);
   res.json(location);
 }));
 
@@ -937,7 +937,7 @@ export class BoothRepository extends BaseRepository<Booth> {
     const cols = WRITABLE.filter((c) => data[c] !== undefined);
     if (!cols.length) {
       const existing = await this.findById(id);
-      if (!existing) throw new NotFoundError('Booth not found');
+      if (!existing) throw new NotFoundError('Booth', id);
       return existing;
     }
     const params: unknown[] = cols.map((c) => data[c]);
@@ -948,7 +948,7 @@ export class BoothRepository extends BaseRepository<Booth> {
         WHERE id = $${params.length} RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Booth not found');
+    if (!result.rows[0]) throw new NotFoundError('Booth', id);
     return result.rows[0];
   }
 
@@ -957,7 +957,7 @@ export class BoothRepository extends BaseRepository<Booth> {
       `UPDATE booths SET is_active = false, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 RETURNING id`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Booth not found');
+    if (!result.rows[0]) throw new NotFoundError('Booth', id);
   }
 }
 
@@ -1006,7 +1006,7 @@ router.get('/', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, 
 
 router.get('/:id', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
   const booth = await boothRepository.findByIdWithCounts(req.params.id);
-  if (!booth) throw new NotFoundError('Booth not found');
+  if (!booth) throw new NotFoundError('Booth', req.params.id);
   res.json(booth);
 }));
 
@@ -1262,7 +1262,7 @@ export class BoothContainerRepository extends BaseRepository<BoothContainer> {
     const result = await this.executeQuery<BoothContainer>(
       `SELECT * FROM booth_containers WHERE id = $1`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Container not found');
+    if (!result.rows[0]) throw new NotFoundError('Container', id);
     return normalise(result.rows[0]);
   }
 
@@ -1302,7 +1302,7 @@ export class BoothContainerRepository extends BaseRepository<BoothContainer> {
         WHERE id = $${params.length} RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Container not found');
+    if (!result.rows[0]) throw new NotFoundError('Container', id);
     return normalise(result.rows[0]);
   }
 
@@ -1310,7 +1310,7 @@ export class BoothContainerRepository extends BaseRepository<BoothContainer> {
     const result = await this.executeQuery(
       `DELETE FROM booth_containers WHERE id = $1 RETURNING id`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Container not found');
+    if (!result.rows[0]) throw new NotFoundError('Container', id);
   }
 }
 
@@ -1694,7 +1694,7 @@ export class BoothComponentRepository extends BaseRepository<BoothComponent> {
     const result = await this.executeQuery<BoothComponent>(
       `SELECT * FROM booth_components WHERE id = $1`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Component not found');
+    if (!result.rows[0]) throw new NotFoundError('Component', id);
     return normalise(result.rows[0]);
   }
 
@@ -1732,7 +1732,7 @@ export class BoothComponentRepository extends BaseRepository<BoothComponent> {
         WHERE id = $${params.length} RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Component not found');
+    if (!result.rows[0]) throw new NotFoundError('Component', id);
     return normalise(result.rows[0]);
   }
 
@@ -1740,7 +1740,7 @@ export class BoothComponentRepository extends BaseRepository<BoothComponent> {
     const result = await this.executeQuery(
       `DELETE FROM booth_components WHERE id = $1 RETURNING id`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Component not found');
+    if (!result.rows[0]) throw new NotFoundError('Component', id);
   }
 }
 
@@ -2721,7 +2721,7 @@ export class BoothInventoryService {
            FROM booth_containers WHERE id = $1 FOR UPDATE`,
         [containerId]
       );
-      if (!containers[0]) throw new NotFoundError('Container not found');
+      if (!containers[0]) throw new NotFoundError('Container', id);
       const container = containers[0];
 
       const { rows: components } = await client.query(
@@ -2763,7 +2763,7 @@ export class BoothInventoryService {
         `SELECT id, current_location_id, current_status FROM booths WHERE id = $1 FOR UPDATE`,
         [boothId]
       );
-      if (!booths[0]) throw new NotFoundError('Booth not found');
+      if (!booths[0]) throw new NotFoundError('Booth', id);
 
       const { rows: containers } = await client.query(
         `SELECT id, current_location_id, current_status
@@ -2831,7 +2831,7 @@ export class BoothInventoryService {
            FROM booth_components WHERE id = $1 FOR UPDATE`,
         [componentId]
       );
-      if (!rows[0]) throw new NotFoundError('Component not found');
+      if (!rows[0]) throw new NotFoundError('Component', id);
       const component = rows[0];
 
       const nextLocation = req.toLocationId ?? component.current_location_id;
@@ -3178,7 +3178,7 @@ and these methods inside the class:
            FROM booth_components WHERE id = $1 FOR UPDATE`,
         [componentId]
       );
-      if (!rows[0]) throw new NotFoundError('Component not found');
+      if (!rows[0]) throw new NotFoundError('Component', id);
       const component = rows[0];
 
       const isMissing = req.kind === 'missing';
@@ -3225,7 +3225,7 @@ and these methods inside the class:
           WHERE id = $1 FOR UPDATE`,
         [componentId]
       );
-      if (!rows[0]) throw new NotFoundError('Component not found');
+      if (!rows[0]) throw new NotFoundError('Component', id);
       const component = rows[0];
 
       await client.query(
@@ -3631,7 +3631,7 @@ export class BoothPackingService {
       `SELECT id, name, booth_id FROM booth_containers WHERE id = $1`,
       [containerId]
     );
-    if (!containerResult.rows[0]) throw new NotFoundError('Container not found');
+    if (!containerResult.rows[0]) throw new NotFoundError('Container', id);
     const container = containerResult.rows[0];
 
     // Everything that BELONGS here plus everything that IS here — the union is
@@ -3697,7 +3697,7 @@ export class BoothPackingService {
         `SELECT id, booth_id FROM booth_containers WHERE id = $1`,
         [containerId]
       );
-      if (!containers[0]) throw new NotFoundError('Container not found');
+      if (!containers[0]) throw new NotFoundError('Container', id);
 
       const { rows: components } = await client.query(
         `SELECT id, booth_id, current_container_id, current_location_id, current_status
@@ -4046,7 +4046,7 @@ export class EventBoothAssignmentRepository extends BaseRepository<EventBoothAss
     const cols = WRITABLE.filter((c) => data[c] !== undefined);
     if (!cols.length) {
       const existing = await this.findById(id);
-      if (!existing) throw new NotFoundError('Assignment not found');
+      if (!existing) throw new NotFoundError('Assignment', id);
       return existing;
     }
     const params: unknown[] = cols.map((c) => data[c]);
@@ -4058,7 +4058,7 @@ export class EventBoothAssignmentRepository extends BaseRepository<EventBoothAss
         WHERE id = $${params.length} RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Assignment not found');
+    if (!result.rows[0]) throw new NotFoundError('Assignment', id);
     return result.rows[0];
   }
 
@@ -4066,7 +4066,7 @@ export class EventBoothAssignmentRepository extends BaseRepository<EventBoothAss
     const result = await this.executeQuery(
       `DELETE FROM event_booth_assignments WHERE id = $1 RETURNING id`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Assignment not found');
+    if (!result.rows[0]) throw new NotFoundError('Assignment', id);
   }
 }
 
@@ -4250,7 +4250,7 @@ export class BoothManifestService {
 
     const all = await this.getForEvent(eventId);
     const created = all.find((a) => a.id === assignmentId);
-    if (!created) throw new NotFoundError('Assignment not found after creation');
+    if (!created) throw new NotFoundError('Assignment', assignmentId);
     return created;
   }
 
@@ -4264,7 +4264,7 @@ export class BoothManifestService {
         RETURNING id`,
       [included, assignmentId, containerId]
     );
-    if (!result.rows[0]) throw new NotFoundError('Manifest container not found');
+    if (!result.rows[0]) throw new NotFoundError('Manifest container', containerId);
   }
 
   async addExtraContainer(assignmentId: string, containerId: string): Promise<void> {
@@ -4614,7 +4614,7 @@ export class BoothAttachmentRepository extends BaseRepository<BoothAttachment> {
     const result = await this.executeQuery(
       `DELETE FROM booth_attachments WHERE id = $1 RETURNING id`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Attachment not found');
+    if (!result.rows[0]) throw new NotFoundError('Attachment', id);
   }
 }
 
