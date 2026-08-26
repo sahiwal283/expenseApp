@@ -5174,21 +5174,33 @@ export const boothApi = {
   // Attachments
   listAttachments: (entityType: string, entityId: string) =>
     apiClient.get(`/booth-attachments${qs({ entity_type: entityType, entity_id: entityId })}`) as Promise<BoothAttachment[]>,
+  /**
+   * Uses apiClient.upload(), NOT apiClient.post(). post() always sets
+   * Content-Type: application/json via buildHeaders, which breaks multipart —
+   * the browser must set the boundary itself. upload() already handles that.
+   *
+   * Blobs from the offline queue have no filename, so wrap them in a File
+   * before sending or the backend receives a nameless part and its extension
+   * allowlist rejects it.
+   */
   uploadAttachment: async (
     entityType: string, entityId: string, file: File | Blob, caption?: string
   ): Promise<BoothAttachment> => {
-    const form = new FormData();
-    form.append('photo', file, (file as File).name || 'photo.jpg');
-    form.append('entity_type', entityType);
-    form.append('entity_id', entityId);
-    if (caption) form.append('caption', caption);
-    return apiClient.post('/booth-attachments', form) as Promise<BoothAttachment>;
+    const named = file instanceof File
+      ? file
+      : new File([file], 'photo.jpg', { type: (file as Blob).type || 'image/jpeg' });
+    return apiClient.upload<BoothAttachment>(
+      '/booth-attachments',
+      { entity_type: entityType, entity_id: entityId, ...(caption ? { caption } : {}) },
+      named,
+      'photo'
+    );
   },
   deleteAttachment: (id: string) => apiClient.delete(`/booth-attachments/${id}`),
 };
 ```
 
-**Before writing this file, confirm `apiClient` exposes `get/post/patch/delete` and that `post` passes a `FormData` body through without forcing `Content-Type: application/json`.** Read `src/utils/apiClient.ts` and, if it always sets that header, add a branch that skips it when the body is `FormData` — the browser must set the multipart boundary itself. If `patch` does not exist, add it mirroring `post`.
+**Already verified against `src/utils/apiClient.ts` — no changes needed there.** It exposes `get`/`post`/`put`/`patch`/`delete`, and separately an `upload(path, data, file, fileFieldName, method)` helper that builds the `FormData` and deliberately omits `Content-Type` so the browser sets the multipart boundary. Note that `post()` DOES force `Content-Type: application/json` in `buildHeaders`, so posting `FormData` through it would fail — which is exactly why `uploadAttachment` above calls `upload()` instead. Do not modify `apiClient.ts`.
 
 - [ ] **Step 4: Write the Locations tab and modal**
 
