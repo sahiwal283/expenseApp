@@ -1,7 +1,7 @@
-# 🤖 Agent Contract - ExpenseApp
+# 🤖 Agent Contract - Argo
 
 **Last Updated:** November 10, 2025  
-**Purpose:** Defines roles, permissions, scope, and responsibilities for all AI agents working on ExpenseApp
+**Purpose:** Defines roles, permissions, scope, and responsibilities for all AI agents working on Argo
 
 ---
 

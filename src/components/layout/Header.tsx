@@ -259,7 +259,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
             onClick={() => {
               // The icon sits in the thumb zone next to the avatar — one
               // accidental tap used to nuke in-progress work with no warning.
-              if (window.confirm('Log out of TradeShow?')) onLogout();
+              if (window.confirm('Log out of Argo?')) onLogout();
             }}
             className="tap-target p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Logout"

@@ -8,7 +8,7 @@
 
 ## 📋 Overview
 
-This guide provides comprehensive testing and validation procedures for the ExpenseApp, focusing on the refactored code from Phases 3 & 4. Since no test infrastructure exists yet, this document serves as both manual testing procedures and a blueprint for future automated testing.
+This guide provides comprehensive testing and validation procedures for Argo, focusing on the refactored code from Phases 3 & 4. Since no test infrastructure exists yet, this document serves as both manual testing procedures and a blueprint for future automated testing.
 
 ---
 

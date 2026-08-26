@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-500 shadow-brand flex items-center justify-center">
         <Receipt className="w-4 h-4 text-white" />
       </div>
-      <span className="font-display font-bold tracking-tight text-stone-900">TradeShow</span>
+      <span className="font-display font-bold tracking-tight text-stone-900">Argo</span>
     </div>
   );
 

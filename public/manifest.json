@@ -1,6 +1,6 @@
 {
-  "name": "ExpenseApp - Trade Show Expense Tracker",
-  "short_name": "ExpenseApp",
+  "name": "Argo",
+  "short_name": "Argo",
   "description": "Professional expense tracking and management for trade shows and events",
   "start_url": "/",
   "display": "standalone",

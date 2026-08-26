@@ -7,7 +7,7 @@
 
 ## 📋 Overview
 
-This document outlines the testing strategy and test file organization for the ExpenseApp project. It provides guidelines for writing, organizing, and maintaining tests to ensure consistency and reduce clutter.
+This document outlines the testing strategy and test file organization for the Argo project. It provides guidelines for writing, organizing, and maintaining tests to ensure consistency and reduce clutter.
 
 ---
 

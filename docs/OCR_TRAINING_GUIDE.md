@@ -19,7 +19,7 @@
 
 ## 🎯 **Overview**
 
-The ExpenseApp uses a **hybrid AI system** that combines:
+Argo uses a **hybrid AI system** that combines:
 
 1. **Rule-Based Inference** - Pre-programmed patterns (merchants, categories, amounts)
 2. **Adaptive Learning** - Automatically learns from user corrections

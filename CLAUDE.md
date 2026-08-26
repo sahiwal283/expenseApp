@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Trade show expense management PWA with OCR receipt scanning, Zoho Books integration, and offline-first architecture. Full-stack: React/Vite frontend + Express/TypeScript backend + PostgreSQL.
+Argo is a trade show expense management PWA with OCR receipt scanning, Zoho Books integration, and offline-first architecture. Full-stack: React/Vite frontend + Express/TypeScript backend + PostgreSQL.
 
 ## Commands
 

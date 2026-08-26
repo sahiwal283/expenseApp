@@ -180,7 +180,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
               <User className="w-8 h-8 text-white" />
             </div>
             <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">Create Account</h1>
-            <p className="text-stone-600 mt-2">Register for TradeShow Expense Manager</p>
+            <p className="text-stone-600 mt-2">Register for Argo</p>
           </div>
 
           {error && (

@@ -1,6 +1,6 @@
 ## Proxmox Production Deployment Guide
 
-This guide deploys the Trade Show App on a Proxmox host with LXC containers, Nginx reverse proxy with TLS, PostgreSQL, and automation for backups.
+This guide deploys Argo on a Proxmox host with LXC containers, Nginx reverse proxy with TLS, PostgreSQL, and automation for backups.
 
 ### 0) Prerequisites
 - Proxmox host reachable via SSH

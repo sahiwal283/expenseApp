@@ -150,7 +150,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
               <Key className="w-7 h-7 text-white" />
             </div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">Welcome back</h1>
-            <p className="text-sm text-stone-500 mt-2">Sign in to TradeShow Expense Manager</p>
+            <p className="text-sm text-stone-500 mt-2">Sign in to Argo</p>
           </div>
 
           {ssoErrorMessage && (

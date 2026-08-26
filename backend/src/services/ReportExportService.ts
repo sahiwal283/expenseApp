@@ -72,7 +72,7 @@ export function generateInvestmentReportPDF(rows: SummaryRow[]): Promise<Buffer>
     doc.rect(0, 92, doc.page.width, 4).fill('#0d9488');
     doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(20).text('Trade Show Investment Report', 48, 30);
     doc.font('Helvetica').fontSize(9).fillOpacity(0.85)
-      .text(`Years ${years.join(' · ')}   |   Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}   |   ExpenseApp 2.0`, 48, 60)
+      .text(`Years ${years.join(' · ')}   |   Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}   |   Argo`, 48, 60)
       .fillOpacity(1);
 
     // ===== KPI band =====
