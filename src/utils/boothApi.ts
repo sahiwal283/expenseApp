@@ -77,6 +77,7 @@ export interface BoothComponent {
   weight_value: number | null;
   weight_unit: string;
   weight_source: string | null;
+  weight_notes: string | null;
   notes: string | null;
 }
 
