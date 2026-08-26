@@ -28,6 +28,7 @@ import boothRoutes from './routes/booths';
 import boothContainerRoutes from './routes/boothContainers';
 import boothComponentRoutes from './routes/boothComponents';
 import boothManifestRoutes from './routes/boothManifest';
+import boothAttachmentRoutes from './routes/boothAttachments';
 import userChecklistRoutes from './routes/userChecklist';
 import pushRoutes from './routes/push';
 import { requestLogger, errorLogger } from './middleware/logger';
@@ -113,6 +114,7 @@ app.use('/api/booths', authenticateToken, sessionTracker, boothRoutes);
 app.use('/api/booth-containers', authenticateToken, sessionTracker, boothContainerRoutes);
 app.use('/api/booth-components', authenticateToken, sessionTracker, boothComponentRoutes);
 app.use('/api/booth-manifest', authenticateToken, sessionTracker, boothManifestRoutes);
+app.use('/api/booth-attachments', authenticateToken, sessionTracker, boothAttachmentRoutes);
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 

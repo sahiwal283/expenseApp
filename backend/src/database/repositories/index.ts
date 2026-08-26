@@ -59,3 +59,6 @@ export type { BoothMovement, MovementQueryOptions } from './BoothMovementReposit
 export { eventBoothAssignmentRepository, EventBoothAssignmentRepository } from './EventBoothAssignmentRepository';
 export type { EventBoothAssignment } from './EventBoothAssignmentRepository';
 
+export { boothAttachmentRepository, BoothAttachmentRepository } from './BoothAttachmentRepository';
+export type { BoothAttachment, AttachmentEntityType } from './BoothAttachmentRepository';
+
