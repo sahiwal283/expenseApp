@@ -244,6 +244,10 @@ describe('BoothInventoryService.moveBooth (real database)', () => {
   let c2Id: string; // belongs to A, loose
   let c3Id: string; // belongs to A, but packed inside B1 (lent out)
   let c4Id: string; // belongs to B, but packed inside A1 (borrowed)
+  let boothCId: string; // clean booth: nothing stranded
+  let containerC1Id: string;
+  let d1Id: string; // belongs to C, packed inside C1
+  let d2Id: string; // belongs to C, loose
 
   beforeAll(async () => {
     const { rows: userRows } = await query(
@@ -312,18 +316,52 @@ describe('BoothInventoryService.moveBooth (real database)', () => {
       [boothBId, `${MB_PREFIX}-c4`, containerA1Id, mbLocationAId]
     );
     c4Id = c4Rows[0].id;
+
+    // Booth C: a clean control case for strandedComponents — every one of
+    // its components is either in its own container or loose, so the count
+    // must read 0, not just "not asserted".
+    const { rows: boothCRows } = await query(
+      `INSERT INTO booths (name, current_location_id) VALUES ($1, $2) RETURNING id`,
+      [`${MB_PREFIX}-booth-c`, mbLocationAId]
+    );
+    boothCId = boothCRows[0].id;
+
+    const { rows: containerCRows } = await query(
+      `INSERT INTO booth_containers (booth_id, name, current_location_id, current_status)
+       VALUES ($1, $2, $3, 'in_storage') RETURNING id`,
+      [boothCId, `${MB_PREFIX}-container-c1`, mbLocationAId]
+    );
+    containerC1Id = containerCRows[0].id;
+
+    const { rows: d1Rows } = await query(
+      `INSERT INTO booth_components (booth_id, name, current_container_id, current_location_id, current_status)
+       VALUES ($1, $2, $3, $4, 'in_storage') RETURNING id`,
+      [boothCId, `${MB_PREFIX}-d1`, containerC1Id, mbLocationAId]
+    );
+    d1Id = d1Rows[0].id;
+
+    const { rows: d2Rows } = await query(
+      `INSERT INTO booth_components (booth_id, name, current_location_id, current_status)
+       VALUES ($1, $2, $3, 'in_storage') RETURNING id`,
+      [boothCId, `${MB_PREFIX}-d2`, mbLocationAId]
+    );
+    d2Id = d2Rows[0].id;
   });
 
   afterAll(async () => {
     await query(
       `DELETE FROM booth_movements
         WHERE booth_id = ANY($1) OR container_id = ANY($2) OR component_id = ANY($3)`,
-      [[boothAId, boothBId], [containerA1Id, containerB1Id], [c1Id, c2Id, c3Id, c4Id]]
+      [
+        [boothAId, boothBId, boothCId],
+        [containerA1Id, containerB1Id, containerC1Id],
+        [c1Id, c2Id, c3Id, c4Id, d1Id, d2Id],
+      ]
     );
-    await query(`DELETE FROM booth_containers WHERE id = ANY($1)`, [[containerA1Id, containerB1Id]]);
-    // booth_components.booth_id IS ON DELETE CASCADE, so deleting both
-    // booths also removes all four fixture components.
-    await query(`DELETE FROM booths WHERE id = ANY($1)`, [[boothAId, boothBId]]);
+    await query(`DELETE FROM booth_containers WHERE id = ANY($1)`, [[containerA1Id, containerB1Id, containerC1Id]]);
+    // booth_components.booth_id IS ON DELETE CASCADE, so deleting all three
+    // booths also removes all six fixture components.
+    await query(`DELETE FROM booths WHERE id = ANY($1)`, [[boothAId, boothBId, boothCId]]);
     await query(`DELETE FROM inventory_locations WHERE id = ANY($1)`, [[mbLocationAId, mbLocationBId]]);
     if (mbUserId) {
       await query(`DELETE FROM users WHERE id = $1`, [mbUserId]);
@@ -341,6 +379,11 @@ describe('BoothInventoryService.moveBooth (real database)', () => {
     expect(result.movedBooths).toBe(1);
     expect(result.movedContainers).toBe(1); // only A1, never B1
     expect(result.movedComponents).toBe(3); // C1, C2, C4 — NOT C3
+    // C3 is stranded: it belongs to A but is physically sitting inside B's
+    // crate, which is not moving. The cascade correctly leaves it in place;
+    // this is the count that lets a caller surface that instead of the user
+    // discovering it missing at the venue.
+    expect(result.strandedComponents).toBe(1);
     expect(result.movementIds).toHaveLength(4); // A1 + C1 + C2 + C4
 
     const { rows: boothARows } = await query(
@@ -449,5 +492,34 @@ describe('BoothInventoryService.moveBooth (real database)', () => {
     );
     expect(c4Movements).toHaveLength(1);
     expect(c4Movements[0].booth_id).toBe(boothBId);
+  });
+
+  it('returns strandedComponents: 0 for a booth whose components are all in its own containers or loose', async () => {
+    const result = await boothInventoryService.moveBooth(boothCId, {
+      toLocationId: mbLocationBId,
+      toStatus: 'at_show',
+      performedBy: mbUserId,
+      idempotencyKey: `${MB_PREFIX}-move-clean`,
+    });
+
+    // Nothing about booth C is stranded — D1 is in C's own container, D2 is
+    // loose — so the count must read 0, not merely "unchecked".
+    expect(result.strandedComponents).toBe(0);
+    expect(result.movedComponents).toBe(2); // D1, D2
+    expect(result.movedContainers).toBe(1); // C1
+
+    const { rows: d1Rows } = await query(
+      `SELECT current_location_id, current_status FROM booth_components WHERE id = $1`,
+      [d1Id]
+    );
+    expect(d1Rows[0].current_location_id).toBe(mbLocationBId);
+    expect(d1Rows[0].current_status).toBe('at_show');
+
+    const { rows: d2Rows } = await query(
+      `SELECT current_location_id, current_status FROM booth_components WHERE id = $1`,
+      [d2Id]
+    );
+    expect(d2Rows[0].current_location_id).toBe(mbLocationBId);
+    expect(d2Rows[0].current_status).toBe('at_show');
   });
 });

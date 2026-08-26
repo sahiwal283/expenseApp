@@ -30,6 +30,13 @@ export interface BulkMoveResult {
   movedBooths: number;
   movedContainers: number;
   movedComponents: number;
+  /**
+   * Components belonging to this booth that did NOT move because they are
+   * currently inside a container that is not part of this booth. They are
+   * physically elsewhere, so moving them would be a lie — but the caller
+   * should be told, not left to discover it at the venue.
+   */
+  strandedComponents: number;
   movementIds: string[];
 }
 
@@ -138,6 +145,7 @@ export class BoothInventoryService {
         movedBooths: 0,
         movedContainers,
         movedComponents,
+        strandedComponents: 0,
         movementIds: movements.map((m) => m.id),
       };
     });
@@ -170,6 +178,24 @@ export class BoothInventoryService {
           FOR UPDATE`,
         [boothId]
       );
+
+      // Components that belong to this booth but are currently packed inside
+      // a container this booth does NOT own — e.g. lent out to another
+      // booth's crate. They cannot travel with this move (that crate isn't
+      // going anywhere), so the cascade correctly leaves them untouched. But
+      // silently skipping them is a surprise the caller should be told about
+      // rather than discover at the venue. Counted inside the same
+      // transaction/FOR UPDATE scope so it reflects state at move time.
+      const { rows: strandedRows } = await client.query(
+        `SELECT COUNT(*)::int AS cnt
+           FROM booth_components
+          WHERE booth_id = $1
+            AND current_container_id IS NOT NULL
+            AND current_container_id NOT IN (
+                  SELECT id FROM booth_containers WHERE booth_id = $1)`,
+        [boothId]
+      );
+      const strandedComponents = strandedRows[0].cnt;
 
       const entries: MovementEntry[] = [];
       let movedBooths = 0;
@@ -210,7 +236,10 @@ export class BoothInventoryService {
         movements.push(await boothMovementService.record(entry, client));
       }
 
-      return { movedBooths, movedContainers, movedComponents, movementIds: movements.map((m) => m.id) };
+      return {
+        movedBooths, movedContainers, movedComponents, strandedComponents,
+        movementIds: movements.map((m) => m.id),
+      };
     });
   }
 
@@ -237,7 +266,7 @@ export class BoothInventoryService {
       const containerChanged = nextContainer !== component.current_container_id;
 
       if (!locationChanged && !statusChanged && !containerChanged) {
-        return { movedBooths: 0, movedContainers: 0, movedComponents: 0, movementIds: [] };
+        return { movedBooths: 0, movedContainers: 0, movedComponents: 0, strandedComponents: 0, movementIds: [] };
       }
 
       await client.query(
@@ -269,7 +298,7 @@ export class BoothInventoryService {
         idempotencyKey: boothMovementService.derivedKey(req.idempotencyKey, 'component', componentId),
       }, client);
 
-      return { movedBooths: 0, movedContainers: 0, movedComponents: 1, movementIds: [movement.id] };
+      return { movedBooths: 0, movedContainers: 0, movedComponents: 1, strandedComponents: 0, movementIds: [movement.id] };
     });
   }
 }
