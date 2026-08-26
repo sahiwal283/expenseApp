@@ -351,7 +351,9 @@ POST /api/booth-components/:id/verify
 
 **Idempotency.** Any movement-producing POST accepts an optional
 `idempotency_key`. `BoothMovementService` inserts with
-`ON CONFLICT (idempotency_key) DO NOTHING`; on conflict it returns the
+`ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING`
+(the predicate is required: the index is partial, and Postgres rejects the
+statement without it); on conflict it returns the
 existing movement with `200` instead of creating a duplicate. Bulk moves
 derive per-entity keys as `<key>:<entity_type>:<entity_id>` so a replayed bulk
 move is idempotent across every row it touched.

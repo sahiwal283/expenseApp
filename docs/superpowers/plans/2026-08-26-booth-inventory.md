@@ -2204,7 +2204,7 @@ const INSERT_SQL = `
     from_status, to_status, from_condition, to_condition,
     event_id, performed_by, notes, idempotency_key
   ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-  ON CONFLICT (idempotency_key) DO NOTHING
+  ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
   RETURNING *`;
 
 export class BoothMovementService {
