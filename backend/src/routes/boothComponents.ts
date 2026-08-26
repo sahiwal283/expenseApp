@@ -12,7 +12,7 @@ import {
   boothComponentRepository, COMPONENT_CONDITIONS,
 } from '../database/repositories/BoothComponentRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
-import { validateComponentBody } from '../validation/boothValidation';
+import { validateComponentBody, normaliseAssetTag } from '../validation/boothValidation';
 
 const router = Router();
 
@@ -21,7 +21,12 @@ router.get('/:id', authorize(...READ_ROLES), asyncHandler(async (req: AuthReques
 }));
 
 router.patch('/:id', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
-  validateComponentBody(req.body);
+  const existing = await boothComponentRepository.findByIdOrThrow(req.params.id);
+  normaliseAssetTag(req.body);
+  // Granularity is a property of the RESULTING row, not of the patch — a PATCH
+  // that sets only one side of the asset_tag/quantity pair must still be checked
+  // against what the other side already is.
+  validateComponentBody({ ...existing, ...req.body });
   res.json(await boothComponentRepository.update(req.params.id, req.body, req.user!.id));
 }));
 
