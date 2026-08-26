@@ -49,7 +49,7 @@ const INSERT_SQL = `
     from_status, to_status, from_condition, to_condition,
     event_id, performed_by, notes, idempotency_key
   ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-  ON CONFLICT (idempotency_key) DO NOTHING
+  ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
   RETURNING *`;
 
 export class BoothMovementService {
@@ -112,6 +112,12 @@ export class BoothMovementService {
 
     const inserted = await run(INSERT_SQL, params);
     if (inserted.rows[0]) return inserted.rows[0] as BoothMovement;
+
+    if (!entry.idempotencyKey) {
+      // No key means no conflict was possible — an empty result here is a real
+      // failure, not a deduplicated replay.
+      throw new Error('Movement insert returned no row and had no idempotency key to recover by');
+    }
 
     // ON CONFLICT DO NOTHING fired: this key was already recorded (an offline
     // replay). Return the original so the caller sees a successful, stable id.
