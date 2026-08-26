@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { pool, query } from '../../src/config/database';
 
 /**
@@ -57,13 +57,57 @@ describe('booth inventory schema (migration 039)', () => {
     }
   });
 
-  it('rejects an asset_tag row with quantity > 1', async () => {
-    await expect(
-      query(
+  describe('booth_components_instance_qty CHECK constraint', () => {
+    // A real booth is required: booth_components.booth_id is NOT NULL and FK'd
+    // to booths(id), so a bogus/nonexistent booth_id would fail on the FK
+    // before Postgres ever evaluates the CHECK, making the test unable to
+    // prove the CHECK itself exists and works.
+    let boothId: string;
+
+    beforeAll(async () => {
+      const { rows } = await query(
+        `INSERT INTO booths (name) VALUES ('Schema Test Fixture Booth') RETURNING id`
+      );
+      boothId = rows[0].id;
+    });
+
+    afterAll(async () => {
+      // booth_components.booth_id is ON DELETE CASCADE, so deleting the
+      // fixture booth also removes any component rows left behind.
+      if (boothId) {
+        await query(`DELETE FROM booths WHERE id = $1`, [boothId]);
+      }
+    });
+
+    it('rejects an asset_tag row with quantity > 1', async () => {
+      await expect(
+        query(
+          `INSERT INTO booth_components (booth_id, name, asset_tag, quantity)
+           VALUES ($1, 'bad', 'TEST-BAD-1', 5)`,
+          [boothId]
+        )
+      ).rejects.toThrow(/booth_components_instance_qty/);
+    });
+
+    it('allows an asset_tag row with quantity = 1', async () => {
+      const { rows } = await query(
         `INSERT INTO booth_components (booth_id, name, asset_tag, quantity)
-         VALUES (gen_random_uuid(), 'bad', 'TEST-BAD-1', 5)`
-      )
-    ).rejects.toThrow();
+         VALUES ($1, 'good-tagged', 'TEST-GOOD-TAGGED-1', 1) RETURNING id`,
+        [boothId]
+      );
+      expect(rows.length).toBe(1);
+      await query(`DELETE FROM booth_components WHERE id = $1`, [rows[0].id]);
+    });
+
+    it('allows a pooled row with no asset_tag and quantity > 1', async () => {
+      const { rows } = await query(
+        `INSERT INTO booth_components (booth_id, name, quantity)
+         VALUES ($1, 'good-pooled', 6) RETURNING id`,
+        [boothId]
+      );
+      expect(rows.length).toBe(1);
+      await query(`DELETE FROM booth_components WHERE id = $1`, [rows[0].id]);
+    });
   });
 
   it('enforces unique idempotency_key on booth_movements', async () => {
