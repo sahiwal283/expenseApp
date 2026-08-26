@@ -48,12 +48,13 @@ async function makeBooth(name: string): Promise<string> {
 async function makeContainer(
   boothId: string,
   name: string,
-  packedWeight: number | null = null
+  packedWeight: number | null = null,
+  weightUnit: 'lb' | 'kg' = 'lb'
 ): Promise<string> {
   const { rows } = await query(
-    `INSERT INTO booth_containers (booth_id, name, packed_weight_value)
-     VALUES ($1, $2, $3) RETURNING id`,
-    [boothId, name, packedWeight]
+    `INSERT INTO booth_containers (booth_id, name, packed_weight_value, weight_unit)
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [boothId, name, packedWeight, weightUnit]
   );
   containerIds.push(rows[0].id);
   return rows[0].id;
@@ -141,6 +142,7 @@ describe('BoothManifestService.getForEvent weight arithmetic (real database)', (
     expect(result.weighed_container_count).toBe(1); // only included1 has a weight
     expect(result.weight_total).toBe(142);
     expect(typeof result.weight_total).toBe('number');
+    expect(result.weight_units_mixed).toBe(false);
 
     // The excluded, heavier container must never contribute to the total.
     const excludedRow = result.containers.find((c) => c.container_id === excludedHeavy);
@@ -163,6 +165,62 @@ describe('BoothManifestService.getForEvent weight arithmetic (real database)', (
     expect(result.weight_total).toBeNull();
     expect(result.included_container_count).toBe(2);
     expect(result.weighed_container_count).toBe(0);
+    expect(result.weight_units_mixed).toBe(false);
+  });
+
+  it('detects mixed units across two included, weighed containers and refuses to total — does not guess or convert', async () => {
+    const eventId = await makeEvent(`${PREFIX}-mixedunits-event`);
+    const boothId = await makeBooth(`${PREFIX}-mixedunits-booth`);
+    await makeContainer(boothId, `${PREFIX}-mixedunits-lb`, 142, 'lb');
+    await makeContainer(boothId, `${PREFIX}-mixedunits-kg`, 40, 'kg');
+
+    const assigned = await boothManifestService.assignBooth(eventId, boothId, {}, userId);
+    assignmentIds.push(assigned.id);
+
+    const [result] = await boothManifestService.getForEvent(eventId);
+    expect(result.weight_units_mixed).toBe(true);
+    expect(result.weight_total).toBeNull();
+    expect(result.weighed_container_count).toBe(2);
+    expect(result.included_container_count).toBe(2);
+  });
+
+  it('does not flag mixed units when the differently-unit container is unweighed — only weighed units are compared', async () => {
+    const eventId = await makeEvent(`${PREFIX}-unweighedunit-event`);
+    const boothId = await makeBooth(`${PREFIX}-unweighedunit-booth`);
+    const lbWeighed = await makeContainer(boothId, `${PREFIX}-unweighedunit-lb`, 142, 'lb');
+    await makeContainer(boothId, `${PREFIX}-unweighedunit-kg-unweighed`, null, 'kg');
+
+    const assigned = await boothManifestService.assignBooth(eventId, boothId, {}, userId);
+    assignmentIds.push(assigned.id);
+
+    const [result] = await boothManifestService.getForEvent(eventId);
+    // The unweighed kg container contributes no unit to the comparison, so
+    // this must NOT be flagged as mixed — regression case for computing the
+    // unit set over all included containers instead of only the weighed ones.
+    expect(result.weight_units_mixed).toBe(false);
+    expect(result.weight_total).toBe(142);
+    expect(result.weighed_container_count).toBe(1);
+    expect(result.included_container_count).toBe(2);
+    void lbWeighed;
+  });
+
+  it('does not flag mixed units when the differently-unit container is excluded — excluded containers are not part of the shipment', async () => {
+    const eventId = await makeEvent(`${PREFIX}-excludedunit-event`);
+    const boothId = await makeBooth(`${PREFIX}-excludedunit-booth`);
+    await makeContainer(boothId, `${PREFIX}-excludedunit-lb-1`, 142, 'lb');
+    await makeContainer(boothId, `${PREFIX}-excludedunit-lb-2`, 88, 'lb');
+    const excludedKg = await makeContainer(boothId, `${PREFIX}-excludedunit-kg`, 40, 'kg');
+
+    const assigned = await boothManifestService.assignBooth(eventId, boothId, {}, userId);
+    assignmentIds.push(assigned.id);
+
+    await boothManifestService.setContainerIncluded(assigned.id, excludedKg, false);
+
+    const [result] = await boothManifestService.getForEvent(eventId);
+    expect(result.weight_units_mixed).toBe(false);
+    expect(result.weight_total).toBe(230);
+    expect(result.weighed_container_count).toBe(2);
+    expect(result.included_container_count).toBe(2);
   });
 });
 

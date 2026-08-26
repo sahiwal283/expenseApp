@@ -45,6 +45,7 @@ describe('BoothManifestService.getForEvent', () => {
     expect(result.weight_total).toBe(230);
     expect(result.included_container_count).toBe(2);
     expect(result.weighed_container_count).toBe(2);
+    expect(result.weight_units_mixed).toBe(false);
   });
 
   it('reports a partial weight count when some included containers are unweighed', async () => {
@@ -64,6 +65,7 @@ describe('BoothManifestService.getForEvent', () => {
     expect(result.weight_total).toBe(142);
     expect(result.included_container_count).toBe(2);
     expect(result.weighed_container_count).toBe(1);
+    expect(result.weight_units_mixed).toBe(false);
   });
 
   it('returns a null weight total when nothing included is weighed', async () => {
@@ -78,6 +80,27 @@ describe('BoothManifestService.getForEvent', () => {
 
     const [result] = await boothManifestService.getForEvent('ev-1');
     expect(result.weight_total).toBeNull();
+    expect(result.weight_units_mixed).toBe(false);
+  });
+
+  it('refuses to total mixed units — detects, does not convert', async () => {
+    vi.mocked(dbQuery)
+      .mockResolvedValueOnce({ rows: [assignment], rowCount: 1 } as any)
+      .mockResolvedValueOnce({ rows: [
+        { id: 'm1', container_id: 'c1', container_name: 'Crate A', container_type: 'crate',
+          asset_tag: null, included: true, is_extra: false,
+          packed_weight_value: '142.00', weight_unit: 'lb', component_count: 12 },
+        { id: 'm2', container_id: 'c2', container_name: 'Crate B', container_type: 'crate',
+          asset_tag: null, included: true, is_extra: false,
+          packed_weight_value: '40.00', weight_unit: 'kg', component_count: 5 },
+      ], rowCount: 2 } as any)
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
+
+    const [result] = await boothManifestService.getForEvent('ev-1');
+    expect(result.weight_units_mixed).toBe(true);
+    expect(result.weight_total).toBeNull();
+    expect(result.weighed_container_count).toBe(2);
+    expect(result.included_container_count).toBe(2);
   });
 
   it('surfaces drift — booth containers absent from the manifest', async () => {

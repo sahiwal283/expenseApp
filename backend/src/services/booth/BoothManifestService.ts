@@ -44,6 +44,13 @@ export interface ManifestAssignment {
   weight_unit: string;
   weighed_container_count: number;
   included_container_count: number;
+  /**
+   * True when the included containers that HAVE a weight do not all share one
+   * unit. Freight quotes come off weight_total, so we refuse to sum
+   * incompatible units rather than guess or silently convert. weight_total is
+   * null whenever this is true.
+   */
+  weight_units_mixed: boolean;
 }
 
 export class BoothManifestService {
@@ -102,9 +109,16 @@ export class BoothManifestService {
 
       const included = mapped.filter((c) => c.included);
       const weighed = included.filter((c) => c.packed_weight_value !== null);
-      const weightTotal = weighed.length
-        ? weighed.reduce((sum, c) => sum + (c.packed_weight_value as number), 0)
-        : null;
+
+      // Only the units of containers that actually contribute a number to the
+      // sum matter — an unweighed container's unit is irrelevant.
+      const units = new Set(weighed.map((c) => c.weight_unit));
+      const weightUnitsMixed = units.size > 1;
+      const weightTotal = weightUnitsMixed
+        ? null
+        : (weighed.length
+            ? weighed.reduce((sum, c) => sum + (c.packed_weight_value as number), 0)
+            : null);
 
       out.push({
         id: assignment.id,
@@ -121,6 +135,7 @@ export class BoothManifestService {
         weight_unit: included[0]?.weight_unit ?? 'lb',
         weighed_container_count: weighed.length,
         included_container_count: included.length,
+        weight_units_mixed: weightUnitsMixed,
       });
     }
 
