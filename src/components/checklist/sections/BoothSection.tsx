@@ -8,6 +8,7 @@ import {
   BoothOrderCard,
   ElectricityOrderCard,
   BoothShippingSection,
+  BoothInventoryPanel,
 } from './BoothSection/index';
 import { useBoothReceipts } from './BoothSection/hooks/useBoothReceipts';
 
@@ -270,6 +271,8 @@ export const BoothSection: React.FC<BoothSectionProps> = ({ checklist, user, eve
           }}
           onUploadReceipt={() => setShowReceiptUpload('booth_shipping')}
         />
+
+        <BoothInventoryPanel event={event} user={user} />
       </div>
 
     {/* Receipt Upload Modal */}
