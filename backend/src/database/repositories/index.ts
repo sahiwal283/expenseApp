@@ -56,3 +56,6 @@ export type { BoothComponent, ComponentFilters } from './BoothComponentRepositor
 export { boothMovementRepository, BoothMovementRepository } from './BoothMovementRepository';
 export type { BoothMovement, MovementQueryOptions } from './BoothMovementRepository';
 
+export { eventBoothAssignmentRepository, EventBoothAssignmentRepository } from './EventBoothAssignmentRepository';
+export type { EventBoothAssignment } from './EventBoothAssignmentRepository';
+
