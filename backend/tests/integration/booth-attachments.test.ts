@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { pool, query } from '../../src/config/database';
 import { boothAttachmentRepository } from '../../src/database/repositories/BoothAttachmentRepository';
+import { handleDeleteAttachment } from '../../src/routes/boothAttachments';
 import { NotFoundError } from '../../src/utils/errors';
 
 /**
@@ -108,6 +111,83 @@ describe('BoothAttachmentRepository (real database)', () => {
 
     // Confirm the delete was real, not just an in-memory illusion.
     const { rows } = await query(`SELECT id FROM booth_attachments WHERE id = $1`, [created.id]);
+    expect(rows).toHaveLength(0);
+  });
+});
+
+/**
+ * DELETE route handler file cleanup — Fix round 1, Finding 2
+ *
+ * `BoothAttachmentRepository.remove` only ever touches the database (by
+ * design — repositories in this codebase talk to the DB and nothing else).
+ * The filesystem cleanup lives in the route's `handleDeleteAttachment`, so
+ * these tests call that handler directly (not the repository) against the
+ * real database and real files on disk, proving the route actually deletes
+ * both, and that a missing file never turns a successful delete into an
+ * error.
+ */
+describe('handleDeleteAttachment (real database + real filesystem)', () => {
+  const uploadDir = path.join(process.env.UPLOAD_DIR || 'uploads', 'booth-inventory');
+  const filesToCleanUp: string[] = [];
+
+  beforeAll(() => {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  });
+
+  afterAll(() => {
+    // Safety net in case an assertion throws before the handler's own
+    // unlink runs — never leave a test-created file behind.
+    for (const filePath of filesToCleanUp) {
+      try { fs.unlinkSync(filePath); } catch { /* already gone, fine */ }
+    }
+  });
+
+  it('deletes both the database row and the file the url points at', async () => {
+    const filename = `${PREFIX}-delete-with-file.jpg`;
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, 'fake-image-bytes');
+    filesToCleanUp.push(filePath);
+
+    const attachment = await boothAttachmentRepository.create({
+      entity_type: 'component',
+      entity_id: randomUUID(),
+      url: `/uploads/booth-inventory/${filename}`,
+      caption: `${PREFIX} delete-with-file`,
+      uploaded_by: userId,
+    });
+
+    const req: any = { params: { id: attachment.id } };
+    const res: any = { json: vi.fn() };
+
+    await handleDeleteAttachment(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+    expect(fs.existsSync(filePath)).toBe(false);
+
+    const { rows } = await query(`SELECT id FROM booth_attachments WHERE id = $1`, [attachment.id]);
+    expect(rows).toHaveLength(0);
+  });
+
+  it('succeeds even when the file on disk is already missing — a failed unlink must not fail the delete', async () => {
+    // Row created, but its file was never written — models a file that was
+    // manually cleared, lost to a prior partial cleanup, or never landed.
+    const filename = `${PREFIX}-delete-missing-file.jpg`;
+    const attachment = await boothAttachmentRepository.create({
+      entity_type: 'component',
+      entity_id: randomUUID(),
+      url: `/uploads/booth-inventory/${filename}`,
+      caption: `${PREFIX} delete-missing-file`,
+      uploaded_by: userId,
+    });
+    expect(fs.existsSync(path.join(uploadDir, filename))).toBe(false);
+
+    const req: any = { params: { id: attachment.id } };
+    const res: any = { json: vi.fn() };
+
+    await expect(handleDeleteAttachment(req, res)).resolves.toBeUndefined();
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+
+    const { rows } = await query(`SELECT id FROM booth_attachments WHERE id = $1`, [attachment.id]);
     expect(rows).toHaveLength(0);
   });
 });
