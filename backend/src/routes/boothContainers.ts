@@ -10,6 +10,7 @@ import { boothContainerRepository } from '../database/repositories/BoothContaine
 import { boothMovementRepository } from '../database/repositories/BoothMovementRepository';
 import { boothMovementService } from '../services/booth/BoothMovementService';
 import { boothInventoryService } from '../services/booth/BoothInventoryService';
+import { boothPackingService } from '../services/booth/BoothPackingService';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
 import { validateContainerBody } from '../validation/boothValidation';
 
@@ -100,6 +101,35 @@ router.post('/:id/move', authorize(...READ_ROLES), asyncHandler(async (req: Auth
     toStatus: to_status ?? null,
     eventId: event_id ?? null,
     notes: notes ?? null,
+    idempotencyKey: idempotency_key ?? null,
+    performedBy: req.user!.id,
+  }));
+}));
+
+// Packing checklist: derived from default_container_id vs current_container_id,
+// never stored. Field operations, not catalog management — setup crew pack
+// crates — so this uses READ_ROLES (the reads-plus-field-ops tier).
+router.get('/:id/packing', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  res.json(await boothPackingService.getChecklist(req.params.id));
+}));
+
+router.post('/:id/pack', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { component_ids, to_location_id, event_id, idempotency_key } = req.body;
+  if (!Array.isArray(component_ids)) throw new ValidationError('component_ids must be an array');
+  res.json(await boothPackingService.pack(req.params.id, component_ids, {
+    toLocationId: to_location_id ?? null,
+    eventId: event_id ?? null,
+    idempotencyKey: idempotency_key ?? null,
+    performedBy: req.user!.id,
+  }));
+}));
+
+router.post('/:id/unpack', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { component_ids, to_location_id, event_id, idempotency_key } = req.body;
+  if (!Array.isArray(component_ids)) throw new ValidationError('component_ids must be an array');
+  res.json(await boothPackingService.unpack(req.params.id, component_ids, {
+    toLocationId: to_location_id ?? null,
+    eventId: event_id ?? null,
     idempotencyKey: idempotency_key ?? null,
     performedBy: req.user!.id,
   }));
