@@ -44,3 +44,6 @@ export type { UserChecklistItem } from './UserChecklistRepository';
 export { inventoryLocationRepository, InventoryLocationRepository } from './InventoryLocationRepository';
 export type { InventoryLocation, LocationFilters } from './InventoryLocationRepository';
 
+export { boothRepository, BoothRepository } from './BoothRepository';
+export type { Booth, BoothWithCounts, BoothFilters } from './BoothRepository';
+
