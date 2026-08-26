@@ -26,6 +26,7 @@ import checklistRoutes from './routes/checklist';
 import inventoryLocationRoutes from './routes/inventoryLocations';
 import boothRoutes from './routes/booths';
 import boothContainerRoutes from './routes/boothContainers';
+import boothComponentRoutes from './routes/boothComponents';
 import userChecklistRoutes from './routes/userChecklist';
 import pushRoutes from './routes/push';
 import { requestLogger, errorLogger } from './middleware/logger';
@@ -109,6 +110,7 @@ app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
 app.use('/api/inventory-locations', authenticateToken, sessionTracker, inventoryLocationRoutes);
 app.use('/api/booths', authenticateToken, sessionTracker, boothRoutes);
 app.use('/api/booth-containers', authenticateToken, sessionTracker, boothContainerRoutes);
+app.use('/api/booth-components', authenticateToken, sessionTracker, boothComponentRoutes);
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 

@@ -11,7 +11,8 @@ import { asyncHandler, NotFoundError, ValidationError } from '../utils/errors';
 import { boothRepository } from '../database/repositories/BoothRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
 import { boothContainerRepository } from '../database/repositories/BoothContainerRepository';
-import { validateContainerBody } from '../validation/boothValidation';
+import { boothComponentRepository } from '../database/repositories/BoothComponentRepository';
+import { validateContainerBody, validateComponentBody } from '../validation/boothValidation';
 
 const router = Router();
 
@@ -71,6 +72,26 @@ router.post('/:id/containers', authorize(...WRITE_ROLES), asyncHandler(async (re
   validateContainerBody(req.body);
   res.status(201).json(
     await boothContainerRepository.create({ ...req.body, booth_id: req.params.id })
+  );
+}));
+
+router.get('/:id/components', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { q, category, status, container_id, condition } = req.query;
+  res.json(await boothComponentRepository.findByBooth(req.params.id, {
+    q: typeof q === 'string' ? q : undefined,
+    category: typeof category === 'string' ? category : undefined,
+    status: typeof status === 'string' ? status : undefined,
+    containerId: typeof container_id === 'string' ? container_id : undefined,
+    condition: typeof condition === 'string' ? condition : undefined,
+  }));
+}));
+
+router.post('/:id/components', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { name } = req.body;
+  if (!name || typeof name !== 'string') throw new ValidationError('name is required');
+  validateComponentBody(req.body);
+  res.status(201).json(
+    await boothComponentRepository.create({ ...req.body, booth_id: req.params.id })
   );
 }));
 

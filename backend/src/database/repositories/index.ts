@@ -50,3 +50,6 @@ export type { Booth, BoothWithCounts, BoothFilters } from './BoothRepository';
 export { boothContainerRepository, BoothContainerRepository } from './BoothContainerRepository';
 export type { BoothContainer } from './BoothContainerRepository';
 
+export { boothComponentRepository, BoothComponentRepository } from './BoothComponentRepository';
+export type { BoothComponent, ComponentFilters } from './BoothComponentRepository';
+
