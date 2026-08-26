@@ -12,6 +12,7 @@ import { boothRepository } from '../database/repositories/BoothRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
 import { boothContainerRepository } from '../database/repositories/BoothContainerRepository';
 import { boothComponentRepository } from '../database/repositories/BoothComponentRepository';
+import { boothMovementRepository } from '../database/repositories/BoothMovementRepository';
 import { validateContainerBody, validateComponentBody } from '../validation/boothValidation';
 
 const router = Router();
@@ -93,6 +94,14 @@ router.post('/:id/components', authorize(...WRITE_ROLES), asyncHandler(async (re
   res.status(201).json(
     await boothComponentRepository.create({ ...req.body, booth_id: req.params.id })
   );
+}));
+
+router.get('/:id/movements', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { limit, event_id } = req.query;
+  res.json(await boothMovementRepository.findByBooth(req.params.id, {
+    limit: limit ? Number(limit) : undefined,
+    eventId: typeof event_id === 'string' ? event_id : undefined,
+  }));
 }));
 
 export default router;

@@ -53,3 +53,6 @@ export type { BoothContainer } from './BoothContainerRepository';
 export { boothComponentRepository, BoothComponentRepository } from './BoothComponentRepository';
 export type { BoothComponent, ComponentFilters } from './BoothComponentRepository';
 
+export { boothMovementRepository, BoothMovementRepository } from './BoothMovementRepository';
+export type { BoothMovement, MovementQueryOptions } from './BoothMovementRepository';
+

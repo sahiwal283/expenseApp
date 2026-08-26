@@ -11,6 +11,7 @@ import { asyncHandler, ValidationError } from '../utils/errors';
 import {
   boothComponentRepository, COMPONENT_CONDITIONS,
 } from '../database/repositories/BoothComponentRepository';
+import { boothMovementRepository } from '../database/repositories/BoothMovementRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
 import { validateComponentBody, normaliseAssetTag } from '../validation/boothValidation';
 
@@ -33,6 +34,13 @@ router.patch('/:id', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthReq
 router.delete('/:id', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
   await boothComponentRepository.remove(req.params.id);
   res.json({ success: true });
+}));
+
+router.get('/:id/movements', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { limit } = req.query;
+  res.json(await boothMovementRepository.findByComponent(req.params.id, {
+    limit: limit ? Number(limit) : undefined,
+  }));
 }));
 
 export default router;
