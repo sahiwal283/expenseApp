@@ -66,6 +66,18 @@ describe('ManifestView', () => {
     expect(await screen.findByText(/no weights recorded/i)).toBeInTheDocument();
   });
 
+  it('flags mixed units rather than presenting a null total as "nothing weighed"', async () => {
+    vi.mocked(boothApi.getManifest).mockResolvedValue([{
+      ...manifest[0], weight_units_mixed: true, weight_total: null,
+      weighed_container_count: 2, included_container_count: 2,
+    }] as any);
+    render(<ManifestView eventId="e1" canManage onOpenPacking={vi.fn()} />);
+    expect(await screen.findByText(/mixed units/i)).toBeInTheDocument();
+    // Pins the branch order: a reordering that checks weight_total === null
+    // first would silently mislabel mixed units as "nothing weighed".
+    expect(screen.queryByText(/no weights recorded/i)).not.toBeInTheDocument();
+  });
+
   it('offers to add drifted containers instead of adding them silently', async () => {
     vi.mocked(boothApi.getManifest).mockResolvedValue([{
       ...manifest[0], drift: [{ container_id: 'k9', container_name: 'Crate D' }],
