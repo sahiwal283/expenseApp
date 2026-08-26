@@ -399,6 +399,13 @@ returned alongside a count of how many containers actually have a weight
 recorded so the UI can caveat a partial total rather than present a
 misleading number.
 
+If the included, weighed containers do not all share one unit, the manifest
+returns `weight_units_mixed: true` and a `null` total. Mixed units are not
+silently converted: a quietly converted number is the same class of error as a
+quietly wrong sum, and freight quotes are made from this figure. The UI must
+distinguish that state from "nothing has been weighed yet", which also yields a
+null total.
+
 ---
 
 ## 3. Frontend

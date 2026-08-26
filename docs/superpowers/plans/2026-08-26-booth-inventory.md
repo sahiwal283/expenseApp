@@ -3844,6 +3844,7 @@ git commit -m "feat(booth): derived packing checklist with pack/unpack"
       drift: Array<{ container_id: string; container_name: string }>;
       weight_total: number | null;
       weight_unit: string;
+      weight_units_mixed: boolean;
       weighed_container_count: number;
       included_container_count: number;
     }
@@ -4122,6 +4123,9 @@ export interface ManifestAssignment {
   drift: Array<{ container_id: string; container_name: string }>;
   weight_total: number | null;
   weight_unit: string;
+  /** True when included+weighed containers do not share one unit. We refuse to
+   *  sum incompatible units rather than guess, so weight_total is null then. */
+  weight_units_mixed: boolean;
   weighed_container_count: number;
   included_container_count: number;
 }
@@ -5000,6 +5004,9 @@ export interface ManifestAssignment {
   drift: Array<{ container_id: string; container_name: string }>;
   weight_total: number | null;
   weight_unit: string;
+  /** True when included+weighed containers do not share one unit. We refuse to
+   *  sum incompatible units rather than guess, so weight_total is null then. */
+  weight_units_mixed: boolean;
   weighed_container_count: number;
   included_container_count: number;
 }
@@ -6439,6 +6446,10 @@ interface Props {
  * get made from this number.
  */
 function weightLine(a: ManifestAssignment): string {
+  if (a.weight_units_mixed) {
+    // Two different reasons produce a null total; say which one this is.
+    return `${a.weighed_container_count} containers weighed, but in mixed units — set one unit to see a total`;
+  }
   if (a.weight_total === null) {
     return `No weights recorded for ${a.included_container_count} container${
       a.included_container_count === 1 ? '' : 's'}`;
