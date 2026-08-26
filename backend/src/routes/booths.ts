@@ -10,6 +10,8 @@ import { authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler, NotFoundError, ValidationError } from '../utils/errors';
 import { boothRepository } from '../database/repositories/BoothRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
+import { boothContainerRepository } from '../database/repositories/BoothContainerRepository';
+import { validateContainerBody } from '../validation/boothValidation';
 
 const router = Router();
 
@@ -58,5 +60,18 @@ router.delete('/:id', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRe
 
 // Nested container routes (Task 4), nested component routes (Task 5), and the
 // bulk-move route (Task 7) are added here, before the default export below.
+
+router.get('/:id/containers', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  res.json(await boothContainerRepository.findByBooth(req.params.id));
+}));
+
+router.post('/:id/containers', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { name } = req.body;
+  if (!name || typeof name !== 'string') throw new ValidationError('name is required');
+  validateContainerBody(req.body);
+  res.status(201).json(
+    await boothContainerRepository.create({ ...req.body, booth_id: req.params.id })
+  );
+}));
 
 export default router;

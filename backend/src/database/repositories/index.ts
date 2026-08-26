@@ -47,3 +47,6 @@ export type { InventoryLocation, LocationFilters } from './InventoryLocationRepo
 export { boothRepository, BoothRepository } from './BoothRepository';
 export type { Booth, BoothWithCounts, BoothFilters } from './BoothRepository';
 
+export { boothContainerRepository, BoothContainerRepository } from './BoothContainerRepository';
+export type { BoothContainer } from './BoothContainerRepository';
+
