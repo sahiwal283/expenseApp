@@ -3178,7 +3178,7 @@ and these methods inside the class:
            FROM booth_components WHERE id = $1 FOR UPDATE`,
         [componentId]
       );
-      if (!rows[0]) throw new NotFoundError('Component', id);
+      if (!rows[0]) throw new NotFoundError('Component', componentId);
       const component = rows[0];
 
       const isMissing = req.kind === 'missing';
@@ -3225,7 +3225,7 @@ and these methods inside the class:
           WHERE id = $1 FOR UPDATE`,
         [componentId]
       );
-      if (!rows[0]) throw new NotFoundError('Component', id);
+      if (!rows[0]) throw new NotFoundError('Component', componentId);
       const component = rows[0];
 
       await client.query(
@@ -3631,7 +3631,7 @@ export class BoothPackingService {
       `SELECT id, name, booth_id FROM booth_containers WHERE id = $1`,
       [containerId]
     );
-    if (!containerResult.rows[0]) throw new NotFoundError('Container', id);
+    if (!containerResult.rows[0]) throw new NotFoundError('Container', containerId);
     const container = containerResult.rows[0];
 
     // Everything that BELONGS here plus everything that IS here — the union is
@@ -3697,7 +3697,7 @@ export class BoothPackingService {
         `SELECT id, booth_id FROM booth_containers WHERE id = $1`,
         [containerId]
       );
-      if (!containers[0]) throw new NotFoundError('Container', id);
+      if (!containers[0]) throw new NotFoundError('Container', containerId);
 
       const { rows: components } = await client.query(
         `SELECT id, booth_id, current_container_id, current_location_id, current_status
