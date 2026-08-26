@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-08-26 - Argo rename
+
+### Changed
+- Product renamed to Argo across the app: browser tab title, PWA manifest, login and registration screens, header, sidebar, install prompt, and the backend-generated report/export copy. Domain language ("trade show", "expense") is unchanged — only the product name moved.
+- Authentik application display name updated to Argo (what users see at sign-in); the future `argo.*` OAuth callback is now pre-registered alongside the existing `expapp` callback so a later cutover task can switch `OIDC_REDIRECT_URI` without a provider-config change at that time.
+
+### Requires
+- No migration. The hostname is unchanged (`https://expapp.duckdns.org`); moving it is a later task.
+
 ## [2.18.0] - 2026-08-24 - Expense message threads
 
 ### Added
