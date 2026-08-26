@@ -584,6 +584,6 @@ const response = await ollama.generate({
 ---
 
 **Last Updated:** October 16, 2025  
-**Maintained By:** ExpenseApp DevOps  
+**Maintained By:** Argo DevOps  
 **Branch:** v1.6.0 (Sandbox Only)
 

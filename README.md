@@ -1,4 +1,4 @@
-# Trade Show Expense Management App
+# Argo — Expense Management App
 
 A professional web application for managing trade show events and expenses with **dynamic role management**, **offline-first PWA architecture**, OCR receipt scanning, expense approval workflows, and **automatic Zoho Books integration**.
 
@@ -177,7 +177,7 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 
 **Architecture:**
 ```
-Trade Show App Sandbox (192.168.1.144)
+Argo Sandbox (192.168.1.144)
     ↓ Receipt Upload
 External OCR Service (192.168.1.195:8000)
     → Tesseract OCR (15-20s)

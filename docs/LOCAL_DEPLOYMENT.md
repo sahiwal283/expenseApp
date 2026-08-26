@@ -2,7 +2,7 @@
 
 **Version:** 1.27.15  
 **Last Updated:** November 6, 2025  
-**Purpose:** Run ExpenseApp locally for development and testing (without VPN/remote access)
+**Purpose:** Run Argo locally for development and testing (without VPN/remote access)
 
 ---
 

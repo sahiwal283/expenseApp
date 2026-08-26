@@ -1,4 +1,4 @@
-# Trade Show Trade Show App - Architecture Documentation
+# Argo — Architecture Documentation
 
 **Last Updated:** November 10, 2025  
 **Status:** Production Active | Sandbox Event Checklist + Full Codebase Refactor (v1.28.0)
@@ -97,7 +97,7 @@ Each Environment Contains:
                         └────────┬─────────┘
                                  │
                    ┌─────────────▼──────────────┐
-                   │    Trade Show App (203)       │
+                   │    Argo (203)                 │
                    │   192.168.1.144            │
                    │ ┌────────────────────────┐ │
                    │ │  Frontend (React)      │ │
@@ -195,7 +195,7 @@ Each Environment Contains:
 
 | Service | Container | URL | Purpose |
 |---------|-----------|-----|---------|
-| **Trade Show App** | 203 | http://192.168.1.144 | Main application, receipt upload, corrections |
+| **Argo** | 203 | http://192.168.1.144 | Main application, receipt upload, corrections |
 | **OCR Service** | 202 | http://192.168.1.195:8000 | Tesseract + LLM enhancement |
 | **Data Pool** | 205 | http://192.168.1.196:5000 | Correction storage, quality scoring |
 | **Model Training** | 206 | http://192.168.1.197:5001 | Pattern analysis, prompt improvement |
@@ -226,11 +226,11 @@ Ollama (Container 191)
 
 ### Data Flow: Receipt Processing
 
-1. **Upload** (Trade Show App Frontend)
+1. **Upload** (Argo Frontend)
    - User selects receipt image
    - Multipart form upload to `/api/ocr/v2/process`
 
-2. **Health Check** (Trade Show App Backend)
+2. **Health Check** (Argo Backend)
    - Check OCR Service: `GET /health/ready`
    - Fail fast if unavailable (5s timeout)
 
@@ -290,7 +290,7 @@ Ollama (Container 191)
 
 ### Configuration
 
-**Trade Show App Backend** (`backend/.env`):
+**Argo Backend** (`backend/.env`):
 ```bash
 # External OCR Service
 OCR_SERVICE_URL=http://192.168.1.195:8000

@@ -1,9 +1,9 @@
-# 🤖 MASTER GUIDE - ExpenseApp
+# 🤖 MASTER GUIDE - Argo
 
 **Last Updated:** November 12, 2025  
 **Status:** ✅ Production v1.29.0 Ready | 🔬 Sandbox v1.28.16 - PDF Optimization & Diagnostics
 
-**Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on ExpenseApp. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
+**Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on Argo. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
 
 **⚠️ IMPORTANT:** Before working on this project, read `docs/AGENT_CONTRACT.md` to understand your role, permissions, scope, and responsibilities.
 
@@ -549,9 +549,9 @@ ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/trade-show-app"
 
 ## 📱 Application Overview
 
-### What is ExpenseApp?
+### What is Argo?
 
-**ExpenseApp** is a professional trade show expense management system for **Haute Brands** and its sub-brands (Alpha, Beta, Gamma, Delta). It manages the complete expense lifecycle from receipt capture to Zoho Books accounting integration.
+**Argo** is a professional trade show expense management system for **Haute Brands** and its sub-brands (Alpha, Beta, Gamma, Delta). It manages the complete expense lifecycle from receipt capture to Zoho Books accounting integration.
 
 ### Core Modules
 

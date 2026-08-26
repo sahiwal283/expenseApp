@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get the Trade Show App running in minutes!
+Get Argo running in minutes!
 
 ## Easiest Way to Start (Recommended)
 
