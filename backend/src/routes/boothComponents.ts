@@ -60,4 +60,34 @@ router.post('/:id/move', authorize(...READ_ROLES), asyncHandler(async (req: Auth
   }));
 }));
 
+// Damage / missing / verification reports: field operations, same tier as
+// /move — the person who finds the torn fabric is the person who reports it.
+router.post('/:id/report', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { kind, condition, notes, event_id, idempotency_key } = req.body;
+  if (kind !== 'damage' && kind !== 'missing') {
+    throw new ValidationError("kind must be 'damage' or 'missing'");
+  }
+  if (condition && !COMPONENT_CONDITIONS.includes(condition)) {
+    throw new ValidationError(`condition must be one of: ${COMPONENT_CONDITIONS.join(', ')}`);
+  }
+  res.json(await boothInventoryService.reportComponent(req.params.id, {
+    kind,
+    condition: condition ?? null,
+    notes: notes ?? null,
+    eventId: event_id ?? null,
+    idempotencyKey: idempotency_key ?? null,
+    performedBy: req.user!.id,
+  }));
+}));
+
+router.post('/:id/verify', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { notes, event_id, idempotency_key } = req.body;
+  res.json(await boothInventoryService.verifyComponent(req.params.id, {
+    notes: notes ?? null,
+    eventId: event_id ?? null,
+    idempotencyKey: idempotency_key ?? null,
+    performedBy: req.user!.id,
+  }));
+}));
+
 export default router;

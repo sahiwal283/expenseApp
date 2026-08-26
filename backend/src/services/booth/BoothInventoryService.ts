@@ -15,7 +15,31 @@
 
 import { PoolClient } from 'pg';
 import { NotFoundError } from '../../utils/errors';
+import { query as dbQuery } from '../../config/database';
 import { boothMovementService, MovementEntry, MovementEventType } from './BoothMovementService';
+import { BoothMovement } from '../../database/repositories/BoothMovementRepository';
+
+export interface ReportRequest {
+  kind: 'damage' | 'missing';
+  condition?: string | null;
+  notes?: string | null;
+  eventId?: string | null;
+  idempotencyKey?: string | null;
+  performedBy: string;
+}
+
+export interface ExceptionRow {
+  component_id: string;
+  component_name: string;
+  asset_tag: string | null;
+  booth_id: string;
+  booth_name: string;
+  condition: string;
+  current_status: string;
+  notes: string | null;
+  reported_at: string;
+  reported_by_name: string | null;
+}
 
 export interface BulkMoveRequest {
   toLocationId?: string | null;
@@ -300,6 +324,112 @@ export class BoothInventoryService {
 
       return { movedBooths: 0, movedContainers: 0, movedComponents: 1, strandedComponents: 0, movementIds: [movement.id] };
     });
+  }
+
+  async reportComponent(componentId: string, req: ReportRequest): Promise<BoothMovement> {
+    return boothMovementService.withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, booth_id, condition, current_status, current_location_id
+           FROM booth_components WHERE id = $1 FOR UPDATE`,
+        [componentId]
+      );
+      if (!rows[0]) throw new NotFoundError('Component', componentId);
+      const component = rows[0];
+
+      const isMissing = req.kind === 'missing';
+      const nextCondition = isMissing
+        ? component.condition
+        : (req.condition ?? 'damaged');
+      // Reporting damage on an already-missing piece must not un-miss it.
+      const nextStatus = isMissing
+        ? 'missing'
+        : (component.current_status === 'missing' ? 'missing' : 'damaged');
+
+      await client.query(
+        `UPDATE booth_components
+            SET condition = $1, current_status = $2, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $3`,
+        [nextCondition, nextStatus, componentId]
+      );
+
+      return boothMovementService.record({
+        componentId,
+        boothId: component.booth_id,
+        eventType: isMissing ? 'missing_report' : 'damage_report',
+        fromStatus: component.current_status,
+        toStatus: nextStatus,
+        fromCondition: component.condition,
+        toCondition: nextCondition,
+        fromLocationId: component.current_location_id,
+        toLocationId: component.current_location_id,
+        eventId: req.eventId ?? null,
+        performedBy: req.performedBy,
+        notes: req.notes ?? null,
+        idempotencyKey: boothMovementService.derivedKey(req.idempotencyKey, 'component', componentId),
+      }, client);
+    });
+  }
+
+  async verifyComponent(
+    componentId: string,
+    req: { eventId?: string | null; notes?: string | null; idempotencyKey?: string | null; performedBy: string }
+  ): Promise<BoothMovement> {
+    return boothMovementService.withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, booth_id, condition, current_status FROM booth_components
+          WHERE id = $1 FOR UPDATE`,
+        [componentId]
+      );
+      if (!rows[0]) throw new NotFoundError('Component', componentId);
+      const component = rows[0];
+
+      await client.query(
+        `UPDATE booth_components
+            SET last_verified_at = CURRENT_TIMESTAMP, last_verified_by = $1,
+                updated_at = CURRENT_TIMESTAMP
+          WHERE id = $2`,
+        [req.performedBy, componentId]
+      );
+
+      return boothMovementService.record({
+        componentId,
+        boothId: component.booth_id,
+        eventType: 'verification',
+        fromStatus: component.current_status,
+        toStatus: component.current_status,
+        eventId: req.eventId ?? null,
+        performedBy: req.performedBy,
+        notes: req.notes ?? null,
+        idempotencyKey: boothMovementService.derivedKey(req.idempotencyKey, 'verify-component', componentId),
+      }, client);
+    });
+  }
+
+  /**
+   * Damaged and missing pieces surfaced for one event: anything reported
+   * against this event, plus anything currently in a bad state on a booth
+   * assigned to it (a piece damaged at the last show is still a problem now).
+   */
+  async listExceptions(eventId: string): Promise<ExceptionRow[]> {
+    const result = await dbQuery(
+      `SELECT DISTINCT ON (c.id)
+              c.id AS component_id, c.name AS component_name, c.asset_tag,
+              c.booth_id, b.name AS booth_name,
+              c.condition, c.current_status,
+              m.notes, m.created_at AS reported_at, u.name AS reported_by_name
+         FROM booth_components c
+         JOIN booths b ON b.id = c.booth_id
+         JOIN event_booth_assignments a ON a.booth_id = c.booth_id AND a.event_id = $1
+         LEFT JOIN booth_movements m
+                ON m.component_id = c.id
+               AND m.event_type IN ('damage_report','missing_report')
+         LEFT JOIN users u ON u.id = m.performed_by
+        WHERE c.current_status IN ('missing','damaged')
+           OR c.condition IN ('damaged','fair')
+        ORDER BY c.id, m.created_at DESC NULLS LAST`,
+      [eventId]
+    );
+    return result.rows as ExceptionRow[];
   }
 }
 
