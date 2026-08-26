@@ -35,8 +35,8 @@ describe('BoothInventoryService.moveContainer', () => {
     const client = stubClient([
       { rows: [{ id: 'cont-1', booth_id: 'booth-1', current_location_id: 'loc-1', current_status: 'in_storage' }] },
       { rows: [
-        { id: 'comp-1', current_location_id: 'loc-1', current_status: 'in_storage' },
-        { id: 'comp-2', current_location_id: 'loc-1', current_status: 'in_storage' },
+        { id: 'comp-1', booth_id: 'booth-1', current_location_id: 'loc-1', current_status: 'in_storage' },
+        { id: 'comp-2', booth_id: 'booth-1', current_location_id: 'loc-1', current_status: 'in_storage' },
       ] },
     ]);
     vi.mocked(boothMovementService.withTransaction).mockImplementation(
@@ -54,7 +54,12 @@ describe('BoothInventoryService.moveContainer', () => {
 
     const selectSql = client.query.mock.calls[1][0];
     expect(selectSql).toContain('current_container_id = $1');
-    expect(selectSql).not.toContain('booth_id');
+    // booth_id may appear in the SELECT list (needed to attribute each
+    // component's movement to its OWN booth, not the container's — see
+    // BoothInventoryService review fix round 1), but the cascade must never
+    // FILTER by booth_id: a borrowed crate can hold another booth's pieces.
+    const whereClause = selectSql.split(/WHERE/i)[1];
+    expect(whereClause).not.toContain('booth_id');
   });
 
   it('records one movement per affected entity', async () => {

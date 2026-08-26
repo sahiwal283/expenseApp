@@ -105,7 +105,7 @@ export class BoothInventoryService {
       const container = containers[0];
 
       const { rows: components } = await client.query(
-        `SELECT id, current_location_id, current_status
+        `SELECT id, booth_id, current_location_id, current_status
            FROM booth_components WHERE current_container_id = $1 FOR UPDATE`,
         [containerId]
       );
@@ -118,7 +118,13 @@ export class BoothInventoryService {
         movedContainers = 1;
       }
       for (const component of components) {
-        if (await this.applyMove(client, 'booth_components', 'component', component, container.booth_id, req, entries)) {
+        // Attribute the movement to the COMPONENT's own booth, not the
+        // container's: a borrowed crate can hold another booth's pieces, and
+        // booth_movements.booth_id exists so a booth's own history is one
+        // indexed query. Tagging it with the container's owner would make
+        // that history wrong for exactly the borrowed-crate case the
+        // never-filter-by-booth_id cascade rule exists to handle.
+        if (await this.applyMove(client, 'booth_components', 'component', component, component.booth_id, req, entries)) {
           movedComponents += 1;
         }
       }
@@ -151,9 +157,12 @@ export class BoothInventoryService {
         [boothId]
       );
       // Components inside this booth's containers, plus loose ones that
-      // belong to the booth and are not packed anywhere.
+      // belong to the booth and are not packed anywhere. The first branch can
+      // pick up a component that belongs to a DIFFERENT booth (a piece
+      // borrowed into one of this booth's containers), so booth_id is
+      // selected per row rather than assumed to be this booth's id.
       const { rows: components } = await client.query(
-        `SELECT id, current_location_id, current_status
+        `SELECT id, booth_id, current_location_id, current_status
            FROM booth_components
           WHERE current_container_id IN (
                   SELECT id FROM booth_containers WHERE booth_id = $1)
@@ -187,7 +196,11 @@ export class BoothInventoryService {
         }
       }
       for (const component of components) {
-        if (await this.applyMove(client, 'booth_components', 'component', component, boothId, req, entries)) {
+        // Same attribution fix as moveContainer: a component picked up via
+        // the "inside this booth's containers" branch may belong to a
+        // different booth (a borrowed piece), so tag its movement with its
+        // own booth_id, not this booth's.
+        if (await this.applyMove(client, 'booth_components', 'component', component, component.booth_id, req, entries)) {
           movedComponents += 1;
         }
       }
