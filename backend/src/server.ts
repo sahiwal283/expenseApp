@@ -23,6 +23,7 @@ import learningAnalyticsRoutes from './routes/learningAnalytics';
 import modelRetrainingRoutes from './routes/modelRetraining';
 import trainingSyncRoutes from './routes/trainingSync';
 import checklistRoutes from './routes/checklist';
+import inventoryLocationRoutes from './routes/inventoryLocations';
 import userChecklistRoutes from './routes/userChecklist';
 import pushRoutes from './routes/push';
 import { requestLogger, errorLogger } from './middleware/logger';
@@ -103,6 +104,7 @@ app.use('/api/learning', authenticateToken, sessionTracker, learningAnalyticsRou
 app.use('/api/retraining', authenticateToken, sessionTracker, modelRetrainingRoutes);
 app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRoutes);
 app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
+app.use('/api/inventory-locations', authenticateToken, sessionTracker, inventoryLocationRoutes);
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 

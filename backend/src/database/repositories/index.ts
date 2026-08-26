@@ -41,3 +41,6 @@ export type { Role } from './RoleRepository';
 export { UserChecklistRepository, userChecklistRepository } from './UserChecklistRepository';
 export type { UserChecklistItem } from './UserChecklistRepository';
 
+export { inventoryLocationRepository, InventoryLocationRepository } from './InventoryLocationRepository';
+export type { InventoryLocation, LocationFilters } from './InventoryLocationRepository';
+
