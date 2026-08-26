@@ -107,7 +107,7 @@ export class BoothRepository extends BaseRepository<Booth> {
     const cols = WRITABLE.filter((c) => data[c] !== undefined);
     if (!cols.length) {
       const existing = await this.findById(id);
-      if (!existing) throw new NotFoundError('Booth not found');
+      if (!existing) throw new NotFoundError('Booth', id);
       return existing;
     }
     const params: unknown[] = cols.map((c) => data[c]);
@@ -118,7 +118,7 @@ export class BoothRepository extends BaseRepository<Booth> {
         WHERE id = $${params.length} RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Booth not found');
+    if (!result.rows[0]) throw new NotFoundError('Booth', id);
     return result.rows[0];
   }
 
@@ -127,7 +127,7 @@ export class BoothRepository extends BaseRepository<Booth> {
       `UPDATE booths SET is_active = false, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 RETURNING id`, [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Booth not found');
+    if (!result.rows[0]) throw new NotFoundError('Booth', id);
   }
 }
 

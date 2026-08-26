@@ -76,7 +76,7 @@ export class InventoryLocationRepository extends BaseRepository<InventoryLocatio
 
     if (!cols.length) {
       const existing = await this.findById(id);
-      if (!existing) throw new NotFoundError('Location not found');
+      if (!existing) throw new NotFoundError('Location', id);
       return existing;
     }
 
@@ -90,7 +90,7 @@ export class InventoryLocationRepository extends BaseRepository<InventoryLocatio
         RETURNING *`,
       params as any[]
     );
-    if (!result.rows[0]) throw new NotFoundError('Location not found');
+    if (!result.rows[0]) throw new NotFoundError('Location', id);
     return result.rows[0];
   }
 
@@ -101,7 +101,7 @@ export class InventoryLocationRepository extends BaseRepository<InventoryLocatio
         WHERE id = $1 RETURNING id`,
       [id]
     );
-    if (!result.rows[0]) throw new NotFoundError('Location not found');
+    if (!result.rows[0]) throw new NotFoundError('Location', id);
   }
 }
 

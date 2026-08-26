@@ -30,7 +30,7 @@ router.get('/', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, 
 
 router.get('/:id', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
   const booth = await boothRepository.findByIdWithCounts(req.params.id);
-  if (!booth) throw new NotFoundError('Booth not found');
+  if (!booth) throw new NotFoundError('Booth', req.params.id);
   res.json(booth);
 }));
 

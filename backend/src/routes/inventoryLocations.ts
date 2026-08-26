@@ -30,7 +30,7 @@ router.get('/', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, 
 
 router.get('/:id', authorize(...READ_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
   const location = await inventoryLocationRepository.findById(req.params.id);
-  if (!location) throw new NotFoundError('Location not found');
+  if (!location) throw new NotFoundError('Location', req.params.id);
   res.json(location);
 }));
 

@@ -51,6 +51,8 @@ describe('InventoryLocationRepository', () => {
     vi.mocked(dbQuery).mockResolvedValue({ rows: [], rowCount: 0 } as any);
     await expect(inventoryLocationRepository.update('missing', { name: 'x' }))
       .rejects.toBeInstanceOf(NotFoundError);
+    await expect(inventoryLocationRepository.update('missing', { name: 'x' }))
+      .rejects.toThrow(/Location with identifier 'missing' not found/);
   });
 
   it('update with no fields is a no-op read', async () => {

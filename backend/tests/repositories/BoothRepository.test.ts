@@ -67,6 +67,8 @@ describe('BoothRepository', () => {
     vi.mocked(dbQuery).mockResolvedValue({ rows: [], rowCount: 0 } as any);
     await expect(boothRepository.update('missing', { name: 'x' }))
       .rejects.toBeInstanceOf(NotFoundError);
+    await expect(boothRepository.update('missing', { name: 'x' }))
+      .rejects.toThrow(/Booth with identifier 'missing' not found/);
   });
 
   it('softDelete sets is_active false', async () => {
@@ -81,5 +83,7 @@ describe('BoothRepository', () => {
     vi.mocked(dbQuery).mockResolvedValue({ rows: [], rowCount: 0 } as any);
     await expect(boothRepository.softDelete('missing'))
       .rejects.toBeInstanceOf(NotFoundError);
+    await expect(boothRepository.softDelete('missing'))
+      .rejects.toThrow(/Booth with identifier 'missing' not found/);
   });
 });
