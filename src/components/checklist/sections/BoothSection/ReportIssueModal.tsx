@@ -1,5 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { boothApi } from '../../../../utils/boothApi';
+import { networkMonitor } from '../../../../utils/networkDetection';
+import { offlineDb } from '../../../../utils/offlineDb';
+import { syncManager } from '../../../../utils/syncManager';
+import { generateUUID } from '../../../../utils/uuid';
 
 interface Props {
   componentId: string;
@@ -25,6 +29,39 @@ export const ReportIssueModal: React.FC<Props> = ({
     setSaving(true);
     setError(null);
     setNotice(null);
+
+    if (!networkMonitor.isOnline()) {
+      try {
+        // queueAction generates its own idempotencyKey and never returns it —
+        // it returns the queue item's own id instead, which is what the photo
+        // placeholder below correlates against (see syncManager's
+        // resolvePendingPhotoTarget).
+        const movementQueueId = await syncManager.queueAction('CREATE', 'booth_movement', {
+          op: 'report', componentId, kind, notes: notes || undefined, eventId,
+        });
+
+        if (file) {
+          const photoId = generateUUID();
+          await offlineDb.putPendingBoothPhoto({
+            id: photoId,
+            entityType: 'movement',
+            entityId: `pending_movement:${movementQueueId}`,
+            blob: file,
+            createdAt: Date.now(),
+          });
+          await syncManager.queueAction('CREATE', 'booth_photo', { photoId });
+        }
+
+        setNotice("Issue queued and will sync when you're back online.");
+        onReported();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not queue this report');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
       const movement = await boothApi.reportComponent(componentId, {
         kind, notes: notes || undefined, event_id: eventId, idempotency_key: crypto.randomUUID(),

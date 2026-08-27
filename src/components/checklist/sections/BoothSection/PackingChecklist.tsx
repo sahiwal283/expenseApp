@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { boothApi, PackingChecklist as Checklist } from '../../../../utils/boothApi';
+import { networkMonitor } from '../../../../utils/networkDetection';
+import { syncManager } from '../../../../utils/syncManager';
 import { ReportIssueModal } from './ReportIssueModal';
 
 interface Props {
@@ -17,6 +19,28 @@ export const PackingChecklist: React.FC<Props> = ({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reporting, setReporting] = useState<{ id: string; name: string } | null>(null);
+  const [online, setOnline] = useState(networkMonitor.isOnline());
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const refreshPending = async () => {
+      const status = await syncManager.getStatus();
+      setPendingCount(status.pendingCount);
+    };
+    void refreshPending();
+
+    const unsubscribeNetwork = networkMonitor.addListener((state) => {
+      setOnline(state.isOnline);
+    });
+    const unsubscribeSync = syncManager.addEventListener(() => {
+      void refreshPending();
+    });
+
+    return () => {
+      unsubscribeNetwork();
+      unsubscribeSync();
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setError(null);
@@ -32,6 +56,26 @@ export const PackingChecklist: React.FC<Props> = ({
   const toggle = async (componentId: string, currentlyPacked: boolean) => {
     setBusy(componentId);
     setError(null);
+
+    if (!networkMonitor.isOnline()) {
+      // queueAction(action, entity, data, localId?) — it generates and stores
+      // its OWN idempotencyKey on the queue item, which is what syncBoothMovement
+      // replays with. Do NOT try to pass one in; there is no options parameter.
+      await syncManager.queueAction(
+        'CREATE', 'booth_movement',
+        { op: currentlyPacked ? 'unpack' : 'pack',
+          containerId, componentIds: [componentId], eventId }
+      );
+      setData((prev) => prev && {
+        ...prev,
+        items: prev.items.map((i) =>
+          i.component_id === componentId ? { ...i, packed: !currentlyPacked } : i),
+        packed_count: prev.packed_count + (currentlyPacked ? -1 : 1),
+      });
+      setBusy(null);
+      return;
+    }
+
     // A fresh key per action: the server dedupes replays of THIS action, and a
     // later toggle of the same component is a genuinely new event.
     const idempotency_key = crypto.randomUUID();
@@ -61,7 +105,14 @@ export const PackingChecklist: React.FC<Props> = ({
             {data.stray_count > 0 && <span> · {data.stray_count} stray</span>}
           </p>
         </div>
-        <button onClick={onClose} aria-label="Close packing list"><X size={18} /></button>
+        <div className="flex items-center gap-2">
+          {!online && (
+            <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+              Offline · {pendingCount} queued
+            </span>
+          )}
+          <button onClick={onClose} aria-label="Close packing list"><X size={18} /></button>
+        </div>
       </header>
 
       {error && <p role="alert" className="bg-amber-50 px-4 py-2 text-sm text-amber-800">{error}</p>}

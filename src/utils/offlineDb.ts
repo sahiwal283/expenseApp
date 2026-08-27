@@ -15,7 +15,7 @@ import { generateUUID } from './uuid';
 export interface SyncQueueItem {
   id: string;                 // UUID
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE';
-  entity: 'expense' | 'user' | 'event';
+  entity: 'expense' | 'user' | 'event' | 'booth_movement' | 'booth_photo';
   data: any;                  // The actual payload
   localId?: string;           // Temporary UUID for new items
   remoteId?: string;          // Backend ID after successful sync
@@ -82,6 +82,20 @@ export interface CachedExpenseMessages {
   cachedAt: number;
 }
 
+/** A photo captured offline, held until its target exists server-side. */
+export interface PendingBoothPhoto {
+  id: string;
+  entityType: string;
+  /**
+   * A real entity id, OR `pending_movement:<idempotencyKey>` when the movement
+   * this photo belongs to has not synced yet.
+   */
+  entityId: string;
+  blob: Blob;
+  caption?: string;
+  createdAt: number;
+}
+
 // ========== DATABASE CLASS ==========
 
 export class OfflineDatabase extends Dexie {
@@ -93,6 +107,8 @@ export class OfflineDatabase extends Dexie {
   syncMetadata!: Table<SyncMetadata, string>;
   cachedPicklists!: Table<CachedPicklists, string>;
   cachedExpenseMessages!: Table<CachedExpenseMessages, string>;
+  cachedBoothInventory!: Table<{ key: string; data: any; cachedAt: number }, string>;
+  pendingBoothPhotos!: Table<PendingBoothPhoto, string>;
 
   constructor() {
     super('ExpenseAppOfflineDB');
@@ -116,6 +132,13 @@ export class OfflineDatabase extends Dexie {
     // forward, so only the new store is declared here.
     this.version(3).stores({
       cachedExpenseMessages: 'expenseId'
+    });
+
+    // v4 adds booth inventory: cached catalog data for offline packing and a
+    // blob store for photos captured with no signal.
+    this.version(4).stores({
+      cachedBoothInventory: 'key',
+      pendingBoothPhotos: 'id, createdAt'
     });
   }
 
@@ -157,6 +180,46 @@ export class OfflineDatabase extends Dexie {
     } catch (error) {
       // A failed cache write must not break a working online session.
       console.error('[offlineDb] Failed to cache messages:', error);
+    }
+  }
+
+  // ========== BOOTH INVENTORY (PACKING) CACHE ==========
+
+  async putPendingBoothPhoto(photo: PendingBoothPhoto): Promise<void> {
+    await this.pendingBoothPhotos.put(photo);
+  }
+
+  async getPendingBoothPhoto(id: string): Promise<PendingBoothPhoto | null> {
+    try {
+      return (await this.pendingBoothPhotos.get(id)) ?? null;
+    } catch (error) {
+      console.error('[offlineDb] Failed to read pending booth photo:', error);
+      return null;
+    }
+  }
+
+  async deletePendingBoothPhoto(id: string): Promise<void> {
+    try {
+      await this.pendingBoothPhotos.delete(id);
+    } catch (error) {
+      console.error('[offlineDb] Failed to delete pending booth photo:', error);
+    }
+  }
+
+  async setCachedBoothInventory(key: string, data: any): Promise<void> {
+    try {
+      await this.cachedBoothInventory.put({ key, data, cachedAt: Date.now() });
+    } catch (error) {
+      console.error('[offlineDb] Failed to cache booth inventory:', error);
+    }
+  }
+
+  async getCachedBoothInventory(key: string): Promise<any | null> {
+    try {
+      return (await this.cachedBoothInventory.get(key))?.data ?? null;
+    } catch (error) {
+      console.error('[offlineDb] Failed to read cached booth inventory:', error);
+      return null;
     }
   }
 
