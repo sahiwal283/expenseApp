@@ -15,6 +15,7 @@ import { boothComponentRepository } from '../database/repositories/BoothComponen
 import { boothMovementRepository } from '../database/repositories/BoothMovementRepository';
 import { boothInventoryService } from '../services/booth/BoothInventoryService';
 import { validateContainerBody, validateComponentBody } from '../validation/boothValidation';
+import { boothErrorMapper } from '../middleware/boothErrorMapper';
 
 const router = Router();
 
@@ -122,5 +123,7 @@ router.post('/:id/move', authorize(...READ_ROLES), asyncHandler(async (req: Auth
     performedBy: req.user!.id,
   }));
 }));
+
+router.use(boothErrorMapper);
 
 export default router;

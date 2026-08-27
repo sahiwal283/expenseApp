@@ -15,6 +15,7 @@ import {
   eventBoothAssignmentRepository, ASSIGNMENT_STATUSES,
 } from '../database/repositories/EventBoothAssignmentRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
+import { boothErrorMapper } from '../middleware/boothErrorMapper';
 
 const router = Router();
 
@@ -73,5 +74,7 @@ router.post('/:assignmentId/containers', authorize(...WRITE_ROLES), asyncHandler
 router.post('/:assignmentId/sync', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRequest, res: Response) => {
   res.json(await boothManifestService.syncDrift(req.params.assignmentId));
 }));
+
+router.use(boothErrorMapper);
 
 export default router;

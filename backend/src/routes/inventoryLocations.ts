@@ -11,6 +11,7 @@ import { authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler, NotFoundError, ValidationError } from '../utils/errors';
 import { inventoryLocationRepository } from '../database/repositories/InventoryLocationRepository';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
+import { boothErrorMapper } from '../middleware/boothErrorMapper';
 
 const router = Router();
 
@@ -51,5 +52,7 @@ router.delete('/:id', authorize(...WRITE_ROLES), asyncHandler(async (req: AuthRe
   await inventoryLocationRepository.softDelete(req.params.id);
   res.json({ success: true });
 }));
+
+router.use(boothErrorMapper);
 
 export default router;

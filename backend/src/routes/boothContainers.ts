@@ -13,6 +13,7 @@ import { boothInventoryService } from '../services/booth/BoothInventoryService';
 import { boothPackingService } from '../services/booth/BoothPackingService';
 import { READ_ROLES, WRITE_ROLES } from '../config/boothRoles';
 import { validateContainerBody } from '../validation/boothValidation';
+import { boothErrorMapper } from '../middleware/boothErrorMapper';
 
 const router = Router();
 
@@ -134,5 +135,7 @@ router.post('/:id/unpack', authorize(...READ_ROLES), asyncHandler(async (req: Au
     performedBy: req.user!.id,
   }));
 }));
+
+router.use(boothErrorMapper);
 
 export default router;

@@ -92,8 +92,20 @@ export class ConflictError extends AppError {
 
 /**
  * Database Error (500)
+ *
+ * Preserves the raw Postgres error code/constraint/detail (when present) as
+ * `pgCode`/`pgConstraint`/`pgDetail` — NOT part of `context`, so they never
+ * leak into the JSON response via `toJSON()`/the error handler's `details`
+ * field. They exist purely so a caller further up the stack (e.g. the booth
+ * routes' pg-error mapper) can recognise a specific constraint violation
+ * that BaseRepository.executeQuery already wrapped into this generic 500,
+ * and turn it into an actionable 4xx.
  */
 export class DatabaseError extends AppError {
+  public readonly pgCode?: string;
+  public readonly pgConstraint?: string;
+  public readonly pgDetail?: string;
+
   constructor(message: string, originalError?: Error) {
     super(
       `Database operation failed: ${message}`,
@@ -101,6 +113,10 @@ export class DatabaseError extends AppError {
       true,
       originalError ? { originalMessage: originalError.message } : undefined
     );
+    const pgErr = originalError as (Error & { code?: string; constraint?: string; detail?: string }) | undefined;
+    this.pgCode = pgErr?.code;
+    this.pgConstraint = pgErr?.constraint;
+    this.pgDetail = pgErr?.detail;
     Object.setPrototypeOf(this, DatabaseError.prototype);
   }
 }

@@ -16,6 +16,7 @@ import {
   boothAttachmentRepository, AttachmentEntityType,
 } from '../database/repositories/BoothAttachmentRepository';
 import { READ_ROLES } from '../config/boothRoles';
+import { boothErrorMapper } from '../middleware/boothErrorMapper';
 
 const router = Router();
 
@@ -128,5 +129,7 @@ router.post('/', authorize(...READ_ROLES),
 );
 
 router.delete('/:id', authorize(...READ_ROLES), asyncHandler(handleDeleteAttachment));
+
+router.use(boothErrorMapper);
 
 export default router;
