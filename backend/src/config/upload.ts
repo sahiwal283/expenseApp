@@ -96,6 +96,9 @@ export function initializeUploadDirectories(): void {
     // Ensure booth-maps subdirectory exists
     ensureDirectory(boothMapsDir);
 
+    const boothInventoryDir = path.join(baseUploadDir, 'booth-inventory');
+    ensureDirectory(boothInventoryDir);
+
     // Verify write permissions
     try {
       const testFile = path.join(boothMapsDir, '.write-test');
@@ -168,6 +171,36 @@ export const uploadBoothMap = multer({
       return cb(null, true);
     }
     console.warn(`[Upload] Rejected booth map: ${file.originalname} (${reason})`);
+    cb(new Error(reason || 'Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed'));
+  }
+});
+
+// Configure multer storage for booth inventory photos
+const boothPhotoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const baseUploadDir = process.env.UPLOAD_DIR || 'uploads';
+    const uploadDir = path.join(baseUploadDir, 'booth-inventory');
+    ensureDirectory(baseUploadDir);
+    ensureDirectory(uploadDir);
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'booth-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Configure multer upload middleware for booth inventory photos
+export const uploadBoothPhoto = multer({
+  storage: boothPhotoStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const { allowed, reason } = isAllowedBoothMapFile(file.mimetype, file.originalname);
+    if (allowed) {
+      console.log(`[Upload] Accepting booth photo: ${file.originalname} (mime: ${file.mimetype || 'none'})`);
+      return cb(null, true);
+    }
+    console.warn(`[Upload] Rejected booth photo: ${file.originalname} (${reason})`);
     cb(new Error(reason || 'Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed'));
   }
 });

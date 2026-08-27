@@ -6,4 +6,5 @@ export { BoothOrderCard } from './BoothOrderCard';
 export { BoothMapUpload } from './BoothMapUpload';
 export { ElectricityOrderCard } from './ElectricityOrderCard';
 export { BoothShippingSection } from './BoothShippingSection';
+export { BoothInventoryPanel } from './BoothInventoryPanel';
 

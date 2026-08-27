@@ -11,6 +11,7 @@ import { networkMonitor } from './networkDetection';
 // `import * as api` namespace import made every `api.createExpense(...)` call
 // undefined at runtime, so queued items could never replay.
 import { api } from './api';
+import { boothApi } from './boothApi';
 import { generateUUID } from './uuid';
 
 // ========== TYPE DEFINITIONS ==========
@@ -32,6 +33,15 @@ export interface SyncStatus {
 
 type SyncEventType = 'sync-start' | 'sync-complete' | 'sync-error' | 'queue-updated';
 type SyncEventCallback = (event: { type: SyncEventType; data?: any }) => void;
+
+/**
+ * Thrown when a queued item can't sync yet because something it depends on
+ * (e.g. a booth movement its photo is attached to) hasn't synced. This is a
+ * normal, expected wait state, not a failure: `syncItem` still resets the
+ * item to 'pending' via the existing backoff so it is retried, but it does
+ * not propagate as an error the way a genuine API failure does.
+ */
+class PendingDependencyError extends Error {}
 
 // ========== SYNC MANAGER CLASS ==========
 
@@ -60,15 +70,21 @@ export class SyncManager {
       }
     });
 
-    // Check for pending items on startup
-    const stats = await offlineDb.getQueueStats();
-    if (stats.pending > 0) {
-      console.log(`[SyncManager] Found ${stats.pending} pending items in queue`);
-      
-      // Try to sync if online
-      if (networkMonitor.isOnline()) {
-        this.processQueue();
+    // Check for pending items on startup. A failure here (e.g. IndexedDB
+    // unavailable, as happens in non-browser test environments) must not
+    // become an unhandled rejection and must not block a working session.
+    try {
+      const stats = await offlineDb.getQueueStats();
+      if (stats.pending > 0) {
+        console.log(`[SyncManager] Found ${stats.pending} pending items in queue`);
+
+        // Try to sync if online
+        if (networkMonitor.isOnline()) {
+          this.processQueue();
+        }
       }
+    } catch (error) {
+      console.error('[SyncManager] Failed to check pending queue items on init:', error);
     }
 
     console.log('[SyncManager] Initialized successfully');
@@ -79,7 +95,7 @@ export class SyncManager {
    */
   public async queueAction(
     action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE',
-    entity: 'expense' | 'user' | 'event',
+    entity: 'expense' | 'user' | 'event' | 'booth_movement' | 'booth_photo',
     data: any,
     localId?: string
   ): Promise<string> {
@@ -193,9 +209,13 @@ export class SyncManager {
   }
 
   /**
-   * Sync a single queue item
+   * Sync a single queue item.
+   *
+   * @internal Public so it is directly testable — replay of a single queue
+   * item is the crux of the offline-safety argument for booth movements and
+   * deserves to be exercised in isolation, not only through processQueue().
    */
-  private async syncItem(item: SyncQueueItem): Promise<void> {
+  public async syncItem(item: SyncQueueItem): Promise<void> {
     // Check retry limit
     if (item.retryCount >= this.MAX_RETRIES) {
       console.warn(`[SyncManager] Item ${item.id} exceeded max retries, marking as failed`);
@@ -227,6 +247,12 @@ export class SyncManager {
         case 'user':
           remoteId = await this.syncUser(item);
           break;
+        case 'booth_movement':
+          remoteId = await this.syncBoothMovement(item);
+          break;
+        case 'booth_photo':
+          remoteId = await this.syncBoothPhoto(item);
+          break;
         default:
           throw new Error(`Unknown entity type: ${item.entity}`);
       }
@@ -237,6 +263,13 @@ export class SyncManager {
       // Update cached data if applicable
       if (item.entity === 'expense' && remoteId) {
         await this.updateLocalIdMapping(item.localId, remoteId);
+      }
+
+      // A synced damage/missing report yields a real movement id. Any photo
+      // still parked on the placeholder for this movement's queue id can now
+      // be pointed at it.
+      if (item.entity === 'booth_movement' && item.data?.op === 'report' && remoteId) {
+        await this.resolvePendingPhotoTarget(item.id, remoteId);
       }
 
       console.log(`[SyncManager] Successfully synced ${item.entity} ${item.action}`);
@@ -259,6 +292,15 @@ export class SyncManager {
         setTimeout(async () => {
           await offlineDb.updateQueueItem(item.id, { status: 'pending' });
         }, backoffMs);
+      }
+
+      // A photo waiting on its movement isn't a genuine sync failure — it's
+      // an ordering dependency that resolves itself once the movement (queued
+      // earlier, replayed first) lands. The queue bookkeeping above still
+      // applies so it gets retried, but it must not propagate as an error the
+      // way a real API failure does.
+      if (error instanceof PendingDependencyError) {
+        return;
       }
 
       throw error;
@@ -333,6 +375,95 @@ export class SyncManager {
   }
 
   /**
+   * Booth movements are append-only events, so replay is safe: the server
+   * dedupes on idempotency_key and returns the original. A "0 changed"
+   * response is a successful replay, NOT a failure.
+   */
+  private async syncBoothMovement(item: SyncQueueItem): Promise<string | undefined> {
+    const { op, containerId, componentIds, componentId, eventId, kind, notes,
+            toLocationId, toContainerId, toStatus } = item.data;
+    const idempotency_key = item.idempotencyKey;
+
+    switch (op) {
+      case 'pack':
+        await boothApi.pack(containerId, {
+          component_ids: componentIds, event_id: eventId, idempotency_key,
+        });
+        return undefined;
+      case 'unpack':
+        await boothApi.unpack(containerId, {
+          component_ids: componentIds, event_id: eventId, idempotency_key,
+        });
+        return undefined;
+      case 'move':
+        await boothApi.moveComponent(componentId, {
+          to_location_id: toLocationId ?? null,
+          to_container_id: toContainerId,
+          to_status: toStatus ?? null,
+          event_id: eventId ?? null,
+          idempotency_key,
+        });
+        return undefined;
+      case 'report': {
+        const movement = await boothApi.reportComponent(componentId, {
+          kind, notes, event_id: eventId, idempotency_key,
+        });
+        return movement?.id;
+      }
+      default:
+        throw new Error(`Unknown booth movement op: ${op}`);
+    }
+  }
+
+  /**
+   * A photo may have been captured before its movement synced. Its entityId is
+   * then `pending_movement:<key>`; throw so the existing backoff retries after
+   * the movement lands. Never drop the blob — the photo IS the evidence. The
+   * only case where dropping is correct is the blob itself having vanished
+   * from Dexie (cache eviction) — nothing left to retry.
+   */
+  private async syncBoothPhoto(item: SyncQueueItem): Promise<string | undefined> {
+    const photo = await offlineDb.getPendingBoothPhoto(item.data.photoId);
+    if (!photo) {
+      console.warn(`[SyncManager] Pending booth photo ${item.data.photoId} not found; dropping`);
+      return undefined;
+    }
+
+    if (photo.entityId.startsWith('pending_movement:')) {
+      throw new PendingDependencyError('Movement for this photo has not synced yet; will retry');
+    }
+
+    const attachment = await boothApi.uploadAttachment(
+      photo.entityType, photo.entityId, photo.blob, photo.caption
+    );
+    await offlineDb.deletePendingBoothPhoto(photo.id);
+    return attachment?.id;
+  }
+
+  /**
+   * Point any queued photo for this movement at the real movement id.
+   *
+   * `movementQueueId` is the *sync queue item's* own id — the value
+   * `queueAction()` returns synchronously to its caller. It is used (rather
+   * than the queue item's `idempotencyKey`) because `queueAction` generates
+   * that key internally and never hands it back, so a caller like
+   * `ReportIssueModal` has no way to know it in advance; the queue id is
+   * already unique per queued action and available immediately.
+   */
+  private async resolvePendingPhotoTarget(movementQueueId: string, movementId: string): Promise<void> {
+    try {
+      const placeholder = `pending_movement:${movementQueueId}`;
+      const pending = await offlineDb.pendingBoothPhotos
+        .filter((p) => p.entityId === placeholder).toArray();
+      for (const photo of pending) {
+        await offlineDb.putPendingBoothPhoto({ ...photo, entityId: movementId });
+      }
+    } catch (error) {
+      console.error('[SyncManager] Failed to resolve pending photo target:', error);
+    }
+  }
+
+  /**
    * Update local ID to remote ID mapping
    */
   private async updateLocalIdMapping(localId: string | undefined, remoteId: string): Promise<void> {
@@ -354,16 +485,30 @@ export class SyncManager {
    * Get current sync status
    */
   public async getStatus(): Promise<SyncStatus> {
-    const stats = await offlineDb.getQueueStats();
-    const lastSyncTime = await offlineDb.getLastSyncTime();
+    // A failed queue/metadata read (e.g. IndexedDB unavailable) must not
+    // reject this call — callers like the packing checklist's queued-count
+    // badge poll it on every render and on every sync event.
+    try {
+      const stats = await offlineDb.getQueueStats();
+      const lastSyncTime = await offlineDb.getLastSyncTime();
 
-    return {
-      isSync: networkMonitor.isOnline(),
-      pendingCount: stats.pending,
-      failedCount: stats.failed,
-      lastSyncTime,
-      currentlyProcessing: this.isProcessing
-    };
+      return {
+        isSync: networkMonitor.isOnline(),
+        pendingCount: stats.pending,
+        failedCount: stats.failed,
+        lastSyncTime,
+        currentlyProcessing: this.isProcessing
+      };
+    } catch (error) {
+      console.error('[SyncManager] Failed to read sync status:', error);
+      return {
+        isSync: networkMonitor.isOnline(),
+        pendingCount: 0,
+        failedCount: 0,
+        lastSyncTime: 0,
+        currentlyProcessing: this.isProcessing
+      };
+    }
   }
 
   /**

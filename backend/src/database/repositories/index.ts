@@ -41,3 +41,24 @@ export type { Role } from './RoleRepository';
 export { UserChecklistRepository, userChecklistRepository } from './UserChecklistRepository';
 export type { UserChecklistItem } from './UserChecklistRepository';
 
+export { inventoryLocationRepository, InventoryLocationRepository } from './InventoryLocationRepository';
+export type { InventoryLocation, LocationFilters } from './InventoryLocationRepository';
+
+export { boothRepository, BoothRepository } from './BoothRepository';
+export type { Booth, BoothWithCounts, BoothFilters } from './BoothRepository';
+
+export { boothContainerRepository, BoothContainerRepository } from './BoothContainerRepository';
+export type { BoothContainer } from './BoothContainerRepository';
+
+export { boothComponentRepository, BoothComponentRepository } from './BoothComponentRepository';
+export type { BoothComponent, ComponentFilters } from './BoothComponentRepository';
+
+export { boothMovementRepository, BoothMovementRepository } from './BoothMovementRepository';
+export type { BoothMovement, MovementQueryOptions } from './BoothMovementRepository';
+
+export { eventBoothAssignmentRepository, EventBoothAssignmentRepository } from './EventBoothAssignmentRepository';
+export type { EventBoothAssignment } from './EventBoothAssignmentRepository';
+
+export { boothAttachmentRepository, BoothAttachmentRepository } from './BoothAttachmentRepository';
+export type { BoothAttachment, AttachmentEntityType } from './BoothAttachmentRepository';
+

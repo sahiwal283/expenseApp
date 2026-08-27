@@ -9,7 +9,8 @@ import {
   X,
   CheckSquare,
   Code,
-  Heart
+  Heart,
+  Package
 } from 'lucide-react';
 import { User, UserRole } from '../../App';
 import packageJson from '../../../package.json';
@@ -31,6 +32,7 @@ const navigationItems = [
   { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'developer', 'temporary'] },
   { id: 'checklist', label: 'Checklist', icon: CheckSquare, roles: ['admin', 'coordinator', 'salesperson', 'developer', 'temporary'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
+  { id: 'booths', label: 'Booths', icon: Package, roles: ['admin', 'coordinator', 'developer'] },
   // NOTE: 'approvals' tab removed in v1.3.0 - approval workflows are now integrated into the Expenses page
   // NOTE: 'account' item merged into Settings — every role can open Settings and gets at least the Account tab
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'developer'] },
@@ -41,7 +43,7 @@ const navigationItems = [
 // Visual grouping only — does not change which items render or their order
 const navSections: { label: string | null; ids: string[] }[] = [
   { label: null, ids: ['dashboard'] },
-  { label: 'Workspace', ids: ['events', 'checklist', 'expenses'] },
+  { label: 'Workspace', ids: ['events', 'checklist', 'expenses', 'booths'] },
   { label: 'Manage', ids: ['reports', 'settings', 'devdashboard'] },
 ];
 
