@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { boothApi, PackingChecklist as Checklist } from '../../../../utils/boothApi';
 import { networkMonitor } from '../../../../utils/networkDetection';
 import { syncManager } from '../../../../utils/syncManager';
+import { offlineDb } from '../../../../utils/offlineDb';
 import { ReportIssueModal } from './ReportIssueModal';
 
 interface Props {
@@ -16,11 +17,19 @@ export const PackingChecklist: React.FC<Props> = ({
   containerId, containerName, eventId, onClose,
 }) => {
   const [data, setData] = useState<Checklist | null>(null);
+  // Distinct from `data === null`: without this, a load FAILURE with no
+  // cached fallback is indistinguishable from "still loading" and the
+  // component renders "Loading packing list…" forever (the error branch
+  // below is unreachable while data stays null).
+  const [loading, setLoading] = useState(true);
+  const [isCached, setIsCached] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reporting, setReporting] = useState<{ id: string; name: string } | null>(null);
   const [online, setOnline] = useState(networkMonitor.isOnline());
   const [pendingCount, setPendingCount] = useState(0);
+
+  const cacheKey = `packing:${containerId}`;
 
   useEffect(() => {
     const refreshPending = async () => {
@@ -45,33 +54,56 @@ export const PackingChecklist: React.FC<Props> = ({
   const load = useCallback(async () => {
     setError(null);
     try {
-      setData(await boothApi.getPacking(containerId));
+      const result = await boothApi.getPacking(containerId);
+      setData(result);
+      setIsCached(false);
+      // Best-effort: a failed cache write must not break a working session.
+      void offlineDb.setCachedBoothInventory(cacheKey, result);
     } catch {
-      setError("Couldn't load the packing list. Your changes will still sync when you're back online.");
+      const cached = await offlineDb.getCachedBoothInventory(cacheKey);
+      if (cached) {
+        setData(cached);
+        setIsCached(true);
+      } else {
+        setData(null);
+        setError("Couldn't load the packing list. Your changes will still sync when you're back online.");
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [containerId]);
+  }, [containerId, cacheKey]);
 
   useEffect(() => { void load(); }, [load]);
+
+  /**
+   * Queues the pack/unpack as a movement (same path the offline branch of
+   * `toggle` uses) and applies the same optimistic local update, so an
+   * ONLINE failure ends up in exactly the state an OFFLINE toggle would:
+   * genuinely queued, not just claimed to be.
+   */
+  const queueToggle = async (componentId: string, currentlyPacked: boolean) => {
+    // queueAction(action, entity, data, localId?) — it generates and stores
+    // its OWN idempotencyKey on the queue item, which is what syncBoothMovement
+    // replays with. Do NOT try to pass one in; there is no options parameter.
+    await syncManager.queueAction(
+      'CREATE', 'booth_movement',
+      { op: currentlyPacked ? 'unpack' : 'pack',
+        containerId, componentIds: [componentId], eventId }
+    );
+    setData((prev) => prev && {
+      ...prev,
+      items: prev.items.map((i) =>
+        i.component_id === componentId ? { ...i, packed: !currentlyPacked } : i),
+      packed_count: prev.packed_count + (currentlyPacked ? -1 : 1),
+    });
+  };
 
   const toggle = async (componentId: string, currentlyPacked: boolean) => {
     setBusy(componentId);
     setError(null);
 
     if (!networkMonitor.isOnline()) {
-      // queueAction(action, entity, data, localId?) — it generates and stores
-      // its OWN idempotencyKey on the queue item, which is what syncBoothMovement
-      // replays with. Do NOT try to pass one in; there is no options parameter.
-      await syncManager.queueAction(
-        'CREATE', 'booth_movement',
-        { op: currentlyPacked ? 'unpack' : 'pack',
-          containerId, componentIds: [componentId], eventId }
-      );
-      setData((prev) => prev && {
-        ...prev,
-        items: prev.items.map((i) =>
-          i.component_id === componentId ? { ...i, packed: !currentlyPacked } : i),
-        packed_count: prev.packed_count + (currentlyPacked ? -1 : 1),
-      });
+      await queueToggle(componentId, currentlyPacked);
       setBusy(null);
       return;
     }
@@ -85,14 +117,23 @@ export const PackingChecklist: React.FC<Props> = ({
       else await boothApi.pack(containerId, payload);
       await load();
     } catch {
-      setError('That change is queued and will sync when you reconnect.');
+      try {
+        await queueToggle(componentId, currentlyPacked);
+        setError('That change is queued and will sync when you reconnect.');
+      } catch {
+        setError('That change was not saved. Please try again.');
+      }
     } finally {
       setBusy(null);
     }
   };
 
-  if (!data) {
+  if (loading) {
     return <p className="p-4 text-sm text-gray-500">Loading packing list…</p>;
+  }
+
+  if (!data) {
+    return <p role="alert" className="p-4 text-sm text-red-700">{error}</p>;
   }
 
   return (
@@ -114,6 +155,12 @@ export const PackingChecklist: React.FC<Props> = ({
           <button onClick={onClose} aria-label="Close packing list"><X size={18} /></button>
         </div>
       </header>
+
+      {isCached && (
+        <p role="status" className="bg-blue-50 px-4 py-2 text-xs text-blue-800">
+          Showing cached data captured earlier — it may be out of date.
+        </p>
+      )}
 
       {error && <p role="alert" className="bg-amber-50 px-4 py-2 text-sm text-amber-800">{error}</p>}
 

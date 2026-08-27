@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ManifestView } from '../ManifestView';
 import { boothApi } from '../../../../../utils/boothApi';
+import { offlineDb } from '../../../../../utils/offlineDb';
 
 vi.mock('../../../../../utils/boothApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../../utils/boothApi')>();
@@ -14,6 +15,13 @@ vi.mock('../../../../../utils/boothApi', async (importOriginal) => {
     },
   };
 });
+
+// The offline read fallback goes through offlineDb — mocked so tests can
+// assert on it directly rather than depending on a real IndexedDB in the
+// test environment.
+vi.mock('../../../../../utils/offlineDb', () => ({
+  offlineDb: { getCachedBoothInventory: vi.fn(), setCachedBoothInventory: vi.fn() },
+}));
 
 const manifest = [{
   id: 'asg-1', event_id: 'e1', booth_id: 'b1', booth_name: '20x20 Haute Main',
@@ -35,6 +43,8 @@ describe('ManifestView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(boothApi.listBooths).mockResolvedValue([] as any);
+    vi.mocked(offlineDb.getCachedBoothInventory).mockResolvedValue(null);
+    vi.mocked(offlineDb.setCachedBoothInventory).mockResolvedValue(undefined);
   });
 
   it('lists the assigned booth and its containers', async () => {
@@ -103,5 +113,37 @@ describe('ManifestView', () => {
     render(<ManifestView eventId="e1" canManage={false} onOpenPacking={vi.fn()} />);
     await screen.findByText('20x20 Haute Main');
     expect(screen.queryByRole('button', { name: /assign a booth/i })).not.toBeInTheDocument();
+  });
+
+  describe('offline read fallback', () => {
+    it('caches a successful load under a key scoped to this event', async () => {
+      vi.mocked(boothApi.getManifest).mockResolvedValue(manifest as any);
+      render(<ManifestView eventId="e1" canManage onOpenPacking={vi.fn()} />);
+      await screen.findByText('20x20 Haute Main');
+
+      expect(offlineDb.setCachedBoothInventory).toHaveBeenCalledWith('manifest:e1', manifest);
+    });
+
+    it('falls back to cached data — with the Pack entry point still reachable — when the live fetch fails', async () => {
+      vi.mocked(boothApi.getManifest).mockRejectedValue(new Error('offline'));
+      vi.mocked(offlineDb.getCachedBoothInventory).mockResolvedValue(manifest);
+
+      render(<ManifestView eventId="e1" canManage onOpenPacking={vi.fn()} />);
+
+      // This is the exact bug being fixed: offline, with no cache fallback,
+      // no container ever rendered and the Pack button was unreachable.
+      expect(await screen.findByText('20x20 Haute Main')).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /pack/i }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('status')).toHaveTextContent(/cached.*captured earlier/i);
+    });
+
+    it('shows the plain error when the fetch fails and there is no cache', async () => {
+      vi.mocked(boothApi.getManifest).mockRejectedValue(new Error('offline'));
+      vi.mocked(offlineDb.getCachedBoothInventory).mockResolvedValue(null);
+
+      render(<ManifestView eventId="e1" canManage onOpenPacking={vi.fn()} />);
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't load the booth manifest/i);
+    });
   });
 });

@@ -71,8 +71,25 @@ export const ReportIssueModal: React.FC<Props> = ({
         try {
           await boothApi.uploadAttachment('movement', movement.id, file);
         } catch {
-          // The report already succeeded — never lose it because the photo failed.
-          setNotice("Issue recorded. The photo will upload when you're back online.");
+          // The report already succeeded — never lose it because the photo
+          // failed. But don't just SAY the photo will upload later — actually
+          // queue it via the same path the offline branch above uses. The
+          // movement already has a real id (the report succeeded), so the
+          // photo can reference it directly with no placeholder to resolve.
+          try {
+            const photoId = generateUUID();
+            await offlineDb.putPendingBoothPhoto({
+              id: photoId,
+              entityType: 'movement',
+              entityId: movement.id,
+              blob: file,
+              createdAt: Date.now(),
+            });
+            await syncManager.queueAction('CREATE', 'booth_photo', { photoId });
+            setNotice("Issue recorded. The photo will upload when you're back online.");
+          } catch {
+            setError('Issue recorded, but the photo could not be saved. Please add it again later.');
+          }
           onReported();
           return;
         }

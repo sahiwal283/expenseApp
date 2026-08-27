@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Package, Plus } from 'lucide-react';
 import { boothApi, Booth, ManifestAssignment, humanise } from '../../../../utils/boothApi';
+import { offlineDb } from '../../../../utils/offlineDb';
 
 interface Props {
   eventId: string;
@@ -33,19 +34,33 @@ export const ManifestView: React.FC<Props> = ({ eventId, canManage, onOpenPackin
   const [booths, setBooths] = useState<Booth[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
   const [adding, setAdding] = useState(false);
+
+  const cacheKey = `manifest:${eventId}`;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setAssignments(await boothApi.getManifest(eventId));
+      const result = await boothApi.getManifest(eventId);
+      setAssignments(result);
+      setIsCached(false);
+      // Best-effort: a failed cache write must not break a working session.
+      void offlineDb.setCachedBoothInventory(cacheKey, result);
     } catch {
-      setError("Couldn't load the booth manifest for this show.");
+      const cached = await offlineDb.getCachedBoothInventory(cacheKey);
+      if (cached) {
+        setAssignments(cached);
+        setIsCached(true);
+      } else {
+        setAssignments([]);
+        setError("Couldn't load the booth manifest for this show.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, cacheKey]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -73,6 +88,12 @@ export const ManifestView: React.FC<Props> = ({ eventId, canManage, onOpenPackin
 
   return (
     <div className="space-y-4">
+      {isCached && (
+        <p role="status" className="rounded bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          Showing cached data captured earlier — it may be out of date.
+        </p>
+      )}
+
       {assignments.length === 0 && (
         <p className="rounded border border-dashed p-6 text-center text-sm text-gray-500">
           No booth assigned to this show yet.
