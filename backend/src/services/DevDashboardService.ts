@@ -4,7 +4,6 @@
  */
 
 import { pool } from '../config/database';
-import axios from 'axios';
 import * as os from 'os';
 import backendPkg from '../../package.json';
 import { FRONTEND_VERSION } from '../config/version';
@@ -346,7 +345,7 @@ export class DevDashboardService {
         logs: filteredLogs,
         total: filteredLogs.length
       };
-    } catch (error) {
+    } catch (_error) {
       // If audit_logs table doesn't exist or query fails, fall back to simulated logs
       console.warn('[DevDashboard] Audit logs not available, using fallback');
 
@@ -550,7 +549,7 @@ export class DevDashboardService {
   /**
    * Get system alerts
    */
-  static async getAlerts(status: string = 'active', severity?: string) {
+  static async getAlerts(_status: string = 'active', _severity?: string) {
     const alerts: any[] = [];
     const now = new Date();
     
@@ -612,8 +611,7 @@ export class DevDashboardService {
     
     const uniqueUsers = parseInt(result.rows[0].unique_users) || 0;
     const totalRequests = parseInt(result.rows[0].total_requests) || 0;
-    const avgResponseTime = Math.round(parseFloat(result.rows[0].avg_response_time) || 0);
-    
+
     // Get page-specific stats (group API endpoints into logical pages)
     const pageStatsResult = await pool.query(`
       SELECT 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HotelsSection } from '../sections/HotelsSection';
 import { api } from '../../../utils/api';
@@ -408,7 +408,6 @@ describe('HotelsSection', () => {
     });
 
     it('should not toggle if hotel does not exist yet', async () => {
-      const user = userEvent.setup();
       const checklistNoHotels = { ...mockChecklist, hotels: [] };
 
       render(

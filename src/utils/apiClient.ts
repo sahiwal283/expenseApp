@@ -64,10 +64,10 @@ class ApiClient {
     this.defaultTimeout = API_CONFIG.TIMEOUT;
     
     // Log API base URL in development mode for debugging
-    // @ts-ignore - Vite provides this at build time
+    // @ts-expect-error - Vite provides this at build time
     if (import.meta.env.DEV) {
       console.log('[API Client] Initialized with base URL:', this.baseURL);
-      // @ts-ignore - Vite provides this at build time
+      // @ts-expect-error - Vite provides this at build time
       console.log('[API Client] Environment variable VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL || '(not set, using default /api)');
     }
   }
@@ -274,7 +274,7 @@ class ApiClient {
       const headers = this.buildHeaders(config);
 
       // Log request in development mode for debugging
-      // @ts-ignore - Vite provides this at build time
+      // @ts-expect-error - Vite provides this at build time
       if (import.meta.env.DEV) {
         const headersObj = headers as Record<string, string>;
         console.log('[API] Request:', {

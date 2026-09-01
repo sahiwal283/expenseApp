@@ -8,7 +8,6 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import { ExpenseWithDetails } from '../database/repositories/ExpenseRepository';
-import { NotFoundError } from '../utils/errors';
 
 /**
  * Generate PDF for an expense record
@@ -196,11 +195,6 @@ export async function generateExpensePDF(expense: ExpenseWithDetails): Promise<B
     // Receipt Image Section - Optimized for larger image
     if (expense.receipt_url) {
       // Check available space before adding receipt section
-      const currentY = doc.y;
-      const pageHeight = doc.page.height;
-      const bottomMargin = doc.page.margins.bottom;
-      const availableSpace = pageHeight - currentY - bottomMargin - 20; // Reserve only 20 points for footer
-      
       doc.fontSize(11).font('Helvetica-Bold').text('Receipt', { underline: true }); // Reduced from 13
       doc.moveDown(0.15); // Minimal spacing
 

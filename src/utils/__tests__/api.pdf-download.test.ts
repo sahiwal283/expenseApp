@@ -42,10 +42,6 @@ vi.mock('../apiClient', async () => {
 import { api } from '../api';
 import { TokenManager, apiClient } from '../apiClient';
 
-// Get references to mocked functions
-const mockGetToken = vi.mocked(TokenManager.getToken);
-const mockGetBaseURL = vi.mocked(apiClient.getBaseURL);
-
 // Mock window.URL
 const mockRevokeObjectURL = vi.fn();
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
@@ -493,7 +489,7 @@ describe('Frontend PDF Download Tests', () => {
 
       try {
         await api.downloadExpensePDF('123');
-      } catch (error) {
+      } catch (_error) {
         // Expected error - cleanup happens in catch block
       }
 

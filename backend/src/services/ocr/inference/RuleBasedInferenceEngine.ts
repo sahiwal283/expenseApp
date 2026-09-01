@@ -593,7 +593,7 @@ export class RuleBasedInferenceEngine implements InferenceEngine {
   /**
    * Suggest categories based on inference and OCR text
    */
-  async suggestCategories(ocrResult: OCRResult, inference: FieldInference): Promise<CategorySuggestion[]> {
+  async suggestCategories(ocrResult: OCRResult, _inference: FieldInference): Promise<CategorySuggestion[]> {
     const textLower = ocrResult.text.toLowerCase();
     const suggestions: CategorySuggestion[] = [];
     

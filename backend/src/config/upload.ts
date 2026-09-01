@@ -68,7 +68,7 @@ function ensureDirectory(dirPath: string): void {
     // Verify directory is writable
     try {
       fs.accessSync(dirPath, fs.constants.W_OK);
-    } catch (error) {
+    } catch (_error) {
       console.warn(`[Upload] Directory exists but is not writable: ${dirPath}`);
       // Try to fix permissions
       try {

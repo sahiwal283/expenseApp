@@ -6,7 +6,7 @@
  */
 
 import { query } from '../config/database';
-import { expenseRepository, eventRepository } from '../database/repositories';
+import { expenseRepository } from '../database/repositories';
 import { resolveExpenseBackend } from './expenseStore';
 import { fetchMidasExpenses } from './expenseStore/midasExpenseReader';
 

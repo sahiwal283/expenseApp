@@ -223,7 +223,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       // Verify the query was called with only defined values
       expect(dbQuery).toHaveBeenCalledWith(
@@ -259,7 +259,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       // Verify null values were included in the query
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
@@ -329,7 +329,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       // Verify query includes null values but not undefined
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
@@ -359,7 +359,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
       const queryString = callArgs[0] as string;
@@ -383,7 +383,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
       const queryString = callArgs[0] as string;
@@ -489,7 +489,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
       const queryString = callArgs[0] as string;
@@ -547,7 +547,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
       const queryString = callArgs[0] as string;
@@ -571,7 +571,7 @@ describe('ExpenseRepository', () => {
         fields: [],
       });
 
-      const result = await repository.update('exp-123', updates);
+      await repository.update('exp-123', updates);
 
       const callArgs = vi.mocked(dbQuery).mock.calls[0];
       const queryValues = callArgs[1] as any[];

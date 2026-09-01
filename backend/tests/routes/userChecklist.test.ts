@@ -1,6 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Request, Response } from 'express';
-import { AuthRequest } from '../../src/middleware/auth';
 import { userChecklistService } from '../../src/services/UserChecklistService';
 import { ValidationError, NotFoundError, AuthorizationError } from '../../src/utils/errors';
 
@@ -20,45 +18,13 @@ vi.mock('../../src/services/UserChecklistService');
 vi.mock('../../src/database/repositories/EventRepository');
 
 describe('User Checklist API - itemType Parameter Tests', () => {
-  let mockReq: Partial<AuthRequest>;
-  let mockRes: Partial<Response>;
-  let mockNext: vi.Mock;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    mockReq = {
-      params: {},
-      body: {},
-      user: {
-        id: 'test-user-1',
-        role: 'salesperson',
-        email: 'test@example.com',
-        name: 'Test User',
-        username: 'testuser'
-      }
-    };
-
-    mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn().mockReturnThis()
-    };
-
-    mockNext = vi.fn();
   });
 
   describe('PUT /api/user-checklist/:eventId/item/:itemType - itemType Parameter Tests', () => {
     const eventId = 'event-1';
     const userId = 'test-user-1';
-
-    // Import route handler
-    const getRouteHandler = async () => {
-      const routes = await import('../../src/routes/userChecklist');
-      // Get the PUT route handler
-      const router = routes.default;
-      // We'll test the service directly since route testing requires express app setup
-      return userChecklistService;
-    };
 
     it('should handle simple itemType (guidelines)', async () => {
       const mockItem = {

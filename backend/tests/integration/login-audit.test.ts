@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { pool } from '../../src/config/database';
 import { auditLogRepository } from '../../src/database/repositories/AuditLogRepository';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 
 /**
  * Login and Audit Logging Integration Tests
@@ -38,7 +37,7 @@ describe('Login and Audit Logging Integration Tests', () => {
       );
       testUserId = result.rows[0].id;
       console.log(`✅ Test user created: ${testUserId}`);
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -632,7 +631,7 @@ describe('Login and Audit Logging Integration Tests', () => {
         expect(authCode).toContain('login_success');
         expect(authCode).toContain('login_failed');
         console.log('✅ Login endpoint code calls logAuth correctly');
-      } catch (error) {
+      } catch (_error) {
         // If file can't be read, verify imports work instead
         const authRoutes = await import('../../src/routes/auth');
         expect(authRoutes).toBeDefined();

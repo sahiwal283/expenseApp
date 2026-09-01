@@ -23,7 +23,7 @@ export function errorHandler(
   err: ApiError | AppError | MidasApiError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   // Handle AppError (new error handling)
   if (err instanceof AppError) {

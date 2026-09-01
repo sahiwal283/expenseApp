@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { pool } from '../../src/config/database';
 import { checklistRepository } from '../../src/database/repositories';
-import fs from 'fs';
 import path from 'path';
 import { initializeUploadDirectories } from '../../src/config/upload';
 
@@ -20,7 +19,6 @@ describe('Booth Map Upload E2E Tests', () => {
   let testEventId: string | null = null;
   let testChecklistId: number | null = null;
   const uploadDir = process.env.UPLOAD_DIR || 'uploads';
-  const boothMapsDir = path.join(uploadDir, 'booth-maps');
 
   beforeAll(async () => {
     try {
@@ -47,7 +45,7 @@ describe('Booth Map Upload E2E Tests', () => {
       }
 
       console.log(`✅ Test event and checklist created: ${testEventId}, ${testChecklistId}`);
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available - tests will verify code structure only');
       dbAvailable = false;
     }

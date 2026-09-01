@@ -34,7 +34,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
     }
 
     // Remove password before sending
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   } catch (error) {
     console.error('Error fetching user:', error);

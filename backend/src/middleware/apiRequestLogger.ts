@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { query } from '../config/database';
 import { AuthRequest } from './auth';
 
@@ -100,7 +100,7 @@ export const apiRequestLogger = (req: AuthRequest, res: Response, next: NextFunc
  */
 export async function cleanupOldApiRequests(): Promise<void> {
   try {
-    const result = await query('SELECT cleanup_old_api_requests()');
+    await query('SELECT cleanup_old_api_requests()');
     console.log('[APIRequestLogger] Cleaned up old API request logs');
   } catch (error) {
     console.error('[APIRequestLogger] Failed to cleanup old logs:', error);

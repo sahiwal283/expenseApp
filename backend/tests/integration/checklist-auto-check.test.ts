@@ -16,13 +16,11 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { pool } from '../../src/config/database';
-import { expenseRepository } from '../../src/database/repositories/ExpenseRepository';
 import { checklistRepository } from '../../src/database/repositories/ChecklistRepository';
 import { userRepository } from '../../src/database/repositories/UserRepository';
 import { eventRepository } from '../../src/database/repositories/EventRepository';
 import { expenseService } from '../../src/services/ExpenseService';
 import { checklistAutoCheckService } from '../../src/services/ChecklistAutoCheckService';
-import { Expense } from '../../src/database/repositories/ExpenseRepository';
 
 describe('Checklist Auto-Check Service Integration Tests', () => {
   let dbAvailable = false;
@@ -44,7 +42,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ Database connection successful');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available locally - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -149,7 +147,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
         // Delete users
         if (testUserId) await userRepository.delete(testUserId);
         if (testUserId2) await userRepository.delete(testUserId2);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -174,7 +172,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for electricity
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Electricity Provider',
@@ -211,7 +209,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for booth (no electricity in description)
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Booth Provider',
@@ -250,7 +248,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       }
 
       // Create expense with receipt for shipping
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Shipping Company',
@@ -288,7 +286,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for flight (new category)
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'United Airlines',
@@ -326,7 +324,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for flight (legacy category)
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Delta Airlines',
@@ -359,7 +357,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for hotel (new category)
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Test Hotel',
@@ -397,7 +395,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for hotel (legacy category)
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Legacy Hotel',
@@ -445,7 +443,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Update expense with receipt
-      const updatedExpense = await expenseService.updateExpenseReceipt(
+      await expenseService.updateExpenseReceipt(
         expense.id,
         testUserId,
         'salesperson',
@@ -485,7 +483,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Update expense with receipt
-      const updatedExpense = await expenseService.updateExpenseReceipt(
+      await expenseService.updateExpenseReceipt(
         expense.id,
         testUserId,
         'salesperson',
@@ -516,7 +514,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense without receipt
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Test Merchant',
@@ -564,7 +562,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       await pool.query('DELETE FROM event_checklists WHERE event_id = $1', [newEvent.id]);
 
       // Create expense with receipt
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: newEvent.id,
         date: '2025-01-29',
         merchant: 'Test Merchant',
@@ -664,7 +662,6 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       }
 
       // Mock checklistRepository to throw error
-      const originalFindByEventId = checklistRepository.findByEventId;
       vi.spyOn(checklistRepository, 'findByEventId').mockRejectedValueOnce(
         new Error('Database error')
       );
@@ -710,7 +707,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for shipping
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Shipping Company',
@@ -746,7 +743,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       await pool.query('DELETE FROM checklist_booth_shipping WHERE checklist_id = $1', [testChecklistId]);
 
       // Create expense with receipt for shipping
-      const expense = await expenseService.createExpense(testUserId, {
+      await expenseService.createExpense(testUserId, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Shipping Company',
@@ -791,7 +788,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for user 2's flight
-      const expense = await expenseService.createExpense(testUserId2, {
+      await expenseService.createExpense(testUserId2, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'Delta Airlines',
@@ -831,7 +828,7 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       });
 
       // Create expense with receipt for user 2's hotel
-      const expense = await expenseService.createExpense(testUserId2, {
+      await expenseService.createExpense(testUserId2, {
         eventId: testEventId,
         date: '2025-01-29',
         merchant: 'User 2 Hotel',
@@ -864,7 +861,6 @@ describe('Checklist Auto-Check Service Integration Tests', () => {
       }
 
       // Mock autoCheckFromExpense to throw error
-      const originalAutoCheck = checklistAutoCheckService.autoCheckFromExpense;
       vi.spyOn(checklistAutoCheckService, 'autoCheckFromExpense').mockRejectedValueOnce(
         new Error('Auto-check service error')
       );

@@ -8,9 +8,8 @@
  */
 
 import { query } from '../../config/database';
-import { UserCorrection, FieldInference } from './types';
+import { UserCorrection } from './types';
 import axios from 'axios';
-import crypto from 'crypto';
 
 // Data Pool configuration
 const DATA_POOL_URL = process.env.DATA_POOL_URL || 'http://192.168.1.196:5000';

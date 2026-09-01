@@ -487,7 +487,7 @@ router.put('/:id/receipt', upload.single('receipt'), asyncHandler(async (req: Au
     const newReceiptUrl = `/uploads/${req.file.filename}`;
 
     // Update expense receipt (transaction-safe: updates DB first)
-    const result = await expenseService.updateExpenseReceipt(
+    await expenseService.updateExpenseReceipt(
       id,
       req.user!.id,
       req.user!.role,

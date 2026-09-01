@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EventSetup } from '../../EventSetup';
-import { api } from '../../../../utils/api';
 import { createMockUser, createMockEvent } from '../../../../test/utils/testHelpers';
 import * as useChecklistSummaryHook from '../hooks/useChecklistSummary';
 import * as useEventDataHook from '../hooks/useEventData';
@@ -40,23 +39,18 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
   let mockLoadChecklistSummary: ReturnType<typeof vi.fn>;
   let mockChecklistData: any;
   let mockLoadingChecklist: boolean;
-  let mockSetChecklistData: ReturnType<typeof vi.fn>;
   let mockSetLoadingChecklist: ReturnType<typeof vi.fn>;
-  let apiCallCount: number;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    apiCallCount = 0;
 
     // Setup mock checklist hook
-    mockLoadChecklistSummary = vi.fn(async (eventId: string, participantCount: number) => {
-      apiCallCount++;
+    mockLoadChecklistSummary = vi.fn(async (_eventId: string, _participantCount: number) => {
       mockSetLoadingChecklist(true);
       await new Promise(resolve => setTimeout(resolve, 10)); // Simulate async
       mockSetLoadingChecklist(false);
     });
 
-    mockSetChecklistData = vi.fn();
     mockSetLoadingChecklist = vi.fn();
     mockLoadingChecklist = false;
     mockChecklistData = null;
@@ -273,7 +267,7 @@ describe('Checklist Loading - Event Details Modal Integration Tests', () => {
         reload: vi.fn(),
       });
 
-      const { rerender } = render(<EventSetup user={mockUser} />);
+      render(<EventSetup user={mockUser} />);
 
       // Open first event
       const detailsButtons = await screen.findAllByRole('button', { name: /details/i });

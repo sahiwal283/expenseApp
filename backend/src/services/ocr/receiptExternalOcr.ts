@@ -89,7 +89,7 @@ export async function prepareReceiptImageForExternalOcr(filePath: string): Promi
     return { pathForRequest: filePath, cleanup };
   }
 
-  let current = await convertHEICToJPEG(filePath);
+  const current = await convertHEICToJPEG(filePath);
   const normalized = await normalizeRasterForOcr(current);
   if (normalized !== current) {
     cleanup.push(normalized);

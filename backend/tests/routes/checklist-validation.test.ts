@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 /**
  * REGRESSION TESTS: Zod Input Validation (v1.27.15)

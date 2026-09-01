@@ -19,7 +19,6 @@ import { expenseService } from '../../src/services/ExpenseService';
 import { ExpenseAuditService } from '../../src/services/ExpenseAuditService';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createMockFile } from '../utils/testHelpers';
 
 describe('Receipt Update API Integration Tests', () => {
   let dbAvailable = false;
@@ -37,7 +36,7 @@ describe('Receipt Update API Integration Tests', () => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ Database connection successful');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available locally - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -54,7 +53,7 @@ describe('Receipt Update API Integration Tests', () => {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -140,7 +139,7 @@ describe('Receipt Update API Integration Tests', () => {
         if (testApprovedExpenseId) await expenseRepository.delete(testApprovedExpenseId);
         if (testUserId) await userRepository.delete(testUserId);
         if (testAdminId) await userRepository.delete(testAdminId);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
 
@@ -150,7 +149,7 @@ describe('Receipt Update API Integration Tests', () => {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
           }
-        } catch (error) {
+        } catch (_error) {
           // Ignore cleanup errors
         }
       }

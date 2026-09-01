@@ -4,24 +4,10 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { pool } from '../config/database';
 import { authenticateToken } from '../middleware/auth';
 import { roleRepository } from '../database/repositories';
 
 const router = Router();
-
-// Interface for Role
-interface Role {
-  id: string;
-  name: string;
-  label: string;
-  description?: string;
-  color?: string;
-  is_system: boolean;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 /**
  * GET /api/roles
@@ -129,8 +115,6 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response) => {
     if (!roleCheck) {
       return res.status(404).json({ error: 'Role not found' });
     }
-    
-    const isSystem = roleCheck.is_system;
     
     // For system roles, only allow updating label, description, and color
     // For custom roles, allow updating all fields

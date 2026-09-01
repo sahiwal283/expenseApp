@@ -19,8 +19,6 @@ import { expenseRepository } from '../../src/database/repositories/ExpenseReposi
 import { userRepository } from '../../src/database/repositories/UserRepository';
 import { generateExpensePDF } from '../../src/services/ExpensePDFService';
 import { ExpenseWithDetails } from '../../src/database/repositories/ExpenseRepository';
-import * as fs from 'fs';
-import * as path from 'path';
 
 describe('PDF Download Endpoint Integration Tests', () => {
   let dbAvailable = false;
@@ -32,7 +30,6 @@ describe('PDF Download Endpoint Integration Tests', () => {
   let testExpenseRejectedId: string;
   let testExpenseWithZohoId: string;
   let testExpenseWithReimbursementId: string;
-  const uploadDir = process.env.UPLOAD_DIR || 'uploads';
 
   // Mock console.log to capture logs
   const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -44,7 +41,7 @@ describe('PDF Download Endpoint Integration Tests', () => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ Database connection successful');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available locally - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -193,7 +190,7 @@ describe('PDF Download Endpoint Integration Tests', () => {
           if (expenseId) {
             try {
               await expenseRepository.delete(expenseId);
-            } catch (error) {
+            } catch (_error) {
               // Ignore cleanup errors
             }
           }
@@ -201,11 +198,11 @@ describe('PDF Download Endpoint Integration Tests', () => {
         if (testUserId) {
           try {
             await userRepository.delete(testUserId);
-          } catch (error) {
+          } catch (_error) {
             // Ignore cleanup errors
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -810,7 +807,7 @@ describe('PDF Download Endpoint Integration Tests', () => {
 
       // All should succeed
       expect(pdfBuffers).toHaveLength(10);
-      pdfBuffers.forEach((buffer, index) => {
+      pdfBuffers.forEach((buffer, _index) => {
         expect(buffer).toBeInstanceOf(Buffer);
         expect(buffer.length).toBeGreaterThan(0);
         expect(buffer.toString('ascii', 0, 4)).toBe('%PDF');

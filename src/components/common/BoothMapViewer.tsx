@@ -71,7 +71,7 @@ export const BoothMapViewer: React.FC<BoothMapViewerProps> = ({
 
   // Construct image URL - ensure boothMapUrl starts with / if it doesn't already
   const normalizedUrl = boothMapUrl.startsWith('/') ? boothMapUrl : `/${boothMapUrl}`;
-  // @ts-ignore - Vite provides this at build time
+  // @ts-expect-error - Vite provides this at build time
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const imageUrl = `${apiBaseUrl}${normalizedUrl}`;
 

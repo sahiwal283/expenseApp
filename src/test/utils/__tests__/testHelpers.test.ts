@@ -8,8 +8,6 @@ import {
   createMockHotel,
   createMockCarRental,
 } from '../testHelpers';
-import { User, TradeShow } from '../../../App';
-import { ChecklistData } from '../../../components/checklist/TradeShowChecklist';
 
 /**
  * Frontend Shared Test Utilities Tests

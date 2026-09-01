@@ -21,7 +21,7 @@ describe('Migration 023 - Audit Log Table Rename', () => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ Database connection successful');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available - tests will verify code structure only');
       dbAvailable = false;
     }

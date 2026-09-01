@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BoothSection } from '../sections/BoothSection';
 import { Expense } from '../../../App';
@@ -103,10 +103,6 @@ describe('Receipt Filtering Tests', () => {
       // Receipt count should show all booth receipts (including those without receiptUrl)
       // The count shows total receipts, not just those with receiptUrl
       const receiptCounts = screen.getAllByText(/Receipt/);
-      // Find the receipt count badge (shows "2 Receipts")
-      const boothReceiptCount = receiptCounts.find(el => 
-        el.textContent?.includes('2 Receipt') || el.textContent?.includes('2 receipt')
-      );
       // Receipt count badge should exist
       expect(receiptCounts.length).toBeGreaterThan(0);
 

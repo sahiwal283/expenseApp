@@ -96,7 +96,6 @@ export class CrossEnvironmentSyncService {
 
     // Create dataset ID
     const datasetId = `dataset_${Date.now()}_${corrections.length}`;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const exportPath = path.join(this.trainingDataPath, `${datasetId}.jsonl`);
 
     // Ensure directory exists

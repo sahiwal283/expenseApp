@@ -128,7 +128,7 @@ describe('BoothManifestService.getForEvent weight arithmetic (real database)', (
   it('sums packed_weight_value of included containers only, coercing NUMERIC strings to numbers', async () => {
     const eventId = await makeEvent(`${PREFIX}-weight-event`);
     const boothId = await makeBooth(`${PREFIX}-weight-booth`);
-    const included1 = await makeContainer(boothId, `${PREFIX}-weight-included-1`, 142);
+    await makeContainer(boothId, `${PREFIX}-weight-included-1`, 142);
     const included2Unweighed = await makeContainer(boothId, `${PREFIX}-weight-included-2-unweighed`, null);
     const excludedHeavy = await makeContainer(boothId, `${PREFIX}-weight-excluded`, 200);
 

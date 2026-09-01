@@ -38,7 +38,7 @@ const BoothMapImage: React.FC<{ boothMapUrl: string; onViewFullSize: () => void 
   // Construct image URL - ensure boothMapUrl starts with / if it doesn't already
   const normalizedUrl = boothMapUrl.startsWith('/') ? boothMapUrl : `/${boothMapUrl}`;
   // Use same pattern as appConstants.ts - Vite handles this at build time
-  // @ts-ignore - Vite provides this at build time
+  // @ts-expect-error - Vite provides this at build time
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const imageUrl = `${apiBaseUrl}${normalizedUrl}`;
   

@@ -4,7 +4,6 @@ import { expenseRepository } from '../../src/database/repositories/ExpenseReposi
 import { ExpenseAuditService } from '../../src/services/ExpenseAuditService';
 import { DuplicateDetectionService } from '../../src/services/DuplicateDetectionService';
 import { AuthorizationError, NotFoundError } from '../../src/utils/errors';
-import { Expense } from '../../src/database/repositories/ExpenseRepository';
 import { pool } from '../../src/config/database';
 
 /**
@@ -40,7 +39,7 @@ describe('Entity Assignment Tests', () => {
     try {
       await pool.query('SELECT 1');
       dbAvailable = true;
-    } catch (error) {
+    } catch (_error) {
       console.warn('Database not available, skipping integration tests');
       dbAvailable = false;
     }
@@ -185,7 +184,7 @@ describe('Entity Assignment Tests', () => {
     for (const id of expenseIds) {
       try {
         await expenseRepository.delete(id);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -193,7 +192,7 @@ describe('Entity Assignment Tests', () => {
     if (testEventId) {
       try {
         await pool.query('DELETE FROM events WHERE id = $1', [testEventId]);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -201,7 +200,7 @@ describe('Entity Assignment Tests', () => {
     if (testUserId) {
       try {
         await pool.query('DELETE FROM users WHERE id = $1', [testUserId]);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }

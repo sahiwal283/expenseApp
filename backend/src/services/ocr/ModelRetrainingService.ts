@@ -9,10 +9,6 @@ import { query } from '../../config/database';
 import { promptRefinementService } from './PromptRefinementService';
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 interface ModelVersion {
   version: string;
@@ -136,7 +132,7 @@ export class ModelRetrainingService {
   /**
    * Validate model performance
    */
-  private async validateModel(version: string): Promise<any> {
+  private async validateModel(_version: string): Promise<any> {
     // Get recent corrections to use as validation set
     const validationResult = await query(`
       SELECT 

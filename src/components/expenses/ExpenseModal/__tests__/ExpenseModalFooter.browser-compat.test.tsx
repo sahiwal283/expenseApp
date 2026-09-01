@@ -149,7 +149,6 @@ describe('Browser Compatibility Note Tests', () => {
       
       // Tooltip container should exist but be hidden initially (CSS: hidden group-hover:block)
       // In test environment, we check that the tooltip text exists in DOM
-      const tooltipBeforeHover = screen.queryByText(/Browser Compatibility/i);
       // Tooltip exists in DOM but may be hidden via CSS classes
       
       // Hover over button (this should trigger CSS group-hover)

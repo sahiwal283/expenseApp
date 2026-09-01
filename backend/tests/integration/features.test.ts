@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from
 import { pool } from '../../src/config/database';
 import { auditLogRepository } from '../../src/database/repositories/AuditLogRepository';
 import { expenseRepository } from '../../src/database/repositories/ExpenseRepository';
-import { checklistRepository } from '../../src/database/repositories/ChecklistRepository';
 
 /**
  * Integration Tests for Recent Features
@@ -24,7 +23,7 @@ describe('Integration Tests - Recent Features', () => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ Database connection successful');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available locally - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -212,7 +211,7 @@ describe('Integration Tests - Recent Features', () => {
       if (testExpenseId) {
         try {
           await expenseRepository.delete(testExpenseId);
-        } catch (error) {
+        } catch (_error) {
           // Ignore cleanup errors
         }
       }
@@ -224,7 +223,7 @@ describe('Integration Tests - Recent Features', () => {
         const pdfService = await import('../../src/services/ExpensePDFService');
         expect(pdfService.generateExpensePDF).toBeDefined();
         expect(typeof pdfService.generateExpensePDF).toBe('function');
-      } catch (error) {
+      } catch (_error) {
         throw new Error('ExpensePDFService not found or not importable');
       }
     });
@@ -240,7 +239,7 @@ describe('Integration Tests - Recent Features', () => {
         const expenseService = await import('../../src/services/ExpenseService');
         // This method should exist for PDF generation
         expect(expenseService).toBeDefined();
-      } catch (error) {
+      } catch (_error) {
         throw new Error('ExpenseService not found');
       }
     });

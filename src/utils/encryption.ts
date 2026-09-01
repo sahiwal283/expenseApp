@@ -347,7 +347,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 export function secureDelete(obj: any): void {
   if (typeof obj === 'object' && obj !== null) {
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         if (typeof obj[key] === 'string') {
           // Overwrite string with zeros (limited effectiveness in JS)
           obj[key] = '\0'.repeat(obj[key].length);

@@ -36,7 +36,7 @@ describe('PDF Download Security and Blank Page Fix Integration Tests', () => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ Database connection successful');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available locally - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -133,7 +133,7 @@ describe('PDF Download Security and Blank Page Fix Integration Tests', () => {
         if (testExpenseWithAllFieldsId) await expenseRepository.delete(testExpenseWithAllFieldsId);
         if (testEventId) await pool.query('DELETE FROM events WHERE id = $1', [testEventId]);
         if (testUserId) await userRepository.delete(testUserId);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }

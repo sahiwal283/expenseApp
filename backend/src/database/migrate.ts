@@ -26,7 +26,7 @@ async function hasMigrationTrackingTable(): Promise<boolean> {
       )`
     );
     return result.rows[0].exists;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
@@ -38,7 +38,7 @@ async function getAppliedMigrations(): Promise<Set<string>> {
   try {
     const result = await pool.query('SELECT version FROM schema_migrations');
     return new Set(result.rows.map((row: any) => row.version));
-  } catch (error) {
+  } catch (_error) {
     return new Set();
   }
 }

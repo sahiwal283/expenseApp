@@ -32,7 +32,7 @@ let schemaDbReady = false;
 try {
   await testPool.query('SELECT 1');
   schemaDbReady = true;
-} catch (error) {
+} catch (_error) {
   console.warn(
     'Skipping Database Schema Integration Tests (no database connection). Set DB_* env and run Postgres to enable.'
   );
@@ -45,21 +45,6 @@ interface ColumnInfo {
   is_nullable: string;
   column_default: string | null;
   character_maximum_length: number | null;
-}
-
-interface ConstraintInfo {
-  constraint_name: string;
-  constraint_type: string;
-  table_name: string;
-  column_name: string;
-}
-
-interface ForeignKeyInfo {
-  constraint_name: string;
-  table_name: string;
-  column_name: string;
-  foreign_table_name: string;
-  foreign_column_name: string;
 }
 
 interface IndexInfo {

@@ -81,7 +81,6 @@ describe('ReceiptsViewerModal Component Tests', () => {
     });
 
     it('should close modal when X button is clicked', async () => {
-      const user = userEvent.setup();
       render(
         <ReceiptsViewerModal
           receipts={mockReceipts}
@@ -99,7 +98,6 @@ describe('ReceiptsViewerModal Component Tests', () => {
     });
 
     it('should close modal when clicking outside (on backdrop)', async () => {
-      const user = userEvent.setup();
       render(
         <ReceiptsViewerModal
           receipts={mockReceipts}

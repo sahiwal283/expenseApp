@@ -12,7 +12,7 @@
  * - Test with expenses that have empty string for zoho_entity (should show "Unassigned")
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, afterAll, vi } from 'vitest';
 import { generateExpensePDF } from '../../src/services/ExpensePDFService';
 import { ExpenseWithDetails } from '../../src/database/repositories/ExpenseRepository';
 

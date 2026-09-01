@@ -102,7 +102,7 @@ export class FieldWarningService {
   /**
    * Check if amount looks suspicious
    */
-  private static checkAmount(amount: number, alternatives: number[] | undefined, confidence: number): FieldWarning[] {
+  private static checkAmount(amount: number, alternatives: number[] | undefined, _confidence: number): FieldWarning[] {
     const warnings: FieldWarning[] = [];
     
     // Warning: Multiple similar amounts detected
@@ -141,7 +141,7 @@ export class FieldWarningService {
   /**
    * Check if date looks suspicious
    */
-  private static checkDate(date: string, confidence: number): FieldWarning[] {
+  private static checkDate(date: string, _confidence: number): FieldWarning[] {
     const warnings: FieldWarning[] = [];
     
     try {
@@ -171,7 +171,7 @@ export class FieldWarningService {
           suggestedAction: 'Confirm this is the correct transaction date'
         });
       }
-    } catch (e) {
+    } catch (_e) {
       // Invalid date format
       warnings.push({
         field: 'date',

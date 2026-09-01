@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { generateExpensePDF } from '../../src/services/ExpensePDFService';
 import { ExpenseWithDetails } from '../../src/database/repositories/ExpenseRepository';
 import fs from 'fs';
-import path from 'path';
 
 /**
  * PDF Generation Integration Tests
@@ -63,7 +62,6 @@ describe('Expense PDF Generation', () => {
 
     it('should include expense details in PDF', async () => {
       const pdfBuffer = await generateExpensePDF(mockExpense);
-      const pdfText = pdfBuffer.toString('utf8');
 
       // PDF is binary, but we can check for some markers
       expect(pdfBuffer.length).toBeGreaterThan(1000); // Reasonable PDF size

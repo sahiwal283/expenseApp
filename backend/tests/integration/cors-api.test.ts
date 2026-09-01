@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -15,13 +15,6 @@ import { join } from 'path';
  */
 
 describe('CORS and API Integration Tests', () => {
-  let originalEnv: NodeJS.ProcessEnv;
-
-  beforeEach(() => {
-    // Save original environment
-    originalEnv = { ...process.env };
-  });
-
   describe('CORS Configuration - Multiple Origins', () => {
     it('should parse multiple origins when CORS_ORIGIN is comma-separated', () => {
       process.env.CORS_ORIGIN = 'http://localhost:80,http://192.168.1.144';
@@ -95,9 +88,6 @@ describe('CORS and API Integration Tests', () => {
 
   describe('Frontend API Configuration', () => {
     it('should use relative URLs by default', () => {
-      // Mock import.meta.env
-      const originalEnv = import.meta.env;
-      
       // Test default behavior (no VITE_API_BASE_URL)
       delete (import.meta.env as any).VITE_API_BASE_URL;
       
@@ -155,7 +145,7 @@ describe('CORS and API Integration Tests', () => {
         expect(serverCode).toContain('trim');
 
         console.log('✅ CORS configuration code verified in server.ts');
-      } catch (error) {
+      } catch (_error) {
         console.log('⏭️  Could not read server.ts for verification');
       }
     });
@@ -170,7 +160,7 @@ describe('CORS and API Integration Tests', () => {
         expect(serverCode).toContain('split(\',\')');
 
         console.log('✅ Multiple origins support verified');
-      } catch (error) {
+      } catch (_error) {
         console.log('⏭️  Could not read server.ts for verification');
       }
     });
@@ -189,14 +179,14 @@ describe('CORS and API Integration Tests', () => {
         expect(authCode).toContain('password');
 
         console.log('✅ Login endpoint code verified');
-      } catch (error) {
+      } catch (_error) {
         // Try alternative path
         try {
           const authPath = join(__dirname, '../../../src/routes/auth.ts');
           const authCode = readFileSync(authPath, 'utf-8');
           expect(authCode).toContain('/login');
           console.log('✅ Login endpoint code verified (alternative path)');
-        } catch (e) {
+        } catch (_e) {
           console.log('⏭️  Could not read auth.ts for verification');
         }
       }
@@ -213,14 +203,14 @@ describe('CORS and API Integration Tests', () => {
         expect(authMiddlewareCode).toContain('Bearer');
 
         console.log('✅ Authentication middleware code verified');
-      } catch (error) {
+      } catch (_error) {
         // Try alternative path
         try {
           const authMiddlewarePath = join(__dirname, '../../../src/middleware/auth.ts');
           const authMiddlewareCode = readFileSync(authMiddlewarePath, 'utf-8');
           expect(authMiddlewareCode).toContain('authenticateToken');
           console.log('✅ Authentication middleware code verified (alternative path)');
-        } catch (e) {
+        } catch (_e) {
           console.log('⏭️  Could not read auth middleware for verification');
         }
       }
@@ -238,7 +228,7 @@ describe('CORS and API Integration Tests', () => {
         expect(serverCode).toContain('cors({');
 
         console.log('✅ CORS credentials configuration verified');
-      } catch (error) {
+      } catch (_error) {
         console.log('⏭️  Could not read server.ts for verification');
       }
     });

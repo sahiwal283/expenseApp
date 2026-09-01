@@ -148,12 +148,9 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
     }, client);
 
     // Update participants if provided
-    let newlyAddedIds: string[] = [];
     if (participants || participant_ids) {
-      const previousIds = new Set(await getCurrentParticipantIds(id, client));
       await removeAllParticipants(id, client);
-      const addedIds = await processParticipants(id, participants, participant_ids, client);
-      newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
+      await processParticipants(id, participants, participant_ids, client);
     }
 
     // Commit transaction

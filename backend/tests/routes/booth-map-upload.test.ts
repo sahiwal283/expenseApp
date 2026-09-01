@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
 import { AuthRequest } from '../../src/middleware/auth';
-import { uploadBoothMap } from '../../src/config/upload';
 import fs from 'fs';
 
 /**
@@ -20,12 +18,10 @@ vi.mock('path');
 
 describe('Booth Map Upload Tests', () => {
   let mockReq: Partial<AuthRequest>;
-  let mockRes: Partial<Response>;
-  let mockNext: vi.Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockReq = {
       params: { checklistId: '1' },
       file: undefined,
@@ -35,13 +31,6 @@ describe('Booth Map Upload Tests', () => {
         role: 'admin',
       },
     };
-
-    mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn().mockReturnThis(),
-    };
-
-    mockNext = vi.fn();
   });
 
   describe('File Type Validation', () => {

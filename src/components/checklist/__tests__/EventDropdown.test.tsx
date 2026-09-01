@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TradeShowChecklist, ChecklistData } from '../TradeShowChecklist';
 import { api } from '../../../utils/api';
-import { User, TradeShow } from '../../../App';
 import { createMockUser, createMockEvent, createEmptyChecklist } from '../../../test/utils/testHelpers';
 
 /**
@@ -295,16 +294,6 @@ describe('Event Dropdown - Filter Buttons Removal Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Booth & Facilities/i)).toBeInTheDocument();
-      });
-
-      // Check that no unexpected errors were logged
-      // Component may log expected messages, but should not have errors
-      const errorCalls = consoleErrorSpy.mock.calls.filter(call => {
-        const message = call[0]?.toString() || '';
-        // Filter out expected logging and allow component's own console.error for errors
-        return !message.includes('[Checklist]') && 
-               !message.includes('Error loading events') &&
-               !message.includes('Failed to load');
       });
 
       // Should have minimal unexpected errors (component may log expected errors)

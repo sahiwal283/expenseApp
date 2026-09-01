@@ -298,7 +298,7 @@ router.get('/accuracy-metrics', asyncHandler(async (req: AuthRequest, res) => {
  */
 router.post('/feedback', asyncHandler(async (req: AuthRequest, res) => {
   const userId = req.user?.id;
-  const { correctionId, helpful, notes } = req.body;
+  const { correctionId, helpful } = req.body;
   
   // Store feedback in separate table (TODO: create table)
   // For now, just acknowledge

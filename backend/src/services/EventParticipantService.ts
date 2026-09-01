@@ -5,7 +5,7 @@
  * Extracted from events.ts to separate concerns and improve maintainability.
  */
 
-import { query, pool } from '../config/database';
+import { query } from '../config/database';
 import { userRepository } from '../database/repositories';
 import bcrypt from 'bcrypt';
 

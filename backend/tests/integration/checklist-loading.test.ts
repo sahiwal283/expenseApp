@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { pool } from '../../src/config/database';
 import { checklistRepository } from '../../src/database/repositories';
 
@@ -32,7 +32,7 @@ describe('Checklist Loading Integration Tests', () => {
       );
       testEventId = eventResult.rows[0].id;
       console.log(`✅ Test event created: ${testEventId}`);
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available - tests will verify code structure only');
       dbAvailable = false;
     }
@@ -147,7 +147,7 @@ describe('Checklist Loading Integration Tests', () => {
         [checklist!.id, 'user-1', 'Test User', 'United Airlines', 'ABC123', false]
       );
 
-      const [flights, hotels, carRentals, boothShipping, customItems] = await Promise.all([
+      const [flights, hotels, carRentals] = await Promise.all([
         checklistRepository.getFlights(checklist!.id),
         checklistRepository.getHotels(checklist!.id),
         checklistRepository.getCarRentals(checklist!.id),

@@ -17,7 +17,7 @@ vi.mock('../../src/middleware/sessionTracker', () => ({
 vi.mock('../../src/utils/auditLogger', () => ({ logAuth: vi.fn().mockResolvedValue(undefined) }));
 
 import jwt from 'jsonwebtoken';
-import { isOidcConfigured, resolveSsoUser, encodeTxnCookie, OIDC_TXN_COOKIE } from '../../src/services/AuthentikOidcService';
+import { isOidcConfigured, resolveSsoUser, OIDC_TXN_COOKIE } from '../../src/services/AuthentikOidcService';
 import { createSession } from '../../src/middleware/sessionTracker';
 import { handleStatus, finishCallback, handleCallback } from '../../src/routes/oidc';
 
