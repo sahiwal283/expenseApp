@@ -38,12 +38,12 @@
 
 ### Production Environment
 
-**Location:** Proxmox LXC Containers 201 & 202  
-**URL:** https://expapp.duckdns.org  
-**IP Address:** 192.168.1.138 (internal)  
-**Database:** `expense_app_production` (Container 201)  
+**Location:** Proxmox LXC CT 2120 (frontend) & CT 2220 (backend)  
+**URL:** https://argo.booute.duckdns.org  
+**Internal:** CT 2120 (frontend, 192.168.1.139:80) / CT 2220 (backend, 192.168.1.201:3000)  
+**Database:** `expense_app_production` (CT 2320)  
 **Purpose:** Live users, real financial data  
-**Version:** v1.4.13 / v1.5.1 (stable)
+**Version:** see CHANGELOG.md
 
 **Key Characteristics:**
 - ✅ Stable, tested code only
@@ -54,12 +54,12 @@
 
 ### Sandbox Environment
 
-**Location:** Proxmox LXC Container 203  
-**URL:** http://192.168.1.144  
-**IP Address:** 192.168.1.144  
-**Database:** `expense_app_sandbox` (Container 203)  
+**Location:** Proxmox LXC CT 2600 (all-in-one)  
+**URL:** http://<sandbox-host>  
+**IP Address:** <sandbox-host>  
+**Database:** `expense_app_sandbox` (CT 2600)  
 **Purpose:** Testing, development, feature validation  
-**Version:** v1.28.0 (latest development)
+**Version:** see CHANGELOG.md
 
 **Key Characteristics:**
 - ✅ Latest features and experiments
@@ -92,12 +92,12 @@
 ```bash
 VITE_API_BASE_URL=/api
 # OR
-VITE_API_BASE_URL=https://expapp.duckdns.org/api
+VITE_API_BASE_URL=https://argo.booute.duckdns.org/api
 ```
 
 **Sandbox:**
 ```bash
-VITE_API_BASE_URL=http://192.168.1.144/api
+VITE_API_BASE_URL=http://<sandbox-host>/api
 # OR
 VITE_API_BASE_URL=/api
 ```
@@ -165,12 +165,12 @@ JWT_SECRET=<sandbox_secret>
 
 **Production:**
 ```bash
-CORS_ORIGIN=https://expapp.duckdns.org
+CORS_ORIGIN=https://argo.booute.duckdns.org
 ```
 
 **Sandbox:**
 ```bash
-CORS_ORIGIN=http://192.168.1.144,http://localhost:5173
+CORS_ORIGIN=http://<sandbox-host>,http://localhost:5173
 ```
 
 #### OCR Service URLs (Sandbox Only)
@@ -207,12 +207,12 @@ npm run build:sandbox
 
 **Validation:**
 - ✅ `VITE_API_BASE_URL` must NOT be production URL
-- ✅ `VITE_API_BASE_URL` should be `http://192.168.1.144/api` or `/api`
-- ✅ Build output should NOT contain `expapp.duckdns.org`
+- ✅ `VITE_API_BASE_URL` should be `http://<sandbox-host>/api` or `/api`
+- ✅ Build output should NOT contain the deprecated domain (see docs/ARGO_RENAME_DEFERRED.md)
 
 **Output Location:**
 - `dist/` directory
-- Deployed to Container 203 at `/var/www/trade-show-app`
+- Deployed to CT 2600 at `/var/www/trade-show-app`
 
 ### Production Build
 
@@ -228,13 +228,13 @@ npm run build:production
 - Builds with production API URLs
 
 **Validation:**
-- ✅ `VITE_API_BASE_URL` must be `/api` or `https://expapp.duckdns.org/api`
+- ✅ `VITE_API_BASE_URL` must be `/api` or `https://argo.booute.duckdns.org/api`
 - ✅ `VITE_API_BASE_URL` must NOT be sandbox URL
-- ✅ Build output should NOT contain `192.168.1.144`
+- ✅ Build output should NOT contain `<sandbox-host>`
 
 **Output Location:**
 - `dist/` directory
-- Deployed to Container 202 at `/var/www/trade-show-app`
+- Deployed to CT 2120 at `/var/www/trade-show-app`
 
 ### Build-Time Validation
 
@@ -274,12 +274,12 @@ This script will:
 
 **Frontend was built with:**
 ```bash
-VITE_API_BASE_URL=https://expapp.duckdns.org/api
+VITE_API_BASE_URL=https://argo.booute.duckdns.org/api
 ```
 
 **Should have been:**
 ```bash
-VITE_API_BASE_URL=http://192.168.1.144/api
+VITE_API_BASE_URL=http://<sandbox-host>/api
 ```
 
 **Why It Happened:**
@@ -320,8 +320,8 @@ VITE_API_BASE_URL=http://192.168.1.144/api
 **Before building, verify:**
 
 - [ ] **Environment variable set correctly**
-  - [ ] Sandbox: `VITE_API_BASE_URL=http://192.168.1.144/api` or `/api`
-  - [ ] Production: `VITE_API_BASE_URL=/api` or `https://expapp.duckdns.org/api`
+  - [ ] Sandbox: `VITE_API_BASE_URL=http://<sandbox-host>/api` or `/api`
+  - [ ] Production: `VITE_API_BASE_URL=/api` or `https://argo.booute.duckdns.org/api`
 - [ ] **Run validation script**
   ```bash
   node scripts/validate-env.js
@@ -345,22 +345,22 @@ VITE_API_BASE_URL=http://192.168.1.144/api
   - [ ] Verify correct URLs present
   - [ ] Verify wrong URLs NOT present
 - [ ] **Target environment confirmed**
-  - [ ] Sandbox build → Container 203
-  - [ ] Production build → Container 202
+  - [ ] Sandbox build → CT 2600
+  - [ ] Production build → CT 2120
 - [ ] **Database credentials verified**
   - [ ] Sandbox → `expense_app_sandbox`
   - [ ] Production → `expense_app_production`
 - [ ] **Backend environment verified**
-  - [ ] Sandbox backend → Container 203
-  - [ ] Production backend → Container 201
+  - [ ] Sandbox backend → CT 2600
+  - [ ] Production backend → CT 2220
 
 ### Post-Deployment Checklist
 
 **After deploying, verify:**
 
 - [ ] **Application loads correctly**
-  - [ ] Sandbox: http://192.168.1.144
-  - [ ] Production: https://expapp.duckdns.org
+  - [ ] Sandbox: http://<sandbox-host>
+  - [ ] Production: https://argo.booute.duckdns.org
 - [ ] **API calls working**
   - [ ] Check browser Network tab
   - [ ] Verify API requests go to correct endpoint
@@ -439,12 +439,12 @@ This ensures validation runs automatically before every build.
 ❌ ENVIRONMENT MISCONFIGURATION DETECTED
 
 Building for SANDBOX but found PRODUCTION API URL:
-  VITE_API_BASE_URL=https://expapp.duckdns.org/api
+  VITE_API_BASE_URL=https://argo.booute.duckdns.org/api
 
 This will cause sandbox to connect to production API!
 
 Fix:
-  export VITE_API_BASE_URL=http://192.168.1.144/api
+  export VITE_API_BASE_URL=http://<sandbox-host>/api
   npm run build:sandbox
 ```
 
@@ -464,8 +464,8 @@ Fix:
 echo $VITE_API_BASE_URL
 
 # Check build output
-grep -r "expapp.duckdns.org" dist/
-grep -r "192.168.1.144" dist/
+# (deprecated domain check — see docs/ARGO_RENAME_DEFERRED.md)
+grep -r "<sandbox-host>" dist/
 ```
 
 **Fix:**
@@ -534,13 +534,13 @@ grep -r "192.168.1.144" dist/
 
 ```bash
 # Frontend
-VITE_API_BASE_URL=http://192.168.1.144/api
+VITE_API_BASE_URL=http://<sandbox-host>/api
 NODE_ENV=development
 
 # Backend
 DB_NAME=expense_app_sandbox
 JWT_SECRET=<sandbox_secret>
-CORS_ORIGIN=http://192.168.1.144,http://localhost:5173
+CORS_ORIGIN=http://<sandbox-host>,http://localhost:5173
 OCR_SERVICE_URL=http://192.168.1.195:8000
 ```
 
@@ -554,7 +554,7 @@ NODE_ENV=production
 # Backend
 DB_NAME=expense_app_production
 JWT_SECRET=<production_secret>
-CORS_ORIGIN=https://expapp.duckdns.org
+CORS_ORIGIN=https://argo.booute.duckdns.org
 # OCR_SERVICE_URL NOT SET (uses embedded Tesseract)
 ```
 

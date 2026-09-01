@@ -1,7 +1,7 @@
 # 🤖 MASTER GUIDE - Argo
 
 **Last Updated:** November 12, 2025  
-**Status:** ✅ Production v1.29.0 Ready | 🔬 Sandbox v1.28.16 - PDF Optimization & Diagnostics
+**Status:** See CHANGELOG.md for current release status.
 
 **Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on Argo. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
 
@@ -35,29 +35,29 @@
 
 ### Versions
 
-**Production (Container 201 & 202)**
-- **Frontend:** v1.29.0 (Ready for Deployment)
-- **Backend:** v1.29.0 (Ready for Deployment)
+**Production (CT 2120 frontend / CT 2220 backend)**
+- **Frontend:** see CHANGELOG.md for current version
+- **Backend:** see CHANGELOG.md for current version
 - **Branch:** `main`
 - **Status:** ✅ Ready for Production Deployment
 - **Last Updated:** November 12, 2025
 
-**Sandbox (Container 203)**
-- **Frontend:** v1.28.16 (Container 203)
-- **Backend:** v1.28.16 (Container 203)
-- **Branch:** `v1.28.0`
+**Sandbox (CT 2600)**
+- **Frontend:** see CHANGELOG.md for current version (CT 2600)
+- **Backend:** see CHANGELOG.md for current version (CT 2600)
+- **Branch:** `main`
 - **Status:** 🔬 PDF Optimization, Checklist Features, Full Codebase Refactor
 - **Last Updated:** November 12, 2025
 
 ### Container Mapping (MEMORIZE THIS!)
-- **Container 201** = **PRODUCTION Backend** (Live users, real financial data)
-- **Container 202** = **PRODUCTION Frontend**
-- **Container 203** = **SANDBOX** (Testing environment)
+- **CT 2220** = **PRODUCTION Backend** (Live users, real financial data, port 3000)
+- **CT 2120** = **PRODUCTION Frontend**
+- **CT 2600** = **SANDBOX** (all-in-one: frontend + backend + PostgreSQL)
 - **Container 104** = **NPMplus Proxy**
 
 ### Quick Access
-- **Production URL:** https://expapp.duckdns.org
-- **Sandbox URL:** http://192.168.1.144
+- **Production URL:** https://argo.booute.duckdns.org
+- **Sandbox URL:** see docs/ARCHITECTURE.md for current sandbox access
 - **Proxmox Host:** 192.168.1.190
 - **Repository:** https://github.com/sahiwal283/trade-show-app
 
@@ -65,7 +65,7 @@
 
 ## ✅ What's Working
 
-### Production Features (v1.4.13 / v1.5.1)
+### Production Features
 - ✅ **Expense Management** - Full CRUD operations, receipt upload
 - ✅ **Event Management** - Create/manage events, participants
 - ✅ **Zoho Integration** - 5-entity sync, OAuth 2.0, duplicate prevention
@@ -75,7 +75,7 @@
 - ✅ **PWA/Offline** - Service Worker, IndexedDB, background sync
 - ✅ **Tesseract OCR** - Embedded OCR processing (production)
 
-### Sandbox Features (v1.28.0)
+### Sandbox Features
 - ✅ **Event Checklist System** - Flights, hotels, car rentals, booth, shipping
 - ✅ **External OCR Service** - Google Document AI integration (4-8s processing, 95%+ confidence)
 - ✅ **AI Training Pipeline** - OCR corrections → Data Pool → Model Training
@@ -141,7 +141,7 @@
 - **Impact:** Affects production deployment of checklist feature
 
 **2. Checklist Feature Not in Production**
-- **Problem:** Major new feature (v1.27.14) only in sandbox
+- **Problem:** Major new feature only in sandbox
 - **Risk:** Not tested with production data/scale
 - **Status:** Ready for testing, needs production deployment decision
 - **Action Required:** Decide on deployment strategy
@@ -205,7 +205,7 @@
 
 ## 🔨 What's Being Worked On
 
-### Active Development (v1.28.0)
+### Active Development
 
 **1. Codebase Refactor - COMPLETE**
 - ✅ Repository pattern implemented
@@ -352,13 +352,13 @@
 
 ### OCR Training Roadmap
 
-**v1.13.0 - Enhanced Learning (Next)**
+**Enhanced Learning (Next)**
 - [ ] Implement category pattern learning
 - [ ] Add amount validation patterns
 - [ ] Cross-merchant learning (similar patterns)
 - [ ] Confidence decay (older patterns get lower confidence)
 
-**v1.14.0 - Advanced AI (Future)**
+**Advanced AI (Future)**
 - [ ] Fine-tune Ollama on correction data
 - [ ] Multi-provider ensemble (Tesseract + EasyOCR vote)
 - [ ] OCR quality prediction (pre-process)
@@ -509,7 +509,7 @@ ORDER BY tc.table_name;
 
 **⚠️ TRAINING PIPELINE REQUIRES SPECIFIC DATABASE TABLES!**
 
-As of **v1.11.0+**, the AI training pipeline requires `ocr_corrections` table to exist.
+The AI training pipeline requires `ocr_corrections` table to exist.
 
 **Required Database Migrations:**
 - `006_create_ocr_corrections_table.sql` - Creates main corrections table
@@ -595,7 +595,7 @@ ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/trade-show-app"
 
 ## 🏗️ Architecture
 
-### Backend Architecture (v1.28.0+)
+### Backend Architecture
 
 **Pattern: Routes → Services → Repositories → Database**
 
@@ -642,7 +642,7 @@ ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/trade-show-app"
 - `DuplicateDetectionService` - Expense duplicate detection
 - `ExpenseAuditService` - Audit trail management
 
-### Frontend Architecture (v1.28.0+)
+### Frontend Architecture
 
 **Pattern: Feature-Based Organization with Component Modularization**
 
@@ -703,10 +703,10 @@ src/
 
 ### OCR System Architecture
 
-**Sandbox (v1.11.0+):**
+**Sandbox:**
 - **External OCR Service** (192.168.1.195:8000) with LLM enhancement
 - **Ollama LLM** (192.168.1.173:11434) - dolphin-llama3
-- **Model Training** (192.168.1.197:5001) - v1.2.0 prompts
+- **Model Training** (192.168.1.197:5001)
 - **Data Pool Integration** (192.168.1.196:5000) with UTF-8 encoding
 
 **Production:**
@@ -719,16 +719,16 @@ src/
 
 ### Production Environment
 
-**URL**: https://expapp.duckdns.org  
-**Containers**: 201 (Backend), 202 (Frontend)  
+**URL**: https://argo.booute.duckdns.org  
+**Containers**: CT 2220 (Backend), CT 2120 (Frontend)  
 **Proxmox Host**: 192.168.1.190
 
 ⚠️ **Production credentials are private and not documented here for security**
 
 ### Sandbox Environment
 
-**URL**: http://192.168.1.144  
-**Container**: 203  
+**URL**: see docs/ARCHITECTURE.md for current sandbox access  
+**Container**: CT 2600  
 **Database**: `expense_app_sandbox`
 
 **ALL sandbox users share password**: `sandbox123`
@@ -800,7 +800,7 @@ npm run dev
 # → http://localhost:5000/api
 ```
 
-### Sandbox Deployment (Container 203)
+### Sandbox Deployment (CT 2600)
 
 **CRITICAL**: Follow this process EXACTLY to avoid caching issues
 
@@ -823,13 +823,13 @@ BUILD_ID=$(date +%Y%m%d_%H%M%S)
 echo "<!-- Build: ${BUILD_ID} -->" >> dist/index.html
 
 # 4. Create tarball
-tar -czf frontend-v1.0.X-$(date +%H%M%S).tar.gz -C dist .
+tar -czf frontend-$(date +%Y%m%d_%H%M%S).tar.gz -C dist .
 ```
 
 **Deploy to Sandbox:**
 ```bash
 # 1. Copy to Proxmox
-TARFILE=$(ls -t frontend-v1.0.*-*.tar.gz | head -1)
+TARFILE=$(ls -t frontend-*.tar.gz | head -1)
 scp "$TARFILE" root@192.168.1.190:/tmp/sandbox-deploy.tar.gz
 
 # 2. Deploy to /var/www/trade-show-app (NOT /var/www/html!)
@@ -866,7 +866,7 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c '
 3. Restart browser completely
 4. Open incognito window
 5. Open DevTools → Network tab → Check "Disable cache"
-6. Load http://192.168.1.144
+6. Load the sandbox URL (see docs/ARCHITECTURE.md)
 7. Verify version in footer matches deployment
 
 ### Production Deployment
@@ -880,10 +880,10 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c '
 4. Backup production database
 
 **Deployment Steps:**
-1. Deploy backend to Container 201
+1. Deploy backend to CT 2220
 2. Run database migrations
 3. Restart backend service
-4. Deploy frontend to Container 202
+4. Deploy frontend to CT 2120
 5. Restart NPMplus proxy (Container 104)
 6. Verify deployment
 
@@ -1035,7 +1035,7 @@ type(scope): description
 - **Prevention:** Version update checklist
 
 **6. Deploying to Production Without Approval**
-- **Pitfall:** Accidentally deploying to Container 201 instead of 203
+- **Pitfall:** Accidentally deploying to production (CT 2220) instead of sandbox (CT 2600)
 - **Error:** Breaks production for real users
 - **Fix:** ALWAYS ask for explicit confirmation before production deployment
 - **Prevention:** Default to sandbox, require explicit "deploy to production" command
@@ -1315,7 +1315,7 @@ type(scope): description
 - `GET /api/expenses` - Get expenses (with filters)
 - `POST /api/expenses` - Create expense
 - `PUT /api/expenses/:id` - Update expense
-- `PUT /api/expenses/:id/receipt` - Update expense receipt (v1.28.9)
+- `PUT /api/expenses/:id/receipt` - Update expense receipt
 - `DELETE /api/expenses/:id` - Delete expense
 
 **Events:**
@@ -1330,10 +1330,10 @@ type(scope): description
 - `POST /api/checklist/:id/flights` - Add flight
 - `POST /api/checklist/:id/hotels` - Add hotel
 - `POST /api/checklist/:id/car-rentals` - Add car rental
-- `GET /api/checklist/user/:eventId` - Get user checklist for event (v1.28.3)
-- `POST /api/checklist/user/:eventId/items` - Create user checklist item (v1.28.3)
-- `PUT /api/checklist/user/:eventId/items/:id` - Update user checklist item (v1.28.3)
-- `DELETE /api/checklist/user/:eventId/items/:id` - Delete user checklist item (v1.28.3)
+- `GET /api/checklist/user/:eventId` - Get user checklist for event
+- `POST /api/checklist/user/:eventId/items` - Create user checklist item
+- `PUT /api/checklist/user/:eventId/items/:id` - Update user checklist item
+- `DELETE /api/checklist/user/:eventId/items/:id` - Delete user checklist item
 
 **OCR:**
 - `POST /api/ocr/v2/process` - Process receipt with OCR
@@ -1354,7 +1354,7 @@ Authorization: Bearer <token>
 
 ## 📚 Historical Sessions & Lessons Learned
 
-### Session: November 10, 2025 - Full Codebase Refactor (v1.28.0)
+### Session: November 10, 2025 - Full Codebase Refactor
 
 **Status:** ✅ Refactor Complete - Architecture Modernized
 
@@ -1448,7 +1448,7 @@ Authorization: Bearer <token>
 - Multiple symptoms can have single root cause
 - **Always validate schema before deployment**
 
-### Session: November 5, 2025 - Event Checklist System (v1.27.14)
+### Session: November 5, 2025 - Event Checklist System
 
 **Status:** ✅ Complete - Ready for Production Testing
 

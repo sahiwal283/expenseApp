@@ -396,13 +396,13 @@ ts-node scripts/retrain_from_corrections.ts --days=30 > monthly_report_$(date +%
 
 ## 📈 **Roadmap**
 
-### **v1.13.0 - Enhanced Learning** (Next)
+### **Enhanced Learning** (Next)
 - [ ] Implement category pattern learning
 - [ ] Add amount validation patterns
 - [ ] Cross-merchant learning (similar patterns)
 - [ ] Confidence decay (older patterns get lower confidence)
 
-### **v1.14.0 - Advanced AI** (Future)
+### **Advanced AI** (Future)
 - [ ] Fine-tune Ollama on correction data
 - [ ] Multi-provider ensemble (Tesseract + EasyOCR vote)
 - [ ] OCR quality prediction (pre-process)

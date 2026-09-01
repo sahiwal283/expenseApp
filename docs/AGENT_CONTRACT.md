@@ -108,8 +108,8 @@ Manager Agent (Task Assignment & Coordination)
 
 **CRITICAL: Production vs Sandbox**
 - ✅ Always verify environment before making changes
-- ✅ Sandbox: `http://192.168.1.144` (Container 203)
-- ✅ Production: `https://expapp.duckdns.org` (Containers 201 & 202)
+- ✅ Sandbox: CT 2600 (all-in-one)
+- ✅ Production: `https://argo.booute.duckdns.org` (CT 2120 frontend / CT 2220 backend)
 - ✅ Frontend must use relative `/api` path (never hardcode URLs)
 - ✅ Backend CORS must allow correct origin
 - ❌ Never use production URLs in sandbox builds

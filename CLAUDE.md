@@ -88,7 +88,7 @@ Key service boundaries:
 
 - **`App.tsx`** — Single-page app with string-based view state (not React Router); role-based rendering
 - **`components/`** — Feature folders: `admin/`, `auth/`, `checklist/`, `expenses/`, `events/`, `reports/`, `developer/`
-- **`hooks/`** — `useAuth`, `useApi`, `useDataFetching` are the primary data-access hooks
+- **`hooks/`** — `useAuth`, `useEscapeKey`, `useExpenseMessages`; data access otherwise goes through `utils/apiClient.ts` and colocated per-feature hooks
 - **`utils/apiClient.ts`** — Axios instance with JWT injection; all API calls go through here
 - **`utils/syncManager.ts`** — Offline sync queue; auto-flushes on reconnect
 - **`utils/offlineDb.ts`** — Dexie (IndexedDB) wrapper for offline storage

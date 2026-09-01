@@ -502,7 +502,5 @@ If you encounter issues not covered here:
 
 ---
 
-**Last Updated:** November 6, 2025  
-**Branch:** v1.27.15  
-**Status:** ✅ Ready for local testing
+**Status:** See CHANGELOG.md for current release status.
 

@@ -1,6 +1,5 @@
 # 📋 User Guide: Booked Status Toggle Feature
 
-**Version:** v1.27.15+  
 **Feature:** Toggle booked/pending status for flights, hotels, and car rentals
 
 ---
@@ -138,6 +137,5 @@ If you encounter issues with the booked status toggle:
 
 ---
 
-**Last Updated:** November 5, 2025  
-**Version:** v1.27.15
+**Status:** See CHANGELOG.md for current release status.
 

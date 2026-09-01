@@ -228,6 +228,4 @@ For issues or questions:
 
 ## Version
 
-Current Version: **v1.0.0**
-
-Check the header in the application to see the version number.
+See `CHANGELOG.md` for the current release version, or check the header in the application.
