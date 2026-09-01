@@ -15,7 +15,7 @@ interface UseExpenseModalProps {
   addToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-export function useExpenseModal({ _onSave, reloadData, addToast }: UseExpenseModalProps) {
+export function useExpenseModal({ onSave: _onSave, reloadData, addToast }: UseExpenseModalProps) {
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
   const [isEditingExpense, setIsEditingExpense] = useState(false);
