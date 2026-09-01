@@ -130,7 +130,3 @@ Bump the version in both `package.json` and `backend/package.json` before deploy
 - **Sandbox:** `deploy-sandbox-2600.sh`
 
 After a frontend deploy, the NPMplus proxy cache must be cleared. Full instructions, including container topology and rollback: [docs/DEPLOYMENT_PROXMOX.md](docs/DEPLOYMENT_PROXMOX.md).
-
-## License
-
-Proprietary software. All rights reserved.
