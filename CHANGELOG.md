@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-08-27 - Booth inventory and tracking
+
+### Added
+- Booth inventory: a catalog of booths and their components (weights, photos, attachments), locations, and containers, managed from a new Booths page with detail tabs and move/weight/photo modals.
+- Packing checklist per event with an offline-capable flow: reads work offline and queued check-offs replay idempotently on reconnect, so double-taps and retries can't double-apply.
+- Manifest panel on the event checklist showing what ships in which container, with exception reporting (ReportIssueModal) including photos.
+- Migration 039 (`039_create_booth_inventory.sql`): booths, components, containers, locations, manifests, and attachment tables.
+
+### Changed
+- Temporary role gains read + field-ops access to inventory so on-site staff can work the packing list without full accounts.
+
+### Fixed
+- Postgres constraint violations on booth endpoints now map to actionable 4xx errors instead of opaque 500s.
+
 ## [2.19.0] - 2026-08-26 - Argo rename
 
 ### Changed
