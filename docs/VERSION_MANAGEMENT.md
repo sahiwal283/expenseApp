@@ -23,7 +23,7 @@ npm version patch --no-git-tag-version  # 1.15.10 → 1.15.11
 
 # Build and deploy
 npm run build
-./deploy-sandbox.sh
+./deploy-sandbox-2600.sh
 ```
 
 ### Backend Only Changed?
@@ -36,7 +36,7 @@ cd ..
 
 # Build and deploy
 cd backend && npm run build && cd ..
-./deploy-sandbox.sh
+./deploy-sandbox-2600.sh
 ```
 
 ### Both Changed?
@@ -48,7 +48,7 @@ cd backend && npm version patch --no-git-tag-version && cd ..
 
 # Build and deploy
 npm run build && cd backend && npm run build && cd ..
-./deploy-sandbox.sh
+./deploy-sandbox-2600.sh
 ```
 
 ---
@@ -81,20 +81,20 @@ Instead of `patch`, you can use:
 **Small frontend UI fix:**
 ```bash
 npm version patch --no-git-tag-version
-npm run build && ./deploy-sandbox.sh
+npm run build && ./deploy-sandbox-2600.sh
 ```
 
 **Backend API endpoint added:**
 ```bash
 cd backend && npm version minor --no-git-tag-version && cd ..
-cd backend && npm run build && cd .. && ./deploy-sandbox.sh
+cd backend && npm run build && cd .. && ./deploy-sandbox-2600.sh
 ```
 
 **Both got updates:**
 ```bash
 npm version patch --no-git-tag-version
 cd backend && npm version patch --no-git-tag-version && cd ..
-npm run build && cd backend && npm run build && cd .. && ./deploy-sandbox.sh
+npm run build && cd backend && npm run build && cd .. && ./deploy-sandbox-2600.sh
 ```
 
 ---

@@ -478,7 +478,7 @@ fi
 - `docs/DEPLOYMENT_PROXMOX.md` - Full deployment guide
 - `docs/MASTER_GUIDE.md` - System architecture
 - `backend/src/database/migrations/README.md` - Migration guidelines
-- `PRE_PRODUCTION_CHECKLIST.md` - Pre-deployment checklist
+- `docs/archive/PRE_PRODUCTION_CHECKLIST.md` - Pre-deployment checklist
 
 ---
 
@@ -512,7 +512,7 @@ If validation fails and you're not sure how to fix it:
 3. **Test migrations on sandbox first**
    ```bash
    # Deploy to sandbox
-   ./deploy-sandbox.sh
+   ./deploy-sandbox-2600.sh
    
    # Validate sandbox
    ./scripts/validate-schema.sh sandbox

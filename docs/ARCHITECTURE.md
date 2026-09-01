@@ -1186,7 +1186,7 @@ Proxmox Host (192.168.1.190)
     ├── Path: /var/www/trade-show-app/current
     └── Version: Frontend v1.4.13
 
-Deployment Process (Sandbox - Automated via deploy-sandbox.sh):
+Deployment Process (Sandbox - Automated via deploy-sandbox-2600.sh):
 1. Update version in package.json (frontend & backend)
 2. Build frontend: npm run build
 3. Build backend: cd backend && npm run build
@@ -1208,7 +1208,7 @@ Deployment Process (Production - Manual):
 7. Verify health endpoints
 
 Current Scripts:
-- deploy-sandbox.sh - Automated sandbox deployment
+- deploy-sandbox-2600.sh - Automated sandbox deployment
 - DEPLOY_TO_PRODUCTION.sh - Production deployment (use with caution!)
 ```
 

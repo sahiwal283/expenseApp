@@ -237,7 +237,7 @@
   - OCR service configuration decision needed
   - Database migrations need production testing
   - Checklist feature needs production testing
-- **Action Required:** See PRE_PRODUCTION_CHECKLIST.md
+- **Action Required:** See `docs/archive/PRE_PRODUCTION_CHECKLIST.md`
 
 **2. Schema Validation Automation**
 - **Status:** Scripts created, needs integration
@@ -1563,7 +1563,7 @@ ssh root@192.168.1.190 "pct exec 201 -- systemctl status trade-show-app-backend"
 - OCR system: `backend/src/services/ocr/README.md`
 - Helper functions: `docs/HELPER_FUNCTIONS.md` - Complete reference for all helper functions
 - Frontend utilities: `src/utils/README.md` - Frontend utility functions guide
-- Pre-production checklist: `PRE_PRODUCTION_CHECKLIST.md` - Production deployment readiness
+- Pre-production checklist: `docs/archive/PRE_PRODUCTION_CHECKLIST.md` - Production deployment readiness
 
 ---
 
