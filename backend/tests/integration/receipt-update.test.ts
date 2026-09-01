@@ -13,10 +13,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { pool } from '../../src/config/database';
 import { expenseRepository } from '../../src/database/repositories/ExpenseRepository';
-import { auditLogRepository } from '../../src/database/repositories/AuditLogRepository';
 import { userRepository } from '../../src/database/repositories/UserRepository';
 import { expenseService } from '../../src/services/ExpenseService';
 import { ExpenseAuditService } from '../../src/services/ExpenseAuditService';
+import { NotFoundError } from '../../src/utils/errors';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -272,9 +272,16 @@ describe('Receipt Update API Integration Tests', () => {
         return;
       }
 
-      const nonExistentId = 'non-existent-id';
+      // Must be a well-formed (but absent) UUID: the id column is typed
+      // uuid, so a non-UUID string fails at the SQL layer (invalid input
+      // syntax) before the service's own not-found check runs.
+      const nonExistentId = '00000000-0000-0000-0000-000000000000';
       const newReceiptUrl = '/uploads/non-existent-receipt.jpg';
 
+      // NotFoundError's message now includes the identifier
+      // ("Expense with identifier '...' not found" -- see
+      // utils/errors/AppError.ts), so assert on the error type rather than
+      // the older literal 'Expense not found' string.
       await expect(
         expenseService.updateExpenseReceipt(
           nonExistentId,
@@ -282,7 +289,7 @@ describe('Receipt Update API Integration Tests', () => {
           'salesperson',
           newReceiptUrl
         )
-      ).rejects.toThrow('Expense not found');
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -317,22 +324,23 @@ describe('Receipt Update API Integration Tests', () => {
         }
       );
 
-      // Verify audit log entry
-      const auditLogs = await auditLogRepository.findByExpenseId(testExpenseWithReceiptId);
+      // Verify audit log entry. Expense audit trail lives in the
+      // expense_audit_log table (written by ExpenseAuditService), which is
+      // separate from the general-purpose audit_logs table that
+      // AuditLogRepository covers -- AuditLogRepository has no
+      // findByExpenseId method (and never queried the right table even
+      // under its old name). ExpenseAuditService.getAuditTrail() is the
+      // current, correct way to read it back.
+      const auditLogs = await ExpenseAuditService.getAuditTrail(testExpenseWithReceiptId);
       const receiptReplacedLog = auditLogs.find(log => log.action === 'receipt_replaced');
 
       expect(receiptReplacedLog).toBeDefined();
       expect(receiptReplacedLog?.action).toBe('receipt_replaced');
-      expect(receiptReplacedLog?.user_id).toBe(testUserId);
-      
+      expect(receiptReplacedLog?.userId).toBe(testUserId);
+
       // Verify change details
-      if (receiptReplacedLog?.change_details) {
-        const details = typeof receiptReplacedLog.change_details === 'string' 
-          ? JSON.parse(receiptReplacedLog.change_details)
-          : receiptReplacedLog.change_details;
-        expect(details.receipt_url.old).toBe('/uploads/old-receipt.jpg');
-        expect(details.receipt_url.new).toBe(newReceiptUrl);
-      }
+      expect(receiptReplacedLog?.changes.receipt_url.old).toBe('/uploads/old-receipt.jpg');
+      expect(receiptReplacedLog?.changes.receipt_url.new).toBe(newReceiptUrl);
     });
   });
 

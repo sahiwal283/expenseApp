@@ -184,7 +184,8 @@ describe('Migration 023 - Audit Log Table Rename', () => {
       const testLog = await auditLogRepository.create({
         action: 'migration_test',
         entityType: 'test',
-        entityId: 'test-123',
+        // entity_id is a UUID column (migration 004); must be well-formed
+        entityId: '00000000-0000-0000-0000-000000000123',
         status: 'success',
         userName: 'Migration Test User',
       });

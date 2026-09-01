@@ -84,15 +84,23 @@ describe('DevDashboardService', () => {
 
   describe('getSummary', () => {
     it('should return dashboard summary with correct statistics', async () => {
-      // Mock all database queries for summary
+      // Mock all database queries for summary, in the order getSummary()
+      // actually issues them (see DevDashboardService.ts:72-145 and
+      // DevDashboardService.expenseStats.ts's expenseSummaryTotals(), which
+      // now sources the four expense aggregates -- introduced by the Midas
+      // cutover work that moved expense aggregation behind an
+      // EXPENSE_BACKEND-aware helper instead of inline pool.query() calls
+      // interleaved with users/events/sessions):
+      // users -> events -> expenseTotal -> expensePending -> expenseAmount ->
+      // expenseZohoPushed -> activeSessions -> errorRate -> slowEndpoints
       vi.mocked(pool.query)
         .mockResolvedValueOnce({ rows: [{ count: '10' }], command: '', rowCount: 1, oid: 0, fields: [] }) // users
-        .mockResolvedValueOnce({ rows: [{ count: '100' }], command: '', rowCount: 1, oid: 0, fields: [] }) // expenses
         .mockResolvedValueOnce({ rows: [{ count: '5' }], command: '', rowCount: 1, oid: 0, fields: [] }) // events
+        .mockResolvedValueOnce({ rows: [{ count: '100' }], command: '', rowCount: 1, oid: 0, fields: [] }) // expenses total
         .mockResolvedValueOnce({ rows: [{ count: '15' }], command: '', rowCount: 1, oid: 0, fields: [] }) // pending expenses
-        .mockResolvedValueOnce({ rows: [{ count: '3' }], command: '', rowCount: 1, oid: 0, fields: [] }) // active sessions
         .mockResolvedValueOnce({ rows: [{ total: '5000.50' }], command: '', rowCount: 1, oid: 0, fields: [] }) // total amount
         .mockResolvedValueOnce({ rows: [{ count: '80' }], command: '', rowCount: 1, oid: 0, fields: [] }) // zoho pushed
+        .mockResolvedValueOnce({ rows: [{ count: '3' }], command: '', rowCount: 1, oid: 0, fields: [] }) // active sessions
         .mockResolvedValueOnce({ rows: [{ total_requests: '50', error_count: '5' }], command: '', rowCount: 1, oid: 0, fields: [] }) // error rate
         .mockResolvedValueOnce({ rows: [{ count: '0' }], command: '', rowCount: 1, oid: 0, fields: [] }); // slow endpoints
 
@@ -152,16 +160,19 @@ describe('DevDashboardService', () => {
     });
 
     it('should set health status to warning when score is between 50-80', async () => {
+      // Same actual call order as the "correct statistics" test above:
+      // users -> events -> expenseTotal -> expensePending -> expenseAmount ->
+      // expenseZohoPushed -> activeSessions -> errorRate -> slowEndpoints
       vi.mocked(pool.query)
-        .mockResolvedValueOnce({ rows: [{ count: '5' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '100' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '2' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '35' }], command: '', rowCount: 1, oid: 0, fields: [] }) // 35% pending
-        .mockResolvedValueOnce({ rows: [{ count: '2' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ total: '1000' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '50' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ total_requests: '100', error_count: '5' }], command: '', rowCount: 1, oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '0' }], command: '', rowCount: 1, oid: 0, fields: [] });
+        .mockResolvedValueOnce({ rows: [{ count: '5' }], command: '', rowCount: 1, oid: 0, fields: [] }) // users
+        .mockResolvedValueOnce({ rows: [{ count: '2' }], command: '', rowCount: 1, oid: 0, fields: [] }) // events
+        .mockResolvedValueOnce({ rows: [{ count: '100' }], command: '', rowCount: 1, oid: 0, fields: [] }) // expenses total
+        .mockResolvedValueOnce({ rows: [{ count: '35' }], command: '', rowCount: 1, oid: 0, fields: [] }) // pending expenses (35%)
+        .mockResolvedValueOnce({ rows: [{ total: '1000' }], command: '', rowCount: 1, oid: 0, fields: [] }) // total amount
+        .mockResolvedValueOnce({ rows: [{ count: '50' }], command: '', rowCount: 1, oid: 0, fields: [] }) // zoho pushed
+        .mockResolvedValueOnce({ rows: [{ count: '2' }], command: '', rowCount: 1, oid: 0, fields: [] }) // active sessions
+        .mockResolvedValueOnce({ rows: [{ total_requests: '100', error_count: '5' }], command: '', rowCount: 1, oid: 0, fields: [] }) // error rate
+        .mockResolvedValueOnce({ rows: [{ count: '0' }], command: '', rowCount: 1, oid: 0, fields: [] }); // slow endpoints
 
       const { apiRequestRepository } = await import('../../src/database/repositories');
       vi.mocked(apiRequestRepository.getStats).mockResolvedValue({

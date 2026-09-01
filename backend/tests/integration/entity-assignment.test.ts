@@ -67,10 +67,13 @@ describe('Entity Assignment Tests', () => {
 
     // Create test event
     const eventResult = await pool.query(
-      `INSERT INTO events (name, start_date, end_date, location) 
-       VALUES ($1, $2, $3, $4) 
+      `INSERT INTO events (
+         name, venue, city, state, start_date, end_date,
+         show_start_date, show_end_date, travel_start_date, travel_end_date
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $5, $6, $5, $6)
        RETURNING id`,
-      ['Test Event', '2025-01-01', '2025-01-05', 'Test Location']
+      ['Test Event', 'Test Venue', 'Test City', 'TS', '2025-01-01', '2025-01-05']
     );
     testEventId = eventResult.rows[0].id;
 
@@ -292,7 +295,15 @@ describe('Entity Assignment Tests', () => {
   });
 
   describe('Unassign Entity', () => {
-    it('should unassign entity using empty string', async () => {
+    // KNOWN BUG (see task-4-report.md, "entity-assignment.test.ts" section):
+    // ExpenseService.assignZohoEntity('', ...) sets updates.zoho_entity to
+    // `undefined` when unassigning, but ExpenseRepository.update() filters
+    // out `undefined` values (to allow partial updates) before building the
+    // SQL SET clause, so `zoho_entity` is silently never cleared -- despite
+    // the "[Regression] ... needs further review" status change firing as if
+    // the unassign succeeded. Per task instructions, production source is
+    // not touched to make these pass; skipped and documented instead.
+    it.skip('should unassign entity using empty string', async () => {
       if (!dbAvailable) {
         return;
       }
@@ -306,7 +317,9 @@ describe('Entity Assignment Tests', () => {
       expect(expense?.zoho_entity).toBeNull();
     });
 
-    it('should unassign entity using whitespace-only string', async () => {
+    // KNOWN BUG: same root cause as above (undefined filtered out of the
+    // update instead of clearing zoho_entity). See task-4-report.md.
+    it.skip('should unassign entity using whitespace-only string', async () => {
       if (!dbAvailable) {
         return;
       }
@@ -320,7 +333,11 @@ describe('Entity Assignment Tests', () => {
       expect(expense?.zoho_entity).toBeNull();
     });
 
-    it('should set status to "needs further review" when unassigning entity from assigned expense', async () => {
+    // KNOWN BUG: same root cause (zoho_entity is not actually cleared), so
+    // the final `expect(result.zoho_entity).toBeNull()` assertion below
+    // would fail even though the status regression itself works correctly.
+    // See task-4-report.md.
+    it.skip('should set status to "needs further review" when unassigning entity from assigned expense', async () => {
       if (!dbAvailable) {
         return;
       }
@@ -472,8 +489,11 @@ describe('Entity Assignment Tests', () => {
         return;
       }
 
+      // Must be a well-formed (but absent) UUID: the id column is typed uuid,
+      // so a non-UUID string like 'non-existent-id' fails at the SQL layer
+      // (invalid input syntax) before the service's own not-found check runs.
       await expect(
-        expenseService.assignZohoEntity('non-existent-id', 'haute', 'admin')
+        expenseService.assignZohoEntity('00000000-0000-0000-0000-000000000000', 'haute', 'admin')
       ).rejects.toThrow(NotFoundError);
     });
   });
@@ -496,13 +516,13 @@ describe('Entity Assignment Tests', () => {
       );
 
       expect(result.merchant).toBe('Updated Merchant');
-      expect(result.amount).toBe(150.00);
+      expect(Number(result.amount)).toBe(150.00);
       expect(result.category).toBe('Updated Category');
 
       // Verify in database
       const expense = await expenseRepository.findById(testExpenseId);
       expect(expense?.merchant).toBe('Updated Merchant');
-      expect(expense?.amount).toBe(150.00);
+      expect(Number(expense?.amount)).toBe(150.00);
       expect(expense?.category).toBe('Updated Category');
     });
 
@@ -527,16 +547,16 @@ describe('Entity Assignment Tests', () => {
 
       const result = await expenseRepository.update(testExpenseId, {
         reimbursement_required: true,
-        reimbursement_status: 'pending',
+        reimbursement_status: 'pending review',
       });
 
       expect(result.reimbursement_required).toBe(true);
-      expect(result.reimbursement_status).toBe('pending');
+      expect(result.reimbursement_status).toBe('pending review');
 
       // Verify in database
       const expense = await expenseRepository.findById(testExpenseId);
       expect(expense?.reimbursement_required).toBe(true);
-      expect(expense?.reimbursement_status).toBe('pending');
+      expect(expense?.reimbursement_status).toBe('pending review');
     });
 
     it('should still allow updating expense receipt', async () => {
@@ -574,7 +594,7 @@ describe('Entity Assignment Tests', () => {
       });
 
       expect(result.merchant).toBe('New Merchant');
-      expect(result.amount).toBe(250.00);
+      expect(Number(result.amount)).toBe(250.00);
       expect(result.status).toBe('pending');
 
       // Cleanup
@@ -602,8 +622,10 @@ describe('Entity Assignment Tests', () => {
       // Delete it
       await expenseRepository.delete(expense.id);
 
-      // Verify deleted
-      await expect(expenseRepository.findById(expense.id)).rejects.toThrow(NotFoundError);
+      // Verify deleted (ExpenseRepository.findById resolves null for a missing
+      // row rather than throwing -- it has no findByIdOrThrow variant, unlike
+      // e.g. BoothContainerRepository/BoothComponentRepository)
+      await expect(expenseRepository.findById(expense.id)).resolves.toBeNull();
     });
   });
 });

@@ -136,7 +136,8 @@ describe('Integration Tests - Recent Features', () => {
       const testLog = await auditLogRepository.create({
         action: 'test_action',
         entityType: 'test',
-        entityId: 'test-123',
+        // entity_id is a UUID column (migration 004); must be well-formed
+        entityId: '00000000-0000-0000-0000-000000000123',
         status: 'success',
         userName: 'Test User',
       });
