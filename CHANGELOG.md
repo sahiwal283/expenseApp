@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.20.1] - 2026-09-01 - Documentation and repo cleanup
+
+### Changed
+- README and docs/ARCHITECTURE.md rewritten to describe the current system (Midas expense backend, Authentik SSO, booth inventory, real production topology) with mermaid diagrams; new docs/DATABASE.md documents the live schema with ER diagrams.
+- Historical one-off documents moved to docs/archive/; stale version references removed from living docs.
+
+### Removed
+- deploy-sandbox.sh (misnamed — it targeted production containers; deploy-sandbox-2600.sh is the sandbox deploy).
+- Tracked credentials files (now local-only), dead files, and unused dependencies. Merged git branches pruned.
+
+### Requires
+- No migration, no env changes.
+
 ## [2.20.0] - 2026-08-27 - Booth inventory and tracking
 
 ### Added
