@@ -2,6 +2,8 @@
 
 This guide deploys Argo on a Proxmox host with LXC containers, Nginx reverse proxy with TLS, PostgreSQL, and automation for backups.
 
+> **Note:** This is a greenfield provisioning guide (fresh LXC creation with generic container numbers). For the current live production topology — actual container IDs, ports, and hostnames — see [docs/ARCHITECTURE.md §2 Production topology](./ARCHITECTURE.md#2-production-topology).
+
 ### 0) Prerequisites
 - Proxmox host reachable via SSH
 - Debian/Ubuntu LXC template available
@@ -18,7 +20,7 @@ cd trade-show-app/deployment/proxmox
 
 ### 2) OS Hardening (inside each container)
 ```
-pct enter 201
+pct enter 2220   # example: prod-backend CT; repeat for frontend/DB CTs
 cd /opt/expenseapp/deployment/common   # ensure repo is present or copy scripts
 bash os-hardening.sh APP_USER=expense SSH_PORT=2222
 ```
@@ -47,7 +49,7 @@ Validate database schema to ensure all required tables and columns exist:
 
 ```bash
 # Connect to production database
-pct exec 201 -- su - postgres -c 'psql -d expense_app_production'
+pct exec 2320 -- su - postgres -c 'psql -d expense_app_production'
 
 # Verify all required tables exist
 SELECT table_name 
@@ -147,10 +149,10 @@ ORDER BY tc.table_name;
 ### 5) Nginx Reverse Proxy + TLS (on Proxmox host)
 ```
 apt-get update && apt-get install -y nginx
-cp deployment/nginx/expenseapp.conf /etc/nginx/sites-available/expenseapp.conf
-sed -i 's/YOUR_DOMAIN_OR_IP/expense.example.com/g' /etc/nginx/sites-available/expenseapp.conf
-sed -i 's#BACKEND_UPSTREAM#http://<backend-container-ip>:5000#g' /etc/nginx/sites-available/expenseapp.conf
-ln -sf /etc/nginx/sites-available/expenseapp.conf /etc/nginx/sites-enabled/expenseapp.conf
+cp deployment/nginx/trade-show-app.conf /etc/nginx/sites-available/trade-show-app.conf
+sed -i 's/YOUR_DOMAIN_OR_IP/expense.example.com/g' /etc/nginx/sites-available/trade-show-app.conf
+sed -i 's#BACKEND_UPSTREAM#http://<backend-container-ip>:3000#g' /etc/nginx/sites-available/trade-show-app.conf
+ln -sf /etc/nginx/sites-available/trade-show-app.conf /etc/nginx/sites-enabled/trade-show-app.conf
 nginx -t && systemctl reload nginx
 
 DOMAIN=expense.example.com EMAIL=admin@example.com \

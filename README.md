@@ -25,9 +25,8 @@ cp backend/env.example backend/.env      # backend + database config
 npm install
 cd backend && npm install
 
-# 3. Set up the database
-npm run migrate
-npm run seed
+# 3. Set up the database (from repo root)
+cd backend && npm run migrate && npm run seed
 cd ..
 
 # 4. Start frontend + backend together

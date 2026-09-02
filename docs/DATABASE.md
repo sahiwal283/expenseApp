@@ -4,7 +4,7 @@ Generated from live production schema (`expense_app_production`, CT 2320) on 202
 
 All access is raw SQL with parameterized queries — no ORM. Schema changes live in `backend/src/database/migrations/` as numbered `NNN_description.sql` files and auto-run at backend startup via `migrate.ts`. See [ARCHITECTURE.md](ARCHITECTURE.md) for service/topology context; this document covers schema shape only.
 
-**46 objects** in the `public` schema: 43 base tables, 2 views, and 1 ad-hoc backup table (see [Table inventory](#table-inventory)).
+**46 objects** in the `public` schema: 44 base tables (one an ad-hoc backup) + 2 views = 46 (see [Table inventory](#table-inventory)).
 
 > **`expenses` is FROZEN.** As of the 2026-08 Midas cutover, the system of record for expense data is the external Midas service, not this table. `backend/src/services/expenseStore/` still reads/writes it as a flag-gated fallback (`EXPENSE_BACKEND=local`), but in production the table is no longer the source of truth — see ARCHITECTURE.md §3 (`ExpenseStore` / `MidasExpenseStore`). Its FK graph below reflects the live schema as-is; treat it as historical/fallback structure, not the active data path.
 
@@ -158,6 +158,7 @@ erDiagram
     users ||--o{ expense_message_notifications : "notified"
     events ||--o{ expenses : "has"
     users ||--o{ expenses : "submitted_by"
+    users ||--o{ expenses : "reviewed_by"
     expenses {
         uuid id PK
         uuid event_id FK
@@ -278,7 +279,23 @@ erDiagram
     }
 ```
 
-Simplification note: `booth_components`, `booth_containers`, and `booth_movements` each carry more than one FK to the same target table (e.g. `booth_movements.from_location_id` / `to_location_id` both → `inventory_locations`; `booth_components.default_container_id` / `current_container_id` both → `booth_containers`). The diagram draws one representative relationship line per table pair rather than every individual column — the full column-level FK list is in `/tmp/argo-fks.txt` from this session's introspection, or re-derivable via the query in [Migrations](#migrations).
+Simplification note: `booth_components`, `booth_containers`, and `booth_movements` each carry more than one FK to the same target table (e.g. `booth_movements.from_location_id` / `to_location_id` both → `inventory_locations`; `booth_components.default_container_id` / `current_container_id` both → `booth_containers`). The diagram draws one representative relationship line per table pair rather than every individual column — the full column-level FK list can be pulled from the live schema with:
+
+```sql
+SELECT
+  tc.table_name,
+  kcu.column_name,
+  ccu.table_name AS foreign_table_name,
+  ccu.column_name AS foreign_column_name
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+  ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+  ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND tc.table_schema = 'public'
+ORDER BY tc.table_name, kcu.column_name;
+```
 
 ## CRM & OCR training
 
@@ -316,7 +333,7 @@ erDiagram
 
 ## Table inventory
 
-Every object in `information_schema.tables` for `public` (43 base tables + 2 views + 1 backup table = 46), covering all domains above plus operational/integration tables not diagrammed individually (API/page analytics, audit log, system monitoring, Telegram bot, idempotency, app settings) — those are single-purpose logging/integration tables without a meaningful ER relationship graph.
+Every object in `information_schema.tables` for `public` (44 base tables, one an ad-hoc backup, + 2 views = 46), covering all domains above plus operational/integration tables not diagrammed individually (API/page analytics, audit log, system monitoring, Telegram bot, idempotency, app settings) — those are single-purpose logging/integration tables without a meaningful ER relationship graph.
 
 | Table | Purpose |
 |---|---|

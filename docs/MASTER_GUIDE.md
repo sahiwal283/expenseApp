@@ -1,6 +1,6 @@
 # 🤖 MASTER GUIDE - Argo
 
-**Last Updated:** November 12, 2025  
+**Last Updated:** September 1, 2026  
 **Status:** See CHANGELOG.md for current release status.
 
 **Purpose:** This is the SINGLE AUTHORITATIVE SOURCE for all AI agents working on Argo. It contains everything you need to know: what works, what doesn't, what's being built, what's planned, failures, lessons learned, and critical information.
@@ -40,14 +40,14 @@
 - **Backend:** see CHANGELOG.md for current version
 - **Branch:** `main`
 - **Status:** ✅ Ready for Production Deployment
-- **Last Updated:** November 12, 2025
+- **Last Updated:** September 1, 2026
 
 **Sandbox (CT 2600)**
 - **Frontend:** see CHANGELOG.md for current version (CT 2600)
 - **Backend:** see CHANGELOG.md for current version (CT 2600)
 - **Branch:** `main`
 - **Status:** 🔬 PDF Optimization, Checklist Features, Full Codebase Refactor
-- **Last Updated:** November 12, 2025
+- **Last Updated:** September 1, 2026
 
 ### Container Mapping (MEMORIZE THIS!)
 - **CT 2220** = **PRODUCTION Backend** (Live users, real financial data, port 3000)
@@ -57,7 +57,7 @@
 
 ### Quick Access
 - **Production URL:** https://argo.booute.duckdns.org
-- **Sandbox URL:** see docs/ARCHITECTURE.md for current sandbox access
+- **Sandbox URL:** no public URL — CT 2600 is reachable via `pct exec` on the Proxmox host (see docs/ARCHITECTURE.md §2)
 - **Proxmox Host:** 192.168.1.190
 - **Repository:** https://github.com/sahiwal283/trade-show-app
 
@@ -131,14 +131,9 @@
 
 ### Known Issues (ONGOING)
 
-**1. OCR Service Configuration for Production**
-- **Problem:** Production doesn't have external OCR service (Container 204 is sandbox-only)
-- **Current State:** Production uses embedded Tesseract
-- **Options:**
-  1. Keep embedded Tesseract (safest, slower)
-  2. Deploy external OCR service (requires new infrastructure)
-- **Decision Needed:** Which OCR method for production?
-- **Impact:** Affects production deployment of checklist feature
+**1. OCR Service Configuration for Production — RESOLVED**
+- **Resolution:** Ollama (CT 103) now serves as the optional LLM enhancement step for OCR in production (Tesseract.js first pass, Ollama enhancement when confidence < 0.70); see `docs/ARCHITECTURE.md` §2 Production topology.
+- **Status:** ✅ Resolved
 
 **2. Checklist Feature Not in Production**
 - **Problem:** Major new feature only in sandbox
@@ -421,7 +416,7 @@ npm run validate-schema
 ```bash
 # Connect to production database
 ssh root@192.168.1.190
-pct exec 201 -- su - postgres -c 'psql -d expense_app_production'
+pct exec 2320 -- su - postgres -c 'psql -d expense_app_production'
 
 # 1. Verify all required tables exist
 SELECT table_name 
@@ -518,7 +513,7 @@ The AI training pipeline requires `ocr_corrections` table to exist.
 **How to Verify:**
 ```bash
 ssh root@192.168.1.190
-pct exec 203 -- su - postgres -c 'psql -d expense_app -c "\dt"'
+pct exec 2600 -- su - postgres -c 'psql -d expense_app -c "\dt"'
 # Should see: ocr_corrections
 ```
 
@@ -533,7 +528,7 @@ pct exec 203 -- su - postgres -c 'psql -d expense_app -c "\dt"'
 
 **Verify:**
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/trade-show-app"
+ssh root@192.168.1.190 "pct exec 2600 -- ls -la /var/www/trade-show-app"
 ```
 
 ### Backend Deployment Path Case Sensitivity
@@ -727,7 +722,7 @@ src/
 
 ### Sandbox Environment
 
-**URL**: see docs/ARCHITECTURE.md for current sandbox access  
+**URL**: no public URL — reachable via `pct exec` on the Proxmox host (see docs/ARCHITECTURE.md §2)  
 **Container**: CT 2600  
 **Database**: `expense_app_sandbox`
 
@@ -743,7 +738,7 @@ src/
 
 **Reset Sandbox Passwords:**
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- bash -c 'cd /opt/trade-show-app/backend && node reset-sandbox-passwords.js'"
+ssh root@192.168.1.190 "pct exec 2600 -- bash -c 'cd /opt/trade-show-app/backend && node reset-sandbox-passwords.js'"
 ```
 
 ### Proxmox Access
@@ -758,13 +753,13 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c 'cd /opt/trade-show-app/backend 
 pct list
 
 # Enter container
-pct exec 203 -- bash
+pct exec 2600 -- bash
 
 # Copy file to container
-pct push 203 /local/file /remote/path
+pct push 2600 /local/file /remote/path
 
 # Check container status
-pct status 203
+pct status 2600
 ```
 
 ---
@@ -834,8 +829,8 @@ scp "$TARFILE" root@192.168.1.190:/tmp/sandbox-deploy.tar.gz
 
 # 2. Deploy to /var/www/trade-show-app (NOT /var/www/html!)
 ssh root@192.168.1.190 "
-  pct push 203 /tmp/sandbox-deploy.tar.gz /tmp/sandbox-deploy.tar.gz &&
-  pct exec 203 -- bash -c '
+  pct push 2600 /tmp/sandbox-deploy.tar.gz /tmp/sandbox-deploy.tar.gz &&
+  pct exec 2600 -- bash -c '
     cd /var/www/trade-show-app &&
     rm -rf * &&
     tar -xzf /tmp/sandbox-deploy.tar.gz &&
@@ -851,7 +846,7 @@ ssh root@192.168.1.190 "pct stop 104 && sleep 3 && pct start 104 && echo '✓ NP
 
 **Verify Deployment:**
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- bash -c '
+ssh root@192.168.1.190 "pct exec 2600 -- bash -c '
   echo \"=== Service Worker ===\"
   head -3 /var/www/trade-show-app/service-worker.js
   echo
@@ -866,7 +861,7 @@ ssh root@192.168.1.190 "pct exec 203 -- bash -c '
 3. Restart browser completely
 4. Open incognito window
 5. Open DevTools → Network tab → Check "Disable cache"
-6. Load the sandbox URL (see docs/ARCHITECTURE.md)
+6. Load the sandbox app (reachable via `pct exec` on the Proxmox host — see docs/ARCHITECTURE.md §2; no public URL)
 7. Verify version in footer matches deployment
 
 ### Production Deployment
@@ -1524,22 +1519,22 @@ kill -9 <PID>
 
 **Check Backend Logs:**
 ```bash
-ssh root@192.168.1.190 "pct exec 201 -- journalctl -u trade-show-app-backend -f"
+ssh root@192.168.1.190 "pct exec 2220 -- journalctl -u trade-show-app-backend -f"
 ```
 
 **Check Frontend Files:**
 ```bash
-ssh root@192.168.1.190 "pct exec 202 -- ls -la /var/www/trade-show-app"
+ssh root@192.168.1.190 "pct exec 2120 -- ls -la /var/www/trade-show-app"
 ```
 
 **Check Database:**
 ```bash
-ssh root@192.168.1.190 "pct exec 201 -- su - postgres -c 'psql -d expense_app_production'"
+ssh root@192.168.1.190 "pct exec 2320 -- su - postgres -c 'psql -d expense_app_production'"
 ```
 
 **Check Service Status:**
 ```bash
-ssh root@192.168.1.190 "pct exec 201 -- systemctl status trade-show-app-backend"
+ssh root@192.168.1.190 "pct exec 2220 -- systemctl status trade-show-app-backend"
 ```
 
 ---

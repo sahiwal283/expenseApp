@@ -463,9 +463,8 @@ Fix:
 # Check environment variable
 echo $VITE_API_BASE_URL
 
-# Check build output
-# (deprecated domain check — see docs/ARGO_RENAME_DEFERRED.md)
-grep -r "<sandbox-host>" dist/
+# Check build output for an accidentally-baked-in production URL
+grep -r "argo.booute.duckdns.org" dist/
 ```
 
 **Fix:**

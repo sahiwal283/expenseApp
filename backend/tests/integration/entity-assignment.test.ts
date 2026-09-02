@@ -295,14 +295,19 @@ describe('Entity Assignment Tests', () => {
   });
 
   describe('Unassign Entity', () => {
-    // KNOWN BUG (see task-4-report.md, "entity-assignment.test.ts" section):
-    // ExpenseService.assignZohoEntity('', ...) sets updates.zoho_entity to
-    // `undefined` when unassigning, but ExpenseRepository.update() filters
-    // out `undefined` values (to allow partial updates) before building the
-    // SQL SET clause, so `zoho_entity` is silently never cleared -- despite
-    // the "[Regression] ... needs further review" status change firing as if
-    // the unassign succeeded. Per task instructions, production source is
-    // not touched to make these pass; skipped and documented instead.
+    // KNOWN BUG: ExpenseService.assignZohoEntity('', ...) sets
+    // updates.zoho_entity to `undefined` when unassigning, but
+    // ExpenseRepository.update() filters out `undefined` values (to allow
+    // partial updates) before building the SQL SET clause, so `zoho_entity`
+    // is silently never cleared -- despite the "[Regression] ... needs
+    // further review" status change firing as if the unassign succeeded.
+    // Per task instructions, production source is not touched to make these
+    // pass; skipped and documented instead.
+    //
+    // Unreachable in production: PATCH /:id/entity is gated by
+    // rejectLocalReviewWhenMidasOwned (backend/src/routes/expenses.ts), which
+    // 409s the whole route under EXPENSE_BACKEND=midas -- the current
+    // production setting. This bug only bites under EXPENSE_BACKEND=local.
     it.skip('should unassign entity using empty string', async () => {
       if (!dbAvailable) {
         return;
@@ -318,7 +323,8 @@ describe('Entity Assignment Tests', () => {
     });
 
     // KNOWN BUG: same root cause as above (undefined filtered out of the
-    // update instead of clearing zoho_entity). See task-4-report.md.
+    // update instead of clearing zoho_entity). Same production caveat as
+    // above -- unreachable while EXPENSE_BACKEND=midas.
     it.skip('should unassign entity using whitespace-only string', async () => {
       if (!dbAvailable) {
         return;
@@ -336,7 +342,8 @@ describe('Entity Assignment Tests', () => {
     // KNOWN BUG: same root cause (zoho_entity is not actually cleared), so
     // the final `expect(result.zoho_entity).toBeNull()` assertion below
     // would fail even though the status regression itself works correctly.
-    // See task-4-report.md.
+    // Same production caveat as above -- unreachable while
+    // EXPENSE_BACKEND=midas.
     it.skip('should set status to "needs further review" when unassigning entity from assigned expense', async () => {
       if (!dbAvailable) {
         return;
