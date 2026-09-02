@@ -430,7 +430,7 @@ Edit `/backend/src/services/ocr/inference/RuleBasedInferenceEngine.ts`:
 ### **Monitor learning in real-time:**
 ```bash
 # Watch correction storage
-ssh root@192.168.1.190 "pct exec 203 -- bash -c 'tail -f /var/log/expenseapp/backend.log | grep OCR'"
+ssh root@192.168.1.190 "pct exec 2600 -- bash -c 'tail -f /var/log/expenseapp/backend.log | grep OCR'"
 
 # Check learned patterns
 psql -U expenseapp -d expenseapp -c "SELECT * FROM ocr_corrections ORDER BY created_at DESC LIMIT 10;"
